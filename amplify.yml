@@ -1,7 +1,6 @@
 version: 1
 applications:
-  - appRoot: apps/frontend
-    frontend:
+  - frontend:
       phases:
         preBuild:
           commands:
@@ -12,10 +11,10 @@ applications:
           commands:
             - pnpm run build
       artifacts:
-        baseDirectory: dist
+        baseDirectory: dist   # Vite always outputs here
         files:
           - '**/*'
       cache:
         paths:
           - node_modules/**/*
-          - .pnpm-store/**/*   # speeds up pnpm installs
+          - pnpm-store/**/*
