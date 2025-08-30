@@ -90,7 +90,7 @@ export default function Header() {
               />
               <span
                 key={idx}
-                className="flycore z-10 text-[24px] md:text-[30px] font-extrabold leading-none tracking-wide"
+                className="flycore z-10 text-[20px] md:text-[22px] font-extrabold leading-none tracking-wide"
                 style={{ color: "#d06549" }}
               >
                 {flashPhrases[idx]}
