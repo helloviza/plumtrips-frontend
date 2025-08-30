@@ -1,6 +1,5 @@
 // apps/frontend/src/components/Footer.tsx
 import { Link } from "react-router-dom";
-import logo from "/assets/logo.png";
 
 const BG = "#d06549";
 const TEXT = "#00477f";
@@ -43,14 +42,27 @@ export default function Footer() {
           {/* Brand + Contact lives in the same top row, right aligned */}
           <div className="md:col-span-4 flex items-start justify-end">
             <div className="flex flex-col items-end gap-3">
-              <img src={logo} alt="PlumTrips" className="h-12 w-auto object-contain" />
+              {/* ✅ Fixed: direct path to public/assets */}
+              <img
+                src="/assets/logo.png"
+                alt="PlumTrips"
+                className="h-12 w-auto object-contain"
+              />
               <div className="text-base font-semibold">
-                <a href="tel:+917065932396" className="hover:underline" style={{ color: TEXT }}>
+                <a
+                  href="tel:+917065932396"
+                  className="hover:underline"
+                  style={{ color: TEXT }}
+                >
                   +91 70659 32396
                 </a>
               </div>
               <div className="text-sm">
-                <a href="mailto:hello@plumtrips.com" className="hover:underline" style={{ color: TEXT }}>
+                <a
+                  href="mailto:hello@plumtrips.com"
+                  className="hover:underline"
+                  style={{ color: TEXT }}
+                >
                   hello@plumtrips.com
                 </a>
               </div>
@@ -63,11 +75,21 @@ export default function Footer() {
 
         {/* ---------- Social row ---------- */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6">
-          <Social href="#" label="Facebook"><FacebookIcon /></Social>
-          <Social href="#" label="X"><XIcon /></Social>
-          <Social href="#" label="Instagram"><InstagramIcon /></Social>
-          <Social href="#" label="LinkedIn"><LinkedInIcon /></Social>
-          <Social href="#" label="YouTube"><YouTubeIcon /></Social>
+          <Social href="#" label="Facebook">
+            <FacebookIcon />
+          </Social>
+          <Social href="#" label="X">
+            <XIcon />
+          </Social>
+          <Social href="#" label="Instagram">
+            <InstagramIcon />
+          </Social>
+          <Social href="#" label="LinkedIn">
+            <LinkedInIcon />
+          </Social>
+          <Social href="#" label="YouTube">
+            <YouTubeIcon />
+          </Social>
         </div>
 
         {/* Divider */}
@@ -104,7 +126,11 @@ function Group({
 function FLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <li>
-      <Link to={to} className="hover:underline underline-offset-4" style={{ color: TEXT }}>
+      <Link
+        to={to}
+        className="hover:underline underline-offset-4"
+        style={{ color: TEXT }}
+      >
         {children}
       </Link>
     </li>
