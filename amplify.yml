@@ -4,8 +4,10 @@ applications:
       phases:
         preBuild:
           commands:
+            # Ensure Node.js 20+
             - nvm install 20
             - nvm use 20
+            - node -v
             - corepack enable
             - corepack prepare pnpm@10.14.0 --activate
             - pnpm install --no-frozen-lockfile
