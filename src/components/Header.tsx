@@ -4,11 +4,8 @@ import { useEffect, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 
-/* >>> If you used Option A (bundled asset), keep this import: */
-import logo from "../assets/logo.png";
-/* >>> If you used Option B (public asset), delete the line above and:
-   const logo = "/logo.png";
-*/
+// Public logo (placed in apps/frontend/public/assets/logo.png)
+const logo = "/assets/logo.png";
 
 const leftNav = [
   { to: "/flights", label: "Flights" },
@@ -83,17 +80,16 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Center: FULL-HEIGHT rotating text — fly-in + sparkle */}
+          {/* Center: rotating text */}
           <div className="relative hidden h-full flex-1 items-center justify-center md:flex">
             <div className="relative inline-flex h-full items-center justify-center">
-              {/* sparkle lives behind the text and uses full header height */}
               <i
                 key={`spark-${idx}`}
                 className="sparkle-burst pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                 aria-hidden
               />
               <span
-                key={idx} // remount on change → animation restarts
+                key={idx}
                 className="flycore z-10 text-[24px] md:text-[30px] font-extrabold leading-none tracking-wide"
                 style={{ color: "#d06549" }}
               >
@@ -146,13 +142,11 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Local styles for full-height fly-in + sparkles */}
+      {/* Local styles */}
       <style>{`
         :root {
-          --spark: #f3cfae;   /* warm sparkle tint */
+          --spark: #f3cfae;
         }
-
-        /* Smooth "from inside" reveal that uses the full header height */
         @keyframes flyCore {
           0%   { opacity: 0; transform: scale(.88) translateY(10%); letter-spacing: .02em; filter: blur(5px); }
           55%  { opacity: .98; transform: scale(1.04) translateY(0);   filter: blur(.35px); }
@@ -163,13 +157,10 @@ export default function Header() {
           text-shadow: 0 1px 0 rgba(255,255,255,.25);
           will-change: transform, opacity, filter, letter-spacing;
         }
-
-        /* Sparkle burst now scales relative to the header (not clipped) */
         .sparkle-burst {
           width: 6px; height: 6px; border-radius: 9999px;
           color: var(--spark);
           opacity: .9;
-          /* multiple tiny dots around center */
           box-shadow:
             0  -14px 0 0 currentColor,
             14px   0  0 0 currentColor,
@@ -194,12 +185,9 @@ export default function Header() {
           width: 2px; height: 2px; border-radius: 9999px;
           background: currentColor;
           transform: translate(-50%, -50%);
-          box-shadow: 0 0 0 0 currentColor;
           opacity: .55;
           animation: ringFull 1100ms ease-out forwards;
         }
-
-        /* Expands to fit most of the header height */
         @keyframes burstFull {
           0%   { transform: translate(-50%, -50%) scale(.5);  opacity: .95; }
           70%  { transform: translate(-50%, -50%) scale(1.8); opacity: .85; }
