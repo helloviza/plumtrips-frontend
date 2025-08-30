@@ -1,6 +1,6 @@
 // apps/frontend/src/components/Footer.tsx
 import { Link } from "react-router-dom";
-import logo from "../assets/logo.png";
+import logo from "/assets/logo.png";
 
 const BG = "#d06549";
 const TEXT = "#00477f";
