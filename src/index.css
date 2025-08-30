@@ -1,0 +1,139 @@
+/* Tailwind (v4) */
+@import "tailwindcss";
+
+/* ---------------- Global reset & base ---------------- */
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #00477f;                  /* brand fallback so no white seams */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
+}
+
+button, [role="button"] { cursor: pointer; }
+
+
+/* ---------------- App-specific utilities ---------------- */
+@layer utilities {
+  /* (A) Optional legacy pulse, safe to keep if referenced anywhere */
+  @keyframes flashPulse {
+    0%   { opacity: 0; transform: scale(.96); filter: drop-shadow(0 0 0 rgba(255,215,0,0)); }
+    12%  { opacity: 1; transform: scale(1);   filter: drop-shadow(0 0 8px rgba(255,215,0,.7)); }
+    55%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(.98); filter: drop-shadow(0 0 0 rgba(255,215,0,0)); }
+  }
+  .flash-once { animation: flashPulse 2.4s ease-in-out both; }
+
+  /* (B) Hero background: 0–60% solid, then step down transparency */
+  .hero-gradient {
+    background-image: linear-gradient(
+      to bottom,
+      #00477f 0%,
+      #00477f 60%,
+      rgba(0, 71, 127, 0.85) 75%,
+      rgba(0, 71, 127, 0.70) 85%,
+      rgba(0, 71, 127, 0.55) 92%,
+      rgba(0, 71, 127, 0.40) 100%
+    );
+  }
+
+  /* (C) Display font just for rotating header phrases */
+  .flash-font {
+    font-family: 'Exo 2', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans';
+    letter-spacing: .3px;
+  }
+
+  /* ================= Fireworks / Sky-shot Text =================
+     Usage in Header:
+       <span class="fireworks flash-font text-[26px] font-bold leading-none">
+         B2E Bookings
+       </span>
+     — No pill/background. Pure text with radial burst like the reference.
+  ---------------------------------------------------------------- */
+  /* Entrance/exit timing for the text itself */
+  @keyframes fw-pop {
+    0%   { opacity: 0; transform: translateY(6px) scale(.96); }
+    15%  { opacity: 1; transform: translateY(0)   scale(1); }
+    78%  { opacity: 1; transform: translateY(0)   scale(1); }
+    100% { opacity: 0; transform: translateY(-2px) scale(1.01); }
+  }
+
+  /* Radial ray burst (gold) */
+  @keyframes fw-rays {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(0turn); }
+    20%  { opacity: .95; transform: translate(-50%, -50%) scale(1) rotate(.03turn); }
+    100% { opacity: 0;  transform: translate(-50%, -50%) scale(1.15) rotate(.12turn); }
+  }
+
+  /* Spark dots (green/white mix) */
+  @keyframes fw-sparks {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+    30%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+  }
+
+  .fireworks {
+    position: relative;
+    display: inline-block;
+    color: #d06549;                      /* requested text color */
+    text-shadow: 0 1px 0 rgba(0,0,0,.08);
+    animation: fw-pop 2.6s ease-in-out both;
+    /* you can tune size overall by changing font-size where it's used */
+  }
+
+  /* Gold rays using repeating-conic-gradient + radial mask */
+  .fireworks::before {
+    --fw-size: 200px;                    /* burst diameter */
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--fw-size);
+    height: var(--fw-size);
+    transform: translate(-50%, -50%);
+    background:
+      repeating-conic-gradient(
+        from 0turn,
+        rgba(255,214,92,1) 0deg 2deg,     /* bright gold sliver */
+        transparent 2deg 10deg
+      );
+    /* fade to transparent from center → edge so rays look tapered */
+    -webkit-mask: radial-gradient(circle, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 75%);
+            mask: radial-gradient(circle, rgba(0,0,0,1) 0 55%, rgba(0,0,0,0) 75%);
+    filter: drop-shadow(0 0 6px rgba(255,214,92,.75));
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    animation: fw-rays 1.2s ease-out .10s both;
+  }
+
+  /* Spark cluster using multiple box-shadows */
+  .fireworks::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, #9ff58a, rgba(159,245,138,0));
+    box-shadow:
+      18px -6px 0 0 #a7ff9a,
+      -14px 10px 0 0 #ffffff,
+      30px 14px 0 0 #a7ff9a,
+      -24px -16px 0 0 #ffffff,
+      4px 22px 0 0 #a7ff9a,
+      -28px 6px 0 0 #a7ff9a,
+      22px -22px 0 0 #ffffff;
+    filter: drop-shadow(0 0 4px rgba(167,255,154,.9));
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    animation: fw-sparks .95s ease-out .18s both;
+    transform: translate(-50%, -50%);
+  }
+
+  /* (D) Optional: remove default focus rings when needed on dark panes */
+  .focus-ring-none:focus { outline: none; box-shadow: none; }
+}
