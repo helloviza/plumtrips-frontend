@@ -231,7 +231,7 @@ function Row({
       className={cx(
         "flex items-center justify-between rounded-2xl bg-white/95 text-zinc-900 shadow",
         pad,
-        compact ? "min-h-[58px]" : "min-h-[66px]"
+        compact ? "min-h-[40px]" : "min-h-[44px]"
       )}
     >
       {children}

@@ -1,7 +1,8 @@
+// apps/frontend/src/components/SearchTabs.tsx
 import { useState } from "react";
 import FlightSearchForm from "./search/FlightSearchForm";
 import type { TripType } from "./search/FlightSearchForm";
-import HotelsSearchForm from "./search/HotelsSearchForm";
+import HotelsSearchForm from "./search/HotelsSearchForm"; // ✅ correct filename
 
 /* top-level tabs (Flights / Hotels) */
 const topTabs = [
@@ -14,14 +15,14 @@ type TopTab = (typeof topTabs)[number]["id"];
 /* trip tabs (right side) */
 const tabsFrame = "rounded-none border border-[#a8d5ff] bg-white/95 p-px";
 const tripBtn = (active: boolean) =>
-  `px-8 py-3 text-xl font-semibold ${
+  `px-11 py-2 text-xl font-semibold ${
     active ? "bg-[#00477f] text-white" : "bg-white text-[#1e88e5]"
   }`;
 
 /** Keep tabs and search form inside the SAME max width
  *  so the tabs never stick out beyond the form. */
-const CONTENT_MAX = "max-w-[1120px]";         // feel free to nudge (e.g., 1080 / 1160)
-const TABS_WIDTH  = "w-[660px] md:w-[720px] lg:w-[780px] xl:w-[820px]";
+const CONTENT_MAX = "max-w-[1120px]"; // feel free to nudge (e.g., 1080 / 1160)
+const TABS_WIDTH = "w-[660px] md:w-[720px] lg:w-[780px] xl:w-[820px]";
 
 export default function SearchTabs() {
   const [active, setActive] = useState<TopTab>("flights");

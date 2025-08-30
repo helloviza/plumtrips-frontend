@@ -5,27 +5,26 @@ import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../styles/datepicker.css";
 
-/** Trip type is controlled by parent (SearchTabs) so we can put top tabs on the right */
 export type TripType = "round" | "oneway" | "multi";
 
 const rowBox =
-  "rounded-none border-2 border-[#a8d5ff] bg-white p-5 shadow-none";
+  "rounded-none border-2 border-[#a8d5ff] bg-white p-2.5 shadow-none";
 const bigBtn =
-  "rounded-none bg-[#d06549] px-10 py-4 text-white font-extrabold tracking-wider uppercase hover:opacity-95";
+  "rounded-none bg-[#d06549] px-8 py-2.5 text-white font-extrabold tracking-wider uppercase hover:opacity-95";
 const inputBase =
-  "mt-0 w-full border-0 bg-transparent text-xl placeholder-zinc-400 focus:outline-none";
+  "mt-0 w-full border-0 bg-transparent text-lg placeholder-zinc-400 focus:outline-none";
 
 type Props = { tripType: TripType };
 
 type Airport = {
-  code: string; // IATA
+  code: string;
   name?: string;
   city?: string;
   country?: string;
   label?: string;
 };
 
-/* ---------- Small auto-complete just for airports ---------- */
+/* ---------- Auto-complete input ---------- */
 function AirportInput({
   value,
   onChange,
@@ -41,7 +40,6 @@ function AirportInput({
   const [query, setQuery] = useState(value);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // close panel on outside click
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!wrapRef.current) return;
@@ -51,36 +49,18 @@ function AirportInput({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  // keep external value in sync if parent overwrites
   useEffect(() => setQuery(value), [value]);
 
-  // show only after at least 1 typed char
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q.length < 1) return [];
-    const starts = airports.filter((a) => {
-      const code = a.code?.toLowerCase() || "";
-      const city = a.city?.toLowerCase() || "";
-      const name = a.name?.toLowerCase() || "";
-      return (
-        code.startsWith(q) ||
-        city.startsWith(q) ||
-        name.startsWith(q)
-      );
-    });
-    // if nothing starts-with, fall back to contains
-    const list =
-      starts.length > 0
-        ? starts
-        : airports.filter((a) => {
-            const code = a.code?.toLowerCase() || "";
-            const city = a.city?.toLowerCase() || "";
-            const name = a.name?.toLowerCase() || "";
-            return (
-              code.includes(q) || city.includes(q) || name.includes(q)
-            );
-          });
-    return list.slice(0, 20);
+    if (!q) return [];
+    const starts = airports.filter(
+      (a) =>
+        a.code?.toLowerCase().startsWith(q) ||
+        a.city?.toLowerCase().startsWith(q) ||
+        a.name?.toLowerCase().startsWith(q)
+    );
+    return (starts.length ? starts : airports).slice(0, 20);
   }, [airports, query]);
 
   function pick(a: Airport) {
@@ -102,7 +82,6 @@ function AirportInput({
           if (query.trim().length >= 1) setOpen(true);
         }}
         onBlur={() => {
-          // normalize to IATA if user typed label text like "Delhi (DEL)"
           const m = query.toUpperCase().match(/\b([A-Z]{3})\b/);
           if (m) onChange(m[1]);
           else onChange(query.toUpperCase());
@@ -117,16 +96,13 @@ function AirportInput({
             <button
               type="button"
               key={`${a.code}-${a.name}`}
-              onMouseDown={(e) => e.preventDefault()} // keep focus
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(a)}
               className="flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-zinc-100"
             >
               <div className="min-w-12 font-semibold">{a.code}</div>
-              <div className="text-sm leading-5 text-zinc-700">
-                {a.label ||
-                  `${a.name || a.city || ""} (${a.code}) — ${
-                    a.country || ""
-                  }`}
+              <div className="text-sm text-zinc-700">
+                {a.label || `${a.name || a.city || ""} (${a.code}) — ${a.country || ""}`}
               </div>
             </button>
           ))}
@@ -135,23 +111,20 @@ function AirportInput({
     </div>
   );
 }
-/* ---------------------------------------------------------- */
 
 export default function FlightSearchForm({ tripType }: Props) {
   const navigate = useNavigate();
 
-  // airports for autocomplete
   const [airports, setAirports] = useState<Airport[]>([]);
   useEffect(() => {
     fetch("/airports.min.json")
       .then((r) => r.json())
-      .then((arr) => (Array.isArray(arr) ? setAirports(arr) : setAirports([])))
+      .then((arr) => (Array.isArray(arr) ? setAirports(arr) : []))
       .catch(() => setAirports([]));
   }, []);
 
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-
   const [leaveDate, setLeaveDate] = useState<Date | null>(null);
   const [returnDate, setReturnDate] = useState<Date | null>(null);
 
@@ -212,30 +185,20 @@ export default function FlightSearchForm({ tripType }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* ===== Round / One way (2-column rows) ===== */}
+      {/* ===== Round / One way ===== */}
       {(tripType === "round" || tripType === "oneway") && (
         <form onSubmit={submitRoundOrOneWay} className="space-y-4">
-          {/* Row 1 — From | To */}
+          {/* From / To */}
           <div className={rowBox}>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <AirportInput
-                value={from}
-                onChange={setFrom}
-                airports={airports}
-                placeholder="From"
-              />
-              <AirportInput
-                value={to}
-                onChange={setTo}
-                airports={airports}
-                placeholder="To"
-              />
+            <div className="grid md:grid-cols-2 gap-3">
+              <AirportInput value={from} onChange={setFrom} airports={airports} placeholder="From" />
+              <AirportInput value={to} onChange={setTo} airports={airports} placeholder="To" />
             </div>
           </div>
 
-          {/* Row 2 — Leave on | Return on */}
+          {/* Dates */}
           <div className={rowBox}>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid md:grid-cols-2 gap-3">
               <DatePicker
                 selected={leaveDate}
                 onChange={(d) => {
@@ -266,63 +229,41 @@ export default function FlightSearchForm({ tripType }: Props) {
 
           {/* Pax row */}
           <div className={rowBox}>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="flex items-center justify-between">
-                <span className="text-lg">1 adult</span>
-                <select
-                  value={adults}
-                  onChange={(e) => setAdults(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+            <div className="grid md:grid-cols-3 gap-3">
+              <label className="flex justify-between">
+                Adults
+                <select value={adults} onChange={(e) => setAdults(Number(e.target.value))}>
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg">0 children</span>
-                <select
-                  value={children}
-                  onChange={(e) => setChildren(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+              </label>
+              <label className="flex justify-between">
+                Children
+                <select value={children} onChange={(e) => setChildren(Number(e.target.value))}>
                   {Array.from({ length: 10 }, (_, i) => i).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg">0 infants</span>
-                <select
-                  value={infants}
-                  onChange={(e) => setInfants(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+              </label>
+              <label className="flex justify-between">
+                Infants
+                <select value={infants} onChange={(e) => setInfants(Number(e.target.value))}>
                   {Array.from({ length: 10 }, (_, i) => i).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
+              </label>
             </div>
           </div>
 
           {/* More options */}
           {showMore && (
             <div className={rowBox}>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="grid md:grid-cols-3 gap-3">
                 <div>
                   <span className="block text-lg">Any class</span>
-                  <select
-                    value={cabin}
-                    onChange={(e) => setCabin(e.target.value)}
-                    className="mt-2 w-full rounded border px-3 py-2"
-                  >
+                  <select value={cabin} onChange={(e) => setCabin(e.target.value)} className="mt-2 w-full rounded border px-3 py-2">
                     <option value="any">Any</option>
                     <option value="economy">Economy</option>
                     <option value="premium">Premium Economy</option>
@@ -339,28 +280,21 @@ export default function FlightSearchForm({ tripType }: Props) {
                     className="mt-2 w-full rounded border px-3 py-2"
                   />
                 </div>
-                <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2">
                   <input
                     id="nonstop"
                     type="checkbox"
-                    className="size-6"
                     checked={nonStopOnly}
                     onChange={(e) => setNonStopOnly(e.target.checked)}
                   />
-                  <label htmlFor="nonstop" className="text-lg">
-                    Non-stop flights only
-                  </label>
-                </div>
+                  Non-stop only
+                </label>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowMore((v) => !v)}
-              className="text-xl text-white/90 underline underline-offset-4"
-            >
+          <div className="flex justify-between">
+            <button type="button" onClick={() => setShowMore((v) => !v)} className="text-xl text-white/90 underline">
               {showMore ? "Less options" : "More options"}
             </button>
             <button type="submit" className={bigBtn}>
@@ -370,103 +304,85 @@ export default function FlightSearchForm({ tripType }: Props) {
         </form>
       )}
 
-      {/* ===== Multi-city (3-column rows) ===== */}
+      {/* ===== Multi-city ===== */}
       {tripType === "multi" && (
         <form onSubmit={submitMulti} className="space-y-4">
           {legs.map((leg, i) => (
-            <div key={i} className={rowBox}>
-              <div className="mb-3 text-xl text-zinc-600">{leg.label}</div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <AirportInput
-                  value={leg.from}
-                  onChange={(v) => {
-                    const copy = [...legs];
-                    copy[i].from = v;
-                    setLegs(copy);
-                  }}
-                  airports={airports}
-                  placeholder="From"
-                />
-                <AirportInput
-                  value={leg.to}
-                  onChange={(v) => {
-                    const copy = [...legs];
-                    copy[i].to = v;
-                    setLegs(copy);
-                  }}
-                  airports={airports}
-                  placeholder="To"
-                />
-                <DatePicker
-                  selected={leg.date}
-                  onChange={(d) => {
-                    const copy = [...legs];
-                    copy[i].date = d;
-                    setLegs(copy);
-                  }}
-                  placeholderText="Leave on"
-                  className={`${inputBase} cursor-pointer`}
-                  dateFormat="dd-MM-yyyy"
-                  minDate={i === 0 ? today : legs[i - 1].date ?? today}
-                  isClearable
-                />
+            <div key={i} className="space-y-1">
+              {/* Label outside */}
+              <div className="text-sm font-semibold text-white/90">{leg.label}</div>
+              <div className={rowBox}>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <AirportInput
+                    value={leg.from}
+                    onChange={(v) => {
+                      const copy = [...legs];
+                      copy[i].from = v;
+                      setLegs(copy);
+                    }}
+                    airports={airports}
+                    placeholder="From"
+                  />
+                  <AirportInput
+                    value={leg.to}
+                    onChange={(v) => {
+                      const copy = [...legs];
+                      copy[i].to = v;
+                      setLegs(copy);
+                    }}
+                    airports={airports}
+                    placeholder="To"
+                  />
+                  <DatePicker
+                    selected={leg.date}
+                    onChange={(d) => {
+                      const copy = [...legs];
+                      copy[i].date = d;
+                      setLegs(copy);
+                    }}
+                    placeholderText="Leave on"
+                    className={`${inputBase} cursor-pointer`}
+                    dateFormat="dd-MM-yyyy"
+                    minDate={i === 0 ? today : legs[i - 1].date ?? today}
+                    isClearable
+                  />
+                </div>
               </div>
             </div>
           ))}
 
+          {/* Pax row */}
           <div className={rowBox}>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="flex items-center justify-between">
-                <span className="text-lg">1 adult</span>
-                <select
-                  value={adults}
-                  onChange={(e) => setAdults(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+            <div className="grid md:grid-cols-3 gap-3">
+              <label className="flex justify-between">
+                Adults
+                <select value={adults} onChange={(e) => setAdults(Number(e.target.value))}>
                   {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg">0 children</span>
-                <select
-                  value={children}
-                  onChange={(e) => setChildren(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+              </label>
+              <label className="flex justify-between">
+                Children
+                <select value={children} onChange={(e) => setChildren(Number(e.target.value))}>
                   {Array.from({ length: 10 }, (_, i) => i).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg">0 infants</span>
-                <select
-                  value={infants}
-                  onChange={(e) => setInfants(Number(e.target.value))}
-                  className="rounded border px-3 py-2"
-                >
+              </label>
+              <label className="flex justify-between">
+                Infants
+                <select value={infants} onChange={(e) => setInfants(Number(e.target.value))}>
                   {Array.from({ length: 10 }, (_, i) => i).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
+                    <option key={n}>{n}</option>
                   ))}
                 </select>
-              </div>
+              </label>
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowMore((v) => !v)}
-              className="text-xl text-white/90 underline underline-offset-4"
-            >
+          <div className="flex justify-between">
+            <button type="button" onClick={() => setShowMore((v) => !v)} className="text-xl text-white/90 underline">
               {showMore ? "Less options" : "More options"}
             </button>
             <button type="submit" className={bigBtn}>
