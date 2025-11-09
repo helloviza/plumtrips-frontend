@@ -20,6 +20,9 @@ import PrivacyPage from "./pages/legal/PrivacyPage";
 import CancellationPage from "./pages/legal/CancellationPage";
 import CookiesPage from "./pages/legal/CookiesPage";
 
+import FlightsEnginePage from "./pages/engine/FlightsEnginePage";
+import HotelsEnginePage from "./pages/engine/HotelsEnginePage";
+
 import AboutPage from "./pages/About";
 
 import Support from "./pages/Support";
@@ -129,6 +132,7 @@ export const router = createBrowserRouter(
 
         // Flights
         { path: "flights", element: <SearchPage /> },
+        { path: "engine/flights", element: <FlightsEnginePage /> },
         { path: "flights/form", element: <FlightsForm /> },
         {
           path: "flights/fare",
@@ -149,11 +153,14 @@ export const router = createBrowserRouter(
         },
         { path: "flight", element: <Navigate to="/flights/fare" replace /> },
 
+        // Hotels + engines
+        { path: "hotels", element: <Hotels /> },
+        { path: "engine/hotels", element: <HotelsEnginePage /> },
+
         // Core sections
         { path: "holidays", element: <HolidaysPage /> },
         { path: "mice", element: <MicePage /> },
         { path: "support", element: <Support /> },
-        { path: "hotels", element: <Hotels /> },
         { path: "cruises", element: <CruisesPage /> },
         { path: "contact", element: <ContactPage /> },
         { path: "offers", element: <OffersPage /> },

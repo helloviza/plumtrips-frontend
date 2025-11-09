@@ -1,3 +1,4 @@
+// src/components/search/FlightSearchForm.tsx
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -9,14 +10,10 @@ export type TripType = "round" | "oneway" | "multi";
 
 const rowBox =
   "rounded-none border-2 border-[#a8d5ff] bg-white p-2.5 shadow-none";
-
-// ⬇️ Smaller button text
 const bigBtn =
-  "w-full sm:w-auto rounded-none bg-[#d06549] px-5 sm:px-8 py-2 text-[10px] sm:text-xs text-white font-extrabold tracking-wider uppercase hover:opacity-95";
-
-// ⬇️ Inputs ~20% smaller (was text-base / sm:text-lg)
+  "w-full sm:w-auto rounded-none bg-[#d06549] px-5 sm:px-8 py-2 text-xs sm:text-sm text-white font-extrabold tracking-wider uppercase hover:opacity-95";
 const inputBase =
-  "mt-0 w-full border-0 bg-transparent text-sm sm:text-base placeholder-zinc-400 focus:outline-none";
+  "mt-0 w-full border-0 bg-transparent text-base sm:text-lg placeholder-zinc-400 focus:outline-none";
 
 type Props = { tripType: TripType };
 
@@ -27,6 +24,8 @@ type Airport = {
   country?: string;
   label?: string;
 };
+
+const fmt = (d: Date | null) => (d ? format(d, "yyyy-MM-dd") : "");
 
 /* ---------- Auto-complete input ---------- */
 function AirportInput({
@@ -104,12 +103,12 @@ function AirportInput({
               onClick={() => pick(a)}
               className="flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-zinc-100"
             >
-              <div className="min-w-12 text-xs font-semibold sm:text-sm">
-                {a.code}
-              </div>
-              <div className="text-[11px] text-zinc-700 sm:text-xs">
+              <div className="min-w-12 font-semibold">{a.code}</div>
+              <div className="text-sm text-zinc-700">
                 {a.label ||
-                  `${a.name || a.city || ""} (${a.code}) — ${a.country || ""}`}
+                  `${a.name || a.city || ""} (${a.code}) — ${
+                    a.country || ""
+                  }`}
               </div>
             </button>
           ))}
@@ -150,44 +149,51 @@ export default function FlightSearchForm({ tripType }: Props) {
     { label: "Flight 3", from: "", to: "", date: null as Date | null },
   ]);
 
-  const fmt = (d: Date | null) => (d ? format(d, "yyyy-MM-dd") : "");
   const today = new Date();
 
   function submitRoundOrOneWay(e: React.FormEvent) {
     e.preventDefault();
+
     const params = new URLSearchParams({
       from: from.toUpperCase(),
       to: to.toUpperCase(),
       date: fmt(leaveDate),
-      ...(tripType === "round" && returnDate ? { return: fmt(returnDate) } : {}),
       adults: String(adults),
       children: String(children),
       infants: String(infants),
       cabin,
-      ...(airline ? { airline } : {}),
       nonstop: String(nonStopOnly),
+      type: tripType === "oneway" ? "oneway" : "round",
+      ...(airline ? { airline } : {}),
+      ...(tripType === "round" && returnDate
+        ? { return: fmt(returnDate) }
+        : {}),
     });
-    navigate(`/flights?${params.toString()}`);
+
+    navigate(`/engine/flights?${params.toString()}`);
   }
 
   function submitMulti(e: React.FormEvent) {
     e.preventDefault();
+
     const params = new URLSearchParams({
       type: "multi",
       adults: String(adults),
       children: String(children),
       infants: String(infants),
       cabin,
-      ...(airline ? { airline } : {}),
       nonstop: String(nonStopOnly),
+      ...(airline ? { airline } : {}),
     });
+
     legs.forEach((leg, i) => {
       const n = i + 1;
       if (leg.from) params.set(`from${n}`, leg.from.toUpperCase());
       if (leg.to) params.set(`to${n}`, leg.to.toUpperCase());
-      if (leg.date) params.set(`date${n}`, format(leg.date, "yyyy-MM-dd"));
+      if (leg.date) params.set(`date${n}`, fmt(leg.date));
     });
-    navigate(`/flights?${params.toString()}`);
+
+    navigate(`/engine/flights?${params.toString()}`);
   }
 
   return (
@@ -247,10 +253,10 @@ export default function FlightSearchForm({ tripType }: Props) {
           {/* Pax row */}
           <div className={rowBox}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Adults</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={adults}
                   onChange={(e) => setAdults(Number(e.target.value))}
                 >
@@ -259,10 +265,10 @@ export default function FlightSearchForm({ tripType }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Children</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={children}
                   onChange={(e) => setChildren(Number(e.target.value))}
                 >
@@ -271,10 +277,10 @@ export default function FlightSearchForm({ tripType }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Infants</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={infants}
                   onChange={(e) => setInfants(Number(e.target.value))}
                 >
@@ -291,13 +297,11 @@ export default function FlightSearchForm({ tripType }: Props) {
             <div className={rowBox}>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div>
-                  <span className="block text-[11px] font-medium sm:text-xs">
-                    Any class
-                  </span>
+                  <span className="block text-sm font-medium">Any class</span>
                   <select
                     value={cabin}
                     onChange={(e) => setCabin(e.target.value)}
-                    className="mt-1 w-full rounded border px-3 py-2 text-[11px] sm:text-xs"
+                    className="mt-1 w-full rounded border px-3 py-2 text-sm"
                   >
                     <option value="any">Any</option>
                     <option value="economy">Economy</option>
@@ -307,17 +311,15 @@ export default function FlightSearchForm({ tripType }: Props) {
                   </select>
                 </div>
                 <div>
-                  <span className="block text-[11px] font-medium sm:text-xs">
-                    Airline
-                  </span>
+                  <span className="block text-sm font-medium">Airline</span>
                   <input
                     value={airline}
                     onChange={(e) => setAirline(e.target.value)}
                     placeholder="Optional"
-                    className="mt-1 w-full rounded border px-3 py-2 text-[11px] sm:text-xs"
+                    className="mt-1 w-full rounded border px-3 py-2 text-sm"
                   />
                 </div>
-                <label className="mt-2 flex items-center gap-2 text-[11px] sm:text-xs md:mt-6">
+                <label className="mt-2 flex items-center gap-2 text-sm md:mt-6">
                   <input
                     id="nonstop"
                     type="checkbox"
@@ -334,7 +336,7 @@ export default function FlightSearchForm({ tripType }: Props) {
             <button
               type="button"
               onClick={() => setShowMore((v) => !v)}
-              className="text-[11px] sm:text-xs text-white/90 underline underline-offset-4"
+              className="text-xs sm:text-sm text-white/90 underline underline-offset-4"
             >
               {showMore ? "Less options" : "More options"}
             </button>
@@ -350,7 +352,7 @@ export default function FlightSearchForm({ tripType }: Props) {
         <form onSubmit={submitMulti} className="space-y-3.5">
           {legs.map((leg, i) => (
             <div key={i} className="space-y-1.5">
-              <div className="text-[11px] font-semibold text-white/90 sm:text-xs">
+              <div className="text-xs font-semibold text-white/90 sm:text-sm">
                 {leg.label}
               </div>
               <div className={rowBox}>
@@ -396,10 +398,10 @@ export default function FlightSearchForm({ tripType }: Props) {
           {/* Pax row */}
           <div className={rowBox}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Adults</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={adults}
                   onChange={(e) => setAdults(Number(e.target.value))}
                 >
@@ -408,10 +410,10 @@ export default function FlightSearchForm({ tripType }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Children</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={children}
                   onChange={(e) => setChildren(Number(e.target.value))}
                 >
@@ -420,10 +422,10 @@ export default function FlightSearchForm({ tripType }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+              <label className="flex items-center justify-between gap-2 text-sm">
                 <span>Infants</span>
                 <select
-                  className="rounded border px-2 py-1 text-[11px] sm:text-xs"
+                  className="rounded border px-2 py-1 text-sm"
                   value={infants}
                   onChange={(e) => setInfants(Number(e.target.value))}
                 >
@@ -439,7 +441,7 @@ export default function FlightSearchForm({ tripType }: Props) {
             <button
               type="button"
               onClick={() => setShowMore((v) => !v)}
-              className="text-[11px] sm:text-xs text-white/90 underline underline-offset-4"
+              className="text-xs sm:text-sm text-white/90 underline underline-offset-4"
             >
               {showMore ? "Less options" : "More options"}
             </button>

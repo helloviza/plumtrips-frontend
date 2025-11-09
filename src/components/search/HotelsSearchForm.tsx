@@ -1,5 +1,8 @@
+// src/components/search/HotelsSearchForm.tsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
+import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../styles/datepicker.css";
 
@@ -10,7 +13,11 @@ const bigBtn =
 const inputBase =
   "mt-0 w-full border-0 bg-transparent text-base sm:text-lg placeholder-zinc-400 focus:outline-none";
 
-export default function HotelSearchForm() {
+const fmt = (d: Date | null) => (d ? format(d, "yyyy-MM-dd") : "");
+
+export default function HotelsSearchForm() {
+  const navigate = useNavigate();
+
   const [location, setLocation] = useState("");
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
@@ -19,14 +26,25 @@ export default function HotelSearchForm() {
 
   function submitHotel(e: React.FormEvent) {
     e.preventDefault();
-    alert(`Hotel search: ${location}, ${adults} adults, ${children} children`);
+
+    const params = new URLSearchParams({
+      location: location.trim(),
+      checkin: fmt(checkIn),
+      checkout: fmt(checkOut),
+      adults: String(adults),
+      children: String(children),
+      rooms: "1",
+    });
+
+    // Stay on plumtrips.com and open the embedded engine page
+    navigate(`/engine/hotels?${params.toString()}`);
   }
 
   return (
-    <form onSubmit={submitHotel} className="space-y-3.5">
+    <form onSubmit={submitHotel} className="space-y-4">
       {/* Location */}
       <div className="space-y-1">
-        <div className="text-xs font-semibold text-white/90 sm:text-sm">
+        <div className="text-sm font-semibold text-white/90">
           Hotel location
         </div>
         <div className={rowBox}>
@@ -41,7 +59,7 @@ export default function HotelSearchForm() {
 
       {/* Dates */}
       <div className="space-y-1">
-        <div className="text-xs font-semibold text-white/90 sm:text-sm">
+        <div className="text-sm font-semibold text-white/90">
           Check-in / Check-out
         </div>
         <div className={rowBox}>
@@ -68,9 +86,7 @@ export default function HotelSearchForm() {
 
       {/* Room */}
       <div className="space-y-1">
-        <div className="text-xs font-semibold text-white/90 sm:text-sm">
-          Room 1
-        </div>
+        <div className="text-sm font-semibold text-white/90">Room 1</div>
         <div className={rowBox}>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex items-center justify-between gap-2 text-sm">
@@ -101,13 +117,14 @@ export default function HotelSearchForm() {
         </div>
       </div>
 
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <a
+          href="#"
           className="text-xs sm:text-sm text-white/90 underline underline-offset-4"
+          onClick={(e) => e.preventDefault()}
         >
           Add another room
-        </button>
+        </a>
         <button type="submit" className={bigBtn}>
           Find Hotels
         </button>
