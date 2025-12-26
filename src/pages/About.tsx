@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/About.tsx
+﻿// apps/frontend/src/pages/About.tsx
 
 export default function AboutPage() {
   return (
@@ -18,7 +18,7 @@ export default function AboutPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[11px] md:text-xs text-slate-200">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 ai-pulse" />
-                SYSTEM ONLINE · Travel OS // AI-enabled
+                SYSTEM ONLINE Â· Travel OS // AI-enabled
               </div>
 
               <h1 className="mt-4 text-3xl leading-tight md:text-4xl lg:text-[2.9rem] lg:leading-[1.1] font-extrabold tracking-tight">
@@ -27,9 +27,9 @@ export default function AboutPage() {
               </h1>
 
               <p className="mt-4 max-w-xl text-sm md:text-base text-slate-200">
-                PlumTrips is a travel–tech platform crafting a user-experience-first
+                Plumtrips is a travelâ€“tech platform crafting a user-experience-first
                 ecosystem for travellers and B2B partners. Flights, visas, holidays,
-                hotels and MICE — all stitched together with intelligent workflows
+                hotels and MICE â€” all stitched together with intelligent workflows
                 and an AI layer we call <span className="font-semibold">pluto.ai</span>.
               </p>
 
@@ -46,7 +46,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Right “OS panel” card + AI core chip */}
+            {/* Right â€œOS panelâ€ card + AI core chip */}
             <div className="relative">
               {/* Floating AI core */}
               <div
@@ -63,20 +63,20 @@ export default function AboutPage() {
 
               <div className="os-grid rounded-3xl border border-slate-800 bg-slate-900/80 p-5 md:p-6 shadow-[0_18px_60px_rgba(15,23,42,0.85)]">
                 <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>MODULE · Core Values</span>
+                  <span>MODULE Â· Core Values</span>
                   <span className="ai-pulse text-emerald-400">LIVE</span>
                 </div>
                 <div className="mt-3 text-xs font-semibold tracking-wide text-sky-300">
-                  WHAT PLUMTRIPS STANDS FOR
+                  WHAT Plumtrips STANDS FOR
                 </div>
                 <p className="mt-3 text-sm md:text-[15px] text-slate-100">
                   We are building a travel layer where:
                 </p>
                 <ul className="mt-3 space-y-2 text-xs md:text-sm text-slate-200">
-                  <li>• agents respond in minutes, not hours.</li>
-                  <li>• travellers get clarity, not hidden surprises.</li>
-                  <li>• businesses see policy-friendly, budget-aware options by default.</li>
-                  <li>• technology handles the complexity, humans curate the experience.</li>
+                  <li>â€¢ agents respond in minutes, not hours.</li>
+                  <li>â€¢ travellers get clarity, not hidden surprises.</li>
+                  <li>â€¢ businesses see policy-friendly, budget-aware options by default.</li>
+                  <li>â€¢ technology handles the complexity, humans curate the experience.</li>
                 </ul>
                 <div className="mt-5 grid grid-cols-3 gap-3 text-center text-[11px] md:text-xs">
                   <div className="rounded-2xl bg-slate-950/70 p-3 border border-slate-800">
@@ -104,11 +104,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* VISION / MISSION – MODULE PANEL */}
+      {/* VISION / MISSION â€“ MODULE PANEL */}
       <section className="bg-slate-950/95 border-t border-slate-800/70">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Vision / Mission</span>
+            <span>MODULE Â· Vision / Mission</span>
             <span className="text-sky-300">SYSTEM LAYER // PURPOSE</span>
           </div>
 
@@ -123,12 +123,12 @@ export default function AboutPage() {
               </h2>
               <p className="mt-3 text-sm md:text-base text-slate-200">
                 To be the most trusted experience-led travel platform for travellers
-                and businesses — a place where every journey feels intelligently
+                and businesses â€” a place where every journey feels intelligently
                 designed, deeply considered and simple to manage.
               </p>
               <p className="mt-3 text-xs md:text-sm text-slate-400">
-                We see a world where every trip — a quick visa run, a family vacation
-                or a global offsite — is powered by an invisible, reliable tech layer
+                We see a world where every trip â€” a quick visa run, a family vacation
+                or a global offsite â€” is powered by an invisible, reliable tech layer
                 that quietly does the heavy lifting.
               </p>
             </div>
@@ -156,33 +156,33 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* WHY PLUMTRIPS – SYSTEM LOG */}
+      {/* WHY Plumtrips â€“ SYSTEM LOG */}
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Origin Story</span>
+            <span>MODULE Â· Origin Story</span>
             <span className="text-emerald-300">SYSTEM LOG // CONTEXT</span>
           </div>
 
           <div className="grid gap-10 md:grid-cols-[1.4fr,1.6fr] md:items-start">
             <div>
               <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
-                Why PlumTrips exists
+                Why Plumtrips exists
               </h2>
               <p className="mt-4 text-sm md:text-base text-slate-200">
-                PlumTrips was born from years spent inside the travel industry —
+                Plumtrips was born from years spent inside the travel industry â€”
                 airlines, OTAs, offline agencies, corporate travel desks, and
                 travel-tech products. We saw the same friction everywhere:
               </p>
               <ul className="mt-4 space-y-2 text-xs md:text-sm text-slate-300">
-                <li>• scattered tools for flights, hotels, visas and support.</li>
-                <li>• endless email threads instead of clean workflows.</li>
-                <li>• confusing fare rules, fine print and policy exceptions.</li>
-                <li>• travellers feeling lost once the booking was “done”.</li>
+                <li>â€¢ scattered tools for flights, hotels, visas and support.</li>
+                <li>â€¢ endless email threads instead of clean workflows.</li>
+                <li>â€¢ confusing fare rules, fine print and policy exceptions.</li>
+                <li>â€¢ travellers feeling lost once the booking was â€œdoneâ€.</li>
               </ul>
               <p className="mt-4 text-sm md:text-base text-slate-200">
-                PlumTrips is our answer: a travel platform that behaves like a calm,
-                capable co-pilot — for individual travellers, for agents, and for
+                Plumtrips is our answer: a travel platform that behaves like a calm,
+                capable co-pilot â€” for individual travellers, for agents, and for
                 B2B partners who need reliability at scale.
               </p>
             </div>
@@ -233,11 +233,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* TRAVEL TECH APPROACH – ARCHITECTURE VIEW */}
+      {/* TRAVEL TECH APPROACH â€“ ARCHITECTURE VIEW */}
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 pb-12 md:pb-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Architecture</span>
+            <span>MODULE Â· Architecture</span>
             <span className="text-sky-300">TRAVEL OS // B2B LAYER</span>
           </div>
 
@@ -268,7 +268,7 @@ export default function AboutPage() {
                 />
                 <TechPillar
                   label="Role-aware UX"
-                  desc="Different views for travellers, agents, finance teams and admins — one source of truth."
+                  desc="Different views for travellers, agents, finance teams and admins â€” one source of truth."
                 />
                 <TechPillar
                   label="Ready to integrate"
@@ -280,11 +280,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* pluto.ai – INTELLIGENCE LAYER */}
+      {/* pluto.ai â€“ INTELLIGENCE LAYER */}
       <section className="border-y border-slate-800 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Intelligence Layer</span>
+            <span>MODULE Â· Intelligence Layer</span>
             <span className="text-sky-300">AI ENGINE // pluto.ai</span>
           </div>
 
@@ -292,14 +292,14 @@ export default function AboutPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 bg-sky-500/10 px-3 py-1 text-[11px] md:text-xs text-sky-100">
                 <span className="h-2 w-2 rounded-full bg-sky-300 ai-pulse" />
-                pluto.ai · AI co-pilot for PlumTrips
+                pluto.ai Â· AI co-pilot for Plumtrips
               </div>
               <h2 className="mt-4 text-xl md:text-2xl font-semibold text-slate-50">
-                pluto.ai – the intelligence that sits behind every journey
+                pluto.ai â€“ the intelligence that sits behind every journey
               </h2>
               <p className="mt-3 text-sm md:text-base text-slate-200">
                 pluto.ai is being designed as a calm, always-on co-pilot across
-                the PlumTrips ecosystem. It doesn’t replace humans — it amplifies
+                the Plumtrips ecosystem. It doesnâ€™t replace humans â€” it amplifies
                 them: scanning options, simplifying rules and highlighting trade-offs
                 in plain language.
               </p>
@@ -319,7 +319,7 @@ export default function AboutPage() {
                 {
                   title: "Trip design & re-design",
                   desc:
-                    "Suggests itineraries, alternatives and re-routes when plans or budgets change — without starting from zero.",
+                    "Suggests itineraries, alternatives and re-routes when plans or budgets change â€” without starting from zero.",
                 },
                 {
                   title: "Policy-aware B2B flows",
@@ -354,20 +354,20 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* TEAM STRENGTHS – HUMAN LAYER */}
+      {/* TEAM STRENGTHS â€“ HUMAN LAYER */}
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Human Layer</span>
+            <span>MODULE Â· Human Layer</span>
             <span className="text-emerald-300">CREW // EXPERTISE</span>
           </div>
 
           <h2 className="text-xl md:text-2xl font-semibold text-slate-50">
-            The team behind PlumTrips
+            The team behind Plumtrips
           </h2>
           <p className="mt-3 max-w-3xl text-sm md:text-base text-slate-200">
-            The people building PlumTrips bring together deep travel industry
-            experience and modern product thinking — from airline revenue and GDS
+            The people building Plumtrips bring together deep travel industry
+            experience and modern product thinking â€” from airline revenue and GDS
             systems to offline trade networks, digital brands and AI-driven
             products.
           </p>
@@ -404,18 +404,18 @@ export default function AboutPage() {
             ))}
           </div>
 
-          {/* Micro personas – light, fun but professional */}
+          {/* Micro personas â€“ light, fun but professional */}
           <div className="mt-9 grid gap-4 md:grid-cols-4">
             {[
               {
                 title: "The Route Architect",
                 desc:
-                  "Obsessed with time, connections and practical layovers that don’t break humans.",
+                  "Obsessed with time, connections and practical layovers that donâ€™t break humans.",
               },
               {
                 title: "The Visa Strategist",
                 desc:
-                  "Lives inside embassy updates and checklists so travellers don’t have to.",
+                  "Lives inside embassy updates and checklists so travellers donâ€™t have to.",
               },
               {
                 title: "The Stay Curator",
@@ -444,11 +444,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* PRINCIPLES – GUARDRAILS */}
+      {/* PRINCIPLES â€“ GUARDRAILS */}
       <section className="border-t border-slate-800 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Guardrails</span>
+            <span>MODULE Â· Guardrails</span>
             <span className="text-rose-300">GOVERNANCE // PRINCIPLES</span>
           </div>
 
@@ -457,7 +457,7 @@ export default function AboutPage() {
           </h2>
           <p className="mt-3 max-w-3xl text-sm md:text-base text-slate-200">
             A platform is only as good as the values baked into it. These are
-            the non-negotiables that guide how PlumTrips and pluto.ai evolve.
+            the non-negotiables that guide how Plumtrips and pluto.ai evolve.
           </p>
 
           <div className="mt-6 grid gap-5 md:grid-cols-3">
@@ -475,7 +475,7 @@ export default function AboutPage() {
               {
                 title: "Respect for time & money",
                 desc:
-                  "We treat every booking like it’s our own — careful with costs, practical with plans.",
+                  "We treat every booking like itâ€™s our own â€” careful with costs, practical with plans.",
               },
               {
                 title: "Honesty beats hype",
@@ -509,11 +509,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* FUTURE ROADMAP + CTA – RELEASE CHANNEL */}
+      {/* FUTURE ROADMAP + CTA â€“ RELEASE CHANNEL */}
       <section className="bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         <div className="mx-auto max-w-6xl px-4 pb-14 pt-10 md:pb-16 md:pt-14">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE · Roadmap</span>
+            <span>MODULE Â· Roadmap</span>
             <span className="text-sky-300">RELEASE CHANNEL // IN PROGRESS</span>
           </div>
 
@@ -523,16 +523,16 @@ export default function AboutPage() {
                 Where we&apos;re headed
               </h2>
               <p className="mt-3 max-w-3xl text-sm md:text-base text-slate-200">
-                PlumTrips is still in active build mode. Every month, we&apos;re
+                Plumtrips is still in active build mode. Every month, we&apos;re
                 tightening the platform, refining pluto.ai&apos;s capabilities
                 and adding the pieces required for a complete travel operating
-                system — built from India, for a global audience.
+                system â€” built from India, for a global audience.
               </p>
               <ul className="mt-4 space-y-2 text-xs md:text-sm text-slate-300">
-                <li>• Deeper tools for B2B partners and agencies.</li>
-                <li>• Richer, more visual experiences for travellers.</li>
-                <li>• Stronger AI assistance with clear, human-readable reasoning.</li>
-                <li>• More integrations with the tools businesses already use.</li>
+                <li>â€¢ Deeper tools for B2B partners and agencies.</li>
+                <li>â€¢ Richer, more visual experiences for travellers.</li>
+                <li>â€¢ Stronger AI assistance with clear, human-readable reasoning.</li>
+                <li>â€¢ More integrations with the tools businesses already use.</li>
               </ul>
             </div>
 
@@ -543,7 +543,7 @@ export default function AboutPage() {
               <p className="mt-3 text-xs md:text-sm text-slate-300">
                 Whether you&apos;re planning a personal trip, running a travel
                 business or leading corporate travel for your company, we&apos;d
-                love to explore how PlumTrips can fit into your world.
+                love to explore how Plumtrips can fit into your world.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3 text-xs md:text-sm">

@@ -1,4 +1,4 @@
-import { BLOGS } from "../../content/blogs/registry"; // ensure this path exists
+﻿import { BLOGS } from "../../content/blogs/registry"; // ensure this path exists
 import BlogCard from "./BlogCard";
 
 export default function BlogIndex() {
@@ -6,7 +6,7 @@ export default function BlogIndex() {
     <main className="mx-auto max-w-6xl px-4 py-10">
       <header className="mb-8 text-center">
         <h1 className="text-3xl md:text-5xl font-extrabold text-[#00477f]">
-          PlumTrips Journal
+          Plumtrips Journal
         </h1>
         <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
           Curated itineraries, trendy stays, and hidden gems for modern luxury travellers.

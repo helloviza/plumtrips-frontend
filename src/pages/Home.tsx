@@ -1,4 +1,5 @@
-// src/pages/Home.tsx
+﻿// src/pages/Home.tsx
+import type { ReactNode } from "react";
 import HeroCarousel from "../components/HeroCarousel";
 import HomeExplore from "../components/home/HomeExplore";
 
@@ -18,7 +19,10 @@ export default function Home() {
   return (
     <div className="relative">
       {/* HERO */}
-      <div className="relative overflow-hidden text-white" style={{ background: heroBg }}>
+      <div
+        className="relative overflow-hidden text-white"
+        style={{ background: heroBg }}
+      >
         {/* === GLOBAL AI ENERGY RING (covers full hero) === */}
         <div
           className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
@@ -27,56 +31,57 @@ export default function Home() {
           <div className="ai-global-ring absolute left-1/2 top-1/2 h-[1100px] w-[1100px] -translate-x-1/2 -translate-y-1/2 rounded-full" />
         </div>
 
-        <div className="relative z-[1] mx-auto max-w-6xl px-4 py-10">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-10">
+        <div className="relative z-[1] mx-auto max-w-6xl px-4 py-8">
+          <div className="grid grid-cols-1 gap-7 lg:grid-cols-10">
             {/* LEFT: AI Actions */}
             <div className="lg:col-span-7">
-              <div className="relative max-w-[960px]">
+              <div className="relative max-w-[920px]">
                 {/* Local glows */}
                 <div
-                  className="pointer-events-none absolute -left-24 -top-12 h-56 w-56 rounded-full bg-cyan-400/22 blur-3xl ai-pulse-slow"
+                  className="pointer-events-none absolute -left-24 -top-12 h-52 w-52 rounded-full bg-cyan-400/22 blur-3xl ai-pulse-slow"
                   aria-hidden
                 />
                 <div
-                  className="pointer-events-none absolute -right-20 top-8 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl ai-pulse-slower"
+                  className="pointer-events-none absolute -right-20 top-8 h-64 w-64 rounded-full bg-emerald-400/18 blur-3xl ai-pulse-slower"
                   aria-hidden
                 />
                 <div
-                  className="pointer-events-none absolute left-1/3 top-24 h-40 w-40 -translate-x-1/2 rounded-full bg-indigo-400/22 blur-3xl ai-pulse-slow"
+                  className="pointer-events-none absolute left-1/3 top-24 h-36 w-36 -translate-x-1/2 rounded-full bg-indigo-400/22 blur-3xl ai-pulse-slow"
                   aria-hidden
                 />
                 <div
-                  className="pointer-events-none ai-orbit-ring absolute -left-10 top-3 h-64 w-64 rounded-full border border-dashed border-cyan-200/25"
+                  className="pointer-events-none ai-orbit-ring absolute -left-10 top-3 h-56 w-56 rounded-full border border-dashed border-cyan-200/25"
                   aria-hidden
                 />
 
                 {/* Header badges */}
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/16 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.9)] ai-pulse-dot" />
                     AI Travel OS
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2.5 py-1 text-[11px] font-medium text-sky-100">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/16 px-2.5 py-1 text-[10px] font-medium text-sky-100">
                     <span className="h-3 w-3 rounded-full bg-gradient-to-tr from-sky-300 to-cyan-200" />
                     Powered by pluto.ai
                   </span>
-                  <span className="ml-auto hidden items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[10px] font-medium text-sky-100/90 sm:inline-flex">
+                  <span className="ml-auto hidden items-center gap-1 rounded-full bg-white/6 px-2 py-1 text-[10px] font-medium text-sky-100/90 sm:inline-flex">
                     <span className="h-1 w-4 rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 ai-scan-beam" />
-                    Live • sandbox preview
+                    Live â€¢ sandbox preview
                   </span>
                 </div>
 
                 {/* Title & copy */}
-                <h1 className="text-[22px] font-semibold leading-snug text-sky-50 sm:text-[26px] md:text-[28px]">
+                <h1 className="text-[18px] font-semibold leading-snug text-sky-50 sm:text-[21px] md:text-[23px]">
                   One AI-native workspace for{" "}
-                  <span className="font-extrabold text-amber-300">
-                    flights, hotels, visas & holidays
-                  </span>
+                  <span className="font-extrabold text-[#d06549]">
+  flights, hotels, visas & holidays
+</span>
                   .
                 </h1>
-                <p className="mt-2 max-w-xl text-xs text-sky-100/80 sm:text-sm">
-                  PlumTrips is building a{" "}
-                  <span className="font-semibold text-sky-100">
+
+                <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-sky-100/90 sm:text-[12px]">
+                  Plumtrips is building a{" "}
+                  <span className="font-semibold text-sky-50">
                     travel operating system for B2B
                   </span>
                   : real-time content from global suppliers, wrapped in a human UI
@@ -86,22 +91,22 @@ export default function Home() {
                 </p>
 
                 {/* Micro chips */}
-                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-sky-100/70">
-                  <span className="rounded-full bg-white/5 px-2 py-1">
-                    • Gen-AI trip design
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[9.5px] font-medium text-sky-50/85">
+                  <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 backdrop-blur-sm">
+                    â€¢ Gen-AI trip design
                   </span>
-                  <span className="rounded-full bg-white/5 px-2 py-1">
-                    • Policy-aware fares
+                  <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 backdrop-blur-sm">
+                    â€¢ Policy-aware fares
                   </span>
-                  <span className="rounded-full bg-white/5 px-2 py-1">
-                    • Supplier-agnostic routing
+                  <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 backdrop-blur-sm">
+                    â€¢ Supplier-agnostic routing
                   </span>
                 </div>
 
-                {/* AI action links */}
-                <div className="mt-6 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {/* AI action links (smaller + more stylish) */}
+                <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   <AIActionLink
-                    href="https://www.plumtrips.in/flights"
+                    href="https://www.Plumtrips.in"
                     label="AI Flight Engine"
                     caption="Search & book flights in real time"
                   >
@@ -109,7 +114,7 @@ export default function Home() {
                   </AIActionLink>
 
                   <AIActionLink
-                    href="https://www.plumtrips.in/hotels"
+                    href="https://www.Plumtrips.in/hotels"
                     label="AI Hotel Finder"
                     caption="Smart stays for teams & guests"
                   >
@@ -117,7 +122,7 @@ export default function Home() {
                   </AIActionLink>
 
                   <AIActionLink
-                    href="https://www.plumtrips.in/holidays"
+                    href="https://www.Plumtrips.in/holidays"
                     label="Smart Holidays"
                     caption="Curated itineraries with human help"
                   >
@@ -125,15 +130,15 @@ export default function Home() {
                   </AIActionLink>
 
                   <AIActionLink
-                    href="https://www.plumtrips.in/visa"
-                    label="Visas & Compliance"
+                    href="https://www.helloviza.com"
+                    label="e-Visas"
                     caption="Guided visa journeys & support"
                   >
                     <AIVisaIcon />
                   </AIActionLink>
 
                   <AIActionLink
-                    href="https://www.plumtrips.in/bus"
+                    href="https://www.Plumtrips.in/bus"
                     label="Intercity Bus Travel"
                     caption="Pan-India routes for your travellers"
                   >
@@ -141,7 +146,7 @@ export default function Home() {
                   </AIActionLink>
 
                   <AIActionLink
-                    href="https://www.plumtrips.in/insurance"
+                    href="https://www.Plumtrips.in/insurance"
                     label="Travel Insurance"
                     caption="Coverage that moves with your people"
                   >
@@ -149,10 +154,10 @@ export default function Home() {
                   </AIActionLink>
                 </div>
 
-                <p className="mt-5 text-[11px] leading-relaxed text-sky-100/70">
+                <p className="mt-4 text-[10px] leading-relaxed text-sky-50/72">
                   For now, booking flows run on{" "}
                   <span className="font-semibold text-amber-200">
-                    plumtrips.in
+                    Plumtrips.in
                   </span>{" "}
                   while we wire the full AI OS. Your data and payments remain with
                   our accredited engine partners.
@@ -213,10 +218,10 @@ export default function Home() {
             );
           mix-blend-mode: screen;
           box-shadow:
-            0 0 120px rgba(56,189,248,0.3),
-            0 0 260px rgba(37,99,235,0.25);
+            0 0 120px rgba(56,189,248,0.26),
+            0 0 240px rgba(37,99,235,0.22);
           animation: aiGlobalSpin 42s linear infinite;
-          opacity: 0.55;
+          opacity: 0.52;
         }
         .ai-global-ring::before {
           content: "";
@@ -224,7 +229,7 @@ export default function Home() {
           inset: 12%;
           border-radius: 9999px;
           border: 1px dashed rgba(148,163,184,0.45);
-          box-shadow: 0 0 40px rgba(148,163,184,0.35);
+          box-shadow: 0 0 40px rgba(148,163,184,0.30);
         }
         .ai-global-ring::after {
           content: "";
@@ -237,7 +242,7 @@ export default function Home() {
         }
         @keyframes aiGlobalPulse {
           0%,100% { opacity: 0.0; }
-          40%     { opacity: 0.38; }
+          40%     { opacity: 0.36; }
         }
 
         /* Existing artifacts */
@@ -250,12 +255,38 @@ export default function Home() {
         .ai-pulse-dot{ animation: aiPulseDot 1.4s ease-in-out infinite }
         @keyframes aiScanBeam { 0%{transform:translateX(-6px);opacity:.2} 50%{transform:translateX(0);opacity:1} 100%{transform:translateX(6px);opacity:.2} }
         .ai-scan-beam{ animation: aiScanBeam 2.4s ease-in-out infinite alternate }
+
+        /* Action cards: more premium + tighter */
+        .ai-card::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          border-radius:16px;
+          background:
+            radial-gradient(700px circle at 12% 0%, rgba(208,101,73,0.20), transparent 42%),
+            radial-gradient(520px circle at 92% 30%, rgba(56,189,248,0.16), transparent 48%);
+          opacity:0;
+          transition: opacity 240ms ease;
+          pointer-events:none;
+        }
+        .ai-card:hover::before{ opacity:1; }
+
+        .ai-card::after{
+          content:"";
+          position:absolute;
+          left:10px; right:10px; top:8px;
+          height:1px;
+          border-radius:9999px;
+          background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.18), rgba(255,255,255,0));
+          opacity:.6;
+          pointer-events:none;
+        }
       `}</style>
     </div>
   );
 }
 
-/* ---------- Simple AI action row link ---------- */
+/* ---------- Premium AI action card link (smaller) ---------- */
 
 function AIActionLink({
   href,
@@ -266,24 +297,33 @@ function AIActionLink({
   href: string;
   label: string;
   caption: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <a
       href={href}
-      className="group flex items-center gap-3 rounded-xl px-2 py-3 transition hover:bg-white/5"
+      className={[
+        "ai-card group relative flex items-center gap-2.5 rounded-2xl",
+        "border border-white/12 bg-white/7 px-2.5 py-2.5 backdrop-blur-md",
+        "shadow-[0_10px_26px_rgba(0,0,0,0.16)] transition",
+        "hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/18",
+        "focus:outline-none focus:ring-2 focus:ring-[#d06549]/70",
+      ].join(" ")}
+      aria-label={`${label} (opens booking flow)`}
     >
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-black/20 text-amber-100 ring-1 ring-white/10 group-hover:ring-white/25">
+      <span className="grid h-9 w-9 place-items-center rounded-2xl bg-black/18 text-amber-100 ring-1 ring-white/12 group-hover:ring-white/24">
         {children}
       </span>
+
       <div className="min-w-0">
-        <div className="truncate text-sm font-semibold text-sky-50">
+        <div className="truncate text-[13px] font-semibold text-sky-50">
           {label}
         </div>
-        <div className="truncate text-[11px] text-sky-100/75">{caption}</div>
+        <div className="truncate text-[10.5px] text-sky-50/80">{caption}</div>
       </div>
-      <span className="ml-auto text-xs text-amber-100/80 transition group-hover:translate-x-0.5 group-hover:text-amber-50">
-        Go →
+
+      <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-sky-50 transition group-hover:border-[#d06549]/45 group-hover:bg-[#d06549] group-hover:text-white">
+        Go <span className="transition group-hover:translate-x-0.5">â†’</span>
       </span>
     </a>
   );
@@ -294,55 +334,154 @@ function AIActionLink({
 function AIChipIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <rect x="6" y="6" width="12" height="12" rx="3" className="stroke-amber-200" strokeWidth="1.4" />
-      <rect x="10" y="10" width="4" height="4" rx="1" className="fill-amber-300" />
-      <path d="M12 2v3M12 19v3M4 12h3M17 12h3" className="stroke-amber-200/80" strokeWidth="1.2" strokeLinecap="round" />
+      <rect
+        x="6"
+        y="6"
+        width="12"
+        height="12"
+        rx="3"
+        className="stroke-amber-200"
+        strokeWidth="1.4"
+      />
+      <rect
+        x="10"
+        y="10"
+        width="4"
+        height="4"
+        rx="1"
+        className="fill-amber-300"
+      />
+      <path
+        d="M12 2v3M12 19v3M4 12h3M17 12h3"
+        className="stroke-amber-200/80"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
+
 function AIHotelIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <rect x="5" y="8" width="14" height="10" rx="2" className="stroke-sky-200" strokeWidth="1.4" />
-      <path d="M7 11h3M7 14h3M14 11h3M14 14h3" className="stroke-sky-200" strokeWidth="1.2" strokeLinecap="round" />
-      <circle cx="12" cy="5" r="1.4" className="stroke-sky-200" strokeWidth="1.2" />
+      <rect
+        x="5"
+        y="8"
+        width="14"
+        height="10"
+        rx="2"
+        className="stroke-sky-200"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M7 11h3M7 14h3M14 11h3M14 14h3"
+        className="stroke-sky-200"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="12"
+        cy="5"
+        r="1.4"
+        className="stroke-sky-200"
+        strokeWidth="1.2"
+      />
     </svg>
   );
 }
+
 function AIGlobeIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <circle cx="12" cy="12" r="8" className="stroke-emerald-200" strokeWidth="1.4" />
-      <path d="M4.5 10.5c2 .5 3.5.7 5.5-.5 1.5-.9 3-.9 4.5 0 1.7 1 3 1 5 0" className="stroke-emerald-200/80" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M9 7c0 4 1.5 6.5 3 6.5S15 11 15 7" className="stroke-emerald-100" strokeWidth="1.2" strokeLinecap="round" />
+      <circle
+        cx="12"
+        cy="12"
+        r="8"
+        className="stroke-emerald-200"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M4.5 10.5c2 .5 3.5.7 5.5-.5 1.5-.9 3-.9 4.5 0 1.7 1 3 1 5 0"
+        className="stroke-emerald-200/80"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9 7c0 4 1.5 6.5 3 6.5S15 11 15 7"
+        className="stroke-emerald-100"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
+
 function AIVisaIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <rect x="4" y="6" width="16" height="12" rx="2" className="stroke-sky-200" strokeWidth="1.4" />
+      <rect
+        x="4"
+        y="6"
+        width="16"
+        height="12"
+        rx="2"
+        className="stroke-sky-200"
+        strokeWidth="1.4"
+      />
       <rect x="7" y="9" width="10" height="1.6" className="fill-sky-200/85" />
       <rect x="7" y="12" width="6" height="1.4" className="fill-sky-200/60" />
-      <circle cx="17" cy="13.5" r="1.3" className="stroke-sky-200" strokeWidth="1.1" />
+      <circle
+        cx="17"
+        cy="13.5"
+        r="1.3"
+        className="stroke-sky-200"
+        strokeWidth="1.1"
+      />
     </svg>
   );
 }
+
 function AIBusIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <rect x="5" y="6" width="14" height="10" rx="2" className="stroke-sky-200" strokeWidth="1.4" />
-      <path d="M7 9h4M13 9h4" className="stroke-sky-200/85" strokeWidth="1.2" strokeLinecap="round" />
+      <rect
+        x="5"
+        y="6"
+        width="14"
+        height="10"
+        rx="2"
+        className="stroke-sky-200"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M7 9h4M13 9h4"
+        className="stroke-sky-200/85"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
       <circle cx="9" cy="17" r="1.3" className="fill-sky-100" />
       <circle cx="15" cy="17" r="1.3" className="fill-sky-100" />
     </svg>
   );
 }
+
 function AIShieldIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <path d="M12 4 7 6v5.5c0 3.1 2.2 5.6 5 6.5 2.8-.9 5-3.4 5-6.5V6l-5-2z" className="stroke-emerald-200" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9.5 11.5 11 13l3-3" className="stroke-emerald-200" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 4 7 6v5.5c0 3.1 2.2 5.6 5 6.5 2.8-.9 5-3.4 5-6.5V6l-5-2z"
+        className="stroke-emerald-200"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.5 11.5 11 13l3-3"
+        className="stroke-emerald-200"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

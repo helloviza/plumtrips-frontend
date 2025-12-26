@@ -1,8 +1,8 @@
-import React from "react";
+﻿import React from "react";
 
 const baseFont = "'Barlow Condensed', Arial, sans-serif";
 const BRAND = "Plumtrips.com";
-const SUPPORT_EMAIL = "hello@plumtrips.com";
+const SUPPORT_EMAIL = "hello@Plumtrips.com";
 
 export default function CookiesPage() {
   return (

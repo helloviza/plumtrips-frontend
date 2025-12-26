@@ -1,4 +1,4 @@
-/* ===== Co-located images ===== */
+﻿/* ===== Co-located images ===== */
 const cover        = new URL("./cover-kos.jpg", import.meta.url).href;
 const imgSwimUp    = new URL("./swim-up-suite.jpg", import.meta.url).href;
 const imgZia       = new URL("./zia-village-sunset.jpg", import.meta.url).href;
@@ -11,7 +11,7 @@ const imgTigaki    = new URL("./tigaki-salt-lake.jpg", import.meta.url).href;
 export const meta = {
   slug: "hidden-gem-kos-greece-a-short-flight-to-pure-relaxation-with-swim-up-pools",
   title:
-    "Hidden Gem Kos, Greece — A Short Flight To Pure Relaxation (With Swim-Up Pools)",
+    "Hidden Gem Kos, Greece â€” A Short Flight To Pure Relaxation (With Swim-Up Pools)",
   excerpt:
     "Kos keeps it quiet: white lanes, turquoise coves, and swim-up suites that whisper luxury.",
   tags: ["Greece", "Short Flights", "Pool Suites"],
@@ -25,7 +25,7 @@ const H = {
 };
 const PlumTip = ({ text }: { text: string }) => (
   <div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">
-    💡 PlumTip: {text}
+    ðŸ’¡ PlumTip: {text}
   </div>
 );
 function Shot({ src, alt }: { src: string; alt: string }) {
@@ -89,7 +89,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Swim-up mornings, taverna afternoons, lacework lanes by night — Kos is
+                Swim-up mornings, taverna afternoons, lacework lanes by night â€” Kos is
                 a gentle luxury escape.
               </p>
             </div>
@@ -98,7 +98,7 @@ export default function Post() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
-        <PlumTip text="May–June & September = warm water, softer rates, and sunsets that linger." />
+        <PlumTip text="Mayâ€“June & September = warm water, softer rates, and sunsets that linger." />
 
         <Block
           title="Swim-Up Suites We Love"
@@ -106,7 +106,7 @@ export default function Post() {
           points={[
             "Adults-only swim-up rooms near sandy bays.",
             "Breakfast on the deck, dip between bites.",
-            "Quiet zones away from kids’ pools.",
+            "Quiet zones away from kidsâ€™ pools.",
           ]}
         />
         <Block
@@ -158,10 +158,10 @@ export default function Post() {
 
         <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-md">
           <h3 className="text-lg md:text-xl font-bold text-slate-900">
-            Plan it with PlumTrips ✈️
+            Plan it with Plumtrips âœˆï¸
           </h3>
           <p className="mt-2 text-slate-700">
-            We’ll pick the right swim-up suite, line up ferry times, and secure the
+            Weâ€™ll pick the right swim-up suite, line up ferry times, and secure the
             best golden-hour dining spots.
           </p>
           <div className="mt-5">

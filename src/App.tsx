@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import Flights from "./pages/Flights";
 import FlightReviewPage from "./pages/Flight";
-import Careers from "./pages/careers/Careers"; // ⬅️ note the folder + file
+import Careers from "./pages/careers/Careers"; // â¬…ï¸ note the folder + file
 
 
-// ⬇️ adjust this import path to where you saved HomeExplore.tsx
+// â¬‡ï¸ adjust this import path to where you saved HomeExplore.tsx
 // e.g. "./components/home/HomeExplore" or "./components/HomeExplore"
 import HomeExplore from "./components/home/HomeExplore";
 
@@ -13,7 +13,7 @@ function HomeLanding() {
   return (
     <div className="min-h-[60vh] bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
       <div className="mx-auto flex max-w-4xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-        <div className="text-3xl font-bold">PlumTrips Frontend is Ready 🚀</div>
+        <div className="text-3xl font-bold">Plumtrips Frontend is Ready ðŸš€</div>
         <p className="max-w-2xl text-white/90">
           Use the homepage chips to explore. Careers is available via the HomeExplore chip.
         </p>
@@ -52,13 +52,13 @@ function BookPlaceholder() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="rounded-lg border bg-white p-6">
-        <h1 className="mb-2 text-xl font-bold">Booking – Placeholder</h1>
+        <h1 className="mb-2 text-xl font-bold">Booking â€“ Placeholder</h1>
         <p className="text-zinc-600">
           This is a placeholder for <code>/flights/book</code>.
         </p>
         <div className="mt-4">
           <Link to="/flights" className="text-blue-700 underline underline-offset-4">
-            ← Back to flights
+            â† Back to flights
           </Link>
         </div>
       </div>
@@ -73,7 +73,7 @@ function Shell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 border-b bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/" className="text-lg font-bold text-blue-700">
-            PlumTrips
+            Plumtrips
           </Link>
           <nav className="flex items-center gap-4 text-sm">
             <Link to="/" className="text-zinc-700 hover:text-blue-700">

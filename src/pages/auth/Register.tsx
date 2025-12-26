@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/auth/Register.tsx
+﻿// apps/frontend/src/pages/auth/Register.tsx
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -52,8 +52,8 @@ export default function Register() {
         <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-cyan-400/40 to-blue-500/40 blur"></div>
         <div className="relative rounded-3xl bg-white/10 backdrop-blur-xl shadow-2xl p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <img src="/assets/logo.png" alt="PlumTrips" className="h-8 w-auto" />
-            <h1 className="text-xl font-semibold tracking-wide">Create your PlumTrips account</h1>
+            <img src="/assets/logo.png" alt="Plumtrips" className="h-8 w-auto" />
+            <h1 className="text-xl font-semibold tracking-wide">Create your Plumtrips account</h1>
           </div>
 
           {err && <div className="mb-4 rounded-lg bg-red-500/15 text-red-100 px-3 py-2 text-sm">{err}</div>}
@@ -123,7 +123,7 @@ export default function Register() {
               disabled={busy}
               className="w-full rounded-2xl bg-[#FFD166] text-[#0b2540] py-2.5 font-semibold tracking-wide hover:opacity-95 disabled:opacity-60 shadow-lg"
             >
-              {busy ? "Creating your account…" : "Create account"}
+              {busy ? "Creating your accountâ€¦" : "Create account"}
             </button>
           </form>
 

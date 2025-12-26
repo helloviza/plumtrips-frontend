@@ -1,8 +1,8 @@
-import React from "react";
+﻿import React from "react";
 
 const baseFont = "'Barlow Condensed', Arial, sans-serif";
 const BRAND = "Plumtrips.com";
-const SUPPORT_EMAIL = "hello@plumtrips.com";
+const SUPPORT_EMAIL = "hello@Plumtrips.com";
 const SUPPORT_PHONE = "+91 70659 32396";
 
 export default function CancellationPage() {
@@ -38,7 +38,7 @@ export default function CancellationPage() {
           are non-refundable once service has commenced.
         </li>
         <li>
-          <strong>Refund Timeline:</strong> Typically 7–21 business days after
+          <strong>Refund Timeline:</strong> Typically 7â€“21 business days after
           supplier confirmation; banks may take extra time to post credits.
         </li>
         <li>

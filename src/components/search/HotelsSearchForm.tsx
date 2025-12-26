@@ -1,4 +1,4 @@
-// src/components/search/HotelsSearchForm.tsx
+﻿// src/components/search/HotelsSearchForm.tsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -36,7 +36,7 @@ export default function HotelsSearchForm() {
       rooms: "1",
     });
 
-    // Stay on plumtrips.com and open the embedded engine page
+    // Stay on Plumtrips.com and open the embedded engine page
     navigate(`/engine/hotels?${params.toString()}`);
   }
 

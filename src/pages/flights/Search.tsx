@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/flights/Search.tsx
+﻿// apps/frontend/src/pages/flights/Search.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -68,8 +68,8 @@ function mapTBOToCard(obj: any): ResultCard {
     airlineCode: airline?.AirlineCode ?? airline?.OperatingCarrier ?? "--",
     airlineName: airline?.AirlineName ?? "",
     flightNumber: airline?.FlightNumber ?? seg0?.FlightNumber ?? "",
-    from: origin?.AirportCode ?? origin?.CityCode ?? "—",
-    to: dest?.AirportCode ?? dest?.CityCode ?? "—",
+    from: origin?.AirportCode ?? origin?.CityCode ?? "â€”",
+    to: dest?.AirportCode ?? dest?.CityCode ?? "â€”",
     departISO: depISO || undefined,
     arriveISO: arrISO || undefined,
     departHHMM: hhmm(dep),
@@ -158,7 +158,7 @@ export default function SearchPage() {
 
         if (!ignore) {
           setTraceId(tid);
-          sessionStorage.setItem("plumtrips.traceId", tid);
+          sessionStorage.setItem("Plumtrips.traceId", tid);
           setCards(mapped);
         }
       } catch (e: any) {
@@ -247,7 +247,7 @@ export default function SearchPage() {
 
   function selectCard(c: ResultCard) {
     sessionStorage.setItem(
-      "plumtrips.selectedFlight",
+      "Plumtrips.selectedFlight",
       JSON.stringify({ flight: { id: c.resultIndex }, from, to, date })
     );
     navigate(
@@ -282,7 +282,7 @@ export default function SearchPage() {
             month: "short",
             year: "numeric",
           })}{" "}
-          • {adults} adult{adults > 1 ? "s" : ""} • {cabin}
+          â€¢ {adults} adult{adults > 1 ? "s" : ""} â€¢ {cabin}
         </div>
       </div>
 
@@ -306,19 +306,19 @@ export default function SearchPage() {
             onClick={() => setSortBy("cheapest")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "cheapest" ? "bg-emerald-100 text-emerald-900" : "bg-white"} border`}
           >
-            💸 CHEAPEST
+            ðŸ’¸ CHEAPEST
           </button>
           <button
             onClick={() => setSortBy("nonstop")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "nonstop" ? "bg-blue-100 text-blue-900" : "bg-white"} border`}
           >
-            ⛳ NON STOP FIRST
+            â›³ NON STOP FIRST
           </button>
           <button
             onClick={() => setSortBy("prefer")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "prefer" ? "bg-zinc-100 text-zinc-900" : "bg-white"} border`}
           >
-            ⭐ YOU MAY PREFER
+            â­ YOU MAY PREFER
           </button>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function SearchPage() {
               onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : undefined)}
               placeholder={priceStats.min ? String(priceStats.min) : "min"}
             />
-            <span className="text-zinc-400">—</span>
+            <span className="text-zinc-400">â€”</span>
             <input
               type="number"
               className="w-28 rounded border px-2 py-1 text-sm"
@@ -384,7 +384,7 @@ export default function SearchPage() {
         {/* RESULTS */}
         <section>
           {loading ? (
-            <div className="rounded-lg border bg-white p-6">Searching…</div>
+            <div className="rounded-lg border bg-white p-6">Searchingâ€¦</div>
           ) : filtered.length === 0 ? (
             <div className="rounded-lg border bg-white p-6 text-zinc-600">
               No flights match these filters.
@@ -435,7 +435,7 @@ export default function SearchPage() {
 
                     <div className="col-span-3 text-right">
                       <div className="text-xl font-bold">
-                        ₹ {c.priceINR.toLocaleString("en-IN")}
+                        â‚¹ {c.priceINR.toLocaleString("en-IN")}
                       </div>
                       <button
                         onClick={() => selectCard(c)}
@@ -448,7 +448,7 @@ export default function SearchPage() {
 
                   {/* tiny footer */}
                   <div className="border-t px-4 py-2 text-[11px] text-zinc-500">
-                    Get FLAT ₹175 OFF using MMTSUPER | Get FLAT ₹500 OFF using HDFCDEALS
+                    Get FLAT â‚¹175 OFF using MMTSUPER | Get FLAT â‚¹500 OFF using HDFCDEALS
                   </div>
                 </div>
               ))}
@@ -480,7 +480,7 @@ export default function SearchPage() {
                     />
                     {a.name || a.code}
                     <span className="ml-auto text-[12px] text-zinc-500">
-                      ₹ {a.lowest.toLocaleString("en-IN")}
+                      â‚¹ {a.lowest.toLocaleString("en-IN")}
                     </span>
                   </label>
                 );

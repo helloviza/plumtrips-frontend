@@ -1,4 +1,4 @@
-// apps/frontend/src/components/auth/AuthModal.tsx
+﻿// apps/frontend/src/components/auth/AuthModal.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useUi } from "../../context/UiContext";
 import { useAuth } from "../../context/AuthContext";
@@ -161,7 +161,7 @@ export default function AuthModal() {
             className="absolute right-3 top-3 z-10 rounded-full bg-black/10 p-2 text-black/70 hover:bg-black/20"
             aria-label="Close"
           >
-            ✕
+            âœ•
           </button>
 
           <div className="grid grid-cols-1 md:grid-cols-2">
@@ -219,9 +219,9 @@ export default function AuthModal() {
                         onChange={(e) => setCc(e.target.value)}
                         className="rounded-l-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-800 focus:outline-none"
                       >
-                        <option value="+91">🇮🇳 +91</option>
-                        <option value="+971">🇦🇪 +971</option>
-                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+91">ðŸ‡®ðŸ‡³ +91</option>
+                        <option value="+971">ðŸ‡¦ðŸ‡ª +971</option>
+                        <option value="+1">ðŸ‡ºðŸ‡¸ +1</option>
                       </select>
                       <input
                         className={`w-full rounded-r-lg border px-3 py-2 outline-none ${
@@ -279,7 +279,7 @@ export default function AuthModal() {
                   </div>
 
                   <p className="mt-6 text-xs text-zinc-500">
-                    By proceeding, you agree to PlumTrips’ Privacy Policy, User Agreement and T&Cs.
+                    By proceeding, you agree to Plumtripsâ€™ Privacy Policy, User Agreement and T&Cs.
                   </p>
                 </form>
               )}
@@ -328,10 +328,10 @@ export default function AuthModal() {
                     disabled={busy}
                     className="w-full rounded-xl bg-[#00477f] py-2.5 font-semibold text-white hover:opacity-95 disabled:opacity-60"
                   >
-                    {busy ? "Signing in…" : "Sign in"}
+                    {busy ? "Signing inâ€¦" : "Sign in"}
                   </button>
                   <div className="text-sm text-zinc-600">
-                    Don’t have an account?{" "}
+                    Donâ€™t have an account?{" "}
                     <button type="button" onClick={() => setAuthStep("emailRegister")} className="text-[#00477f] underline">
                       Create one
                     </button>
@@ -400,7 +400,7 @@ export default function AuthModal() {
                     disabled={busy}
                     className="w-full rounded-xl bg-[#00477f] py-2.5 font-semibold text-white hover:opacity-95 disabled:opacity-60"
                   >
-                    {busy ? "Creating your account…" : "Create account"}
+                    {busy ? "Creating your accountâ€¦" : "Create account"}
                   </button>
                   <div className="text-sm text-zinc-600">
                     Already have an account?{" "}

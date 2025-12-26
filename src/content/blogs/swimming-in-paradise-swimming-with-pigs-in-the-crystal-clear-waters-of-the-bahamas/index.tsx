@@ -1,4 +1,4 @@
-/* ===== Co-located images ===== */
+﻿/* ===== Co-located images ===== */
 const cover      = new URL("./cover-bahamas-pigs.jpg", import.meta.url).href;
 const imgPigs    = new URL("./big-major-cay-pigs.jpg", import.meta.url).href;
 const imgExuma   = new URL("./exuma-blues.jpg", import.meta.url).href;
@@ -10,14 +10,14 @@ const imgResort  = new URL("./exuma-resort.jpg", import.meta.url).href;
 /* ===== Meta ===== */
 export const meta = {
   slug: "swimming-in-paradise-swimming-with-pigs-in-the-crystal-clear-waters-of-the-bahamas",
-  title: "Swimming In Paradise — Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
-  excerpt: "Emerald shallows, friendly pigs, and a boat day you’ll never forget.",
+  title: "Swimming In Paradise â€” Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
+  excerpt: "Emerald shallows, friendly pigs, and a boat day youâ€™ll never forget.",
   tags: ["Bahamas","Unique","Boat Day"],
   cover,
 };
 
 const H={heroTitle:"text-2xl md:text-4xl font-extrabold text-white drop-shadow",sectionH2:"text-2xl md:text-3xl font-extrabold text-[#00477f]"};
-const Tip=({t}:{t:string})=><div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">💡 PlumTip: {t}</div>;
+const Tip=({t}:{t:string})=><div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">ðŸ’¡ PlumTip: {t}</div>;
 const Shot=({src,alt}:{src:string;alt:string})=><img src={src} alt={alt} className="w-full rounded-2xl object-cover shadow-md" style={{aspectRatio:"16 / 9"}} loading="lazy"/>;
 const Bullets=({items}:{items:string[]})=><ul className="mt-2 list-disc pl-5 text-slate-700">{items.map(i=><li key={i} className="mb-1">{i}</li>)}</ul>;
 function Block({title,img,points}:{title:string;img:string;points:string[]}){return(<section className="mt-10"><h2 className={H.sectionH2}>{title}</h2><div className="mt-4"><Shot src={img} alt={title}/></div><div className="mt-4 rounded-xl bg-white border p-5 shadow-sm"><Bullets items={points}/></div></section>)}
@@ -32,6 +32,6 @@ export default function Post(){return(<article className="bg-gradient-to-b from-
     <Block title="Nurse Shark Sandbar" img={imgNurse} points={["Calm sharks, guided wade","Respectful distance","No sudden moves"]}/>
     <Block title="Yacht Day" img={imgYacht} points={["Island-hop in comfort","Shade + coolers","Drone-free etiquette"]}/>
     <Block title="Where To Stay" img={imgResort} points={["Exuma resorts with private docks","Beach villas with decks","Chef kitchens for fresh catch"]}/>
-    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with PlumTrips ✈️</h3><p className="mt-2 text-slate-700">We’ll line up boats, timing, and the chillest cays — stress-free.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Exuma Day</a></div></div>
+    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Weâ€™ll line up boats, timing, and the chillest cays â€” stress-free.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Exuma Day</a></div></div>
   </main>
 </article>)}

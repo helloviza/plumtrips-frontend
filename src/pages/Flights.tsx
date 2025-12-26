@@ -1,4 +1,4 @@
-console.log("Rendering FlightsForm");
+﻿console.log("Rendering FlightsForm");
 
 // apps/frontend/src/pages/Flights.tsx
 import { useLocation, Link, useNavigate } from "react-router-dom";
@@ -46,7 +46,7 @@ function normalizeFilters(f: Filters): Filters {
   };
 }
 
-/* ----------------------------- TBO → Flight map ----------------------------- */
+/* ----------------------------- TBO â†’ Flight map ----------------------------- */
 function mapTBOToFlight(obj: any, idx: number): Flight {
   const slices0 = obj?.Segments;
   const legs: any[] = Array.isArray(slices0?.[0]) ? slices0[0] : Array.isArray(slices0) ? slices0 : [];
@@ -88,8 +88,8 @@ function mapTBOToFlight(obj: any, idx: number): Flight {
 
   return {
     id: `${obj?.ResultIndex ?? obj?.FlightInfoIndex ?? idx}`,
-    from: origin?.AirportCode ?? origin?.CityCode ?? "—",
-    to: dest?.AirportCode ?? dest?.CityCode ?? "—",
+    from: origin?.AirportCode ?? origin?.CityCode ?? "â€”",
+    to: dest?.AirportCode ?? dest?.CityCode ?? "â€”",
     departTime: hhmm(dep),
     arriveTime: hhmm(arr),
     durationMins,
@@ -220,11 +220,11 @@ export default function Flights() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, filtersKey]);
 
-  /* Select → persist then navigate to /flight with query + state */
+  /* Select â†’ persist then navigate to /flight with query + state */
   const handleSelect = (f: Flight) => {
     try {
       sessionStorage.setItem(
-        "plumtrips.selectedFlight",
+        "Plumtrips.selectedFlight",
         JSON.stringify({ flight: f, ts: Date.now() })
       );
     } catch {}
@@ -245,13 +245,13 @@ export default function Flights() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Showing {results.length}</span>
           <span className="text-blue-800/80">of {source.length} results</span>
-          <span className="mx-1 text-blue-800/50">•</span>
+          <span className="mx-1 text-blue-800/50">â€¢</span>
           <span className="font-medium">
-            {from || "—"} → {to || "—"} {date ? `on ${date}` : ""}
+            {from || "â€”"} â†’ {to || "â€”"} {date ? `on ${date}` : ""}
           </span>
-          <span className="mx-1 text-blue-800/50">•</span>
+          <span className="mx-1 text-blue-800/50">â€¢</span>
           <span className="text-blue-800/80">
-            {adults} adult{Number(adults) > 1 ? "s" : ""} • {cabin}
+            {adults} adult{Number(adults) > 1 ? "s" : ""} â€¢ {cabin}
           </span>
           <span className="flex-1" />
           <Link to="/" className="text-blue-700 underline underline-offset-4">
@@ -279,7 +279,7 @@ export default function Flights() {
         {/* Results */}
         <div>
           {loading ? (
-            <div className="rounded-lg border bg-white p-6">Loading…</div>
+            <div className="rounded-lg border bg-white p-6">Loadingâ€¦</div>
           ) : (
             <>
               <div className="mb-3 text-sm text-zinc-600">

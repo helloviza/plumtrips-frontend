@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/go/Concierge.tsx
+﻿// apps/frontend/src/pages/go/Concierge.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -13,7 +13,7 @@ const ACCENT_SOFT = "rgba(199,165,107,0.15)";
 const hero = new URL("./concierge-hero.jpg", import.meta.url).href;
 
 /** Contact details */
-const DESK_EMAIL = "concierge@plumtrips.com";
+const DESK_EMAIL = "concierge@Plumtrips.com";
 const PHONE_DISPLAY = "+91 70659 32396";
 const WHATSAPP_E164 = "917065932396"; // no leading "+"
 
@@ -69,7 +69,7 @@ export default function Concierge() {
   }
 
   function buildMailto() {
-    const subject = `Concierge Request — ${name || "New lead"}`;
+    const subject = `Concierge Request â€” ${name || "New lead"}`;
     const body = [
       `Name: ${name}`,
       `Email: ${email}`,
@@ -91,8 +91,8 @@ export default function Concierge() {
 
   function buildWhatsApp() {
     const text = [
-      `PlumTrips Concierge request`,
-      `—`,
+      `Plumtrips Concierge request`,
+      `â€”`,
       `Name: ${name}`,
       `Email: ${email}`,
       `Phone: ${phone}`,
@@ -117,7 +117,7 @@ export default function Concierge() {
       return;
     }
     if (!name) {
-      alert("Please add your name so we can respond. ✨");
+      alert("Please add your name so we can respond. âœ¨");
       return;
     }
     if (!email && user?.email) setEmail(user.email);
@@ -147,10 +147,10 @@ export default function Concierge() {
             <div className="mx-auto max-w-5xl px-4 pb-8 md:pb-10">
               <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 md:p-8 shadow-2xl">
                 <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
-                  PlumTrips Concierge
+                  Plumtrips Concierge
                 </h1>
                 <p className="mt-3 max-w-2xl text-white/90">
-                  Seamless, bespoke journeys — villa keys, overwater mornings, private
+                  Seamless, bespoke journeys â€” villa keys, overwater mornings, private
                   transfers, and hidden-gem experiences curated to your taste.
                 </p>
 
@@ -160,7 +160,7 @@ export default function Concierge() {
                     className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
                     title="Call us"
                   >
-                    ☎︎ {PHONE_DISPLAY}
+                    â˜Žï¸Ž {PHONE_DISPLAY}
                   </a>
                   <a
                     href={`https://wa.me/${WHATSAPP_E164}`}
@@ -169,7 +169,7 @@ export default function Concierge() {
                     className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
                     title="Chat on WhatsApp"
                   >
-                    🟢 WhatsApp
+                    ðŸŸ¢ WhatsApp
                   </a>
 
                   {fromSlug ? (
@@ -208,7 +208,7 @@ export default function Concierge() {
             onSubmit={onSubmit}
             className="md:col-span-2 rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 md:p-8 shadow-2xl"
           >
-            <SectionTitle title="Tell us about your trip" subtitle="We’ll take it from here." />
+            <SectionTitle title="Tell us about your trip" subtitle="Weâ€™ll take it from here." />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <Field label="Your name *">
@@ -244,7 +244,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Maldives, Amalfi, Bali…"
+                  placeholder="Maldives, Amalfi, Baliâ€¦"
                 />
               </Field>
 
@@ -253,7 +253,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={dates}
                   onChange={(e) => setDates(e.target.value)}
-                  placeholder="Oct 10–18 (flex ±2)"
+                  placeholder="Oct 10â€“18 (flex Â±2)"
                 />
               </Field>
               <Field label="Budget (total or per night)">
@@ -261,7 +261,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  placeholder="€3000 total / €250–€350 pn"
+                  placeholder="â‚¬3000 total / â‚¬250â€“â‚¬350 pn"
                 />
               </Field>
 
@@ -293,7 +293,7 @@ export default function Concierge() {
                 className="lux-input h-32 resize-y"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Tell us about the trip you have in mind…"
+                placeholder="Tell us about the trip you have in mindâ€¦"
               />
             </div>
 
@@ -303,7 +303,7 @@ export default function Concierge() {
                 className="lux-btn"
                 style={{ background: "linear-gradient(90deg, #b89054, #d8b97d, #b89054)" }}
               >
-                ✉️ Send via Email
+                âœ‰ï¸ Send via Email
               </button>
 
               <a
@@ -321,9 +321,9 @@ export default function Concierge() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-3 text-[12px] text-white/70">
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">✓ Private transfers</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">✓ Handpicked stays</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">✓ 24/7 assistance</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ Private transfers</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ Handpicked stays</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ 24/7 assistance</span>
             </div>
           </form>
 
@@ -340,7 +340,7 @@ export default function Concierge() {
               <div className="mt-8 rounded-xl border border-white/15 bg-gradient-to-br from-white/10 to-white/5 p-4">
                 <h4 className="text-white font-semibold">Timing tip</h4>
                 <p className="mt-1 text-sm text-white/80">
-                  For peak dates & wow suites, 6–10 weeks ahead is the real sweet spot.
+                  For peak dates & wow suites, 6â€“10 weeks ahead is the real sweet spot.
                 </p>
               </div>
 
@@ -350,7 +350,7 @@ export default function Concierge() {
               />
 
               <p className="mt-8 text-xs text-white/60">
-                By submitting, you agree that we may contact you about this request. No spam — ever.
+                By submitting, you agree that we may contact you about this request. No spam â€” ever.
               </p>
             </div>
           </aside>
@@ -405,7 +405,7 @@ export default function Concierge() {
   );
 }
 
-/* ——— UI bits ——— */
+/* â€”â€”â€” UI bits â€”â€”â€” */
 function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div>

@@ -1,11 +1,16 @@
-// apps/frontend/src/components/Header.tsx
+﻿// apps/frontend/src/components/Header.tsx
 import { Link, NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 
 // Public logo (placed in apps/frontend/public/assets/logo.png)
 const logo = "/assets/logo.png";
+
+// External destinations (as requested)
+const EXTERNAL_FLIGHTS_URL = "https://www.Plumtrips.in";
+const EXTERNAL_HOTELS_URL = "https://www.Plumtrips.in/hotels";
+const EXTERNAL_VISA_URL = "https://www.helloviza.com";
 
 const leftNav = [
   { to: "/flights", label: "Flights" },
@@ -46,6 +51,92 @@ export default function Header() {
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
+  // Map label -> external URL for special routing
+  const externalByLabel = useMemo(
+    () =>
+      ({
+        Flights: EXTERNAL_FLIGHTS_URL,
+        Hotels: EXTERNAL_HOTELS_URL,
+        Visa: EXTERNAL_VISA_URL,
+      }) as Record<string, string>,
+    []
+  );
+
+  const renderNavItemDesktop = (item: { to: string; label: string }) => {
+    const externalUrl = externalByLabel[item.label];
+    if (externalUrl) {
+      return (
+        <a
+          key={item.label}
+          href={externalUrl}
+          target="_self"
+          rel="noopener noreferrer"
+          className="relative pb-1 font-medium text-white/90 hover:text-white"
+          onClick={closeMobile}
+          aria-label={`${item.label} (opens external site)`}
+        >
+          {item.label}
+        </a>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        className={({ isActive }) =>
+          `relative pb-1 font-medium ${
+            isActive ? "text-white" : "text-white/90 hover:text-white"
+          }`
+        }
+        onClick={closeMobile}
+      >
+        {({ isActive }) => (
+          <>
+            {item.label}
+            {isActive && (
+              <span className="absolute -bottom-1 left-0 h-[3px] w-8 bg-[#d06549]" />
+            )}
+          </>
+        )}
+      </NavLink>
+    );
+  };
+
+  const renderNavItemMobile = (item: { to: string; label: string }) => {
+    const externalUrl = externalByLabel[item.label];
+    if (externalUrl) {
+      return (
+        <a
+          key={item.label}
+          href={externalUrl}
+          target="_self"
+          rel="noopener noreferrer"
+          className="block rounded px-1 py-1.5 text-white/90"
+          onClick={closeMobile}
+          aria-label={`${item.label} (opens external site)`}
+        >
+          {item.label}
+        </a>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        className={({ isActive }) =>
+          `block rounded px-1 py-1.5 ${
+            isActive ? "font-semibold text-white" : "text-white/90"
+          }`
+        }
+        onClick={closeMobile}
+      >
+        {item.label}
+      </NavLink>
+    );
+  };
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-gradient-to-r from-[#00477f] to-[#00477f] text-white">
@@ -55,41 +146,19 @@ export default function Header() {
             <Link
               to="/"
               className="flex items-center gap-3"
-              aria-label="PlumTrips home"
+              aria-label="Plumtrips home"
               onClick={closeMobile}
             >
               <img
                 src={logo}
-                alt="PlumTrips"
+                alt="Plumtrips"
                 className="h-10 w-auto select-none object-contain pointer-events-none"
               />
             </Link>
 
             {/* Desktop left nav */}
             <nav className="hidden items-center gap-10 text-[17px] md:flex">
-              {leftNav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `relative pb-1 font-medium ${
-                      isActive
-                        ? "text-white"
-                        : "text-white/90 hover:text-white"
-                    }`
-                  }
-                  onClick={closeMobile}
-                >
-                  {({ isActive }) => (
-                    <>
-                      {item.label}
-                      {isActive && (
-                        <span className="absolute -bottom-1 left-0 h-[3px] w-8 bg-[#d06549]" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+              {leftNav.map(renderNavItemDesktop)}
             </nav>
           </div>
 
@@ -128,15 +197,14 @@ export default function Header() {
                     </button>
                   );
                 }
+
                 return (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     className={({ isActive }) =>
                       `relative pb-1 font-medium ${
-                        isActive
-                          ? "text-white"
-                          : "text-white/90 hover:text-white"
+                        isActive ? "text-white" : "text-white/90 hover:text-white"
                       }`
                     }
                     onClick={closeMobile}
@@ -189,20 +257,7 @@ export default function Header() {
           <div className="md:hidden border-t border-white/20 bg-[#00477f]">
             <nav className="mx-auto max-w-screen-2xl px-4 py-3 flex flex-col gap-2 text-sm">
               {/* Left nav items */}
-              {leftNav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `block rounded px-1 py-1.5 ${
-                      isActive ? "font-semibold text-white" : "text-white/90"
-                    }`
-                  }
-                  onClick={closeMobile}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
+              {leftNav.map(renderNavItemMobile)}
 
               <div className="mt-2 border-t border-white/15 pt-2" />
 
@@ -222,6 +277,7 @@ export default function Header() {
                     </button>
                   );
                 }
+
                 return (
                   <NavLink
                     key={item.to}

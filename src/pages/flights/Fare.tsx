@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/flights/Fare.tsx
+﻿// apps/frontend/src/pages/flights/Fare.tsx
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -13,7 +13,7 @@ import type { BookBody } from "../../lib/api";
 /* -------- session fallbacks (if user refreshes) -------- */
 function readSelectedResultIndex(): string {
   try {
-    const raw = sessionStorage.getItem("plumtrips.selectedFlight");
+    const raw = sessionStorage.getItem("Plumtrips.selectedFlight");
     if (!raw) return "";
     const parsed = JSON.parse(raw);
     return String(parsed?.flight?.id || "");
@@ -23,7 +23,7 @@ function readSelectedResultIndex(): string {
 }
 function readSearchTraceId(): string {
   try {
-    const t = sessionStorage.getItem("plumtrips.traceId");
+    const t = sessionStorage.getItem("Plumtrips.traceId");
     return t ? String(t) : "";
   } catch {
     return "";
@@ -76,7 +76,7 @@ export default function FarePage() {
     LastName: "TESTLN",
     DateOfBirth: "1990-01-01",
     Gender: "1",
-    Email: "passenger1@plumtrips.test",
+    Email: "passenger1@Plumtrips.test",
     Mobile: "9999999999",
 
     // Address fields required by some LCCs (must be present on each pax; backend will copy)
@@ -238,14 +238,14 @@ export default function FarePage() {
           return;
         }
         const body = { bookingId: id, pnr: pp, traceId };
-        console.log("[Ticket/GDS] payload →", body);
+        console.log("[Ticket/GDS] payload â†’", body);
         await tboTicket(body);
         setTicketOk(true);
         await refreshDetails(id);
         return;
       }
 
-      // LCC path → build per-passenger payload + zero ancillaries
+      // LCC path â†’ build per-passenger payload + zero ancillaries
       const cur = String(quote?.Fare?.Currency || "INR");
       const legs = legsFromQuote(quote);
 
@@ -323,7 +323,7 @@ export default function FarePage() {
         passengers,
       } as any;
 
-      console.log("[Ticket/LCC] payload →", body);
+      console.log("[Ticket/LCC] payload â†’", body);
       await tboTicket(body);
 
       setTicketOk(true);
@@ -358,8 +358,8 @@ export default function FarePage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-semibold mb-2">Fare &amp; Book</h1>
       <div className="text-xs opacity-70 mb-4">
-        TraceId: {(traceId || "—").toString().slice(0, 16)}… {" | "}
-        ResultIndex: {(resultIndex || "—").toString().slice(0, 16)}…
+        TraceId: {(traceId || "â€”").toString().slice(0, 16)}â€¦ {" | "}
+        ResultIndex: {(resultIndex || "â€”").toString().slice(0, 16)}â€¦
       </div>
 
       {fatalErr && (
@@ -368,7 +368,7 @@ export default function FarePage() {
         </div>
       )}
 
-      {loading && <div className="rounded border p-3">Loading fare…</div>}
+      {loading && <div className="rounded border p-3">Loading fareâ€¦</div>}
 
       {!loading && quote && (
         <div className="space-y-4">
@@ -434,7 +434,7 @@ export default function FarePage() {
                    value={form.ZipCode} onChange={(e)=>update("ZipCode", e.target.value)} />
 
             <button disabled={bookLoading} className="col-span-2 rounded bg-green-700 px-4 py-2 text-white">
-              {bookLoading ? "Booking…" : "Book (create PNR)"}
+              {bookLoading ? "Bookingâ€¦" : "Book (create PNR)"}
             </button>
           </form>
 
@@ -452,7 +452,7 @@ export default function FarePage() {
                   onClick={() => attemptTicket()}
                   className="rounded bg-blue-600 px-3 py-1.5 text-white disabled:opacity-60"
                 >
-                  {ticketLoading ? "Issuing Ticket…" : ticketOk ? "Retry Ticket" : "Issue Ticket"}
+                  {ticketLoading ? "Issuing Ticketâ€¦" : ticketOk ? "Retry Ticket" : "Issue Ticket"}
                 </button>
 
                 <button
@@ -481,7 +481,7 @@ export default function FarePage() {
                   onClick={() => refreshDetails()}
                   className="rounded border px-3 py-1.5 text-sm disabled:opacity-60"
                 >
-                  {detailsLoading ? "Refreshing…" : "Refresh Booking Details"}
+                  {detailsLoading ? "Refreshingâ€¦" : "Refresh Booking Details"}
                 </button>
               </div>
 
@@ -504,13 +504,13 @@ export default function FarePage() {
             <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
               <div>IsLCC (from quote): <strong>{String(isLccFare)}</strong></div>
               <div>Ticket path used last: <strong>{lastTicketPath ?? "-"}</strong></div>
-              <div>TraceId: <span className="opacity-70">{(traceId || "").slice(0, 24)}…</span></div>
-              <div>ResultIndex: <span className="opacity-70">{(resultIndex || "").toString().slice(0, 24)}…</span></div>
+              <div>TraceId: <span className="opacity-70">{(traceId || "").slice(0, 24)}â€¦</span></div>
+              <div>ResultIndex: <span className="opacity-70">{(resultIndex || "").toString().slice(0, 24)}â€¦</span></div>
               <div>BookingId: <span className="opacity-70">{bookingId ?? "-"}</span></div>
               <div>PNR: <span className="opacity-70">{pnr || "-"}</span></div>
             </div>
             <div className="mt-2 text-xs text-zinc-500">
-              Open DevTools → Network → <code>/api/v1/flights/tbo/ticket</code> to verify the payload being sent.
+              Open DevTools â†’ Network â†’ <code>/api/v1/flights/tbo/ticket</code> to verify the payload being sent.
             </div>
           </details>
 

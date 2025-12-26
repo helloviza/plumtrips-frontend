@@ -1,12 +1,12 @@
-import { useMemo, useState, type ReactNode } from "react";
+﻿import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 /**
- * PlumTrips — MICE Page
+ * Plumtrips â€” MICE Page
  * - Translucent hero gradient + background image
  * - Event-type chips
  * - Services, Event Management, Value chips
- * - Why PlumTrips grid, Process, Testimonials, Logos, RFP form
+ * - Why Plumtrips grid, Process, Testimonials, Logos, RFP form
  * - Brand accent: #d06549
  */
 
@@ -25,7 +25,7 @@ const EVENT_TYPES: EventType[] = [
 ];
 
 const CORE_SERVICES = [
-  "Determine your group’s requirements",
+  "Determine your groupâ€™s requirements",
   "Venue & destination curation to fit your event",
   "Negotiate best room rates and airfares",
   "Travel & ground arrangements",
@@ -49,11 +49,11 @@ const VALUE_CHIPS = [
   "Continuous Support",
 ];
 
-const WHY_PLUMTRIPS = [
+const WHY_Plumtrips = [
   {
     title: "Proven Delivery",
     text:
-      "Track record across MICE programs—board meetings to 2,000-delegate conferences.",
+      "Track record across MICE programsâ€”board meetings to 2,000-delegate conferences.",
   },
   {
     title: "Negotiation Power",
@@ -78,7 +78,7 @@ const WHY_PLUMTRIPS = [
   {
     title: "Concierge Support",
     text:
-      "Dedicated PMO, VIP handling, and 24×7 traveler assistance throughout.",
+      "Dedicated PMO, VIP handling, and 24Ã—7 traveler assistance throughout.",
   },
 ];
 
@@ -100,8 +100,8 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "From visas to venue design—the PlumTrips team anticipated every detail. Best incentive trip yet.",
-    name: "L. D’Souza",
+      "From visas to venue designâ€”the Plumtrips team anticipated every detail. Best incentive trip yet.",
+    name: "L. Dâ€™Souza",
     role: "Sales Director, FMCG",
   },
 ];
@@ -201,7 +201,7 @@ export default function MicePage() {
 
   const heroSubtitle = useMemo(
     () =>
-      "MICE (Meetings, Incentives, Conferences & Exhibitions) with concierge precision — from concept to applause.",
+      "MICE (Meetings, Incentives, Conferences & Exhibitions) with concierge precision â€” from concept to applause.",
     []
   );
 
@@ -243,7 +243,7 @@ export default function MicePage() {
             <Stat kpi="300+" label="Corporate Events" />
             <Stat kpi="65+" label="Cities Served" />
             <Stat kpi="4.8/5" label="Client Satisfaction" />
-            <Stat kpi="24×7" label="Concierge Support" />
+            <Stat kpi="24Ã—7" label="Concierge Support" />
           </div>
         </div>
       </section>
@@ -256,7 +256,7 @@ export default function MicePage() {
               {type}: end-to-end expertise
             </h2>
             <p className="mt-3 text-slate-600 text-[15px] leading-6">
-              Whether you’re planning a leadership retreat, a global sales kick-off, or an expo
+              Whether youâ€™re planning a leadership retreat, a global sales kick-off, or an expo
               floor, our specialists combine destination knowledge, rate negotiation, and on-site
               mastery to deliver a premium, low-friction experience for your team and guests.
             </p>
@@ -342,7 +342,7 @@ export default function MicePage() {
           <div className="rounded-2xl bg-white p-6 ring-1 ring-slate-200 shadow-sm">
             <p className="text-slate-600 text-[15px] leading-6">
               Our support extends beyond the event itself. We provide ongoing assistance, budget
-              reconciliation, and detailed reporting. You’ll receive cost-saving recommendations for
+              reconciliation, and detailed reporting. Youâ€™ll receive cost-saving recommendations for
               future events, ensuring financial control and continuous improvements across your
               program portfolio.
             </p>
@@ -381,14 +381,14 @@ export default function MicePage() {
         </div>
       </section>
 
-      {/* ============ WHY PLUMTRIPS ============ */}
+      {/* ============ WHY Plumtrips ============ */}
       <section className="mx-auto max-w-7xl px-4 pb-12">
         <h3 className="text-center text-2xl md:text-3xl font-extrabold text-slate-900">
-          What Sets PlumTrips MICE Apart?
+          What Sets Plumtrips MICE Apart?
         </h3>
         <div className="mx-auto mt-3 h-1 w-20 rounded-full" style={{ backgroundColor: BRAND_PRIMARY }} />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {WHY_PLUMTRIPS.map((f) => (
+          {WHY_Plumtrips.map((f) => (
             <FeatureCard
               key={f.title}
               title={f.title}
@@ -439,10 +439,10 @@ export default function MicePage() {
                 <path d="M7 7h5v5H9v5H4v-5c0-2.8 1-5 3-5zm10 0h5v5h-3v5h-5v-5c0-2.8 1-5 3-5z" fill={ACCENT} />
               </svg>
               <blockquote className="mt-3 text-slate-800 text-[15px] leading-7">
-                “{t.quote}”
+                â€œ{t.quote}â€
               </blockquote>
               <div className="mt-3 text-sm text-slate-600">
-                — <span className="font-semibold">{t.name}</span>, {t.role}
+                â€” <span className="font-semibold">{t.name}</span>, {t.role}
               </div>
             </div>
           ))}
@@ -471,7 +471,7 @@ export default function MicePage() {
         <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm">
           <h3 className="text-xl font-bold text-slate-900">Request a Proposal</h3>
           <p className="mt-1 text-slate-600 text-sm">
-            Tell us the essentials—we’ll come back with ideas and indicative budgets.
+            Tell us the essentialsâ€”weâ€™ll come back with ideas and indicative budgets.
           </p>
 
           <form
@@ -497,10 +497,10 @@ export default function MicePage() {
             <input className="mice-input" placeholder="Group Size (approx.)" name="groupSize" />
             <input className="mice-input" placeholder="Preferred Dates" name="dates" />
             <input className="mice-input" placeholder="City / Destination" name="destination" />
-            <input className="mice-input md:col-span-2" placeholder="Budget (₹) or range" name="budget" />
+            <input className="mice-input md:col-span-2" placeholder="Budget (â‚¹) or range" name="budget" />
             <textarea
               className="mice-input md:col-span-2"
-              placeholder="Notes (agenda highlights, venue preferences, production ideas)…"
+              placeholder="Notes (agenda highlights, venue preferences, production ideas)â€¦"
               name="notes"
               rows={4}
             />

@@ -1,4 +1,4 @@
-/* ===== Co-located images ===== */
+﻿/* ===== Co-located images ===== */
 const cover                = new URL("./cover-maldives-beaches.jpg", import.meta.url).href;
 const imgOverwater         = new URL("./overwater-villas.jpg", import.meta.url).href;
 const imgSandbank          = new URL("./sandbank-picnic.jpg", import.meta.url).href;
@@ -10,14 +10,14 @@ const imgBeachVilla        = new URL("./beach-pool-villa.jpg", import.meta.url).
 /* ===== Meta ===== */
 export const meta = {
   slug: "the-most-beautiful-beaches-and-resorts-in-the-maldives-your-paradise-vacation",
-  title: "The Most Beautiful Beaches & Resorts In The Maldives — Your Paradise Vacation",
-  excerpt: "Iconic blues, powder sands, and overwater villas — Maldives perfected.",
+  title: "The Most Beautiful Beaches & Resorts In The Maldives â€” Your Paradise Vacation",
+  excerpt: "Iconic blues, powder sands, and overwater villas â€” Maldives perfected.",
   tags: ["Maldives", "Overwater", "Honeymoon"],
   cover,
 };
 
 const H={heroTitle:"text-2xl md:text-4xl font-extrabold text-white drop-shadow",sectionH2:"text-2xl md:text-3xl font-extrabold text-[#00477f]"};
-const Tip=({t}:{t:string})=><div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">💡 PlumTip: {t}</div>;
+const Tip=({t}:{t:string})=><div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">ðŸ’¡ PlumTip: {t}</div>;
 const Shot=({src,alt}:{src:string;alt:string})=><img src={src} alt={alt} className="w-full rounded-2xl object-cover shadow-md" style={{aspectRatio:"16 / 9"}} loading="lazy"/>;
 const Bullets=({items}:{items:string[]})=><ul className="mt-2 list-disc pl-5 text-slate-700">{items.map(x=><li key={x} className="mb-1">{x}</li>)}</ul>;
 function Block({title,img,points}:{title:string;img:string;points:string[]}){return(<section className="mt-10"><h2 className={H.sectionH2}>{title}</h2><div className="mt-4"><Shot src={img} alt={title}/></div><div className="mt-4 rounded-xl bg-white border p-5 shadow-sm"><Bullets items={points}/></div></section>)}
@@ -33,7 +33,7 @@ export default function Post(){
       <Block title="Overwater Spa Rituals" img={imgSpa} points={["Glass-floor treatment rooms","Aromatherapy with sea breeze","Sound bath at sunset"]}/>
       <Block title="Dolphin Sunset Cruise" img={imgSunsetCruise} points={["Pastel skies + playful pods","Photo ops without chasing","Toast to the moment"]}/>
       <Block title="Beach Pool Villas" img={imgBeachVilla} points={["Soft sand at your doorstep","Private pool & palms","Perfect for longer stays"]}/>
-      <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with PlumTrips ✈️</h3><p className="mt-2 text-slate-700">We’ll match the right island, villa type, and season to your vibe.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Maldives</a></div></div>
+      <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Weâ€™ll match the right island, villa type, and season to your vibe.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Maldives</a></div></div>
     </main>
   </article>);
 }

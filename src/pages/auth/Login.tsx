@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/auth/Login.tsx
+﻿// apps/frontend/src/pages/auth/Login.tsx
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -52,7 +52,7 @@ export default function Login() {
         <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-cyan-400/40 to-blue-500/40 blur"></div>
         <div className="relative rounded-3xl bg-white/10 backdrop-blur-xl shadow-2xl p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <img src="/assets/logo.png" alt="PlumTrips" className="h-8 w-auto" />
+            <img src="/assets/logo.png" alt="Plumtrips" className="h-8 w-auto" />
             <h1 className="text-xl font-semibold tracking-wide">Welcome back</h1>
           </div>
 
@@ -83,7 +83,7 @@ export default function Login() {
                   autoComplete="current-password"
                   required
                   minLength={8}
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 />
                 <button
                   type="button"
@@ -101,12 +101,12 @@ export default function Login() {
               disabled={busy}
               className="w-full rounded-2xl bg-[#FFD166] text-[#0b2540] py-2.5 font-semibold tracking-wide hover:opacity-95 disabled:opacity-60 shadow-lg"
             >
-              {busy ? "Signing in…" : "Sign in"}
+              {busy ? "Signing inâ€¦" : "Sign in"}
             </button>
           </form>
 
           <div className="mt-6 text-sm text-slate-200 flex items-center justify-between">
-            <span>Don’t have an account?</span>
+            <span>Donâ€™t have an account?</span>
             <Link to="/auth/register" className="text-cyan-300 hover:underline" state={{ from }}>
               Create one
             </Link>

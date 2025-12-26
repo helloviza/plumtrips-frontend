@@ -1,4 +1,4 @@
-// apps/frontend/src/components/Footer.tsx
+﻿// apps/frontend/src/components/Footer.tsx
 import { Link } from "react-router-dom";
 
 const BG = "#d06549";
@@ -44,7 +44,7 @@ export default function Footer() {
             <div className="flex flex-col items-end gap-3">
               <img
                 src="/assets/logo.png"
-                alt="PlumTrips"
+                alt="Plumtrips"
                 className="h-12 w-auto object-contain"
               />
               <div className="text-base font-semibold">
@@ -58,11 +58,11 @@ export default function Footer() {
               </div>
               <div className="text-sm">
                 <a
-                  href="mailto:hello@plumtrips.com"
+                  href="mailto:hello@Plumtrips.com"
                   className="hover:underline"
                   style={{ color: TEXT }}
                 >
-                  hello@plumtrips.com
+                  hello@Plumtrips.com
                 </a>
               </div>
             </div>
@@ -80,10 +80,10 @@ export default function Footer() {
           >
             <FacebookIcon />
           </Social>
-          <Social href="https://x.com/plumtrips" label="X">
+          <Social href="https://x.com/Plumtrips" label="X">
             <XIcon />
           </Social>
-          <Social href="https://www.instagram.com/plumtrips/" label="Instagram">
+          <Social href="https://www.instagram.com/Plumtrips/" label="Instagram">
             <InstagramIcon />
           </Social>
           <Social
@@ -93,7 +93,7 @@ export default function Footer() {
             <LinkedInIcon />
           </Social>
           <Social
-            href="https://www.youtube.com/@plumtrips.official"
+            href="https://www.youtube.com/@Plumtrips.official"
             label="YouTube"
           >
             <YouTubeIcon />
@@ -105,7 +105,7 @@ export default function Footer() {
 
         {/* Bottom note */}
         <div className="flex items-center justify-between pt-6 text-xs">
-          <p>© {year} — Peachmint Trips and Planners Private Limited</p>
+          <p>Â© {year} â€” Peachmint Trips and Planners Private Limited</p>
         </div>
       </div>
     </footer>

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 
 export default function Hotels() {
   return (
@@ -20,7 +20,7 @@ export default function Hotels() {
             Hotels by Plumtrips
           </h1>
           <p className="text-lg text-gray-700 mb-8">
-            A curated collection of luxurious hotels is on the way. We’re
+            A curated collection of luxurious hotels is on the way. Weâ€™re
             designing an experience where **comfort, elegance, and modern design**
             meet to delight every traveler.
           </p>
@@ -28,19 +28,19 @@ export default function Hotels() {
           {/* Luxury highlights */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
             <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#00477f]">🏨 Elegant Stays</h3>
+              <h3 className="text-xl font-semibold text-[#00477f]">ðŸ¨ Elegant Stays</h3>
               <p className="text-sm text-gray-600 mt-2">
                 Boutique & design-driven hotels for the discerning traveler.
               </p>
             </div>
             <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#d06549]">✨ Modern Comfort</h3>
+              <h3 className="text-xl font-semibold text-[#d06549]">âœ¨ Modern Comfort</h3>
               <p className="text-sm text-gray-600 mt-2">
-                Clean, safe, and seamlessly styled — luxury without compromise.
+                Clean, safe, and seamlessly styled â€” luxury without compromise.
               </p>
             </div>
             <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#00477f]">🌍 Smart Travel</h3>
+              <h3 className="text-xl font-semibold text-[#00477f]">ðŸŒ Smart Travel</h3>
               <p className="text-sm text-gray-600 mt-2">
                 Connected locations with easy access and effortless transfers.
               </p>
@@ -49,7 +49,7 @@ export default function Hotels() {
 
           {/* Footer */}
           <p className="text-gray-500 text-sm">
-            🌟 Coming soon — the <span className="font-bold text-[#00477f]">Plumtrips way</span> 
+            ðŸŒŸ Coming soon â€” the <span className="font-bold text-[#00477f]">Plumtrips way</span> 
             of booking your perfect stay.
           </p>
         </motion.div>

@@ -1,8 +1,8 @@
-// src/pages/engine/HotelsEnginePage.tsx
+﻿// src/pages/engine/HotelsEnginePage.tsx
 import { useLocation } from "react-router-dom";
 import { useMemo } from "react";
 
-const PT_IN_HOTELS = "https://www.plumtrips.in/hotels";
+const PT_IN_HOTELS = "https://www.Plumtrips.in/hotels";
 
 export default function HotelsEnginePage() {
   const location = useLocation();
@@ -27,7 +27,7 @@ export default function HotelsEnginePage() {
           <div className="relative h-[calc(100vh-4rem)] min-h-[640px] w-full">
             <iframe
               src={iframeUrl}
-              title="PlumTrips Hotel Search"
+              title="Plumtrips Hotel Search"
               className="absolute inset-0 h-full w-full border-0"
               loading="lazy"
               sandbox="allow-forms allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
