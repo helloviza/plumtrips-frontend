@@ -117,16 +117,16 @@ export const BLOGS = [
     slug: "10-affordable-trips-you-can-book-through-Plumtrips",
     title: "10 Affordable Trips You Can Book Through Plumtrips",
     excerpt:
-      "From boutique hostels in Budapest to sunset escapes in Lisbon, hereâ€™s your Gen Z-friendly guide to 10 pocket-smart adventures without compromising luxury.",
+      "From boutique hostels in Budapest to sunset escapes in Lisbon, here's your Gen Z-friendly guide to 10 pocket-smart adventures without compromising luxury.",
     tags: ["Gen Z", "Luxury Travel", "Budget Chic"],
     cover: cover_affordable,
   },
   {
     slug: "10-culinary-delights-from-around-the-world-a-journey-for-your-taste-buds",
     title:
-      "10 Culinary Delights From Around The World â€” A Journey For Your Taste Buds",
+      "10 Culinary Delights From Around The World - A Journey For Your Taste Buds",
     excerpt:
-      "From Tokyo ramen counters to Barcelona tapas bars â€” the worldâ€™s tastiest cities, served the Plum way.",
+      "From Tokyo ramen counters to Barcelona tapas bars - the world's tastiest cities, served the Plum way.",
     tags: ["Food Trips", "City Breaks", "Gen Z"],
     cover: cover_culinary,
   },
@@ -134,25 +134,25 @@ export const BLOGS = [
     slug: "10-luxurious-vacation-destinations-you-can-find-on-Plumtrips",
     title: "10 Luxurious Vacation Destinations You Can Find On Plumtrips",
     excerpt:
-      "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service â€” hereâ€™s the Plumrips shortlist for your next flex.",
+      "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service - here's the Plumrips shortlist for your next flex.",
     tags: ["Luxury", "Honeymoon", "Bucket List"],
     cover: cover_luxury,
   },
   {
     slug: "10-short-flights-from-germany-to-paradise-book-with-Plumtrips",
     title:
-      "10 Short Flights From Germany To Paradise â€” Book With Plumtrips",
+      "10 Short Flights From Germany To Paradise - Book With Plumtrips",
     excerpt:
-      "Weekend escapes, sunny coasts, island bliss â€” 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
+      "Weekend escapes, sunny coasts, island bliss - 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
     tags: ["Weekend Getaways", "Island Vibes", "Europe"],
     cover: cover_germany_paradise,
   },
   {
     slug: "crystal-clear-waters-dream-destinations-around-the-world-not-just-in-the-maldives",
     title:
-      "Crystal Clear Waters: Dream Destinations Around The World â€” Not Just In The Maldives",
+      "Crystal Clear Waters: Dream Destinations Around The World - Not Just In The Maldives",
     excerpt:
-      "From Bora Bora to Palawan, hereâ€™s your handpicked edit of the clearest waters on earth â€” curated by Plumtrips.",
+      "From Bora Bora to Palawan, here's your handpicked edit of the clearest waters on earth - curated by Plumtrips.",
     tags: ["Beach Vibes", "Luxury Escapes", "Bucket List"],
     cover: cover_crystal,
   },
@@ -161,16 +161,16 @@ export const BLOGS = [
   {
     slug: "flamingos-up-close-in-paradise-unforgettable-travel-experiences",
     title:
-      "Flamingos Up Close In Paradise â€” Unforgettable Travel Experiences",
+      "Flamingos Up Close In Paradise - Unforgettable Travel Experiences",
     excerpt:
-      "Candy-pink lagoons and mirror-like shallows â€” the chic way to meet flamingos up close.",
+      "Candy-pink lagoons and mirror-like shallows - the chic way to meet flamingos up close.",
     tags: ["Wildlife", "Photography", "Island Vibes"],
     cover: cover_flamingos,
   },
   {
     slug: "hidden-gem-kos-greece-a-short-flight-to-pure-relaxation-with-swim-up-pools",
     title:
-      "Hidden Gem Kos, Greece â€” A Short Flight To Pure Relaxation (With Swim-Up Pools)",
+      "Hidden Gem Kos, Greece - A Short Flight To Pure Relaxation (With Swim-Up Pools)",
     excerpt:
       "Kos keeps it quiet: white lanes, turquoise coves, and swim-up suites that whisper luxury.",
     tags: ["Greece", "Short Flights", "Pool Suites"],
@@ -179,43 +179,43 @@ export const BLOGS = [
   {
     slug: "hidden-gems-resorts-surrounded-by-breathtaking-nature-cuisine-and-relaxation",
     title:
-      "Hidden Gems â€” Resorts Surrounded By Breathtaking Nature, Cuisine & Relaxation",
+      "Hidden Gems - Resorts Surrounded By Breathtaking Nature, Cuisine & Relaxation",
     excerpt:
-      "Forest villas, cliffside spas, and farm-to-fork dinners â€” true hidden-gem energy.",
+      "Forest villas, cliffside spas, and farm-to-fork dinners - true hidden-gem energy.",
     tags: ["Hidden Gems", "Nature", "Wellness"],
     cover: cover_hiddenresorts,
   },
   {
     slug: "magical-holiday-destinations-that-are-still-undiscovered-hidden-gems-with-Plumtrips",
     title:
-      "Magical Holiday Destinations That Are Still Undiscovered â€” Hidden Gems With Plumtrips",
+      "Magical Holiday Destinations That Are Still Undiscovered - Hidden Gems With Plumtrips",
     excerpt:
-      "Under-the-radar shores and heritage towns â€” go now, before everyone else.",
+      "Under-the-radar shores and heritage towns - go now, before everyone else.",
     tags: ["Undiscovered", "Islands", "Culture"],
     cover: cover_undiscovered,
   },
   {
     slug: "pure-relaxation-the-best-wellness-destinations-in-germany-for-a-relaxing-weekend",
     title:
-      "Pure Relaxation â€” The Best Wellness Destinations In Germany For A Relaxing Weekend",
+      "Pure Relaxation - The Best Wellness Destinations In Germany For A Relaxing Weekend",
     excerpt:
-      "Thermal baths, forest saunas, and design hotels â€” reset mode: ON.",
+      "Thermal baths, forest saunas, and design hotels - reset mode: ON.",
     tags: ["Germany", "Wellness", "Weekend"],
     cover: cover_wellness_de,
   },
   {
     slug: "swimming-in-paradise-swimming-with-pigs-in-the-crystal-clear-waters-of-the-bahamas",
     title:
-      "Swimming In Paradise â€” Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
+      "Swimming In Paradise - Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
     excerpt:
-      "Emerald shallows, friendly pigs, and a boat day youâ€™ll never forget.",
+      "Emerald shallows, friendly pigs, and a boat day you'll never forget.",
     tags: ["Bahamas", "Unique", "Boat Day"],
     cover: cover_bahamas_pigs,
   },
   {
     slug: "the-best-animal-friendly-trips-breathtaking-nature-and-unforgettable-activities",
     title:
-      "The Best Animal-Friendly Trips â€” Breathtaking Nature & Unforgettable Activities",
+      "The Best Animal-Friendly Trips - Breathtaking Nature & Unforgettable Activities",
     excerpt:
       "Ethical wildlife encounters with expert guides and low-impact stays.",
     tags: ["Wildlife", "Ethical", "Outdoors"],
@@ -223,88 +223,88 @@ export const BLOGS = [
   },
   {
     slug: "the-best-safaris-to-remember-for-a-lifetime",
-    title: "The Best Safaris â€” To Remember For A Lifetime",
+    title: "The Best Safaris - To Remember For A Lifetime",
     excerpt:
-      "Dawn drives, sundowners, and stargazer lodges â€” lifetime safari ideas.",
+      "Dawn drives, sundowners, and stargazer lodges - lifetime safari ideas.",
     tags: ["Safari", "Africa", "Bucket List"],
     cover: cover_safaris,
   },
   {
     slug: "the-most-beautiful-beaches-and-resorts-in-the-maldives-your-paradise-vacation",
     title:
-      "The Most Beautiful Beaches & Resorts In The Maldives â€” Your Paradise Vacation",
+      "The Most Beautiful Beaches & Resorts In The Maldives - Your Paradise Vacation",
     excerpt:
-      "Iconic blues, powder sands, and overwater villas â€” Maldives perfected.",
+      "Iconic blues, powder sands, and overwater villas - Maldives perfected.",
     tags: ["Maldives", "Overwater", "Honeymoon"],
     cover: cover_maldives_best,
   },
   {
     slug: "the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips",
     title:
-      "The Most Beautiful Beaches In The World â€” Your Dream Vacation With Plumtrips",
+      "The Most Beautiful Beaches In The World - Your Dream Vacation With Plumtrips",
     excerpt:
-      "From Caribbean shallows to Greek coves â€” the worldâ€™s prettiest sands, curated.",
+      "From Caribbean shallows to Greek coves - the world's prettiest sands, curated.",
     tags: ["Beaches", "Bucket List", "Islands"],
     cover: cover_world_beaches,
   },
   {
     slug: "the-most-beautiful-places-in-europe-discover-the-best-travel-destinations-on-Plumtrips",
     title:
-      "The Most Beautiful Places In Europe â€” Discover The Best Travel Destinations On Plumtrips",
+      "The Most Beautiful Places In Europe - Discover The Best Travel Destinations On Plumtrips",
     excerpt:
-      "Clifftop villages, alpine mirrors, storybook streets â€” Europeâ€™s best, distilled.",
+      "Clifftop villages, alpine mirrors, storybook streets - Europe's best, distilled.",
     tags: ["Europe", "City+Nature", "Inspo"],
     cover: cover_europe_places,
   },
   {
     slug: "the-most-exotic-countries-in-the-world-an-adventure-beyond-the-familiar",
     title:
-      "The Most Exotic Countries In The World â€” An Adventure Beyond The Familiar",
+      "The Most Exotic Countries In The World - An Adventure Beyond The Familiar",
     excerpt:
-      "Vivid markets, jungle hideaways, and coastlines youâ€™ve only seen in dreams.",
+      "Vivid markets, jungle hideaways, and coastlines you've only seen in dreams.",
     tags: ["Exotic", "Culture", "Adventure"],
     cover: cover_exotic,
   },
   {
     slug: "top-10-vacation-spots-for-autumn-holidays-discover-the-best-destinations-on-Plumtrips",
     title:
-      "Top 10 Vacation Spots For Autumn Holidays â€” Discover The Best Destinations On Plumtrips",
+      "Top 10 Vacation Spots For Autumn Holidays - Discover The Best Destinations On Plumtrips",
     excerpt:
-      "Fall color, warm seas, truffle nights â€” the sweet spot of the year.",
+      "Fall color, warm seas, truffle nights - the sweet spot of the year.",
     tags: ["Autumn", "Seasonal", "Short Breaks"],
     cover: cover_autumn,
   },
   {
     slug: "travel-to-dubai-top-10-hotels-and-activities",
-    title: "Travel To Dubai â€” Top 10 Hotels & Activities",
+    title: "Travel To Dubai - Top 10 Hotels & Activities",
     excerpt:
-      "Skyline suites, desert silence, and yacht afternoons â€” Dubai, done right.",
+      "Skyline suites, desert silence, and yacht afternoons - Dubai, done right.",
     tags: ["Dubai", "City Luxe", "Desert"],
     cover: cover_dubai,
   },
   {
     slug: "traveling-to-bali-top-10-hotels-and-activities",
-    title: "Traveling To Bali â€” Top 10 Hotels & Activities",
+    title: "Traveling To Bali - Top 10 Hotels & Activities",
     excerpt:
-      "Jungle pools, temple dawns, surf sunsets â€” Bali is a mood you can live in.",
+      "Jungle pools, temple dawns, surf sunsets - Bali is a mood you can live in.",
     tags: ["Bali", "Wellness", "Nature"],
     cover: cover_bali,
   },
   {
     slug: "vacation-in-nature-experience-wildlife-and-culinary-delights",
     title:
-      "Vacation In Nature â€” Experience Wildlife & Culinary Delights",
+      "Vacation In Nature - Experience Wildlife & Culinary Delights",
     excerpt:
-      "Forest lodges, chef gardens, and quiet trails â€” natureâ€™s luxury edit.",
+      "Forest lodges, chef gardens, and quiet trails - nature's luxury edit.",
     tags: ["Nature", "Food", "Slow Travel"],
     cover: cover_nature_food,
   },
   {
     slug: "winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips",
     title:
-      "Winterurlaubsorte â€” Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
+      "Winterurlaubsorte - Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
     excerpt:
-      "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme â€” dein perfekter Wintertrip.",
+      "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme - dein perfekter Wintertrip.",
     tags: ["Winter", "SonneOderSchnee", "DE"],
     cover: cover_winter_de,
   },

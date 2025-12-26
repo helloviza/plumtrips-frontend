@@ -61,7 +61,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "bali",
     title: "Bali Packages",
-    subtitle: "Kuta â€¢ Ubud â€¢ Seminyak",
+    subtitle: "Kuta - Ubud - Seminyak",
     price: 29999,
     scope: "International",
     trending: true,
@@ -124,7 +124,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "paris",
     title: "Paris Getaway",
-    subtitle: "Louvre â€¢ Seine â€¢ Montmartre",
+    subtitle: "Louvre - Seine - Montmartre",
     price: 118999,
     scope: "International",
     image:
@@ -134,7 +134,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "newzealand",
     title: "New Zealand",
-    subtitle: "Auckland â€¢ Rotorua â€¢ Glacier",
+    subtitle: "Auckland - Rotorua - Glacier",
     price: 94699,
     scope: "International",
     image:
@@ -144,7 +144,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "tokyo",
     title: "Japan Highlights",
-    subtitle: "Tokyo â€¢ Kyoto â€¢ Osaka",
+    subtitle: "Tokyo - Kyoto - Osaka",
     price: 168599,
     scope: "International",
     image:
@@ -175,7 +175,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "kerala",
     title: "Kerala",
-    subtitle: "Backwaters â€¢ Munnar â€¢ Alleppey",
+    subtitle: "Backwaters - Munnar - Alleppey",
     price: 15999,
     scope: "Domestic",
     image:
@@ -185,7 +185,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "kashmir",
     title: "Kashmir",
-    subtitle: "Gulmarg â€¢ Pahalgam â€¢ Dal Lake",
+    subtitle: "Gulmarg - Pahalgam - Dal Lake",
     price: 22999,
     scope: "Domestic",
     trending: true,
@@ -196,7 +196,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "andaman",
     title: "Andaman",
-    subtitle: "Havelock â€¢ Radhanagar",
+    subtitle: "Havelock - Radhanagar",
     price: 32999,
     scope: "Domestic",
     image:
@@ -206,7 +206,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "ladakh",
     title: "Ladakh",
-    subtitle: "Nubra â€¢ Pangong â€¢ Monasteries",
+    subtitle: "Nubra - Pangong - Monasteries",
     price: 34999,
     scope: "Domestic",
     image:
@@ -243,7 +243,7 @@ const CATALOG: PackageCard[] = [
   {
     id: "rishikesh",
     title: "Rishikesh",
-    subtitle: "Ganga â€¢ Yoga â€¢ Adventure",
+    subtitle: "Ganga - Yoga - Adventure",
     price: 10999,
     scope: "Domestic",
     image:
@@ -269,14 +269,14 @@ const BUDGET_RANGES: Record<
 > = {
   Domestic: [
     { label: "Under â‚¹15k", min: 0, max: 15000 },
-    { label: "â‚¹15kâ€“â‚¹30k", min: 15000, max: 30000 },
-    { label: "â‚¹30kâ€“â‚¹50k", min: 30000, max: 50000 },
+    { label: "â‚¹15k-â‚¹30k", min: 15000, max: 30000 },
+    { label: "â‚¹30k-â‚¹50k", min: 30000, max: 50000 },
     { label: "â‚¹50k+", min: 50000, max: Number.MAX_SAFE_INTEGER },
   ],
   International: [
     { label: "Under â‚¹40k", min: 0, max: 40000 },
-    { label: "â‚¹40kâ€“â‚¹80k", min: 40000, max: 80000 },
-    { label: "â‚¹80kâ€“â‚¹1.5L", min: 80000, max: 150000 },
+    { label: "â‚¹40k-â‚¹80k", min: 40000, max: 80000 },
+    { label: "â‚¹80k-â‚¹1.5L", min: 80000, max: 150000 },
     { label: "â‚¹1.5L+", min: 150000, max: Number.MAX_SAFE_INTEGER },
   ],
 };
@@ -449,7 +449,7 @@ export default function HolidaysPage() {
 
           <div className="mx-auto mt-5 h-1 w-24 rounded-full bg-white/70" />
           <p className="mx-auto mt-4 max-w-3xl text-center text-[#ffffff]">
-            Curated escapes, crafted the Plumtrips way â€” private transfers, hand-picked hotels, thoughtful dining, and experiences youâ€™ll talk about for years.
+            Curated escapes, crafted the Plumtrips way - private transfers, hand-picked hotels, thoughtful dining, and experiences you'll talk about for years.
           </p>
 
           {/* Category Chips */}

@@ -83,7 +83,7 @@ export default function Login() {
                   autoComplete="current-password"
                   required
                   minLength={8}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="--------"
                 />
                 <button
                   type="button"
@@ -106,7 +106,7 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-sm text-slate-200 flex items-center justify-between">
-            <span>Donâ€™t have an account?</span>
+            <span>Don't have an account?</span>
             <Link to="/auth/register" className="text-cyan-300 hover:underline" state={{ from }}>
               Create one
             </Link>

@@ -46,7 +46,7 @@ function normalizeFilters(f: Filters): Filters {
   };
 }
 
-/* ----------------------------- TBO â†’ Flight map ----------------------------- */
+/* ----------------------------- TBO → Flight map ----------------------------- */
 function mapTBOToFlight(obj: any, idx: number): Flight {
   const slices0 = obj?.Segments;
   const legs: any[] = Array.isArray(slices0?.[0]) ? slices0[0] : Array.isArray(slices0) ? slices0 : [];
@@ -88,8 +88,8 @@ function mapTBOToFlight(obj: any, idx: number): Flight {
 
   return {
     id: `${obj?.ResultIndex ?? obj?.FlightInfoIndex ?? idx}`,
-    from: origin?.AirportCode ?? origin?.CityCode ?? "â€”",
-    to: dest?.AirportCode ?? dest?.CityCode ?? "â€”",
+    from: origin?.AirportCode ?? origin?.CityCode ?? "-",
+    to: dest?.AirportCode ?? dest?.CityCode ?? "-",
     departTime: hhmm(dep),
     arriveTime: hhmm(arr),
     durationMins,
@@ -220,7 +220,7 @@ export default function Flights() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, filtersKey]);
 
-  /* Select â†’ persist then navigate to /flight with query + state */
+  /* Select → persist then navigate to /flight with query + state */
   const handleSelect = (f: Flight) => {
     try {
       sessionStorage.setItem(
@@ -245,13 +245,13 @@ export default function Flights() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold">Showing {results.length}</span>
           <span className="text-blue-800/80">of {source.length} results</span>
-          <span className="mx-1 text-blue-800/50">â€¢</span>
+          <span className="mx-1 text-blue-800/50">-</span>
           <span className="font-medium">
-            {from || "â€”"} â†’ {to || "â€”"} {date ? `on ${date}` : ""}
+            {from || "-"} → {to || "-"} {date ? `on ${date}` : ""}
           </span>
-          <span className="mx-1 text-blue-800/50">â€¢</span>
+          <span className="mx-1 text-blue-800/50">-</span>
           <span className="text-blue-800/80">
-            {adults} adult{Number(adults) > 1 ? "s" : ""} â€¢ {cabin}
+            {adults} adult{Number(adults) > 1 ? "s" : ""} - {cabin}
           </span>
           <span className="flex-1" />
           <Link to="/" className="text-blue-700 underline underline-offset-4">

@@ -68,11 +68,11 @@ export default function CruisesPage() {
     },
     {
       q: "Can I cancel or change my booking?",
-      a: "Yesâ€”each cruise line has its own policy. We surface the terms during checkout, and our team can help with flexible fares when you prefer that safety.",
+      a: "Yes-each cruise line has its own policy. We surface the terms during checkout, and our team can help with flexible fares when you prefer that safety.",
     },
     {
       q: "Do I need a visa for my cruise?",
-      a: "Some itineraries require visas or eTAs. Use our Visa section or ask conciergeâ€”weâ€™ll check requirements for every port of call.",
+      a: "Some itineraries require visas or eTAs. Use our Visa section or ask concierge-we'll check requirements for every port of call.",
     },
     {
       q: "Can you arrange flights & transfers?",
@@ -110,7 +110,7 @@ export default function CruisesPage() {
                 Your Cruise, Your Way.
               </h1>
               <p className="mt-2 max-w-2xl text-white/90">
-                Luxe ships, curated ports, and stress-free planningâ€”handpicked by Plumtrips.
+                Luxe ships, curated ports, and stress-free planning-handpicked by Plumtrips.
               </p>
             </div>
           </div>
@@ -152,13 +152,13 @@ export default function CruisesPage() {
                   label="Travel dates"
                   value={travelDates}
                   onChange={setTravelDates}
-                  placeholder="Oct 12â€“19"
+                  placeholder="Oct 12-19"
                 />
                 <Select
                   label="Duration"
                   value={duration}
                   onChange={setDuration}
-                  options={["Select", "3â€“4 nights", "5â€“7 nights", "8â€“10 nights", "10+ nights"]}
+                  options={["Select", "3-4 nights", "5-7 nights", "8-10 nights", "10+ nights"]}
                 />
                 <Input label="Travellers" value={travellers} onChange={setTravellers} />
                 <div className="flex items-end">
@@ -198,7 +198,7 @@ export default function CruisesPage() {
                     Advanced search
                   </button>
                 </div>
-                <div className="text-slate-500">Best-price protection â€¢ Flexible fares â€¢ Concierge assist</div>
+                <div className="text-slate-500">Best-price protection - Flexible fares - Concierge assist</div>
               </div>
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function CruisesPage() {
 
       {/* DESTINATIONS */}
       <section className="mx-auto max-w-6xl px-4">
-        <SectionTitle title="Top cruise destinations" subtitle="A quick list if youâ€™re cruising for the first time." />
+        <SectionTitle title="Top cruise destinations" subtitle="A quick list if you're cruising for the first time." />
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {destinations.map((d) => (
             <DestinationCard key={d.title} img={d.img} title={d.title} count={d.count} />
@@ -257,7 +257,7 @@ export default function CruisesPage() {
                   <Avatar />
                   <div>
                     <div className="font-semibold text-slate-900">Ana Paula Chagia</div>
-                    <div className="text-xs text-slate-500">India â€¢ a month ago</div>
+                    <div className="text-xs text-slate-500">India - a month ago</div>
                   </div>
                 </div>
                 <div className="text-amber-500">
@@ -270,7 +270,7 @@ export default function CruisesPage() {
               </div>
               <p className="mt-3 text-slate-700">
                 Grand experienceâ€¦ MSC Grandiosa is a fantastic ship. The Plumtrips concierge was very professional and
-                thoroughâ€”booked a dreamy suite and secured shore excursions we loved.
+                thorough-booked a dreamy suite and secured shore excursions we loved.
               </p>
 
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -335,7 +335,7 @@ export default function CruisesPage() {
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <DiffCard icon={<Shield />} title="Best price guarantee" text="We ensure you get the best deal on your cruise, offering unbeatable prices that you won't find anywhere else." />
           <DiffCard icon={<Lightning />} title="Live inventory & confirmations" text="Book your entire cruise journey online with a seamless flow and secure confirmations." />
-          <DiffCard icon={<Plane />} title="Cruise + Flights + Hotels + Visa" text="We cover every travel needâ€”routes, suites, dining, toursâ€”so your trip feels silky smooth." />
+          <DiffCard icon={<Plane />} title="Cruise + Flights + Hotels + Visa" text="We cover every travel need-routes, suites, dining, tours-so your trip feels silky smooth." />
           <DiffCard icon={<Refund />} title="Up to 100% refund" text="Flexible policies allow changes up to 75 days before sail (varies by cruise line)." />
         </div>
       </section>
@@ -375,7 +375,7 @@ export default function CruisesPage() {
   );
 }
 
-/* â€”â€”â€” Reusable bits â€”â€”â€” */
+/* --- Reusable bits --- */
 function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="text-center">

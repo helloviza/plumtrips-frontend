@@ -10,8 +10,8 @@ const imgBeachVilla        = new URL("./beach-pool-villa.jpg", import.meta.url).
 /* ===== Meta ===== */
 export const meta = {
   slug: "the-most-beautiful-beaches-and-resorts-in-the-maldives-your-paradise-vacation",
-  title: "The Most Beautiful Beaches & Resorts In The Maldives â€” Your Paradise Vacation",
-  excerpt: "Iconic blues, powder sands, and overwater villas â€” Maldives perfected.",
+  title: "The Most Beautiful Beaches & Resorts In The Maldives - Your Paradise Vacation",
+  excerpt: "Iconic blues, powder sands, and overwater villas - Maldives perfected.",
   tags: ["Maldives", "Overwater", "Honeymoon"],
   cover,
 };
@@ -33,7 +33,7 @@ export default function Post(){
       <Block title="Overwater Spa Rituals" img={imgSpa} points={["Glass-floor treatment rooms","Aromatherapy with sea breeze","Sound bath at sunset"]}/>
       <Block title="Dolphin Sunset Cruise" img={imgSunsetCruise} points={["Pastel skies + playful pods","Photo ops without chasing","Toast to the moment"]}/>
       <Block title="Beach Pool Villas" img={imgBeachVilla} points={["Soft sand at your doorstep","Private pool & palms","Perfect for longer stays"]}/>
-      <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Weâ€™ll match the right island, villa type, and season to your vibe.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Maldives</a></div></div>
+      <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">We'll match the right island, villa type, and season to your vibe.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Maldives</a></div></div>
     </main>
   </article>);
 }

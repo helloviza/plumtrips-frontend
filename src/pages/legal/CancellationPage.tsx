@@ -38,7 +38,7 @@ export default function CancellationPage() {
           are non-refundable once service has commenced.
         </li>
         <li>
-          <strong>Refund Timeline:</strong> Typically 7â€“21 business days after
+          <strong>Refund Timeline:</strong> Typically 7-21 business days after
           supplier confirmation; banks may take extra time to post credits.
         </li>
         <li>

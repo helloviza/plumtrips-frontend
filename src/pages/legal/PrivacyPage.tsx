@@ -33,7 +33,7 @@ export default function PrivacyPage() {
 
       <p>
         <strong>{BRAND}</strong> is a brand and website operated by{" "}
-        <strong>{LEGAL_ENTITY}</strong> (â€œPeachmint,â€ â€œwe,â€ â€œus,â€ or â€œourâ€). This
+        <strong>{LEGAL_ENTITY}</strong> ("Peachmint," "we," "us," or "our"). This
         Privacy Policy explains how we collect, use, disclose, and safeguard your
         information when you access or use our website, mobile experiences, and
         related travel services, including flights, hotels, holidays, visa
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
       <p>
         We aim to handle personal data responsibly and in accordance with
         applicable laws, including the <strong>Digital Personal Data Protection Act, 2023</strong>{" "}
-        (â€œ<strong>DPDP Act</strong>â€), the <strong>Information Technology Act, 2000</strong>, and
+        ("<strong>DPDP Act</strong>"), the <strong>Information Technology Act, 2000</strong>, and
         applicable rules (including the IT Rules, 2021), and other applicable
         data protection laws (including GDPR where relevant).
       </p>
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>KYC &amp; Visa Documents:</strong> passport details, photos,
-          address proofâ€”only when you choose to submit them for visa/booking
+          address proof-only when you choose to submit them for visa/booking
           assistance or where required by a service provider or law.
         </li>
         <li>
@@ -188,7 +188,7 @@ export default function PrivacyPage() {
       </h2>
       <p>
         We may update this Policy from time to time. Material changes will be
-        highlighted on this page with a new â€œLast updatedâ€ date.
+        highlighted on this page with a new "Last updated" date.
       </p>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>12. Grievance Officer</h2>
@@ -199,7 +199,7 @@ export default function PrivacyPage() {
       <p style={{ marginTop: 0 }}>
         <strong>Grievance Officer</strong>
         <br />
-        <strong>{LEGAL_ENTITY}</strong> (operating the brand â€œPlumtrips.comâ€)
+        <strong>{LEGAL_ENTITY}</strong> (operating the brand "Plumtrips.com")
         <br />
         <strong>Registered Address:</strong> {REGISTERED_ADDRESS}
         <br />

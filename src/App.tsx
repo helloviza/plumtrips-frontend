@@ -52,7 +52,7 @@ function BookPlaceholder() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <div className="rounded-lg border bg-white p-6">
-        <h1 className="mb-2 text-xl font-bold">Booking â€“ Placeholder</h1>
+        <h1 className="mb-2 text-xl font-bold">Booking - Placeholder</h1>
         <p className="text-zinc-600">
           This is a placeholder for <code>/flights/book</code>.
         </p>

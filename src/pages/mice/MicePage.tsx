@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 
 /**
- * Plumtrips â€” MICE Page
+ * Plumtrips - MICE Page
  * - Translucent hero gradient + background image
  * - Event-type chips
  * - Services, Event Management, Value chips
@@ -25,7 +25,7 @@ const EVENT_TYPES: EventType[] = [
 ];
 
 const CORE_SERVICES = [
-  "Determine your groupâ€™s requirements",
+  "Determine your group's requirements",
   "Venue & destination curation to fit your event",
   "Negotiate best room rates and airfares",
   "Travel & ground arrangements",
@@ -53,7 +53,7 @@ const WHY_Plumtrips = [
   {
     title: "Proven Delivery",
     text:
-      "Track record across MICE programsâ€”board meetings to 2,000-delegate conferences.",
+      "Track record across MICE programs-board meetings to 2,000-delegate conferences.",
   },
   {
     title: "Negotiation Power",
@@ -100,8 +100,8 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "From visas to venue designâ€”the Plumtrips team anticipated every detail. Best incentive trip yet.",
-    name: "L. Dâ€™Souza",
+      "From visas to venue design-the Plumtrips team anticipated every detail. Best incentive trip yet.",
+    name: "L. D'Souza",
     role: "Sales Director, FMCG",
   },
 ];
@@ -201,7 +201,7 @@ export default function MicePage() {
 
   const heroSubtitle = useMemo(
     () =>
-      "MICE (Meetings, Incentives, Conferences & Exhibitions) with concierge precision â€” from concept to applause.",
+      "MICE (Meetings, Incentives, Conferences & Exhibitions) with concierge precision - from concept to applause.",
     []
   );
 
@@ -256,7 +256,7 @@ export default function MicePage() {
               {type}: end-to-end expertise
             </h2>
             <p className="mt-3 text-slate-600 text-[15px] leading-6">
-              Whether youâ€™re planning a leadership retreat, a global sales kick-off, or an expo
+              Whether you're planning a leadership retreat, a global sales kick-off, or an expo
               floor, our specialists combine destination knowledge, rate negotiation, and on-site
               mastery to deliver a premium, low-friction experience for your team and guests.
             </p>
@@ -342,7 +342,7 @@ export default function MicePage() {
           <div className="rounded-2xl bg-white p-6 ring-1 ring-slate-200 shadow-sm">
             <p className="text-slate-600 text-[15px] leading-6">
               Our support extends beyond the event itself. We provide ongoing assistance, budget
-              reconciliation, and detailed reporting. Youâ€™ll receive cost-saving recommendations for
+              reconciliation, and detailed reporting. You'll receive cost-saving recommendations for
               future events, ensuring financial control and continuous improvements across your
               program portfolio.
             </p>
@@ -439,10 +439,10 @@ export default function MicePage() {
                 <path d="M7 7h5v5H9v5H4v-5c0-2.8 1-5 3-5zm10 0h5v5h-3v5h-5v-5c0-2.8 1-5 3-5z" fill={ACCENT} />
               </svg>
               <blockquote className="mt-3 text-slate-800 text-[15px] leading-7">
-                â€œ{t.quote}â€
+                "{t.quote}"
               </blockquote>
               <div className="mt-3 text-sm text-slate-600">
-                â€” <span className="font-semibold">{t.name}</span>, {t.role}
+                - <span className="font-semibold">{t.name}</span>, {t.role}
               </div>
             </div>
           ))}
@@ -471,7 +471,7 @@ export default function MicePage() {
         <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm">
           <h3 className="text-xl font-bold text-slate-900">Request a Proposal</h3>
           <p className="mt-1 text-slate-600 text-sm">
-            Tell us the essentialsâ€”weâ€™ll come back with ideas and indicative budgets.
+            Tell us the essentials-we'll come back with ideas and indicative budgets.
           </p>
 
           <form

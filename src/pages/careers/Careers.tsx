@@ -39,7 +39,7 @@ const ROLES: Job[] = [
     type: "Full-time",
     tags: ["React", "TypeScript", "Tailwind", "Web Perf", "Design Systems"],
     description:
-      "Craft high-performance, elegant UIs for Plumtrips & HelloViza. Youâ€™ll sweat details, accessibility, and speed.",
+      "Craft high-performance, elegant UIs for Plumtrips & HelloViza. You'll sweat details, accessibility, and speed.",
     about:
       "Work closely with Design & Product to deliver refined, scalable interfaces that feel inevitable.",
     responsibilities: [
@@ -78,7 +78,7 @@ const ROLES: Job[] = [
     type: "Full-time",
     tags: ["UI/UX", "Prototyping", "Design Systems"],
     description:
-      "Define the visual language of modern luxury travelâ€”from polished flows to subtle micro-interactions.",
+      "Define the visual language of modern luxury travel-from polished flows to subtle micro-interactions.",
   },
   {
     id: "concierge-luxe",
@@ -108,7 +108,7 @@ const ROLES: Job[] = [
     type: "Full-time",
     tags: ["Partnerships", "Funnels", "Brand"],
     description:
-      "Scale Plumtrips with tasteâ€”build partnerships, campaigns, and brand moments that resonate.",
+      "Scale Plumtrips with taste-build partnerships, campaigns, and brand moments that resonate.",
   },
 ];
 
@@ -191,7 +191,7 @@ function ApplyModal({
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5">
           <div className="border-b p-6">
-            <Kicker>Apply â€” {job.team}</Kicker>
+            <Kicker>Apply - {job.team}</Kicker>
             <h3 className="mt-1 text-2xl font-extrabold" style={{ color: BRAND }}>
               {job.title}
             </h3>
@@ -214,7 +214,7 @@ function ApplyModal({
                 setOk(true);
                 form.reset();
               } catch {
-                setErr("We couldnâ€™t reach the server. Please email your CV or ping us on WhatsApp.");
+                setErr("We couldn't reach the server. Please email your CV or ping us on WhatsApp.");
               } finally {
                 setSubmitting(false);
               }
@@ -269,12 +269,12 @@ function ApplyModal({
 
             {ok && (
               <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700">
-                Thank you! Weâ€™ve received your application. Weâ€™ll respond within 3â€“5 business days.
+                Thank you! We've received your application. We'll respond within 3-5 business days.
               </div>
             )}
             {err && (
               <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
-                {err} â€”{" "}
+                {err} -{" "}
                 <a className="underline" href={`mailto:${SUPPORT_EMAIL}?subject=Career Application: ${encodeURIComponent(job.title)}`}>
                   Email {SUPPORT_EMAIL}
                 </a>{" "}
@@ -317,7 +317,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 /* ================= Page ================= */
 export default function Careers() {
   useEffect(() => {
-    document.title = "Careers â€” Plumtrips";
+    document.title = "Careers - Plumtrips";
   }, []);
 
   const [query, setQuery] = useState("");
@@ -384,12 +384,12 @@ export default function Careers() {
         <div className="absolute inset-x-0 top-0 h-[2px] opacity-80" style={{ background: `linear-gradient(90deg, ${ACCENT}, ${BRAND})` }} />
         <div className="relative mx-auto max-w-7xl px-6 pb-16 pt-28">
           <div className="mx-auto max-w-3xl text-center">
-            <Kicker>Weâ€™re hiring across multiple teams</Kicker>
+            <Kicker>We're hiring across multiple teams</Kicker>
             <h1 className="mt-3 text-4xl font-extrabold md:text-6xl" style={{ color: BRAND }}>
               Build the future of <span style={{ color: ACCENT }}>luxury travel</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-              Elegance engineered. Join a team where craft, speed and hospitality meetâ€”across travel, design and technology.
+              Elegance engineered. Join a team where craft, speed and hospitality meet-across travel, design and technology.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <a
@@ -414,7 +414,7 @@ export default function Careers() {
           {/* little stat bar */}
           <div className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 rounded-2xl border bg-white/80 p-4 text-sm shadow-sm backdrop-blur md:grid-cols-4" style={{ borderColor: "#eef2f7" }}>
             {[
-              { k: "Offices", v: "Mumbai â€¢ Delhi" },
+              { k: "Offices", v: "Mumbai - Delhi" },
               { k: "Team", v: "Growing fast" },
               { k: "Work style", v: "Remote-friendly" },
               { k: "Customers", v: "HNW & global travelers" },
@@ -435,16 +435,16 @@ export default function Careers() {
         <SectionHeader
           kicker="Why Plumtrips"
           title="Where high standards meet warm hospitality"
-          sub="We design products and experiences weâ€™d be proud to use with our own families. Youâ€™ll ship with taste, and be supported by people who care."
+          sub="We design products and experiences we'd be proud to use with our own families. You'll ship with taste, and be supported by people who care."
         />
         <div className="grid gap-6 md:grid-cols-3">
           {[
             { t: "Ownership & Pace", d: "Work with autonomy. Ship fast. No dead weight." },
-            { t: "Craft & Taste", d: "We sweat the detailsâ€”from micro-interactions to white-glove service." },
+            { t: "Craft & Taste", d: "We sweat the details-from micro-interactions to white-glove service." },
             { t: "Top-tier Tools", d: "React + TypeScript + Tailwind, modern backend, crisp design systems." },
             { t: "Great People", d: "Low-ego, high-bar teammates who obsess over the customer." },
             { t: "Benefits", d: "Competitive compensation, flexibility, and travel perks." },
-            { t: "Impact", d: "Your work goes live in daysâ€”not quarters." },
+            { t: "Impact", d: "Your work goes live in days-not quarters." },
           ].map((p) => (
             <div key={p.t} className="rounded-2xl border bg-white/80 p-6 shadow-sm backdrop-blur-sm transition hover:shadow-md" style={{ borderColor: "#eef2f7" }}>
               <div className="flex items-start gap-3">
@@ -642,12 +642,12 @@ export default function Careers() {
         <SectionHeader
           kicker="Our Values"
           title="Luxury is a standard, not a price point"
-          sub="We aim for products that feel inevitableâ€”clear, fast, and quietly beautiful."
+          sub="We aim for products that feel inevitable-clear, fast, and quietly beautiful."
         />
         <div className="grid gap-6 md:grid-cols-3">
           {[
             { t: "Hospitality", d: "Every interaction should feel considered and kind." },
-            { t: "Taste", d: "Refined defaults, strong opinionsâ€”then we simplify." },
+            { t: "Taste", d: "Refined defaults, strong opinions-then we simplify." },
             { t: "Speed", d: "Momentum compounds. We ship small, often, with care." },
           ].map((v) => (
             <div key={v.t} className="rounded-2xl border bg-white/80 p-6 shadow-sm backdrop-blur-sm transition hover:shadow-md" style={{ borderColor: "#eef2f7" }}>
@@ -666,7 +666,7 @@ export default function Careers() {
           <SectionHeader kicker="Process" title="Clear steps, respectful timelines" />
           <ol className="relative mx-auto max-w-3xl space-y-8 border-l border-slate-200 pl-6">
             {[
-              { t: "Hello", d: "Intro chat (15â€“20 min) to align on role & motivation." },
+              { t: "Hello", d: "Intro chat (15-20 min) to align on role & motivation." },
               { t: "Craft", d: "Portfolio/code walkthrough or short task based on your preference." },
               { t: "Deep Dive", d: "Meet future teammates. Focus on collaboration & taste." },
               { t: "Offer", d: "Reference checks, compensation, and start date." },
@@ -696,9 +696,9 @@ export default function Careers() {
           <div className="rounded-3xl border bg-white/80 p-8 shadow-xl backdrop-blur md:p-10" style={{ borderColor: "#eef2f7" }}>
             <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
               <div>
-                <Kicker>Ready to craft whatâ€™s next?</Kicker>
+                <Kicker>Ready to craft what's next?</Kicker>
                 <h3 className="mt-1 text-3xl font-extrabold md:text-4xl" style={{ color: BRAND }}>
-                  Donâ€™t see your role? Write to us.
+                  Don't see your role? Write to us.
                 </h3>
                 <p className="mt-2 text-slate-600">Tell us about your superpower and the work you love doing.</p>
               </div>

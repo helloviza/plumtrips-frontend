@@ -68,8 +68,8 @@ function mapTBOToCard(obj: any): ResultCard {
     airlineCode: airline?.AirlineCode ?? airline?.OperatingCarrier ?? "--",
     airlineName: airline?.AirlineName ?? "",
     flightNumber: airline?.FlightNumber ?? seg0?.FlightNumber ?? "",
-    from: origin?.AirportCode ?? origin?.CityCode ?? "â€”",
-    to: dest?.AirportCode ?? dest?.CityCode ?? "â€”",
+    from: origin?.AirportCode ?? origin?.CityCode ?? "-",
+    to: dest?.AirportCode ?? dest?.CityCode ?? "-",
     departISO: depISO || undefined,
     arriveISO: arrISO || undefined,
     departHHMM: hhmm(dep),
@@ -282,7 +282,7 @@ export default function SearchPage() {
             month: "short",
             year: "numeric",
           })}{" "}
-          â€¢ {adults} adult{adults > 1 ? "s" : ""} â€¢ {cabin}
+          - {adults} adult{adults > 1 ? "s" : ""} - {cabin}
         </div>
       </div>
 
@@ -352,7 +352,7 @@ export default function SearchPage() {
               onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : undefined)}
               placeholder={priceStats.min ? String(priceStats.min) : "min"}
             />
-            <span className="text-zinc-400">â€”</span>
+            <span className="text-zinc-400">-</span>
             <input
               type="number"
               className="w-28 rounded border px-2 py-1 text-sm"

@@ -14,9 +14,9 @@ const imgMykonos   = new URL("./mykonos.jpg", import.meta.url).href;
 /* ===== Meta for BlogIndex ===== */
 export const meta = {
   slug: "10-short-flights-from-germany-to-paradise-book-with-Plumtrips",
-  title: "10 Short Flights From Germany To Paradise â€” Book With Plumtrips",
+  title: "10 Short Flights From Germany To Paradise - Book With Plumtrips",
   excerpt:
-    "Weekend escapes, sunny coasts, island bliss â€” 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
+    "Weekend escapes, sunny coasts, island bliss - 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
   tags: ["Weekend Getaways", "Island Vibes", "Europe"],
   cover,
 };
@@ -64,7 +64,7 @@ function FlightBlock({
       <div className="mt-5"><Shot src={img} alt={`${place}, ${country}`} /></div>
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-xl bg-white shadow-sm border p-5">
-          <h3 className="font-bold text-slate-900">ðŸ¨ Where Youâ€™ll Stay</h3>
+          <h3 className="font-bold text-slate-900">ðŸ¨ Where You'll Stay</h3>
           <Bullets items={stays} />
         </div>
         <div className="rounded-xl bg-white shadow-sm border p-5">
@@ -90,7 +90,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Sun, sand, and cocktails on repeat â€” all within a short flight from Berlin, Munich, Hamburg, or Frankfurt.
+                Sun, sand, and cocktails on repeat - all within a short flight from Berlin, Munich, Hamburg, or Frankfurt.
               </p>
             </div>
           </div>
@@ -101,18 +101,18 @@ export default function Post() {
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
         <p className="text-lg text-slate-700">
           Looking for a **quick recharge** without burning your annual leave? Here are 10 short-haul flights
-          from Germany to paradise â€” curated with Plumtripsâ€™ **luxury-but-effortless** lens. Expect boutique
+          from Germany to paradise - curated with Plumtrips' **luxury-but-effortless** lens. Expect boutique
           stays, soft beaches, and sunset dinners that look straight out of Instagram. âœˆï¸
         </p>
 
-        <PlumTip text="Mid-week flights are up to 35% cheaper â€” consider Tue/Thu departures for sweet savings." />
+        <PlumTip text="Mid-week flights are up to 35% cheaper - consider Tue/Thu departures for sweet savings." />
 
         <FlightBlock
           i={1} place="Mallorca" country="Spain" img={imgMallorca}
           vibe="Balearic vibes, hidden coves, lazy afternoons."
           stays={[
             "Finca-style boutique hotels near DeiÃ .",
-            "Beachfront suites in Cala dâ€™Or.",
+            "Beachfront suites in Cala d'Or.",
             "Adults-only spa retreats in SÃ³ller.",
           ]}
           moments={[
@@ -120,7 +120,7 @@ export default function Post() {
             "Wine tasting in local vineyards.",
             "Cliff walks with infinity views.",
           ]}
-          tip="Skip July crowds â€” May & Sept offer perfect weather + lower rates."
+          tip="Skip July crowds - May & Sept offer perfect weather + lower rates."
         />
 
         <FlightBlock
@@ -200,7 +200,7 @@ export default function Post() {
             "Fado night in Bairro Alto.",
             "Day-trip to Sintra palaces.",
           ]}
-          tip="Try pastÃ©is de nata at Manteigaria â€” life changing."
+          tip="Try pastÃ©is de nata at Manteigaria - life changing."
         />
 
         <FlightBlock
@@ -224,7 +224,7 @@ export default function Post() {
           vibe="Roman ruins, Adriatic bays, beach bars that hum past midnight."
           stays={[
             "Sea-facing apartments near BaÄvice Beach.",
-            "Rooftop suites overlooking Diocletianâ€™s Palace.",
+            "Rooftop suites overlooking Diocletian's Palace.",
             "Chic guesthouses near Marjan Hill.",
           ]}
           moments={[
@@ -273,7 +273,7 @@ export default function Post() {
             Ready for your next quick escape?
           </h3>
           <p className="mt-2 text-slate-700">
-            Book short flights, boutique stays, and curated adventures â€” all wrapped up in one seamless Plumtrips itinerary.
+            Book short flights, boutique stays, and curated adventures - all wrapped up in one seamless Plumtrips itinerary.
           </p>
           <div className="mt-5">
             <a

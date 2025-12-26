@@ -11,9 +11,9 @@ const imgSunrise   = new URL("./sunrise-deck.jpg", import.meta.url).href;
 export const meta = {
   slug: "hidden-gems-resorts-surrounded-by-breathtaking-nature-cuisine-and-relaxation",
   title:
-    "Hidden Gems â€” Resorts Surrounded By Breathtaking Nature, Cuisine & Relaxation",
+    "Hidden Gems - Resorts Surrounded By Breathtaking Nature, Cuisine & Relaxation",
   excerpt:
-    "Forest villas, cliffside spas, and farm-to-fork dinners â€” true hidden-gem energy.",
+    "Forest villas, cliffside spas, and farm-to-fork dinners - true hidden-gem energy.",
   tags: ["Hidden Gems", "Nature", "Wellness"],
   cover,
 };
@@ -98,7 +98,7 @@ export default function Post() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
-        <PlumTip text="Ask for sunrise-facing suites â€” quiet light, birdsong, and breakfast on your terrace." />
+        <PlumTip text="Ask for sunrise-facing suites - quiet light, birdsong, and breakfast on your terrace." />
 
         <Block
           title="Cliffside Spa Retreats"
@@ -106,7 +106,7 @@ export default function Post() {
           points={[
             "Infinity pools that blur into the horizon.",
             "Steam rituals with ocean air.",
-            "Couplesâ€™ treatments in rock-cut rooms.",
+            "Couples' treatments in rock-cut rooms.",
           ]}
         />
         <Block
@@ -161,7 +161,7 @@ export default function Post() {
             Plan it with Plumtrips âœˆï¸
           </h3>
           <p className="mt-2 text-slate-700">
-            Tell us your scenery (cliff, jungle, farm, mountain) and weâ€™ll match you to
+            Tell us your scenery (cliff, jungle, farm, mountain) and we'll match you to
             under-the-radar resorts with standout kitchens and soulful calm.
           </p>
           <div className="mt-5">

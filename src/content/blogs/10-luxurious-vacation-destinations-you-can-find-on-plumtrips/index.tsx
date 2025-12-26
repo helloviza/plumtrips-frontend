@@ -16,7 +16,7 @@ export const meta = {
   slug: "10-luxurious-vacation-destinations-you-can-find-on-Plumtrips",
   title: "10 Luxurious Vacation Destinations You Can Find On Plumtrips",
   excerpt:
-    "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service â€” hereâ€™s the Plumtrips shortlist for your next flex.",
+    "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service - here's the Plumtrips shortlist for your next flex.",
   tags: ["Luxury", "Honeymoon", "Bucket List"],
   cover,
 };
@@ -64,7 +64,7 @@ function LuxBlock({
       <div className="mt-5"><Shot src={img} alt={`${place}, ${country}`} /></div>
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-xl bg-white shadow-sm border p-5">
-          <h3 className="font-bold text-slate-900">ðŸ¨ Where Youâ€™ll Stay</h3>
+          <h3 className="font-bold text-slate-900">ðŸ¨ Where You'll Stay</h3>
           <Bullets items={stays} />
         </div>
         <div className="rounded-xl bg-white shadow-sm border p-5">
@@ -90,7 +90,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Quiet luxury, statement views, and service that anticipates â€” curated by Plumtrips.
+                Quiet luxury, statement views, and service that anticipates - curated by Plumtrips.
               </p>
             </div>
           </div>
@@ -100,12 +100,12 @@ export default function Post() {
       {/* BODY */}
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
         <p className="text-lg text-slate-700">
-          Luxe doesnâ€™t shout; it whispers. Think still-water pools, linen mornings, and sunsets that
-          feel designed. If youâ€™re planning a **honeymoon, milestone, or â€œI deserve thisâ€ trip**, start here â€”
+          Luxe doesn't shout; it whispers. Think still-water pools, linen mornings, and sunsets that
+          feel designed. If you're planning a **honeymoon, milestone, or "I deserve this" trip**, start here -
           our travel designers lock in the suites and experiences that photograph *and* feel incredible.
         </p>
 
-        <PlumTip text="Travel in shoulder season for the same suites at softer rates â€” ask us for the perfect dates." />
+        <PlumTip text="Travel in shoulder season for the same suites at softer rates - ask us for the perfect dates." />
 
         <LuxBlock
           i={1} place="Maldives (North & South Atolls)" country="Maldives" img={imgMaldives}
@@ -118,7 +118,7 @@ export default function Post() {
           moments={[
             "Sunrise snorkel with reef life meters from your bed.",
             "Sandbank picnic with champagne on ice.",
-            "Stargazing from your deck â€” ocean hush only.",
+            "Stargazing from your deck - ocean hush only.",
           ]}
           tip="Split stay: 2 nights beach villa + 2 nights overwater for two vibes in one trip."
         />
@@ -149,7 +149,7 @@ export default function Post() {
           ]}
           moments={[
             "Shallow-lagoon paddle at sunrise.",
-            "Floating breakfast (yes, itâ€™s worth it).",
+            "Floating breakfast (yes, it's worth it).",
             "Stingray & reef snorkel with a guide.",
           ]}
           tip="Combine with Moorea for a 2-island itinerary and better value."
@@ -184,7 +184,7 @@ export default function Post() {
             "Yacht hour along the Marina.",
             "Sky-high brunch with views for days.",
           ]}
-          tip="Novâ€“Mar has perfect weather; book early over NYE."
+          tip="Nov-Mar has perfect weather; book early over NYE."
         />
 
         <LuxBlock
@@ -196,7 +196,7 @@ export default function Post() {
             "Beachfront suites on powder bays.",
           ]}
           moments={[
-            "Anse Source dâ€™Argent photo-walk.",
+            "Anse Source d'Argent photo-walk.",
             "Private picnic on a hidden cove.",
             "Turtle spotting in season.",
           ]}
@@ -214,7 +214,7 @@ export default function Post() {
           moments={[
             "Private sound bath + flower bath combo.",
             "Sunrise hike on Campuhan ridge.",
-            "Chefâ€™s table in the paddies.",
+            "Chef's table in the paddies.",
           ]}
           tip="Pair Ubud with Uluwatu (cliff sunsets) for contrast."
         />
@@ -246,9 +246,9 @@ export default function Post() {
           moments={[
             "Private tea ceremony in a garden.",
             "Arashiyama bamboo at dawn.",
-            "Evening Gion walk â€” lantern glow.",
+            "Evening Gion walk - lantern glow.",
           ]}
-          tip="Book ryokan dinners â€” itâ€™s half the experience."
+          tip="Book ryokan dinners - it's half the experience."
         />
 
         <LuxBlock
@@ -273,8 +273,8 @@ export default function Post() {
             Ready for quiet luxury done right?
           </h3>
           <p className="mt-2 text-slate-700">
-            Tell us your vibe (overwater, cliff-edge, desert, alpine) and weâ€™ll craft a
-            <strong> made-for-you</strong> itinerary â€” best suites, smooth transfers, perfect dates.
+            Tell us your vibe (overwater, cliff-edge, desert, alpine) and we'll craft a
+            <strong> made-for-you</strong> itinerary - best suites, smooth transfers, perfect dates.
           </p>
           <div className="mt-5">
             <a

@@ -279,7 +279,7 @@ export default function AuthModal() {
                   </div>
 
                   <p className="mt-6 text-xs text-zinc-500">
-                    By proceeding, you agree to Plumtripsâ€™ Privacy Policy, User Agreement and T&Cs.
+                    By proceeding, you agree to Plumtrips' Privacy Policy, User Agreement and T&Cs.
                   </p>
                 </form>
               )}
@@ -331,7 +331,7 @@ export default function AuthModal() {
                     {busy ? "Signing inâ€¦" : "Sign in"}
                   </button>
                   <div className="text-sm text-zinc-600">
-                    Donâ€™t have an account?{" "}
+                    Don't have an account?{" "}
                     <button type="button" onClick={() => setAuthStep("emailRegister")} className="text-[#00477f] underline">
                       Create one
                     </button>

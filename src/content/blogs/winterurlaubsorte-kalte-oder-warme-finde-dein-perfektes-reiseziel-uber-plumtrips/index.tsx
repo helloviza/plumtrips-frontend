@@ -10,8 +10,8 @@ const imgMaldives= new URL("./maldives-winter-escape.jpg", import.meta.url).href
 /* ===== Meta ===== */
 export const meta = {
   slug: "winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips",
-  title: "Winterurlaubsorte â€” Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
-  excerpt: "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme â€” dein perfekter Wintertrip.",
+  title: "Winterurlaubsorte - Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
+  excerpt: "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme - dein perfekter Wintertrip.",
   tags: ["Winter","SonneOderSchnee","DE"],
   cover,
 };
@@ -23,15 +23,15 @@ const Bullets=({items}:{items:string[]})=><ul className="mt-2 list-disc pl-5 tex
 function Block({title,img,points}:{title:string;img:string;points:string[]}){return(<section className="mt-10"><h2 className={H.sectionH2}>{title}</h2><div className="mt-4"><Shot src={img} alt={title}/></div><div className="mt-4 rounded-xl bg-white border p-5 shadow-sm"><Bullets items={points}/></div></section>)}
 
 export default function Post(){return(<article className="bg-gradient-to-b from-slate-50 to-white">
-  <header className="relative"><div className="relative h-[280px] md:h-[380px]"><img src={cover} alt={meta.title} className="h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/10"/><div className="absolute inset-x-0 bottom-0"><div className="mx-auto max-w-4xl px-4 pb-10"><h1 className={H.heroTitle}>{meta.title}</h1><p className="mt-3 text-white/90">Ski & Sauna oder Sonne & Strand â€” du wÃ¤hlst, wir planen.</p></div></div></div></header>
+  <header className="relative"><div className="relative h-[280px] md:h-[380px]"><img src={cover} alt={meta.title} className="h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/10"/><div className="absolute inset-x-0 bottom-0"><div className="mx-auto max-w-4xl px-4 pb-10"><h1 className={H.heroTitle}>{meta.title}</h1><p className="mt-3 text-white/90">Ski & Sauna oder Sonne & Strand - du wÃ¤hlst, wir planen.</p></div></div></div></header>
   <main className="mx-auto max-w-4xl px-4 py-10">
-    <Tip t="Weihnachten/Neujahr frÃ¼h sichern â€” beste Zimmer sind schnell weg."/>
+    <Tip t="Weihnachten/Neujahr frÃ¼h sichern - beste Zimmer sind schnell weg."/>
     <Block title="Alpenzauber" img={imgAlps} points={["Ski-in Chalets","Spa-Etage mit Ausblick","Fondue am Kamin"]}/>
     <Block title="Lappland & Polarlichter" img={imgLapland} points={["Huskys & Schnee-Expedition","Glas-Iglu NÃ¤chte","Nordlicht-Jagd"]}/>
     <Block title="Kanarische Inseln" img={imgCanary} points={["Wintersonne + mildes Meer","KÃ¼sten-Wanderwege","Vulkansand-StrÃ¤nde"]}/>
     <Block title="Dubai WÃ¤rme" img={imgDubai} points={["Pooltage + Citylights","WÃ¼stencamp am Abend","Yacht-Stunde am Marina"]}/>
     <Block title="Madeira GrÃ¼n" img={imgMadeira} points={["Levadas & GÃ¤rten","Klippenpools","Whale/Winter-Boatdays"]}/>
     <Block title="Maldives Escape" img={imgMaldives} points={["Overwater-Tage","Sandbank-Picknick","Delfin-Sonnenuntergang"]}/>
-    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Mit Plumtrips planen âœˆï¸</h3><p className="mt-2 text-slate-700">Wir sichern dir die besten Daten, Transfers und Zimmer â€” schneekalt oder tropenwarm.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Mein Wintertrip</a></div></div>
+    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Mit Plumtrips planen âœˆï¸</h3><p className="mt-2 text-slate-700">Wir sichern dir die besten Daten, Transfers und Zimmer - schneekalt oder tropenwarm.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Mein Wintertrip</a></div></div>
   </main>
 </article>)}

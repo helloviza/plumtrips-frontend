@@ -22,16 +22,16 @@ const CONTACT = {
   emailSupport:  "hello@Plumtrips.com",
   emailHolidays: "hello@Plumtrips.com",
   emailMice:     "hello@Plumtrips.com",
-  hours: "Mon â€“ Sat Â· 9:00 AM â€“ 8:00 PM IST",
+  hours: "Mon - Sat Â· 9:00 AM - 8:00 PM IST",
   emergencyNote:
     "If you are already travelling, call the hotline in your voucher for 24Ã—7 assistance.",
 };
 
 // Two office addresses (India)
 const ADDR_GGN =
-  "Vatika Business Park, 12th Floor, Sohna Road, Gurgaonâ€“122001, Haryana, India";
+  "Vatika Business Park, 12th Floor, Sohna Road, Gurgaon-122001, Haryana, India";
 const ADDR_MUM =
-  "1207â€“1208 Damji Shamji Business Galleria, Ambedkar Nagar, Hiranandani Gardens, Kanjurmarg West, Bhandup West, Mumbai, Maharashtra 400078, India";
+  "1207-1208 Damji Shamji Business Galleria, Ambedkar Nagar, Hiranandani Gardens, Kanjurmarg West, Bhandup West, Mumbai, Maharashtra 400078, India";
 
 // Simple Google Maps embeds from addresses
 const mapUrl = (addr: string) =>
@@ -128,7 +128,7 @@ export default function ContactPage() {
       }
     }
 
-    // No API configured â†’ fallback to mailto
+    // No API configured → fallback to mailto
     window.location.href = mailtoHref;
   }
 
@@ -153,21 +153,21 @@ export default function ContactPage() {
                   style={{ backgroundColor: ACCENT }}
                 />
                 <span className="uppercase tracking-[.16em] text-[.72rem] font-semibold text-white/90">
-                  Weâ€™re here for you
+                  We're here for you
                 </span>
               </span>
               <h1 className="mt-2 text-3xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow">
                 Contact Plumtrips
               </h1>
               <p className="mt-2 max-w-2xl text-white/90">
-                Luxury trips, visas, MICE, cruises â€” talk to a real human who cares.
+                Luxury trips, visas, MICE, cruises - talk to a real human who cares.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CONTACT CHANNELS (raised above gradient â†’ z-10, no clipping) */}
+      {/* CONTACT CHANNELS (raised above gradient → z-10, no clipping) */}
       <section className="relative z-10 mx-auto -mt-10 md:-mt-14 max-w-6xl px-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <ContactTile
@@ -293,14 +293,14 @@ export default function ContactPage() {
         {/* OFFICES */}
         <div className="space-y-6">
           <OfficeCard
-            title="Plumtrips â€” Gurgaon (HQ)"
+            title="Plumtrips - Gurgaon (HQ)"
             img={officeGgn}
             address={[ADDR_GGN]}
             phone={CONTACT.phoneMain}
             email={CONTACT.emailSupport}
           />
           <OfficeCard
-            title="Plumtrips â€” Mumbai"
+            title="Plumtrips - Mumbai"
             img={officeMumbai}
             address={[ADDR_MUM]}
             phone={CONTACT.phoneMain}
@@ -320,7 +320,7 @@ export default function ContactPage() {
   );
 }
 
-/* â€”â€”â€” small components â€”â€”â€” */
+/* --- small components --- */
 function ContactTile({
   title, subtitle, lines, actions, icon,
 }: {
@@ -449,7 +449,7 @@ function Input({
   );
 }
 
-/* â€”â€”â€” tiny icons â€”â€”â€” */
+/* --- tiny icons --- */
 function PhoneIcon() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none">

@@ -10,8 +10,8 @@ const imgResort  = new URL("./exuma-resort.jpg", import.meta.url).href;
 /* ===== Meta ===== */
 export const meta = {
   slug: "swimming-in-paradise-swimming-with-pigs-in-the-crystal-clear-waters-of-the-bahamas",
-  title: "Swimming In Paradise â€” Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
-  excerpt: "Emerald shallows, friendly pigs, and a boat day youâ€™ll never forget.",
+  title: "Swimming In Paradise - Swimming With Pigs In The Crystal Clear Waters Of The Bahamas",
+  excerpt: "Emerald shallows, friendly pigs, and a boat day you'll never forget.",
   tags: ["Bahamas","Unique","Boat Day"],
   cover,
 };
@@ -32,6 +32,6 @@ export default function Post(){return(<article className="bg-gradient-to-b from-
     <Block title="Nurse Shark Sandbar" img={imgNurse} points={["Calm sharks, guided wade","Respectful distance","No sudden moves"]}/>
     <Block title="Yacht Day" img={imgYacht} points={["Island-hop in comfort","Shade + coolers","Drone-free etiquette"]}/>
     <Block title="Where To Stay" img={imgResort} points={["Exuma resorts with private docks","Beach villas with decks","Chef kitchens for fresh catch"]}/>
-    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Weâ€™ll line up boats, timing, and the chillest cays â€” stress-free.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Exuma Day</a></div></div>
+    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">We'll line up boats, timing, and the chillest cays - stress-free.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Exuma Day</a></div></div>
   </main>
 </article>)}

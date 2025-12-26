@@ -14,9 +14,9 @@ const imgTurksCaicos = new URL("./turks-caicos.jpg", import.meta.url).href;
 /* ===== Meta for BlogIndex ===== */
 export const meta = {
   slug: "crystal-clear-waters-dream-destinations-around-the-world-not-just-in-the-maldives",
-  title: "Crystal Clear Waters: Dream Destinations Around The World â€” Not Just In The Maldives",
+  title: "Crystal Clear Waters: Dream Destinations Around The World - Not Just In The Maldives",
   excerpt:
-    "From Bora Bora to Palawan, hereâ€™s your handpicked edit of the clearest waters on earth â€” curated by Plumtrips.",
+    "From Bora Bora to Palawan, here's your handpicked edit of the clearest waters on earth - curated by Plumtrips.",
   tags: ["Beach Vibes", "Luxury Escapes", "Bucket List"],
   cover,
 };
@@ -94,7 +94,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Lagoon blues, barefoot luxury, cinematic sunsets â€” your ultimate Plumtrips water edit.
+                Lagoon blues, barefoot luxury, cinematic sunsets - your ultimate Plumtrips water edit.
               </p>
             </div>
           </div>
@@ -105,7 +105,7 @@ export default function Post() {
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
         <p className="text-lg text-slate-700">
           If paradise had a texture, it would be water. Think turquoise lagoons, palm-framed bays,
-          and coral gardens that rewrite your reel aesthetics. Hereâ€™s our curated **top 10 list** of
+          and coral gardens that rewrite your reel aesthetics. Here's our curated **top 10 list** of
           destinations where crystal-clear waters meet luxury stays and immersive adventures.
         </p>
 
@@ -172,7 +172,7 @@ export default function Post() {
             "Sunset village fire dances.",
             "Kayak turquoise lagoons.",
           ]}
-          tip="Go Aprilâ€“June for calm seas and vibrant marine life."
+          tip="Go April-June for calm seas and vibrant marine life."
         />
 
         <WaterBlock
@@ -232,7 +232,7 @@ export default function Post() {
             "Floating villas in Coron Bay.",
           ]}
           activities={[
-            "Island-hop El Nidoâ€™s Big Lagoon.",
+            "Island-hop El Nido's Big Lagoon.",
             "Swim Twin Lagoon hidden passageways.",
             "Kayak limestone-framed secret beaches.",
           ]}
@@ -252,12 +252,12 @@ export default function Post() {
             "Glass-bottom sailing experiences.",
             "Underwater observatories for coral viewing.",
           ]}
-          tip="Avoid Janâ€“Mar cyclone season for smooth sailing."
+          tip="Avoid Jan-Mar cyclone season for smooth sailing."
         />
 
         <WaterBlock
           i={10} place="Turks & Caicos" country="Caribbean" img={imgTurksCaicos}
-          vibe="Instagramâ€™s favorite blue â€” softest sands, endless shallows."
+          vibe="Instagram's favorite blue - softest sands, endless shallows."
           stays={[
             "Beachfront designer villas.",
             "Adults-only boutique resorts.",
@@ -277,7 +277,7 @@ export default function Post() {
             Dreaming of water this clear?
           </h3>
           <p className="mt-2 text-slate-700">
-            Our designers craft **bucket-list itineraries** with handpicked stays and private transfers â€”
+            Our designers craft **bucket-list itineraries** with handpicked stays and private transfers -
             you just bring your swimwear.
           </p>
           <div className="mt-5">

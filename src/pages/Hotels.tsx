@@ -20,7 +20,7 @@ export default function Hotels() {
             Hotels by Plumtrips
           </h1>
           <p className="text-lg text-gray-700 mb-8">
-            A curated collection of luxurious hotels is on the way. Weâ€™re
+            A curated collection of luxurious hotels is on the way. We're
             designing an experience where **comfort, elegance, and modern design**
             meet to delight every traveler.
           </p>
@@ -36,7 +36,7 @@ export default function Hotels() {
             <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
               <h3 className="text-xl font-semibold text-[#d06549]">âœ¨ Modern Comfort</h3>
               <p className="text-sm text-gray-600 mt-2">
-                Clean, safe, and seamlessly styled â€” luxury without compromise.
+                Clean, safe, and seamlessly styled - luxury without compromise.
               </p>
             </div>
             <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
@@ -49,7 +49,7 @@ export default function Hotels() {
 
           {/* Footer */}
           <p className="text-gray-500 text-sm">
-            ðŸŒŸ Coming soon â€” the <span className="font-bold text-[#00477f]">Plumtrips way</span> 
+            ðŸŒŸ Coming soon - the <span className="font-bold text-[#00477f]">Plumtrips way</span> 
             of booking your perfect stay.
           </p>
         </motion.div>

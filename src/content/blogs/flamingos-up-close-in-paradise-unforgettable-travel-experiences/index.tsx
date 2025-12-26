@@ -12,9 +12,9 @@ const imgWalvisBay = new URL("./walvis-bay-namibia.jpg", import.meta.url).href;
 /* ===== Meta for BlogIndex ===== */
 export const meta = {
   slug: "flamingos-up-close-in-paradise-unforgettable-travel-experiences",
-  title: "Flamingos Up Close In Paradise â€” Unforgettable Travel Experiences",
+  title: "Flamingos Up Close In Paradise - Unforgettable Travel Experiences",
   excerpt:
-    "Candy-pink lagoons and mirror-like shallows â€” the chic way to meet flamingos up close.",
+    "Candy-pink lagoons and mirror-like shallows - the chic way to meet flamingos up close.",
   tags: ["Wildlife", "Photography", "Island Vibes"],
   cover,
 };
@@ -76,7 +76,7 @@ function Spot({
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-xl bg-white shadow-sm border p-5">
-          <h3 className="font-bold text-slate-900">âœ¨ Why Itâ€™s Special</h3>
+          <h3 className="font-bold text-slate-900">âœ¨ Why It's Special</h3>
           <Bullets items={why} />
         </div>
         <div className="rounded-xl bg-white shadow-sm border p-5">
@@ -105,7 +105,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Mirror-like lagoons, pastel skies, and feathered pinks â€” hereâ€™s where
+                Mirror-like lagoons, pastel skies, and feathered pinks - here's where
                 flamingo encounters feel cinematic and ethical.
               </p>
             </div>
@@ -114,7 +114,7 @@ export default function Post() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
-        <PlumTip text="Go at sunrise when winds are low â€” flat water, golden light, and calm birds." />
+        <PlumTip text="Go at sunrise when winds are low - flat water, golden light, and calm birds." />
 
         <Spot
           i={1}
@@ -130,7 +130,7 @@ export default function Post() {
           country="Bonaire"
           img={imgBonaire}
           why={["Wild flamingos in pink salt lakes", "Dreamy sunset reflections", "Low crowds, relaxed pace"]}
-          how={["Self-drive loop around the lake", "Use pullouts; donâ€™t enter the flats", "Binoculars recommended"]}
+          how={["Self-drive loop around the lake", "Use pullouts; don't enter the flats", "Binoculars recommended"]}
         />
         <Spot
           i={3}
@@ -186,7 +186,7 @@ export default function Post() {
             Plan it with Plumtrips âœˆï¸
           </h3>
           <p className="mt-2 text-slate-700">
-            Weâ€™ll time seasons, tides, and permits â€” you get effortless, ethical, and beautiful encounters.
+            We'll time seasons, tides, and permits - you get effortless, ethical, and beautiful encounters.
           </p>
           <div className="mt-5">
             <a

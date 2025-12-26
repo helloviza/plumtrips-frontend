@@ -238,14 +238,14 @@ export default function FarePage() {
           return;
         }
         const body = { bookingId: id, pnr: pp, traceId };
-        console.log("[Ticket/GDS] payload â†’", body);
+        console.log("[Ticket/GDS] payload →", body);
         await tboTicket(body);
         setTicketOk(true);
         await refreshDetails(id);
         return;
       }
 
-      // LCC path â†’ build per-passenger payload + zero ancillaries
+      // LCC path → build per-passenger payload + zero ancillaries
       const cur = String(quote?.Fare?.Currency || "INR");
       const legs = legsFromQuote(quote);
 
@@ -323,7 +323,7 @@ export default function FarePage() {
         passengers,
       } as any;
 
-      console.log("[Ticket/LCC] payload â†’", body);
+      console.log("[Ticket/LCC] payload →", body);
       await tboTicket(body);
 
       setTicketOk(true);
@@ -358,8 +358,8 @@ export default function FarePage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-semibold mb-2">Fare &amp; Book</h1>
       <div className="text-xs opacity-70 mb-4">
-        TraceId: {(traceId || "â€”").toString().slice(0, 16)}â€¦ {" | "}
-        ResultIndex: {(resultIndex || "â€”").toString().slice(0, 16)}â€¦
+        TraceId: {(traceId || "-").toString().slice(0, 16)}â€¦ {" | "}
+        ResultIndex: {(resultIndex || "-").toString().slice(0, 16)}â€¦
       </div>
 
       {fatalErr && (
@@ -510,7 +510,7 @@ export default function FarePage() {
               <div>PNR: <span className="opacity-70">{pnr || "-"}</span></div>
             </div>
             <div className="mt-2 text-xs text-zinc-500">
-              Open DevTools â†’ Network â†’ <code>/api/v1/flights/tbo/ticket</code> to verify the payload being sent.
+              Open DevTools → Network → <code>/api/v1/flights/tbo/ticket</code> to verify the payload being sent.
             </div>
           </details>
 

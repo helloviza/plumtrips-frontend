@@ -10,8 +10,8 @@ const imgPinkSand     = new URL("./harbour-island-pink-sand.jpg", import.meta.ur
 /* ===== Meta ===== */
 export const meta = {
   slug: "the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips",
-  title: "The Most Beautiful Beaches In The World â€” Your Dream Vacation With Plumtrips",
-  excerpt: "From Caribbean shallows to Greek coves â€” the worldâ€™s prettiest sands, curated.",
+  title: "The Most Beautiful Beaches In The World - Your Dream Vacation With Plumtrips",
+  excerpt: "From Caribbean shallows to Greek coves - the world's prettiest sands, curated.",
   tags: ["Beaches","Bucket List","Islands"],
   cover,
 };
@@ -26,12 +26,12 @@ export default function Post(){return(<article className="bg-gradient-to-b from-
   <header className="relative"><div className="relative h-[280px] md:h-[380px]"><img src={cover} alt={meta.title} className="h-full w-full object-cover"/><div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/10"/><div className="absolute inset-x-0 bottom-0"><div className="mx-auto max-w-4xl px-4 pb-10"><h1 className={H.heroTitle}>{meta.title}</h1><p className="mt-3 text-white/90">Powder sand, crazy blues, and coves that break the feed.</p></div></div></div></header>
   <main className="mx-auto max-w-4xl px-4 py-10">
     <Tip t="Midweek flights + shoulder season = empty beaches & better prices."/>
-    <Block title="Grace Bay, Turks & Caicos" img={imgGraceBay} points={["Soft shallows for days","Sail to uninhabited cays","Sunset walks = chefâ€™s kiss"]}/>
+    <Block title="Grace Bay, Turks & Caicos" img={imgGraceBay} points={["Soft shallows for days","Sail to uninhabited cays","Sunset walks = chef's kiss"]}/>
     <Block title="Navagio, Zakynthos" img={imgNavagio} points={["Cliff-framed azure","Boat-only access","Blue caves nearby"]}/>
     <Block title="Whitehaven, Whitsundays" img={imgWhitehaven} points={["Silica sand swirls","Hill Inlet lookout","Sail the archipelago"]}/>
-    <Block title="Anse Source dâ€™Argent, Seychelles" img={imgAnseSource} points={["Granite boulders + glass water","Cycle between beaches","Perfect for golden hour"]}/>
+    <Block title="Anse Source d'Argent, Seychelles" img={imgAnseSource} points={["Granite boulders + glass water","Cycle between beaches","Perfect for golden hour"]}/>
     <Block title="Seven Mile, Negril" img={imgSevenMile} points={["Laid-back reggae vibe","West End cliffs + jumps","Sunsets that linger"]}/>
     <Block title="Harbour Island Pink Sand" img={imgPinkSand} points={["Dreamy blush tones","Morning is quietest","Golf carts + chic cafes"]}/>
-    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Tell us your beach style â€” weâ€™ll match stays and boat days.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Beach Trip</a></div></div>
+    <div className="mt-12 rounded-2xl border bg-white p-6 shadow-md"><h3 className="text-lg md:text-xl font-bold">Plan it with Plumtrips âœˆï¸</h3><p className="mt-2 text-slate-700">Tell us your beach style - we'll match stays and boat days.</p><div className="mt-5"><a href="/go/concierge" className="inline-flex rounded-full bg-[#d06549] px-6 py-3 text-white font-semibold hover:bg-[#c2513d]">Design My Beach Trip</a></div></div>
   </main>
 </article>)}

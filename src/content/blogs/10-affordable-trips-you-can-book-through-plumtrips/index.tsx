@@ -16,7 +16,7 @@ export const meta = {
   slug: "10-affordable-trips-you-can-book-through-Plumtrips",
   title: "10 Affordable Trips You Can Book Through Plumtrips",
   excerpt:
-    "From boutique hostels in Budapest to sunset escapes in Lisbon, hereâ€™s your Gen Z-friendly guide to 10 pocket-smart adventures without compromising luxury.",
+    "From boutique hostels in Budapest to sunset escapes in Lisbon, here's your Gen Z-friendly guide to 10 pocket-smart adventures without compromising luxury.",
   tags: ["Gen Z", "Luxury Travel", "Budget Chic"],
   cover,
 };
@@ -97,7 +97,7 @@ export default function Post() {
             <div className="mx-auto max-w-4xl px-4 pb-8 md:pb-12">
               <h1 className={H.heroTitle}>{meta.title}</h1>
               <p className="mt-3 max-w-2xl text-white/90 text-base md:text-lg">
-                Stylish escapes, Insta-worthy vibes & budget-chic stays â€” crafted for Gen Z & new-age travellers.
+                Stylish escapes, Insta-worthy vibes & budget-chic stays - crafted for Gen Z & new-age travellers.
               </p>
             </div>
           </div>
@@ -107,17 +107,17 @@ export default function Post() {
       {/* BODY */}
       <main className="mx-auto max-w-4xl px-4 py-8 md:py-12 leading-relaxed">
         <p className="text-lg text-slate-700">
-          You want adventures âœˆï¸, but without breaking the bank? Welcome to Plumtripsâ€™
-          <span className="font-semibold text-[#00477f]"> Budget-Chic Collection</span> â€” curated escapes where
+          You want adventures âœˆï¸, but without breaking the bank? Welcome to Plumtrips'
+          <span className="font-semibold text-[#00477f]"> Budget-Chic Collection</span> - curated escapes where
           <strong> luxury meets affordability</strong>. Think boutique stays, rooftop cafÃ©s, street food that slaps,
-          and sunsets youâ€™ll want to post.
+          and sunsets you'll want to post.
         </p>
 
         <PlumTip text="Save up to 40% when you book weekdays instead of weekends." />
 
         <CityBlock
           i={1} city="Budapest" country="Hungary" image={imgBudapest}
-          vibe="Thermal baths, ruin bars & sunset river walks â€” Budapest blends boho & boujee like nowhere else."
+          vibe="Thermal baths, ruin bars & sunset river walks - Budapest blends boho & boujee like nowhere else."
           stays={[
             "Rooftop boutique hotels by the Danube.",
             "Design-forward lofts in District VII.",
@@ -125,15 +125,15 @@ export default function Post() {
           ]}
           dos={[
             "Thermal spa hopping (SzÃ©chenyi + Rudas).",
-            "Sunset cocktails at Fishermanâ€™s Bastion.",
+            "Sunset cocktails at Fisherman's Bastion.",
             "Night walks along the Danube Promenade.",
           ]}
-          tip="Best months: April & September â€” mild weather + off-peak rates."
+          tip="Best months: April & September - mild weather + off-peak rates."
         />
 
         <CityBlock
           i={2} city="Lisbon" country="Portugal" image={imgLisbon}
-          vibe="Pastel streets, rooftop brunches & trams through tiled alleys â€” Lisbonâ€™s sunshine is unmatched."
+          vibe="Pastel streets, rooftop brunches & trams through tiled alleys - Lisbon's sunshine is unmatched."
           stays={[
             "Airy lofts with Tagus views.",
             "Alfama guesthouses with insta corners.",
@@ -144,12 +144,12 @@ export default function Post() {
             "PastÃ©is de Nata tasting crawl.",
             "Pink Street nightlife + rooftop sunsets.",
           ]}
-          tip="Donâ€™t miss LX Factory â€” Lisbonâ€™s creative hub for coffee, art & thrift finds."
+          tip="Don't miss LX Factory - Lisbon's creative hub for coffee, art & thrift finds."
         />
 
         <CityBlock
           i={3} city="Prague" country="Czech Republic" image={imgPrague}
-          vibe="Fairytale bridges, Gothic alleys & 24/7 cafÃ© culture â€” Prague is for dreamers on a budget."
+          vibe="Fairytale bridges, Gothic alleys & 24/7 cafÃ© culture - Prague is for dreamers on a budget."
           stays={[
             "Stone-house Airbnbs near Old Town Square.",
             "Art deco hotels around Charles Bridge.",
@@ -165,7 +165,7 @@ export default function Post() {
 
         <CityBlock
           i={4} city="Krakow" country="Poland" image={imgKrakow}
-          vibe="Medieval charm, student energy & affordable eats â€” Krakow is a budget favorite."
+          vibe="Medieval charm, student energy & affordable eats - Krakow is a budget favorite."
           stays={[
             "Modern rooms near Main Square.",
             "Kazimierz boutique stays by the boho quarter.",
@@ -176,7 +176,7 @@ export default function Post() {
             "KoÅ›ciuszko Mound / Kazimierz lanes.",
             "Auschwitz Memorial day trip.",
           ]}
-          tip="Winter markets are magical (and cheaper) â€” carry warm layers."
+          tip="Winter markets are magical (and cheaper) - carry warm layers."
         />
 
         <CityBlock
@@ -197,10 +197,10 @@ export default function Post() {
 
         <CityBlock
           i={6} city="Valencia" country="Spain" image={imgValencia}
-          vibe="Beach mornings, orange afternoons & paella evenings â€” Valencia is sunshine therapy."
+          vibe="Beach mornings, orange afternoons & paella evenings - Valencia is sunshine therapy."
           stays={[
             "Beach apartments near City of Arts & Sciences.",
-            "North Malvarrosa B&Bs â€” clean, fair, linear.",
+            "North Malvarrosa B&Bs - clean, fair, linear.",
             "Old-town guesthouses by the centre.",
           ]}
           dos={[
@@ -208,12 +208,12 @@ export default function Post() {
             "Paella in its birthplace.",
             "Relax at Malvarrosa Beach.",
           ]}
-          tip="Rent bikes â€” Valencia is perfectly flat and cycle-friendly."
+          tip="Rent bikes - Valencia is perfectly flat and cycle-friendly."
         />
 
         <CityBlock
           i={7} city="Porto" country="Portugal" image={imgPorto}
-          vibe="Tile-lined streets, river balconies & cosy wine lodges â€” Porto is a vibe."
+          vibe="Tile-lined streets, river balconies & cosy wine lodges - Porto is a vibe."
           stays={[
             "Douro-facing pensÃµes with balconies.",
             "Boutique B&Bs near ClÃ©rigos & Ribeira.",
@@ -245,7 +245,7 @@ export default function Post() {
 
         <CityBlock
           i={9} city="Edinburgh" country="Scotland" image={imgEdinburgh}
-          vibe="Storybook hills, cobbled lanes & writersâ€™ cafÃ©s â€” cozy, cultured, camera-ready."
+          vibe="Storybook hills, cobbled lanes & writers' cafÃ©s - cozy, cultured, camera-ready."
           stays={[
             "Classic townhouses with hill views.",
             "Arts-rich guest homes, hearty breakfasts.",
@@ -253,15 +253,15 @@ export default function Post() {
           ]}
           dos={[
             "Royal Mile & Edinburgh Castle.",
-            "Arthurâ€™s Seat hike.",
-            "Writersâ€™ Museum + vintage bookshops.",
+            "Arthur's Seat hike.",
+            "Writers' Museum + vintage bookshops.",
           ]}
-          tip="Pack a windproof layer â€” weather changes fast."
+          tip="Pack a windproof layer - weather changes fast."
         />
 
         <CityBlock
           i={10} city="Ä°stanbul" country="TÃ¼rkiye" image={imgIstanbul}
-          vibe="Spice markets by day, Bosphorus breeze by night â€” a sensory city made for night walks."
+          vibe="Spice markets by day, Bosphorus breeze by night - a sensory city made for night walks."
           stays={[
             "KarakÃ¶y studios; Bosphorus vibe.",
             "Hammam-adjacent B&Bs in Cihangir.",
@@ -281,7 +281,7 @@ export default function Post() {
             Plan It Your Way, The Plumtrips Way âœˆï¸
           </h3>
           <p className="mt-2 text-slate-700">
-            Whether youâ€™re chasing rooftops in Lisbon or street food in Ä°stanbul, our designers craft
+            Whether you're chasing rooftops in Lisbon or street food in Ä°stanbul, our designers craft
             <strong> exclusive itineraries</strong> that are big on vibes and light on budget.
           </p>
           <div className="mt-5">

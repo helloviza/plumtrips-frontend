@@ -16,42 +16,42 @@ const OFFERS = [
     id: "holiday1",
     type: "Holiday",
     title: "Romantic Maldives Escape",
-    subtitle: "5 Nights â€¢ Water Villa + Seaplane Transfers",
+    subtitle: "5 Nights - Water Villa + Seaplane Transfers",
     img: "/assets/offers/maldives.jpg",
   },
   {
     id: "holiday2",
     type: "Holiday",
     title: "Swiss Alps Experience",
-    subtitle: "7 Nights â€¢ Scenic Trains & Luxury Stays",
+    subtitle: "7 Nights - Scenic Trains & Luxury Stays",
     img: "/assets/offers/switzerland.jpg",
   },
   {
     id: "flight1",
     type: "Flight",
     title: "Return to Dubai",
-    subtitle: "From Delhi â€¢ Direct Flights",
+    subtitle: "From Delhi - Direct Flights",
     img: "/assets/offers/dubai-flight.jpg",
   },
   {
     id: "flight2",
     type: "Flight",
     title: "Singapore Special",
-    subtitle: "From Mumbai â€¢ Full-Service Airline",
+    subtitle: "From Mumbai - Full-Service Airline",
     img: "/assets/offers/singapore-flight.jpg",
   },
   {
     id: "hotel1",
     type: "Hotel",
     title: "Udaipur Heritage Palace Stay",
-    subtitle: "2 Nights â€¢ Lake View Suite",
+    subtitle: "2 Nights - Lake View Suite",
     img: "/assets/offers/udaipur-hotel.jpg",
   },
   {
     id: "hotel2",
     type: "Hotel",
     title: "Dubai Marina 5â˜… Luxury",
-    subtitle: "3 Nights â€¢ Breakfast Included",
+    subtitle: "3 Nights - Breakfast Included",
     img: "/assets/offers/dubai-hotel.jpg",
   },
 ];
@@ -68,11 +68,11 @@ export default function OffersPage() {
       <section className="relative bg-gradient-to-r from-[#00477f] to-[#0a5fa3] text-white py-20 px-6">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-            Exclusive Travel Offers â€” Holidays, Flights & Hotels
+            Exclusive Travel Offers - Holidays, Flights & Hotels
           </h1>
           <p className="mt-4 text-lg md:text-xl opacity-90">
             Experience luxury for less. Plumtrips brings curated offers that combine
-            best-in-class pricing with unmatched service â€” perfect for leisure travelers
+            best-in-class pricing with unmatched service - perfect for leisure travelers
             and corporates alike.
           </p>
         </div>
@@ -138,7 +138,7 @@ export default function OffersPage() {
             Beyond leisure, our offers are tailored for businesses planning{" "}
             <strong>Meetings, Incentives, Conferences, and Exhibitions (MICE)</strong>.
             We simplify travel management with exclusive flight fares, hotel group
-            discounts, and destination packages â€” helping companies save costs while
+            discounts, and destination packages - helping companies save costs while
             ensuring a premium experience for employees and delegates.
           </p>
 
@@ -177,7 +177,7 @@ export default function OffersPage() {
             Ready to Unlock Your Exclusive Offer?
           </h2>
           <p className="mt-4 opacity-90">
-            Whether itâ€™s your next family vacation or a corporate event, our concierge
+            Whether it's your next family vacation or a corporate event, our concierge
             team will craft the perfect itinerary at the best value.
           </p>
           <Link

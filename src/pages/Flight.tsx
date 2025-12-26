@@ -56,8 +56,8 @@ function mapQuoteToFlight(obj: any, idx = 0): Flight {
 
   return {
     id: `${obj?.ResultIndex ?? obj?.FlightInfoIndex ?? idx}`,
-    from: origin?.AirportCode ?? origin?.CityCode ?? "â€”",
-    to: dest?.AirportCode ?? dest?.CityCode ?? "â€”",
+    from: origin?.AirportCode ?? origin?.CityCode ?? "-",
+    to: dest?.AirportCode ?? dest?.CityCode ?? "-",
     departTime: hhmm(dep),
     arriveTime: hhmm(arr),
     durationMins,
@@ -165,17 +165,17 @@ export default function FlightReviewPage() {
       {/* Header / crumbs */}
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
         <button type="button" onClick={handleBack} className="rounded-md border px-3 py-1.5 hover:bg-zinc-50">
-          â† Back to results
+          → Back to results
         </button>
-        <span className="mx-1 text-zinc-400">â€¢</span>
+        <span className="mx-1 text-zinc-400">-</span>
         <span className="font-medium">
-          Review &amp; Fare Quote â€” {from} â†’ {to} {date ? `on ${date}` : ""}
+          Review &amp; Fare Quote - {from} → {to} {date ? `on ${date}` : ""}
         </span>
       </div>
 
       {showDebug && (
         <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          Selected flight not found in navigation state/session. Still trying live quote (ri={ri || "â€”"}).
+          Selected flight not found in navigation state/session. Still trying live quote (ri={ri || "-"}).
           If this persists, go back and select a flight again.
         </div>
       )}
@@ -195,14 +195,14 @@ export default function FlightReviewPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="text-sm text-zinc-500">
-                  {(flight.airlineName || flight.airlineCode) ?? "--"} â€¢ {flight.flightNumber}
+                  {(flight.airlineName || flight.airlineCode) ?? "--"} - {flight.flightNumber}
                 </div>
                 <div className="text-xl font-bold">
-                  {flight.from} {flight.departTime} â†’ {flight.to} {flight.arriveTime}
+                  {flight.from} {flight.departTime} → {flight.to} {flight.arriveTime}
                 </div>
                 <div className="text-xs text-zinc-500">
-                  {flight.durationMins} mins â€¢{" "}
-                  {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`} â€¢{" "}
+                  {flight.durationMins} mins -{" "}
+                  {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`} -{" "}
                   {flight.cabin}
                 </div>
               </div>
@@ -245,7 +245,7 @@ export default function FlightReviewPage() {
                 <span>{fmtINR(fare.published || fare.offered)}</span>
               </div>
               <div className="text-xs text-zinc-500">
-                {fare.refundable ? "Refundable" : "Non-refundable"} â€¢ Currency: {fare.currency}
+                {fare.refundable ? "Refundable" : "Non-refundable"} - Currency: {fare.currency}
               </div>
             </div>
 

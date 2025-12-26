@@ -146,19 +146,19 @@ const chips = {
     "Qatar Airways",
   ] as ChipItem[],
   domesticRoutes: [
-    "Mumbai â†” Delhi",
-    "Delhi â†” Goa",
-    "Bengaluru â†” Mumbai",
-    "Chennai â†” Delhi",
-    "Delhi â†” Pune",
-    "Hyderabad â†” Kolkata",
+    "Mumbai → Delhi",
+    "Delhi → Goa",
+    "Bengaluru → Mumbai",
+    "Chennai → Delhi",
+    "Delhi → Pune",
+    "Hyderabad → Kolkata",
   ] as ChipItem[],
   internationalRoutes: [
-    "Mumbai â†” Dubai",
-    "Delhi â†” London",
-    "Mumbai â†” Singapore",
-    "Delhi â†” Sydney",
-    "Delhi â†” Paris",
+    "Mumbai → Dubai",
+    "Delhi → London",
+    "Mumbai → Singapore",
+    "Delhi → Sydney",
+    "Delhi → Paris",
   ] as ChipItem[],
   blogs: [
     "Visa Rejections: What to do?",
@@ -224,7 +224,7 @@ export default function HomeExplore() {
           <PromoBanner
             img="/assets/home/visa-promo.jpg"
             title="Get 100% Refund in Case of Visa Rejection"
-            caption="On select visas â€¢ Terms apply"
+            caption="On select visas - Terms apply"
           />
 
           <CardRow features={holidaysRow1} />
@@ -523,7 +523,7 @@ function ChipsGroup({
                 e.preventDefault();
                 navigate(to);
               }}
-              aria-label={`${label} â€“ open ${to}`}
+              aria-label={`${label} - open ${to}`}
             >
               {label}
             </Link>

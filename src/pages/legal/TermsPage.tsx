@@ -27,8 +27,8 @@ export default function TermsPage() {
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>1. Definitions</h2>
       <p>
-        â€œServicesâ€ include flight/hotel/holiday/visa/MICE search, booking,
-        concierge, and related support. â€œYouâ€ means the user/customer.
+        "Services" include flight/hotel/holiday/visa/MICE search, booking,
+        concierge, and related support. "You" means the user/customer.
       </p>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>2. Eligibility</h2>
@@ -120,7 +120,7 @@ export default function TermsPage() {
         10. Disclaimers & Limitation of Liability
       </h2>
       <p>
-        Services are provided â€œas isâ€. We do not warrant uninterrupted or
+        Services are provided "as is". We do not warrant uninterrupted or
         error-free operation. To the maximum extent permitted by law, our
         liability is limited to the amount paid to us for the affected service.
       </p>
