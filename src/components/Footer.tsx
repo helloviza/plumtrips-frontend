@@ -105,7 +105,7 @@ export default function Footer() {
 
         {/* Bottom note */}
         <div className="flex items-center justify-between pt-6 text-xs">
-          <p>© {year} — PlumTrips Private Limited</p>
+          <p>© {year} — Peachmint Trips and Planners Private Limited</p>
         </div>
       </div>
     </footer>

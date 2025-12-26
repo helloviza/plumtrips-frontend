@@ -1,9 +1,19 @@
-import React from "react";
-
 const baseFont = "'Barlow Condensed', Arial, sans-serif";
+
 const BRAND = "Plumtrips.com";
+const LEGAL_ENTITY = "Peachmint Trips and Planners Private Limited";
 const SUPPORT_EMAIL = "hello@plumtrips.com";
-const SUPPORT_PHONE = "+91 70659 32396";
+const SUPPORT_PHONE_DISPLAY = "+91 70659 32396";
+const SUPPORT_PHONE_TEL = "+917065932396";
+
+// Set these to your official details (recommended for legal pages)
+const REGISTERED_ADDRESS = "Vatika Business Park, Gurugram Haryana";
+const GRIEVANCE_EMAIL = "grievance@plumtrips.com"; // change if you want to keep grievance@plumtrips.com
+const LAST_UPDATED = "9 Nov 2025";
+
+function linkStyle() {
+  return { color: "#00477f", textDecoration: "underline" };
+}
 
 export default function PrivacyPage() {
   return (
@@ -19,28 +29,37 @@ export default function PrivacyPage() {
       <h1 style={{ fontSize: "2.2rem", color: "#00477f", marginBottom: 8 }}>
         Privacy Policy
       </h1>
-      <p style={{ marginTop: 0, opacity: 0.8 }}>Last updated: 9 Nov 2025</p>
+      <p style={{ marginTop: 0, opacity: 0.8 }}>Last updated: {LAST_UPDATED}</p>
 
       <p>
-        {BRAND} (“we”, “us”, “our”) respects your privacy. This Privacy Policy
-        explains how we collect, use, disclose, and safeguard your information
-        when you use our website, mobile experiences, and related services for
-        travel (flights, hotels, holidays, visa assistance, MICE).
+        <strong>{BRAND}</strong> is a brand and website operated by{" "}
+        <strong>{LEGAL_ENTITY}</strong> (“Peachmint,” “we,” “us,” or “our”). This
+        Privacy Policy explains how we collect, use, disclose, and safeguard your
+        information when you access or use our website, mobile experiences, and
+        related travel services, including flights, hotels, holidays, visa
+        assistance, group bookings, and MICE (Meetings, Incentives, Conferences,
+        and Events).
+      </p>
+
+      <p>
+        We aim to handle personal data responsibly and in accordance with
+        applicable laws, including the <strong>Digital Personal Data Protection Act, 2023</strong>{" "}
+        (“<strong>DPDP Act</strong>”), the <strong>Information Technology Act, 2000</strong>, and
+        applicable rules (including the IT Rules, 2021), and other applicable
+        data protection laws (including GDPR where relevant).
       </p>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>1. Scope</h2>
       <p>
-        This Policy applies to users, prospects, and business contacts who
-        access or use our services. By using {BRAND}, you consent to the
-        practices described here.
+        This Policy applies to users, prospects, and business contacts who access
+        or use our Services. By using {BRAND}, you consent to the practices
+        described here.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>
-        2. Information We Collect
-      </h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>2. Information We Collect</h2>
       <ul>
         <li>
-          <strong>Identity & Contact:</strong> name, email, phone, gender,
+          <strong>Identity &amp; Contact:</strong> name, email, phone, gender,
           date of birth, nationality.
         </li>
         <li>
@@ -48,19 +67,20 @@ export default function PrivacyPage() {
           co-traveller details, special requests.
         </li>
         <li>
-          <strong>KYC & Visa Docs:</strong> passport details, photos, address
-          proof—only when you choose to submit for visa/booking assistance.
+          <strong>KYC &amp; Visa Documents:</strong> passport details, photos,
+          address proof—only when you choose to submit them for visa/booking
+          assistance or where required by a service provider or law.
         </li>
         <li>
-          <strong>Payment Data:</strong> limited billing info (we use PCI-DSS
-          compliant payment gateways; we do not store full card data).
+          <strong>Payment Data:</strong> limited billing information (we use
+          PCI-DSS compliant payment gateways; we do not store full card data).
         </li>
         <li>
-          <strong>Technical:</strong> device/browser info, IP, cookies,
-          analytics, referrers.
+          <strong>Technical:</strong> device/browser information, IP address,
+          cookies, analytics, referrers.
         </li>
         <li>
-          <strong>Communications:</strong> emails, chat messages, call notes
+          <strong>Communications:</strong> emails, chat messages, and call notes
           relating to support and bookings.
         </li>
       </ul>
@@ -70,75 +90,142 @@ export default function PrivacyPage() {
         <li>Provide and manage bookings (flights/hotels/holidays/visa/MICE).</li>
         <li>Quote fares, issue tickets, process refunds, and deliver itineraries.</li>
         <li>Verify identity and comply with KYC/visa/documentation requirements.</li>
-        <li>Improve site performance, UX, and offerings using analytics.</li>
+        <li>Improve site performance, user experience, and offerings using analytics.</li>
         <li>Customer support, notifications, travel alerts, and service updates.</li>
         <li>Fraud prevention, security, audits, and legal compliance.</li>
-        <li>Marketing with consent and opt-out controls.</li>
+        <li>Marketing with consent (where required) and opt-out controls.</li>
       </ul>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>
-        4. Legal Bases (incl. India DPDPA/GDPR concepts)
+        4. Legal Bases (DPDP Act / GDPR where applicable)
       </h2>
       <p>
-        We process data based on consent, contract performance (to deliver
-        bookings/services), legitimate interests (security, analytics, customer
-        experience), and legal obligations (KYC, tax, audit).
+        We process personal data based on your consent (where required), to
+        perform contracts and provide services you request (for example, booking
+        travel), for legitimate interests (such as security, fraud prevention,
+        analytics, and service improvement), and to comply with legal obligations
+        (including KYC, tax, and audit requirements).
       </p>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>
-        5. Sharing & International Transfers
+        5. Sharing &amp; International Transfers
       </h2>
       <p>
-        We share data with trusted providers strictly for service delivery:
-        GDS/aggregators/airlines/hotels/DMCs/visa partners, payment gateways,
-        customer support and analytics tools, cloud hosting. Data may be
-        transferred outside your country subject to appropriate safeguards.
+        We share personal data with trusted service providers strictly to deliver
+        the Services you request. This may include airlines, GDS/aggregators,
+        hotels, DMCs, visa partners, payment gateways, customer support tools,
+        analytics providers, and cloud hosting providers. We share only the data
+        that is reasonably necessary for service delivery, compliance, and
+        security.
+      </p>
+      <p>
+        Your data may be processed or stored outside your country depending on
+        where our providers operate. Where applicable, we take steps to implement
+        appropriate safeguards consistent with applicable law.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>6. Data Retention</h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>6. Cookies &amp; Tracking</h2>
       <p>
-        We retain data for the duration needed to provide services, meet legal
+        We use cookies and similar technologies to operate the website, remember
+        preferences, enhance performance, and understand usage through analytics.
+        You can manage cookies through your browser settings. Disabling cookies
+        may affect certain features of the Services.
+      </p>
+
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>7. Data Retention</h2>
+      <p>
+        We retain data for the duration needed to provide Services, meet legal
         and tax/audit requirements, resolve disputes, and enforce agreements.
-        Passport/visa copies submitted for processing are retained only for
-        mandated durations and securely deleted thereafter.
+        Passport/visa documents submitted for processing are retained only for
+        legally mandated or operationally necessary durations and are securely
+        deleted thereafter, subject to legal holds.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>7. Your Rights</h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>8. Your Rights</h2>
       <ul>
-        <li>Access, correction, update, and deletion (subject to legal holds).</li>
+        <li>
+          Access, correction, update, and deletion (subject to legal and
+          regulatory requirements).
+        </li>
         <li>Withdraw consent where processing is consent-based.</li>
-        <li>Object/limit certain processing and opt out of marketing.</li>
+        <li>Opt out of marketing communications.</li>
+        <li>
+          Request grievance redressal related to your personal data and our
+          Services.
+        </li>
+        <li>
+          Other rights available to you under applicable law (including where
+          relevant, GDPR rights).
+        </li>
       </ul>
       <p>
-        To exercise rights, email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
-        We may verify your identity before actioning requests.
+        To exercise your rights, email{" "}
+        <a style={linkStyle()} href={`mailto:${SUPPORT_EMAIL}`}>
+          {SUPPORT_EMAIL}
+        </a>
+        . We may verify your identity before actioning requests.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>8. Security</h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>9. Security</h2>
       <p>
-        We implement administrative, technical, and physical safeguards. No
-        method of transmission is 100% secure; we aim to reduce risks with
-        strong controls and vendor due diligence.
+        We implement reasonable administrative, technical, and physical
+        safeguards designed to protect your data. No method of transmission or
+        storage is 100% secure; we continuously work to reduce risk through
+        security controls and vendor due diligence.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>9. Children</h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>10. Children</h2>
       <p>
-        Our services are not directed to children under 13. We process minor
-        data only as needed for travel bookings with guardian consent.
+        Our Services are not directed to children. Where child data is required
+        for travel bookings (for example, for minors traveling with family), we
+        collect and process such data only with the consent and involvement of a
+        parent or legal guardian, and only to the extent necessary for service
+        delivery and compliance.
       </p>
 
       <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>
-        10. Updates to This Policy
+        11. Updates to This Policy
       </h2>
       <p>
-        We may update this Policy. Material changes will be highlighted on this
-        page with a new “Last updated” date.
+        We may update this Policy from time to time. Material changes will be
+        highlighted on this page with a new “Last updated” date.
       </p>
 
-      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>11. Contact</h2>
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>12. Grievance Officer</h2>
+      <p style={{ marginBottom: 8 }}>
+        If you have complaints about our Services or how we handle personal data,
+        please contact:
+      </p>
+      <p style={{ marginTop: 0 }}>
+        <strong>Grievance Officer</strong>
+        <br />
+        <strong>{LEGAL_ENTITY}</strong> (operating the brand “Plumtrips.com”)
+        <br />
+        <strong>Registered Address:</strong> {REGISTERED_ADDRESS}
+        <br />
+        <strong>Email:</strong>{" "}
+        <a style={linkStyle()} href={`mailto:${GRIEVANCE_EMAIL}`}>
+          {GRIEVANCE_EMAIL}
+        </a>
+      </p>
+      <p style={{ opacity: 0.9 }}>
+        In accordance with Rule 3(2) of the Information Technology (Intermediary
+        Guidelines and Digital Media Ethics Code) Rules, 2021, the Grievance
+        Officer will acknowledge your complaint within 24 hours and will
+        endeavour to resolve it within 15 days of receipt, or sooner if required
+        by applicable law.
+      </p>
+
+      <h2 style={{ fontSize: "1.4rem", marginTop: 28 }}>13. Contact</h2>
       <p>
-        Questions? Contact {BRAND}: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>{" "}
-        | {SUPPORT_PHONE}
+        Questions? Contact {BRAND}:{" "}
+        <a style={linkStyle()} href={`mailto:${SUPPORT_EMAIL}`}>
+          {SUPPORT_EMAIL}
+        </a>{" "}
+        {" | "}
+        <a style={linkStyle()} href={`tel:${SUPPORT_PHONE_TEL}`}>
+          {SUPPORT_PHONE_DISPLAY}
+        </a>
       </p>
     </main>
   );
