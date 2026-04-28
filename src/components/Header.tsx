@@ -163,7 +163,7 @@ export default function Header() {
           </div>
 
           {/* Center: rotating text (desktop only) */}
-          <div className="relative hidden h-full flex-1 items-center justify-center md:flex">
+          {/* <div className="relative hidden h-full flex-1 items-center justify-center md:flex">
             <div className="relative inline-flex h-full items-center justify-center">
               <i
                 key={`spark-${idx}`}
@@ -178,7 +178,7 @@ export default function Header() {
                 {flashPhrases[idx]}
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Right: right nav + User menu + mobile burger */}
           <div className="flex items-center gap-4">

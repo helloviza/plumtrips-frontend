@@ -268,21 +268,25 @@ const BUDGET_RANGES: Record<
   { label: string; min: number; max: number }[]
 > = {
   Domestic: [
-    { label: "Under â‚¹15k", min: 0, max: 15000 },
-    { label: "â‚¹15k-â‚¹30k", min: 15000, max: 30000 },
-    { label: "â‚¹30k-â‚¹50k", min: 30000, max: 50000 },
-    { label: "â‚¹50k+", min: 50000, max: Number.MAX_SAFE_INTEGER },
+    { label: "Under 15k", min: 0, max: 15000 },
+    { label: "15k-30k", min: 15000, max: 30000 },
+    { label: "30k-50k", min: 30000, max: 50000 },
+    { label: "50k+", min: 50000, max: Number.MAX_SAFE_INTEGER },
   ],
   International: [
-    { label: "Under â‚¹40k", min: 0, max: 40000 },
-    { label: "â‚¹40k-â‚¹80k", min: 40000, max: 80000 },
-    { label: "â‚¹80k-â‚¹1.5L", min: 80000, max: 150000 },
-    { label: "â‚¹1.5L+", min: 150000, max: Number.MAX_SAFE_INTEGER },
+    { label: "Under 40k", min: 0, max: 40000 },
+    { label: "40k-80k", min: 40000, max: 80000 },
+    { label: "80k-1.5L", min: 80000, max: 150000 },
+    { label: "1.5L+", min: 150000, max: Number.MAX_SAFE_INTEGER },
   ],
 };
 
 const formatINR = (n: number) =>
-  "â‚¹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  n.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
 
 /* ---------- Typewriter ---------- */
 function useTypewriter(words: string[], typing = 110, deleting = 65, hold = 1600) {

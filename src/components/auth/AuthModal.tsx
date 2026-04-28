@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useUi } from "../../context/UiContext";
 import { useAuth } from "../../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 
 /** Bundled images (lives under src/assets) */
 import s1 from "../../assets/auth/slide1.jpg";
@@ -157,12 +158,12 @@ export default function AuthModal() {
         <div className="relative mx-3 overflow-hidden rounded-3xl bg-white shadow-2xl">
           {/* close */}
           <button
-            onClick={onClose}
-            className="absolute right-3 top-3 z-10 rounded-full bg-black/10 p-2 text-black/70 hover:bg-black/20"
-            aria-label="Close"
-          >
-            âœ•
-          </button>
+  onClick={onClose}
+  className="absolute right-3 top-3 z-10 rounded-full bg-black/10 p-2 text-black/70 hover:bg-black/20"
+  aria-label="Close"
+>
+  <X size={18} />
+</button>
 
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* LEFT: Forms */}
@@ -219,9 +220,9 @@ export default function AuthModal() {
                         onChange={(e) => setCc(e.target.value)}
                         className="rounded-l-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-800 focus:outline-none"
                       >
-                        <option value="+91">ðŸ‡®ðŸ‡³ +91</option>
-                        <option value="+971">ðŸ‡¦ðŸ‡ª +971</option>
-                        <option value="+1">ðŸ‡ºðŸ‡¸ +1</option>
+                        <option value="+91">+91</option>
+                        <option value="+971">+971</option>
+                        <option value="+1">+1</option>
                       </select>
                       <input
                         className={`w-full rounded-r-lg border px-3 py-2 outline-none ${

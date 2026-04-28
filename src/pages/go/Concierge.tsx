@@ -117,7 +117,7 @@ export default function Concierge() {
       return;
     }
     if (!name) {
-      alert("Please add your name so we can respond. âœ¨");
+      alert("Please add your name so we can respond.");
       return;
     }
     if (!email && user?.email) setEmail(user.email);
@@ -160,7 +160,7 @@ export default function Concierge() {
                     className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
                     title="Call us"
                   >
-                    â˜Žï¸Ž {PHONE_DISPLAY}
+                    {PHONE_DISPLAY}
                   </a>
                   <a
                     href={`https://wa.me/${WHATSAPP_E164}`}
@@ -169,7 +169,7 @@ export default function Concierge() {
                     className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
                     title="Chat on WhatsApp"
                   >
-                    ðŸŸ¢ WhatsApp
+                     WhatsApp
                   </a>
 
                   {fromSlug ? (
@@ -244,7 +244,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Maldives, Amalfi, Baliâ€¦"
+                  placeholder="Maldives, Bali, Greece"
                 />
               </Field>
 
@@ -253,7 +253,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={dates}
                   onChange={(e) => setDates(e.target.value)}
-                  placeholder="Oct 10-18 (flex Â±2)"
+                  placeholder="Oct 10-18 (flex±2)"
                 />
               </Field>
               <Field label="Budget (total or per night)">
@@ -261,7 +261,7 @@ export default function Concierge() {
                   className="lux-input"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
-                  placeholder="â‚¬3000 total / â‚¬250-â‚¬350 pn"
+                  placeholder="3000 INR per night or 20,000 INR total"
                 />
               </Field>
 
@@ -303,7 +303,7 @@ export default function Concierge() {
                 className="lux-btn"
                 style={{ background: "linear-gradient(90deg, #b89054, #d8b97d, #b89054)" }}
               >
-                âœ‰ï¸ Send via Email
+               Send via Email
               </button>
 
               <a
@@ -321,9 +321,9 @@ export default function Concierge() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-3 text-[12px] text-white/70">
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ Private transfers</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ Handpicked stays</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">âœ“ 24/7 assistance</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">Private transfers</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">Handpicked stays</span>
+              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">24/7 assistance</span>
             </div>
           </form>
 
@@ -337,7 +337,7 @@ export default function Concierge() {
                 <li className="flex gap-3"><Dot />Ethical, small-scale experiences that feel special.</li>
               </ul>
 
-              <div className="mt-8 rounded-xl border border-white/15 bg-gradient-to-br from-white/10 to-white/5 p-4">
+              <div className="mt-8 rounded-xl border border-white/15 bg-linear-to-br from-white/10 to-white/5 p-4">
                 <h4 className="text-white font-semibold">Timing tip</h4>
                 <p className="mt-1 text-sm text-white/80">
                   For peak dates & wow suites, 6-10 weeks ahead is the real sweet spot.
@@ -357,7 +357,7 @@ export default function Concierge() {
         </div>
 
         <div
-          className="mt-10 h-24 w-full rounded-b-[2rem] blur-2xl"
+          className="mt-10 h-24 w-full rounded-b-4xl blur-2xl"
           style={{ background: "radial-gradient(60% 60% at 50% 0%, rgba(199,165,107,0.25), transparent 70%)" }}
         />
       </main>
@@ -446,5 +446,6 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
 }
 
 function Dot() {
-  return <span className="mt-[6px] inline-block h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: ACCENT }} />;
+  return <span className="mt-1.5 inline-block h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: ACCENT }} />;
 }
+ 
