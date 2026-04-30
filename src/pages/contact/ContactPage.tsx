@@ -24,8 +24,10 @@ const CONTACT = {
   emailMice:     "hello@Plumtrips.com",
   hours: "Mon - Sat Â· 9:00 AM - 8:00 PM IST",
   emergencyNote:
-    "If you are already travelling, call the hotline in your voucher for 24Ã—7 assistance.",
+    "If you are already travelling, call the hotline in your voucher for 24x7 assistance.",
 };
+
+
 
 // Two office addresses (India)
 const ADDR_GGN =

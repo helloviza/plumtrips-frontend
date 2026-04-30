@@ -329,7 +329,7 @@ export default function AuthModal() {
                     disabled={busy}
                     className="w-full rounded-xl bg-[#00477f] py-2.5 font-semibold text-white hover:opacity-95 disabled:opacity-60"
                   >
-                    {busy ? "Signing inâ€¦" : "Sign in"}
+                    {busy ? "Signing in" : "Sign in"}
                   </button>
                   <div className="text-sm text-zinc-600">
                     Don't have an account?{" "}
@@ -337,7 +337,7 @@ export default function AuthModal() {
                       Create one
                     </button>
                   </div>
-                </form>
+                </form> 
               )}
 
               {/* --- EMAIL REGISTER STEP --- */}

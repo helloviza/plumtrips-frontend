@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 /* ----------------------- Brand ----------------------- */
 const BRAND_PRIMARY = "#00477f";
 const ACCENT = "#d06549";
-const HERO_BG = "/assets/mice/hero.jpg"; // put your hero image here
+const HERO_BG = "/assets/mice/miceevents.png"; // put your hero image here
 
 /* --------------------- Page Data --------------------- */
 type EventType = "Meetings" | "Incentives" | "Conferences" | "Exhibitions";
@@ -217,7 +217,7 @@ export default function MicePage() {
       >
         <div className="absolute inset-0">
           <div
-            className="h-full w-full bg-center bg-cover opacity-55"
+            className="h-full w-full bg-center bg-cover opacity-45"
             style={{ backgroundImage: `url(${HERO_BG})` }}
           />
         </div>
@@ -243,7 +243,7 @@ export default function MicePage() {
             <Stat kpi="300+" label="Corporate Events" />
             <Stat kpi="65+" label="Cities Served" />
             <Stat kpi="4.8/5" label="Client Satisfaction" />
-            <Stat kpi="24Ã—7" label="Concierge Support" />
+            <Stat kpi="24x7" label="Concierge Support" />
           </div>
         </div>
       </section>
@@ -291,7 +291,7 @@ export default function MicePage() {
               <img
                 className="h-full w-full object-cover"
                 loading="lazy"
-                src="https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1400&auto=format&fit=crop"
+                src="/assets/mice/mice1.jpg"
                 alt="Concert production"
               />
             </div>
@@ -299,7 +299,7 @@ export default function MicePage() {
               <img
                 className="h-full w-full object-cover"
                 loading="lazy"
-                src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1400&auto=format&fit=crop"
+                src="/assets/mice/mice2.jpg"
                 alt="Incentive travel"
               />
             </div>
@@ -307,7 +307,7 @@ export default function MicePage() {
               <img
                 className="h-full w-full object-cover"
                 loading="lazy"
-                src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=1400&auto=format&fit=crop"
+                src="/assets/mice/mice3.jpg"
                 alt="Business handshake"
               />
             </div>
@@ -315,7 +315,7 @@ export default function MicePage() {
               <img
                 className="h-full w-full object-cover"
                 loading="lazy"
-                src="https://images.unsplash.com/photo-1503428593586-e225b39bddfe?q=80&w=1400&auto=format&fit=crop"
+                src="/assets/mice/mice4.jpg"
                 alt="Conference session"
               />
             </div>

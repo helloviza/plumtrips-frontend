@@ -57,6 +57,8 @@ import Logout from "./pages/account/Logout";
 import { AuthProvider } from "./context/AuthContext";
 import { UiProvider } from "./context/UiContext";
 import RequireAuth from "./components/RequireAuth";
+import MarketingDash from "./pages/marketing/MarketingDash";
+import MarketingLogin from "./pages/auth/MarketingLogin";
 
 // BLOG (lazy to speed initial load)
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -124,6 +126,12 @@ const withProviders = (node: ReactNode): ReactElement => (
 
 export const router = createBrowserRouter(
   [
+    // ✅ Route WITHOUT header/footer
+    {path: "/marketing-login",element: withProviders(<MarketingLogin />)},
+    { path: "auth/login", element: withProviders(<Login />) }, 
+    { path: "auth/register", element: withProviders(<Register />) },
+    { path: "signin", element: withProviders(<Navigate to="/auth/login" replace />) },
+    // ✅ All other routes (with header/footer)
     {
       path: "/",
       element: withProviders(<MainLayout />), // MainLayout must render <Outlet />
@@ -183,6 +191,8 @@ export const router = createBrowserRouter(
         { path: "go/concierge", element: <Concierge /> },
         { path: "concierge", element: <Navigate to="/go/concierge" replace /> },
 
+        //Marketing Admin Panel
+        { path: "marketing-dash", element: <MarketingDash /> },
         // Careers
         {
           path: "careers",
@@ -248,10 +258,7 @@ export const router = createBrowserRouter(
         // Shortcut
         { path: "my-trips", element: <Navigate to="/account/trips" replace /> },
 
-        // Auth
-        { path: "auth/login", element: <Login /> },
-        { path: "auth/register", element: <Register /> },
-        { path: "signin", element: <Navigate to="/auth/login" replace /> },
+        
 
         // 404
         { path: "*", element: <NotFound /> },

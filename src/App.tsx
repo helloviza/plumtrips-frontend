@@ -58,7 +58,7 @@ function BookPlaceholder() {
         </p>
         <div className="mt-4">
           <Link to="/flights" className="text-blue-700 underline underline-offset-4">
-            â† Back to flights
+            Back to flights
           </Link>
         </div>
       </div>
@@ -159,6 +159,7 @@ export default function App() {
             </Shell>
           }
         />
+
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

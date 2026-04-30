@@ -1,7 +1,7 @@
 ﻿// apps/frontend/src/components/Footer.tsx
 import { Link } from "react-router-dom";
 
-const BG = "#d06549";
+const BG = "#f8fafc";
 const TEXT = "#00477f";
 const DIV = "rgba(0,71,127,0.25)";
 
@@ -10,7 +10,7 @@ export default function Footer() {
 
   return (
     <footer style={{ backgroundColor: BG, color: TEXT }}>
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-4 py-10"> 
         {/* ---------- TOP ROW: 4 link columns + brand/contact on the RIGHT ---------- */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
           <Group title="PRODUCTS" className="md:col-span-2">
@@ -30,6 +30,7 @@ export default function Footer() {
           <Group title="FOR AGENTS" className="md:col-span-2">
             <FLink to="/auth/register">Sign Up</FLink>
             <FLink to="/auth/login">Login</FLink>
+            <FLink to="/marketing-login">Marketing Login</FLink>
           </Group>
 
           <Group title="OTHERS" className="md:col-span-2">
@@ -42,11 +43,11 @@ export default function Footer() {
           {/* Brand + Contact lives in the same top row, right aligned */}
           <div className="md:col-span-4 flex items-start justify-end">
             <div className="flex flex-col items-end gap-3">
-              <img
+              {/* <img
                 src="/assets/logo.png"
                 alt="Plumtrips"
                 className="h-12 w-auto object-contain"
-              />
+              /> */}
               <div className="text-base font-semibold">
                 <a
                   href="tel:+917065932396"
@@ -105,7 +106,7 @@ export default function Footer() {
 
         {/* Bottom note */}
         <div className="flex items-center justify-between pt-6 text-xs">
-          <p>Â© {year} - Peachmint Trips and Planners Private Limited</p>
+          <p>© {year} - Peachmint Trips and Planners Private Limited</p>
         </div>
       </div>
     </footer>

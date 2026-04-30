@@ -26,7 +26,7 @@ const H = {
 };
 const PlumTip = ({ text }: { text: string }) => (
   <div className="mt-3 rounded-xl bg-[#d06549]/10 px-4 py-3 text-sm text-[#d06549] font-semibold">
-    ðŸ’¡ PlumTip: {text}
+     PlumTip: {text}
   </div>
 );
 function Shot({ src, alt }: { src: string; alt: string }) {

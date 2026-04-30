@@ -12,15 +12,12 @@ const EXTERNAL_FLIGHTS_URL = "https://www.Plumtrips.in";
 const EXTERNAL_HOTELS_URL = "https://www.Plumtrips.in/hotels";
 const EXTERNAL_VISA_URL = "https://www.helloviza.com";
 
-const leftNav = [
+const allNav = [
   { to: "/flights", label: "Flights" },
   { to: "/hotels", label: "Hotels" },
   { to: "/go/visa", label: "Visa" },
   { to: "/holidays", label: "Holidays" },
-  { to: "/mice", label: "MICE" },
-];
-
-const rightNav = [
+  { to: "/mice", label: "Group Booking" },
   { to: "/blogs", label: "Blogs" },
   { to: "/offers", label: "Offers" },
   { to: "/business", label: "Business" },
@@ -64,6 +61,20 @@ export default function Header() {
 
   const renderNavItemDesktop = (item: { to: string; label: string }) => {
     const externalUrl = externalByLabel[item.label];
+
+    if (item.label === "Business") {
+      return (
+        <button
+          key={item.label}
+          onClick={() => openAuth("mobile", "biz", true)}
+          className="relative pb-1 font-medium text-white/90 hover:text-white transition-colors"
+          aria-label="Business sign in (MyBiz)"
+        >
+          {item.label}
+        </button>
+      );
+    }
+
     if (externalUrl) {
       return (
         <a
@@ -71,7 +82,7 @@ export default function Header() {
           href={externalUrl}
           target="_self"
           rel="noopener noreferrer"
-          className="relative pb-1 font-medium text-white/90 hover:text-white"
+          className="relative pb-1 font-medium text-white/90 hover:text-white transition-colors"
           onClick={closeMobile}
           aria-label={`${item.label} (opens external site)`}
         >
@@ -85,7 +96,7 @@ export default function Header() {
         key={item.to}
         to={item.to}
         className={({ isActive }) =>
-          `relative pb-1 font-medium ${
+          `relative pb-1 font-medium transition-colors ${
             isActive ? "text-white" : "text-white/90 hover:text-white"
           }`
         }
@@ -105,6 +116,22 @@ export default function Header() {
 
   const renderNavItemMobile = (item: { to: string; label: string }) => {
     const externalUrl = externalByLabel[item.label];
+
+    if (item.label === "Business") {
+      return (
+        <button
+          key={item.label}
+          onClick={() => {
+            openAuth("mobile", "biz", true);
+            closeMobile();
+          }}
+          className="block rounded px-1 py-1.5 text-left text-white/90"
+        >
+          {item.label}
+        </button>
+      );
+    }
+
     if (externalUrl) {
       return (
         <a
@@ -139,13 +166,14 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-[#00477f] to-[#00477f] text-white">
-        <div className="mx-auto flex h-22 max-w-screen-2xl items-center justify-between px-4 md:px-6">
-          {/* Left: logo + left nav */}
-          <div className="flex items-center gap-6">
+      <header className="sticky top-0 z-50 bg-[#00477f] text-white shadow-md">
+        <div className="mx-auto flex h-[72px] max-w-screen-2xl items-center px-4 md:px-6">
+
+          {/* ── LEFT: Logo ── */}
+          <div className="flex-shrink-0">
             <Link
               to="/"
-              className="flex items-center gap-3"
+              className="flex items-center"
               aria-label="Plumtrips home"
               onClick={closeMobile}
             >
@@ -155,73 +183,15 @@ export default function Header() {
                 className="h-10 w-auto select-none object-contain pointer-events-none"
               />
             </Link>
-
-            {/* Desktop left nav */}
-            <nav className="hidden items-center gap-10 text-[17px] md:flex">
-              {leftNav.map(renderNavItemDesktop)}
-            </nav>
           </div>
 
-          {/* Center: rotating text (desktop only) */}
-          {/* <div className="relative hidden h-full flex-1 items-center justify-center md:flex">
-            <div className="relative inline-flex h-full items-center justify-center">
-              <i
-                key={`spark-${idx}`}
-                className="sparkle-burst pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                aria-hidden
-              />
-              <span
-                key={idx}
-                className="flycore z-10 text-[20px] md:text-[22px] font-extrabold leading-none tracking-wide"
-                style={{ color: "#d06549" }}
-              >
-                {flashPhrases[idx]}
-              </span>
-            </div>
-          </div> */}
+          {/* ── CENTER: All nav items (desktop) ── */}
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-7 text-[15.5px]">
+            {allNav.map(renderNavItemDesktop)}
+          </nav>
 
-          {/* Right: right nav + User menu + mobile burger */}
-          <div className="flex items-center gap-4">
-            {/* Desktop right nav */}
-            <nav className="hidden items-center gap-8 text-[17px] lg:flex">
-              {rightNav.map((item) => {
-                if (item.label === "Business") {
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => openAuth("mobile", "biz", true)}
-                      className="relative pb-1 font-medium text-white/90 hover:text-white"
-                      aria-label="Business sign in (MyBiz)"
-                    >
-                      {item.label}
-                    </button>
-                  );
-                }
-
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `relative pb-1 font-medium ${
-                        isActive ? "text-white" : "text-white/90 hover:text-white"
-                      }`
-                    }
-                    onClick={closeMobile}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        {item.label}
-                        {isActive && (
-                          <span className="absolute -bottom-1 left-0 h-[3px] w-8 bg-[#d06549]" />
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </nav>
-
+          {/* ── RIGHT: UserMenu + mobile burger ── */}
+          <div className="flex-shrink-0 flex items-center gap-3">
             <UserMenu />
 
             {/* Mobile burger (only < md) */}
@@ -252,47 +222,11 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile slide-down menu */}
+        {/* ── Mobile slide-down menu ── */}
         {mobileOpen && (
           <div className="md:hidden border-t border-white/20 bg-[#00477f]">
             <nav className="mx-auto max-w-screen-2xl px-4 py-3 flex flex-col gap-2 text-sm">
-              {/* Left nav items */}
-              {leftNav.map(renderNavItemMobile)}
-
-              <div className="mt-2 border-t border-white/15 pt-2" />
-
-              {/* Right nav items (mobile) */}
-              {rightNav.map((item) => {
-                if (item.label === "Business") {
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={() => {
-                        openAuth("mobile", "biz", true);
-                        closeMobile();
-                      }}
-                      className="block rounded px-1 py-1.5 text-left text-white/90"
-                    >
-                      {item.label}
-                    </button>
-                  );
-                }
-
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `block rounded px-1 py-1.5 ${
-                        isActive ? "font-semibold text-white" : "text-white/90"
-                      }`
-                    }
-                    onClick={closeMobile}
-                  >
-                    {item.label}
-                  </NavLink>
-                );
-              })}
+              {allNav.map(renderNavItemMobile)}
             </nav>
           </div>
         )}

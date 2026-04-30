@@ -20,7 +20,7 @@ type PackageCard = {
   href?: string;
 };
 
-const HERO_BG = "/assets/holidays/hero.jpg";
+const HERO_BG = "/assets/holidays/kashmir.jpg";
 
 const BRAND_PRIMARY = "#00477f";
 const ACTIVE_HEX = "#d06549";
@@ -66,7 +66,7 @@ const CATALOG: PackageCard[] = [
     scope: "International",
     trending: true,
     image:
-      "https://images.unsplash.com/photo-1541417904950-b855846fe074?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/bali",
   },
   {
@@ -77,7 +77,7 @@ const CATALOG: PackageCard[] = [
     scope: "International",
     trending: true,
     image:
-      "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/dubai",
   },
   {
@@ -87,7 +87,7 @@ const CATALOG: PackageCard[] = [
     price: 56999,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1508057198894-247b23fe5ade?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/singapore",
   },
   {
@@ -97,17 +97,17 @@ const CATALOG: PackageCard[] = [
     price: 25999,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1544989164-31dc3c645987?q=80&w=1400&auto=format&fit=crop",
+      "/assets/holidays/qatar_2.jpg",
     href: "/packages/qatar",
   },
-  {
+  { 
     id: "georgia",
     title: "Georgia Packages",
     subtitle: "Tbilisi & Batumi",
     price: 73999,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1565008576549-57569a49371d?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/georgia",
   },
   {
@@ -118,7 +118,7 @@ const CATALOG: PackageCard[] = [
     scope: "International",
     trending: true,
     image:
-      "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/maldives",
   },
   {
@@ -128,7 +128,7 @@ const CATALOG: PackageCard[] = [
     price: 118999,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1459213599465-03ab6a4d5931?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/paris",
   },
   {
@@ -138,7 +138,7 @@ const CATALOG: PackageCard[] = [
     price: 94699,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1526498460520-4c246339dccb?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1507699622108-4be3abd695ad?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/new-zealand",
   },
   {
@@ -158,7 +158,7 @@ const CATALOG: PackageCard[] = [
     price: 22990,
     scope: "International",
     image:
-      "https://images.unsplash.com/photo-1544989164-31dc3c645987?q=80&w=1400&auto=format&fit=crop", // âœ… Fixed Oman
+      "https://images.unsplash.com/photo-1590076215667-875d4ef2d7de?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/oman",
   },
   {
@@ -169,7 +169,7 @@ const CATALOG: PackageCard[] = [
     scope: "Domestic",
     trending: true,
     image:
-      "https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1614082242765-7c98ca0f3df3?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/goa",
   },
   {
@@ -179,7 +179,7 @@ const CATALOG: PackageCard[] = [
     price: 15999,
     scope: "Domestic",
     image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/kerala",
   },
   {
@@ -190,7 +190,7 @@ const CATALOG: PackageCard[] = [
     scope: "Domestic",
     trending: true,
     image:
-      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1400&auto=format&fit=crop",
+      "/assets/holidays/kashmir_2.jpg",
     href: "/packages/kashmir",
   },
   {
@@ -200,7 +200,7 @@ const CATALOG: PackageCard[] = [
     price: 32999,
     scope: "Domestic",
     image:
-      "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/andaman",
   },
   {
@@ -210,34 +210,37 @@ const CATALOG: PackageCard[] = [
     price: 34999,
     scope: "Domestic",
     image:
-      "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/ladakh",
   },
-{
-  id: "manali",
-  title: "Manali",
-  subtitle: "Himalayan Retreat",
-  price: 12999,
-  scope: "Domestic",
-  image: "/assets/holidays/manali.jpg",
-  href: "/packages/manali",
-},
-{
-  id: "jaipur",
-  title: "Jaipur",
-  subtitle: "Palaces & Pink City",
-  price: 11999,
-  scope: "Domestic",
-  image: "/assets/holidays/jaipur.jpg",
-  href: "/packages/jaipur",
-},
+  {
+    id: "manali",
+    title: "Manali",
+    subtitle: "Himalayan Retreat",
+    price: 12999,
+    scope: "Domestic",
+    image:
+      "/assets/holidays/manali.jpg",
+    href: "/packages/manali",
+  },
+  {
+    id: "jaipur",
+    title: "Jaipur",
+    subtitle: "Palaces & Pink City",
+    price: 11999,
+    scope: "Domestic",
+    image:
+      "https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=1400&auto=format&fit=crop",
+    href: "/packages/jaipur",
+  },
   {
     id: "udaipur",
     title: "Udaipur",
     subtitle: "Lakes & Heritage",
     price: 14999,
     scope: "Domestic",
-    image: "/assets/holidays/udaipur.jpg",
+    image:
+      "/assets/holidays/udaipur.jpg",
     href: "/packages/udaipur",
   },
   {
@@ -247,7 +250,7 @@ const CATALOG: PackageCard[] = [
     price: 10999,
     scope: "Domestic",
     image:
-      "https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1605649487212-47bdab064df7?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/rishikesh",
   },
   {
@@ -257,7 +260,7 @@ const CATALOG: PackageCard[] = [
     price: 12999,
     scope: "Domestic",
     image:
-      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1400&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/coorg",
   },
 ];
@@ -419,12 +422,10 @@ export default function HolidaysPage() {
         }}
       >
         {/* BG Image */}
-        <div className="absolute inset-0">
-          <div
-            className="h-full w-full bg-center bg-cover opacity-60"
-            style={{ backgroundImage: `url(${HERO_BG})` }}
-          />
-        </div>
+        <div
+    className="absolute inset-0 bg-center bg-cover bg-no-repeat opacity-70"
+    style={{ backgroundImage: `url(${HERO_BG})` }}
+  />
 
         <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16">
           <h1 className="text-center font-extrabold tracking-tight text-white font-mono">
