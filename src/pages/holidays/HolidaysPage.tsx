@@ -50,7 +50,7 @@ const DEST_INDIA = [
   "Rishikesh",
   "Coorg",
 ];
-const TYPEWRITER_WORDS = [...DEST_GLOBAL, ...DEST_INDIA];
+const TYPEWRITER_WORDS = [...DEST_GLOBAL];
 const LONGEST = TYPEWRITER_WORDS.reduce((a, b) =>
   a.length >= b.length ? a : b
 );
@@ -161,108 +161,108 @@ const CATALOG: PackageCard[] = [
       "https://images.unsplash.com/photo-1590076215667-875d4ef2d7de?q=80&w=1400&auto=format&fit=crop",
     href: "/packages/oman",
   },
-  {
-    id: "goa",
-    title: "Goa",
-    subtitle: "Beaches & Boutique Stays",
-    price: 8999,
-    scope: "Domestic",
-    trending: true,
-    image:
-      "https://images.unsplash.com/photo-1614082242765-7c98ca0f3df3?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/goa",
-  },
-  {
-    id: "kerala",
-    title: "Kerala",
-    subtitle: "Backwaters - Munnar - Alleppey",
-    price: 15999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/kerala",
-  },
-  {
-    id: "kashmir",
-    title: "Kashmir",
-    subtitle: "Gulmarg - Pahalgam - Dal Lake",
-    price: 22999,
-    scope: "Domestic",
-    trending: true,
-    image:
-      "/assets/holidays/kashmir_2.jpg",
-    href: "/packages/kashmir",
-  },
-  {
-    id: "andaman",
-    title: "Andaman",
-    subtitle: "Havelock - Radhanagar",
-    price: 32999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/andaman",
-  },
-  {
-    id: "ladakh",
-    title: "Ladakh",
-    subtitle: "Nubra - Pangong - Monasteries",
-    price: 34999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/ladakh",
-  },
-  {
-    id: "manali",
-    title: "Manali",
-    subtitle: "Himalayan Retreat",
-    price: 12999,
-    scope: "Domestic",
-    image:
-      "/assets/holidays/manali.jpg",
-    href: "/packages/manali",
-  },
-  {
-    id: "jaipur",
-    title: "Jaipur",
-    subtitle: "Palaces & Pink City",
-    price: 11999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/jaipur",
-  },
-  {
-    id: "udaipur",
-    title: "Udaipur",
-    subtitle: "Lakes & Heritage",
-    price: 14999,
-    scope: "Domestic",
-    image:
-      "/assets/holidays/udaipur.jpg",
-    href: "/packages/udaipur",
-  },
-  {
-    id: "rishikesh",
-    title: "Rishikesh",
-    subtitle: "Ganga - Yoga - Adventure",
-    price: 10999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1605649487212-47bdab064df7?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/rishikesh",
-  },
-  {
-    id: "coorg",
-    title: "Coorg",
-    subtitle: "Coffee Hills & Mist",
-    price: 12999,
-    scope: "Domestic",
-    image:
-      "https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=1400&auto=format&fit=crop",
-    href: "/packages/coorg",
-  },
+  // {
+  //   id: "goa",
+  //   title: "Goa",
+  //   subtitle: "Beaches & Boutique Stays",
+  //   price: 8999,
+  //   scope: "Domestic",
+  //   trending: true,
+  //   image:
+  //     "https://images.unsplash.com/photo-1614082242765-7c98ca0f3df3?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/goa",
+  // },
+  // {
+  //   id: "kerala",
+  //   title: "Kerala",
+  //   subtitle: "Backwaters - Munnar - Alleppey",
+  //   price: 15999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/kerala",
+  // },
+  // {
+  //   id: "kashmir",
+  //   title: "Kashmir",
+  //   subtitle: "Gulmarg - Pahalgam - Dal Lake",
+  //   price: 22999,
+  //   scope: "Domestic",
+  //   trending: true,
+  //   image:
+  //     "/assets/holidays/kashmir_2.jpg",
+  //   href: "/packages/kashmir",
+  // },
+  // {
+  //   id: "andaman",
+  //   title: "Andaman",
+  //   subtitle: "Havelock - Radhanagar",
+  //   price: 32999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/andaman",
+  // },
+  // {
+  //   id: "ladakh",
+  //   title: "Ladakh",
+  //   subtitle: "Nubra - Pangong - Monasteries",
+  //   price: 34999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/ladakh",
+  // },
+  // {
+  //   id: "manali",
+  //   title: "Manali",
+  //   subtitle: "Himalayan Retreat",
+  //   price: 12999,
+  //   scope: "Domestic",
+  //   image:
+  //     "/assets/holidays/manali.jpg",
+  //   href: "/packages/manali",
+  // },
+  // {
+  //   id: "jaipur",
+  //   title: "Jaipur",
+  //   subtitle: "Palaces & Pink City",
+  //   price: 11999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/jaipur",
+  // },
+  // {
+  //   id: "udaipur",
+  //   title: "Udaipur",
+  //   subtitle: "Lakes & Heritage",
+  //   price: 14999,
+  //   scope: "Domestic",
+  //   image:
+  //     "/assets/holidays/udaipur.jpg",
+  //   href: "/packages/udaipur",
+  // },
+  // {
+  //   id: "rishikesh",
+  //   title: "Rishikesh",
+  //   subtitle: "Ganga - Yoga - Adventure",
+  //   price: 10999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1605649487212-47bdab064df7?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/rishikesh",
+  // },
+  // {
+  //   id: "coorg",
+  //   title: "Coorg",
+  //   subtitle: "Coffee Hills & Mist",
+  //   price: 12999,
+  //   scope: "Domestic",
+  //   image:
+  //     "https://images.unsplash.com/photo-1559827260-dc66d52bef19?q=80&w=1400&auto=format&fit=crop",
+  //   href: "/packages/coorg",
+  // },
 ];
 
 /* ---------- Budget ranges ---------- */
@@ -398,15 +398,16 @@ export default function HolidaysPage() {
     if (category === "Top Destination") return CATALOG;
     if (category === "Trending") {
       const intl = CATALOG.filter((p) => p.scope === "International" && p.trending).slice(0, 3);
-      const dom = CATALOG.filter((p) => p.scope === "Domestic" && p.trending).slice(0, 3);
-      return [...intl, ...dom];
+      // const dom = CATALOG.filter((p) => p.scope === "Domestic" && p.trending).slice(0, 3);
+      // return [...intl, ...dom];
+      return [...intl];
     }
     if (category === "International") {
       return CATALOG.filter((p) => p.scope === "International").slice(0, 10);
     }
-    if (category === "Domestic") {
-      return CATALOG.filter((p) => p.scope === "Domestic").slice(0, 10);
-    }
+    // if (category === "Domestic") {
+    //   return CATALOG.filter((p) => p.scope === "Domestic").slice(0, 10);
+    // }
     const r = BUDGET_RANGES[budgetScope][budgetIndex] || BUDGET_RANGES[budgetScope][0];
     return CATALOG.filter((p) => p.scope === budgetScope && p.price >= r.min && p.price <= r.max).slice(0, 12);
   }, [category, budgetScope, budgetIndex]);
@@ -459,7 +460,7 @@ export default function HolidaysPage() {
 
           {/* Category Chips */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {(["Top Destination", "Trending", "International", "Domestic", "Budget"] as Category[]).map((c) => (
+            {(["Top Destination", "Trending", "International", "Budget"] as Category[]).map((c) => (
               <Chip key={c} label={c} active={category === c} onClick={() => setCategory(c)} />
             ))}
           </div>
