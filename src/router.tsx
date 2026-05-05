@@ -131,6 +131,8 @@ export const router = createBrowserRouter(
     { path: "auth/login", element: withProviders(<Login />) }, 
     { path: "auth/register", element: withProviders(<Register />) },
     { path: "signin", element: withProviders(<Navigate to="/auth/login" replace />) },
+            //Marketing Admin Panel
+    { path: "marketing-dash", element: withProviders(<MarketingDash />) },
     // ✅ All other routes (with header/footer)
     {
       path: "/",
@@ -191,8 +193,7 @@ export const router = createBrowserRouter(
         { path: "go/concierge", element: <Concierge /> },
         { path: "concierge", element: <Navigate to="/go/concierge" replace /> },
 
-        //Marketing Admin Panel
-        { path: "marketing-dash", element: <MarketingDash /> },
+
         // Careers
         {
           path: "careers",

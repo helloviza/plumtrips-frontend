@@ -15,6 +15,8 @@ async function http<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 export type MeResponse = { user: { id?: string; email: string; fullName?: string; phone?: string } | null };
+export type MarketResponse = { user : { id?: string; email: string } | null }
+
 
 export const authApi = {
   me: () => http<MeResponse>("/api/auth/me", { method: "GET" }),
@@ -23,4 +25,8 @@ export const authApi = {
   register: (body: { fullName: string; email: string; phone?: string; password: string }) =>
     http<MeResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(body) }),
   logout: () => http<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+  marketMe: () => http<MarketResponse>("/api/auth-market/me", { method: "GET" }),
+  marketLogin: (body: { email: string; password: string }) =>
+    http<MarketResponse>("/api/auth-market/marketingLogin", { method: "POST", body: JSON.stringify(body) }),
+  marketLogout: () => http<{ ok: true }>("/api/auth-market/marketingLogout", { method: "POST" }),
 };

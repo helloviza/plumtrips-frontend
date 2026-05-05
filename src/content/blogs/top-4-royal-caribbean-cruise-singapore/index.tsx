@@ -1,16 +1,11 @@
 /* ===== Top 4 Royal Caribbean Cruise Singapore =====
-   Files to place in this folder:
-   - cover-royal.jpg
-   - quantum.jpg
-   - spectrum.jpg
-   - ovation.jpg
-   - anthem.jpg
+   Images served from public/assets/blogs/cruise-singapore/
 */
-const cover = new URL("./cover-royal.jpg", import.meta.url).href;
-const imgQuantum  = new URL("./quantum.jpg", import.meta.url).href;
-const imgSpectrum = new URL("./Spectrum.jpg".toLowerCase(), import.meta.url).href;
-const imgOvation  = new URL("./ovation.jpg", import.meta.url).href;
-const imgAnthem   = new URL("./anthem.jpg", import.meta.url).href;
+const cover = "/assets/blogs/cruise-singapore/cover-royal.jpg";
+const imgQuantum  = "/assets/blogs/cruise-singapore/quantum.jpg";
+const imgSpectrum = "/assets/blogs/cruise-singapore/spectrum.jpg";
+const imgOvation  = "/assets/blogs/cruise-singapore/ovation.jpg";
+const imgAnthem   = "/assets/blogs/cruise-singapore/anthem.jpg";
 
 export const meta = {
   slug: "top-4-royal-caribbean-cruise-singapore",

@@ -1,8 +1,8 @@
 ﻿// src/content/blogs/registry.tsx
 
-// ----- Covers for the first 5 (custom filenames) -----
+
 const cover_affordable = new URL(
-  "./10-affordable-trips-you-can-book-through-Plumtrips/cover-affordable-trips.jpg",
+  "./10-affordable-trips-you-can-book-through-Plumtrips/cover-affordable.jpg",
   import.meta.url
 ).href;
 

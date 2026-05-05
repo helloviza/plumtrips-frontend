@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function MarketingLogin() {
-  const { login } = useAuth();
+  const { marketlogin } = useAuth();
   const navigate   = useNavigate();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,7 @@ export default function MarketingLogin() {
     if (!email || !password) { toast.error('Enter email and password'); return; }
     setLoading(true);
     try {
-      await login(email, password);
+      await marketlogin(email, password);
       toast.success('Welcome back!');
       navigate('/marketing-dash');
     } catch {
@@ -45,28 +45,29 @@ export default function MarketingLogin() {
                 className="h-12 w-auto object-contain"
               />
             <div>
-              <div className="text-white font-bold text-lg leading-none flash-font">Plumtrips</div>
-              <div className="text-white/60 text-xs mt-0.5 tracking-wide uppercase">Marketing Panel</div>
+              <div className="text-white font-bold text-2xl leading-none flash-font">Marketing Panel</div>
             </div>
           </div>
 
           {/* Tagline */}
           <div className="mt-auto mb-10 lg:mb-0">
-            <h2 className="text-white text-3xl lg:text-4xl font-bold leading-tight flash-font mb-4">
+            <h2 className="text-[#d06549] text-3xl lg:text-4xl font-bold leading-tight flash-font mb-4">
               Craft stories that<br />move the world.
             </h2>
             <p className="text-white/65 text-base leading-relaxed max-w-sm">
-              Your full-stack CMS for exotic travel content — from draft to published in minutes.
+              Your all-in-one platform to create, manage, and market travel experiences — from content to bookings in minutes.
             </p>
 
             {/* Feature list */}
             <ul className="mt-8 space-y-3">
               {[
-                'Rich TSX blog editor',
-                'AWS S3 image uploads',
-                'Draft · Schedule · Publish',
-                'SEO & slug management',
-              ].map((f) => (
+  'Create blogs, packages & landing pages',
+  'Build and manage custom itineraries',
+  'Upload & manage media at scale (S3)',
+  'Schedule content, offers & campaigns',
+  'SEO tools for travel discovery',
+  'Direct customer marketing & engagement',
+].map((f) => (
                 <li key={f} className="flex items-center gap-3 text-white/80 text-sm">
                   <span
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -98,8 +99,8 @@ export default function MarketingLogin() {
         >
           {/* Form header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 flash-font">Sign in</h1>
-            <p className="text-gray-500 text-sm mt-1">Access the Plumtrips Marketing Panel</p>
+            <h1 className="text-2xl font-bold text-[#d06549] flash-font">Sign in</h1>
+            <p className="text-[#00477f] text-lg mt-1">Access the Plumtrips Marketing Panel</p>
           </div>
 
           {/* Email field */}

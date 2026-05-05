@@ -1,16 +1,11 @@
 /* ===== Top 25 ship cruise in India =====
-   Images:
-   - cover-india.jpg
-   - mumbai.jpg
-   - goa.jpg
-   - kochi.jpg
-   - lakshadweep.jpg
+   Images served from public/assets/blogs/cruise-india/
 */
-const cover = new URL("./cover-india.jpg", import.meta.url).href;
-const imgMumbai = new URL("./mumbai.jpg", import.meta.url).href;
-const imgGoa = new URL("./goa.jpg", import.meta.url).href;
-const imgKochi = new URL("./kochi.jpg", import.meta.url).href;
-const imgLd = new URL("./lakshadweep.jpg", import.meta.url).href;
+const cover = "/assets/blogs/cruise-india/cover-india.jpg";
+const imgMumbai = "/assets/blogs/cruise-india/mumbai.jpg";
+const imgGoa = "/assets/blogs/cruise-india/goa.jpg";
+const imgKochi = "/assets/blogs/cruise-india/kochi.jpg";
+const imgLd = "/assets/blogs/cruise-india/lakshadweep.jpg";
 
 export const meta = {
   slug: "top-25-ship-cruise-in-india",

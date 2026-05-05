@@ -1,21 +1,28 @@
 // apps/frontend/src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { authApi, type MeResponse } from "../lib/authApi";
+import { authApi, type MeResponse, type MarketResponse } from "../lib/authApi";
 
 type User = NonNullable<MeResponse["user"]>;
+type MarketUser = NonNullable<MarketResponse["user"]>;
 type AuthContextType = {
-  user: User | null;
+  user: User | MarketUser | null;
   loading: boolean;
   refresh: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
+  marketRefresh: () => Promise<void>;
+  marketlogin: (email: string, password: string) => Promise<void>;
+  marketlogout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<"user" | "market" | null>(() => {
+  return localStorage.getItem("role") as any;
+});
+  const [user, setUser] = useState<User | MarketUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
@@ -29,16 +36,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  async function marketRefresh() {
+    try {
+      const res = await authApi.marketMe();
+      setUser(res.user);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    // load session on first mount
+  if (role === "market") {
+    marketRefresh();
+  } else {
     refresh();
-  }, []);
+  }
+}, [role]);
 
   async function login(email: string, password: string) {
     setLoading(true);
     try {
       const res = await authApi.login({ email, password });
       setUser(res.user);
+      setRole("user");
+      localStorage.setItem("role", "user");
     } finally {
       setLoading(false);
     }
@@ -49,17 +72,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await authApi.register({ fullName, email, password, phone });
       setUser(res.user);
+      setRole("user");
+      localStorage.setItem("role", "user");
     } finally {
       setLoading(false);
     }
   }
-
+ 
   async function logout() {
     await authApi.logout();
     setUser(null);
+    setRole(null);
+    localStorage.removeItem("role");
   }
 
-  const value = useMemo(() => ({ user, loading, refresh, login, register, logout }), [user, loading]);
+  async function marketlogin(email: string, password: string) {
+    setLoading(true);
+    try {
+      const res = await authApi.marketLogin({ email, password }); 
+      setUser(res.user);
+      setRole("market");
+      localStorage.setItem("role", "market");
+    } finally {
+      setLoading(false);
+    }
+  } 
+
+  async function marketlogout() {
+    await authApi.marketLogout();
+    setUser(null);
+    setRole(null);
+    localStorage.removeItem("role");
+  }
+
+  const value = useMemo(() => ({ user, loading, refresh, login, register, logout, marketRefresh, marketlogin, marketlogout }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
