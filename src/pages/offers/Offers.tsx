@@ -11,6 +11,8 @@ import { Link } from "react-router-dom";
  * - CTA: Concierge
  */
 
+const HERO_BG = "/assets/offers/offerhero.jpg"; // put your hero image here
+
 const OFFERS = [
   {
     id: "holiday1",
@@ -50,7 +52,7 @@ const OFFERS = [
   {
     id: "hotel2",
     type: "Hotel",
-    title: "Dubai Marina 5â˜… Luxury",
+    title: "Dubai Marina Luxury",
     subtitle: "3 Nights - Breakfast Included",
     img: "/assets/offers/dubai-hotel.jpg",
   },
@@ -66,6 +68,12 @@ export default function OffersPage() {
     <main className="min-h-screen bg-slate-50">
       {/* HERO */}
       <section className="relative bg-gradient-to-r from-[#00477f] to-[#0a5fa3] text-white py-20 px-6">
+                <div className="absolute inset-0">
+          <div
+            className="h-full w-full bg-center bg-cover opacity-45"
+            style={{ backgroundImage: `url(${HERO_BG})` }}
+          />
+        </div>
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
             Exclusive Travel Offers - Holidays, Flights & Hotels

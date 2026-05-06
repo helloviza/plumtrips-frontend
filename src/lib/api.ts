@@ -83,6 +83,134 @@ async function postJson<T>(
   return data as T;
 }
 
+/** GET JSON, return JSON, throw clean Error on HTTP/ok:false failures */
+async function getJson<T>(
+  path: string,
+  timeoutMs?: number
+): Promise<T> {
+  const res = await fetchWithTimeout(`${BACKEND}${path}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    timeoutMs,
+  });
+
+  const data = await parseJsonSafe(res);
+
+  if (data && typeof data === "object" && (data as any).ok === false) {
+    const msg = ensureErrorMessage(data, "Request failed");
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    const txt = !data ? await res.text().catch(() => "") : "";
+    const msg = ensureErrorMessage(
+      data ?? txt,
+      `HTTP ${res.status} ${res.statusText || ""}`.trim()
+    );
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/** PUT JSON, return JSON, throw clean Error on HTTP/ok:false failures */
+async function putJson<T>(
+  path: string,
+  body: unknown,
+  timeoutMs?: number
+): Promise<T> {
+  const res = await fetchWithTimeout(`${BACKEND}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body ?? {}),
+    timeoutMs,
+  });
+
+  const data = await parseJsonSafe(res);
+
+  if (data && typeof data === "object" && (data as any).ok === false) {
+    const msg = ensureErrorMessage(data, "Request failed");
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    const txt = !data ? await res.text().catch(() => "") : "";
+    const msg = ensureErrorMessage(
+      data ?? txt,
+      `HTTP ${res.status} ${res.statusText || ""}`.trim()
+    );
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/** PATCH JSON, return JSON, throw clean Error on HTTP/ok:false failures */
+async function patchJson<T>(
+  path: string,
+  body: unknown,
+  timeoutMs?: number
+): Promise<T> {
+  const res = await fetchWithTimeout(`${BACKEND}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body ?? {}),
+    timeoutMs,
+  });
+
+  const data = await parseJsonSafe(res);
+
+  if (data && typeof data === "object" && (data as any).ok === false) {
+    const msg = ensureErrorMessage(data, "Request failed");
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    const txt = !data ? await res.text().catch(() => "") : "";
+    const msg = ensureErrorMessage(
+      data ?? txt,
+      `HTTP ${res.status} ${res.statusText || ""}`.trim()
+    );
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/** DELETE JSON, return JSON, throw clean Error on HTTP/ok:false failures */
+async function deleteJson<T>(
+  path: string,
+  timeoutMs?: number
+): Promise<T> {
+  const res = await fetchWithTimeout(`${BACKEND}${path}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    timeoutMs,
+  });
+
+  const data = await parseJsonSafe(res);
+
+  if (data && typeof data === "object" && (data as any).ok === false) {
+    const msg = ensureErrorMessage(data, "Request failed");
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    const txt = !data ? await res.text().catch(() => "") : "";
+    const msg = ensureErrorMessage(
+      data ?? txt,
+      `HTTP ${res.status} ${res.statusText || ""}`.trim()
+    );
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
@@ -292,6 +420,67 @@ export async function searchHotels(_params: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Blog API functions                                                 */
+/* ------------------------------------------------------------------ */
+
+export type Post = {
+  id?: string;
+  title: string;
+  subtitle: string;
+  slug: string;
+  excerpt: string;
+  cover?: { src: string; caption: string };
+  author: { name: string; role: string; initials: string; avatar: string };
+  categories: string[];
+  tags: string[];
+  readingTime: number;
+  publishDate: string;
+  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  featured: boolean;
+  seo: { title: string; description: string; ogImage: string };
+  blocks: any[];
+  related: any[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function getBlogs(filters?: any) {
+  const params = new URLSearchParams();
+  if (filters) {
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) params.append(k, String(v));
+    });
+  }
+  return getJson<{ success: boolean; data: { posts: Post[]; total: number; page: number; limit: number } }>(
+    `/api/abx/blogs?${params.toString()}`
+  );
+}
+
+export async function getBlog(idOrSlug: string) {
+  return getJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${idOrSlug}`);
+}
+
+export async function createBlog(blog: Partial<Post>) {
+  return postJson<{ success: boolean; data: Post }>(`/api/abx/blogs`, blog);
+}
+
+export async function updateBlog(id: string, blog: Partial<Post>) {
+  return putJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${id}`, blog);
+}
+
+export async function deleteBlog(id: string) {
+  return deleteJson<{ success: boolean; data: { deleted: boolean } }>(`/api/abx/blogs/${id}`);
+}
+
+export async function publishBlog(id: string) {
+  return patchJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${id}/publish`, {});
+}
+
+export async function unpublishBlog(id: string) {
+  return patchJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${id}/unpublish`, {});
+}
+
+/* ------------------------------------------------------------------ */
 /* Frontend helpers for airports/airlines JSON in /public              */
 /* ------------------------------------------------------------------ */
 export type Airport = {
@@ -382,4 +571,216 @@ export async function snoozeProfileStep(key: string): Promise<void> {
     body: JSON.stringify({ key }),
   });
   if (!res.ok) throw new Error("Failed to snooze");
+}
+
+
+// src/lib/api.ts
+// Single source of truth for all marketing-dashboard API calls.
+// Both Cruises.tsx and Holidays.tsx import from here.
+
+//const BACKEND = import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
+const BASE = `${BACKEND}/api/abx`;
+
+// ─── Shared helpers ────────────────────────────────────────────────────────────
+
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { credentials: "include" });
+  if (!res.ok) throw new Error(await res.text());
+  const json = await res.json();
+  return (json.data ?? json) as T;
+}
+
+async function sendForm<T>(
+  method: "POST" | "PUT",
+  path: string,
+  fields: Record<string, string | number | boolean>,
+  imageFile?: File,
+  imageFieldName = "image"
+): Promise<T> {
+  const body = new FormData();
+  for (const [k, v] of Object.entries(fields)) {
+    body.append(k, String(v));
+  }
+  if (imageFile) body.append(imageFieldName, imageFile);
+
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    credentials: "include",
+    body,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const json = await res.json();
+  return (json.data ?? json) as T;
+}
+
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+export type CruiseScope = "International" | "Domestic";
+export type HolidayScope = "International" | "Domestic";
+export type OfferType =
+  | "Hotel"
+  | "Flight"
+  | "Tour"
+  | "Transfer"
+  | "Activity"
+  | "Package"
+  | "Other";
+
+export interface Cruise {
+  id: string;
+  title: string;
+  subtitle: string;
+  price: number;
+  scope: CruiseScope;
+  trending: boolean;
+  active: boolean;
+  image: string;
+  href: string;
+}
+
+export interface Holiday {
+  id: string;
+  title: string;
+  subtitle: string;
+  price: number;
+  scope: HolidayScope;
+  trending: boolean;
+  active: boolean;
+  image: string;
+  href: string;
+}
+
+export interface Offer {
+  id: string;
+  type: OfferType;
+  title: string;
+  subtitle: string;
+  img: string;
+  active: boolean;
+}
+
+// ─── Raw shape returned by MongoDB (uses _id) ─────────────────────────────────
+
+type RawCruise = Omit<Cruise, "id"> & { _id: string };
+type RawHoliday = Omit<Holiday, "id"> & { _id: string };
+type RawOffer = Omit<Offer, "id"> & { _id: string };
+
+function normalizeCruise(r: RawCruise): Cruise {
+  return { ...r, id: r._id };
+}
+function normalizeHoliday(r: RawHoliday): Holiday {
+  return { ...r, id: r._id };
+}
+function normalizeOffer(r: RawOffer): Offer {
+  return { ...r, id: r._id };
+}
+
+// ─── Cruise API ────────────────────────────────────────────────────────────────
+
+export async function getCruises(): Promise<Cruise[]> {
+  const raw = await get<RawCruise[]>("/cruises");
+  return raw.map(normalizeCruise);
+}
+
+export async function createCruise(
+  payload: Omit<Cruise, "id">,
+  imageFile: File
+): Promise<Cruise> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawCruise>("POST", "/cruises", fields, imageFile, "image");
+  return normalizeCruise(raw);
+}
+
+export async function updateCruise(
+  id: string,
+  payload: Omit<Cruise, "id">,
+  imageFile?: File
+): Promise<Cruise> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawCruise>(
+    "PUT",
+    `/cruises/${id}`,
+    fields,
+    imageFile,
+    "image"
+  );
+  return normalizeCruise(raw);
+}
+
+export async function deleteCruise(id: string): Promise<void> {
+  return del(`/cruises/${id}`);
+}
+
+// ─── Holiday API ───────────────────────────────────────────────────────────────
+
+export async function getHolidays(): Promise<Holiday[]> {
+  const raw = await get<RawHoliday[]>("/holidays");
+  return raw.map(normalizeHoliday);
+}
+
+export async function createHoliday(
+  payload: Omit<Holiday, "id">,
+  imageFile: File
+): Promise<Holiday> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawHoliday>("POST", "/holidays", fields, imageFile, "image");
+  return normalizeHoliday(raw);
+}
+
+export async function updateHoliday(
+  id: string,
+  payload: Omit<Holiday, "id">,
+  imageFile?: File
+): Promise<Holiday> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawHoliday>(
+    "PUT",
+    `/holidays/${id}`,
+    fields,
+    imageFile,
+    "image"
+  );
+  return normalizeHoliday(raw);
+}
+
+export async function deleteHoliday(id: string): Promise<void> {
+  return del(`/holidays/${id}`);
+}
+
+// ─── Offer API ─────────────────────────────────────────────────────────────────
+
+export async function getOffers(): Promise<Offer[]> {
+  const raw = await get<RawOffer[]>("/offers");
+  return raw.map(normalizeOffer);
+}
+
+export async function createOffer(
+  payload: Omit<Offer, "id">,
+  imageFile: File
+): Promise<Offer> {
+  const { img: _img, ...fields } = payload;
+  const raw = await sendForm<RawOffer>("POST", "/offers", fields, imageFile, "img");
+  return normalizeOffer(raw);
+}
+
+export async function updateOffer(
+  id: string,
+  payload: Omit<Offer, "id">,
+  imageFile?: File
+): Promise<Offer> {
+  const { img: _img, ...fields } = payload;
+  const raw = await sendForm<RawOffer>("PUT", `/offers/${id}`, fields, imageFile, "img");
+  return normalizeOffer(raw);
+}
+
+export async function deleteOffer(id: string): Promise<void> {
+  return del(`/offers/${id}`);
 }

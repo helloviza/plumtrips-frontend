@@ -20,7 +20,7 @@ type PackageCard = {
   href?: string;
 };
 
-const HERO_BG = "/assets/holidays/kashmir.jpg";
+const HERO_BG = "/assests/auth/slide5.jpg";
 
 const BRAND_PRIMARY = "#00477f";
 const ACTIVE_HEX = "#d06549";

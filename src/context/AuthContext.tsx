@@ -36,24 +36,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  async function marketRefresh() {
-    try {
-      const res = await authApi.marketMe();
+async function marketRefresh() {
+  try {
+    const res = await authApi.marketMe();
+    if (res.user) {
       setUser(res.user);
-    } catch {
+      setRole("market");
+    } else {
+      // session dead — clean up
       setUser(null);
-    } finally {
-      setLoading(false);
+      setRole(null);
+      localStorage.removeItem("role");
     }
+  } catch {
+    setUser(null);
+    setRole(null);
+    localStorage.removeItem("role"); // ← clear stale role
+  } finally {
+    setLoading(false); // ← only false AFTER check completes
   }
+}
 
-  useEffect(() => {
-  if (role === "market") {
+ useEffect(() => {
+  const savedRole = localStorage.getItem("role");
+  if (savedRole === "market") {
     marketRefresh();
   } else {
     refresh();
   }
-}, [role]);
+}, []);
 
   async function login(email: string, password: string) {
     setLoading(true);

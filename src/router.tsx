@@ -4,6 +4,7 @@ import { useEffect, lazy, Suspense } from "react";
 import {
   createBrowserRouter,
   Navigate,
+  Outlet,
   useSearchParams,
 } from "react-router-dom";
 
@@ -59,6 +60,12 @@ import { UiProvider } from "./context/UiContext";
 import RequireAuth from "./components/RequireAuth";
 import MarketingDash from "./pages/marketing/MarketingDash";
 import MarketingLogin from "./pages/auth/MarketingLogin";
+import Holiday from "./pages/marketing/Holidays";
+import Blog from "./pages/marketing/Blogs"
+import Cruise from "./pages/marketing/Cruises";
+import Offer from "./pages/marketing/Offers"
+
+import RequireMarketAuth from "./components/RequireMarketAuth";
 
 // BLOG (lazy to speed initial load)
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -66,6 +73,8 @@ const BlogPost = lazy(() => import("./pages/blogs/BlogPost"));
 
 // CAREERS (lazy)
 const Careers = lazy(() => import("./pages/careers/Careers"));
+
+
 
 // Tiny fallback while lazy chunks load
 function RouteFallback() {
@@ -126,13 +135,38 @@ const withProviders = (node: ReactNode): ReactElement => (
 
 export const router = createBrowserRouter(
   [
+
+    {
+      // Single root element that wraps ALL routes
+      element: (
+        <AuthProvider>
+          <UiProvider>
+            <Outlet />
+          </UiProvider>
+        </AuthProvider>
+      ),
+      children: [
     // ✅ Route WITHOUT header/footer
     {path: "/marketing-login",element: withProviders(<MarketingLogin />)},
     { path: "auth/login", element: withProviders(<Login />) }, 
     { path: "auth/register", element: withProviders(<Register />) },
     { path: "signin", element: withProviders(<Navigate to="/auth/login" replace />) },
             //Marketing Admin Panel
-    { path: "marketing-dash", element: withProviders(<MarketingDash />) },
+    {
+  path: "/marketing-dash",
+  element: withProviders(
+    <RequireMarketAuth>
+      <MarketingDash />
+    </RequireMarketAuth>
+  ),
+  children: [
+    { index: true, element: <Cruise /> },
+    { path: "cruises", element: <Cruise /> },
+    { path: "holidays", element: <Holiday /> },
+    { path: "offers", element: <Offer /> },
+    { path: "blogs", element: <Blog /> },
+  ],
+},
     // ✅ All other routes (with header/footer)
     {
       path: "/",
@@ -265,6 +299,8 @@ export const router = createBrowserRouter(
         { path: "*", element: <NotFound /> },
       ],
     },
+  ],
+},
   ],
   { basename: import.meta.env.BASE_URL }
 );
