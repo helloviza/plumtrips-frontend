@@ -480,6 +480,35 @@ export async function unpublishBlog(id: string) {
   return patchJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${id}/unpublish`, {});
 }
 
+export async function uploadBlogImage(file: File) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetchWithTimeout(`${BACKEND}/api/abx/blogs/upload-image`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+  });
+
+  const data = await parseJsonSafe(res);
+
+  if (data && typeof data === 'object' && (data as any).ok === false) {
+    const msg = ensureErrorMessage(data, 'Image upload failed');
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    const msg = ensureErrorMessage(
+      data,
+      `HTTP ${res.status} ${res.statusText || 'Image upload failed'}`
+    );
+    throw new Error(msg);
+  }
+
+  return data as { success: boolean; data: { url: string } };
+}
+
 /* ------------------------------------------------------------------ */
 /* Frontend helpers for airports/airlines JSON in /public              */
 /* ------------------------------------------------------------------ */
