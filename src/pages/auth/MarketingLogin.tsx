@@ -38,7 +38,7 @@ export default function MarketingLogin() {
         <div className="relative z-10 flex flex-col justify-between w-full px-10 py-12 lg:px-16 lg:py-16">
 
           {/* Logo */}
-          <div className="flex items-center gap-4">
+          <div onClick={() => navigate("/")} className="flex items-center gap-4 cursor-pointer">
             <img
                 src="/assets/logo.png"
                 alt="Plumtrips"

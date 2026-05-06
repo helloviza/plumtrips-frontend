@@ -1,17 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+// src/pages/marketing/Offers.tsx
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  getOffers,
+  createOffer,
+  updateOffer,
+  deleteOffer,
+  type OfferType,
+  type Offer,
+} from "../../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type OfferType = "Hotel" | "Flight" | "Tour" | "Transfer" | "Activity" | "Package" | "Other";
-
-interface Offer {
-  id: string;
-  type: OfferType;
-  title: string;
-  subtitle: string;
-  img: string;
-  active: boolean;
-}
-
 type FormMode = "add" | "edit";
 
 const OFFER_TYPES: OfferType[] = [
@@ -28,28 +26,7 @@ const TYPE_META: Record<OfferType, { emoji: string; color: string; bg: string }>
   Other:    { emoji: "✨", color: "text-slate-700",  bg: "bg-slate-100" },
 };
 
-// ─── API helpers ──────────────────────────────────────────────────────────────
-const BASE = "/api/abx";
-
-const api = {
-  list: (): Promise<Offer[]> =>
-    fetch(`${BASE}/offers`).then((r) => r.json()).then((r) => r.data ?? r),
-  create: (payload: Omit<Offer, "id">): Promise<Offer> =>
-    fetch(`${BASE}/offers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).then((r) => r.json()).then((r) => r.data ?? r),
-  update: (id: string, payload: Partial<Offer>): Promise<Offer> =>
-    fetch(`${BASE}/offers/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).then((r) => r.json()).then((r) => r.data ?? r),
-  remove: (id: string): Promise<void> =>
-    fetch(`${BASE}/offers/${id}`, { method: "DELETE" }).then(() => undefined),
-};
-
+// ─── Blank form state ─────────────────────────────────────────────────────────
 const blank = (): Omit<Offer, "id"> => ({
   type: "Hotel",
   title: "",
@@ -58,7 +35,7 @@ const blank = (): Omit<Offer, "id"> => ({
   active: true,
 });
 
-// ─── StatusBadge ──────────────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span
@@ -74,7 +51,6 @@ function StatusBadge({ active }: { active: boolean }) {
   );
 }
 
-// ─── TypeBadge ───────────────────────────────────────────────────────────────
 function TypeBadge({ type }: { type: OfferType }) {
   const m = TYPE_META[type];
   return (
@@ -89,26 +65,49 @@ interface ModalProps {
   mode: FormMode;
   initial: Omit<Offer, "id"> & { id?: string };
   onClose: () => void;
-  onSave: (data: Omit<Offer, "id">, id?: string) => Promise<void>;
+  // Consistent with Cruises/Holidays: imageFile is a separate arg, not bundled in payload
+  onSave: (data: Omit<Offer, "id">, imageFile: File | null, id?: string) => Promise<void>;
 }
 
 function OfferModal({ mode, initial, onClose, onSave }: ModalProps) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(initial.img ?? "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: keyof typeof form, v: unknown) =>
     setForm((p) => ({ ...p, [k]: v }));
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+      set("img", ""); // clear stale URL; real S3 URL will come back from server
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
   const handleSubmit = async () => {
     if (!form.title.trim()) { setError("Title is required."); return; }
+    // Require an image on create, same as Cruises/Holidays
+    if (mode === "add" && !imageFile) { setError("Please upload an image."); return; }
+
     setSaving(true);
     try {
       const { id, ...payload } = form as Offer;
-      await onSave(payload, mode === "edit" ? id : undefined);
+      await onSave(payload, imageFile, mode === "edit" ? id : undefined);
       onClose();
-    } catch {
-      setError("Failed to save. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -198,24 +197,46 @@ function OfferModal({ mode, initial, onClose, onSave }: ModalProps) {
             />
           </div>
 
-          {/* Image URL */}
+          {/* Image upload — consistent with Cruises/Holidays drag-zone style */}
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Image / Asset Path
+              Image {mode === "add" ? "*" : "(leave blank to keep current)"}
             </label>
             <input
-              value={form.img}
-              onChange={(e) => set("img", e.target.value)}
-              placeholder="/assets/offers/dubai-hotel.jpg"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00477f]/30 focus:border-[#00477f] transition"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
             />
-            {form.img && (
-              <img
-                src={form.img}
-                alt="preview"
-                className="mt-2 w-full h-24 object-cover rounded-xl border border-slate-200"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="relative flex flex-col items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-[#00477f] cursor-pointer transition-colors bg-slate-50 hover:bg-[#00477f]/5 overflow-hidden"
+              style={{ minHeight: "120px" }}
+            >
+              {imagePreview ? (
+                <>
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-32 object-cover rounded-xl"
+                  />
+                  <span className="absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm text-[10px] font-semibold text-slate-500 px-2 py-0.5 rounded-full shadow">
+                    Click to change
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl">🖼️</span>
+                  <p className="text-xs text-slate-400">Click to upload an image</p>
+                  <p className="text-[10px] text-slate-300">PNG, JPG, WEBP accepted</p>
+                </>
+              )}
+            </div>
+            {imageFile && (
+              <p className="mt-1.5 text-[11px] text-slate-400 truncate">
+                📎 {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
+              </p>
             )}
           </div>
 
@@ -226,7 +247,9 @@ function OfferModal({ mode, initial, onClose, onSave }: ModalProps) {
               role="switch"
               aria-checked={form.active}
               onClick={() => set("active", !form.active)}
-              className={`relative w-10 h-5.5 rounded-full transition-colors ${form.active ? "bg-[#00477f]" : "bg-slate-200"}`}
+              className={`relative w-10 h-5.5 rounded-full transition-colors ${
+                form.active ? "bg-[#00477f]" : "bg-slate-200"
+              }`}
             >
               <span
                 className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 bg-white rounded-full shadow transition-transform ${
@@ -281,8 +304,18 @@ function DeleteConfirm({
           <span className="font-semibold text-slate-700">"{title}"</span> will be permanently removed.
         </p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition">Delete</button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -301,7 +334,7 @@ export default function OffersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.list();
+      const data = await getOffers();
       setItems(data);
     } catch {
       console.error("Failed to load offers");
@@ -312,19 +345,25 @@ export default function OffersPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (payload: Omit<Offer, "id">, id?: string) => {
+  // Consistent with Cruises/Holidays: imageFile is a separate argument.
+  // For edit with no new image, imageFile is null — api.ts updateOffer keeps existing img URL.
+  const handleSave = async (
+    payload: Omit<Offer, "id">,
+    imageFile: File | null,
+    id?: string
+  ) => {
     if (id) {
-      const updated = await api.update(id, payload);
+      const updated = await updateOffer(id, payload, imageFile ?? undefined);
       setItems((p) => p.map((o) => (o.id === id ? updated : o)));
     } else {
-      const created = await api.create(payload);
+      const created = await createOffer(payload, imageFile!);
       setItems((p) => [created, ...p]);
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await api.remove(deleteTarget.id);
+    await deleteOffer(deleteTarget.id);
     setItems((p) => p.filter((o) => o.id !== deleteTarget.id));
     setDeleteTarget(null);
   };
@@ -337,7 +376,6 @@ export default function OffersPage() {
     return matchQ && matchType;
   });
 
-  // Group counts by type for the filter tabs
   const typeCounts = OFFER_TYPES.reduce(
     (acc, t) => ({ ...acc, [t]: items.filter((o) => o.type === t).length }),
     {} as Record<OfferType, number>
@@ -429,7 +467,10 @@ export default function OffersPage() {
               <thead>
                 <tr className="border-b border-slate-100">
                   {["Offer", "Type", "Status", "Actions"].map((h) => (
-                    <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    <th
+                      key={h}
+                      className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest"
+                    >
                       {h}
                     </th>
                   ))}
@@ -439,7 +480,9 @@ export default function OffersPage() {
                 {filtered.map((o, i) => (
                   <tr
                     key={o.id}
-                    className={`border-b border-slate-50 hover:bg-slate-50/70 transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}
+                    className={`border-b border-slate-50 hover:bg-slate-50/70 transition-colors ${
+                      i === filtered.length - 1 ? "border-b-0" : ""
+                    }`}
                   >
                     {/* Offer */}
                     <td className="px-5 py-4">

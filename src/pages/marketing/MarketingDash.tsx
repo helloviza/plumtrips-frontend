@@ -53,8 +53,9 @@ export default function MarketingDash() {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-xl overflow-y-auto border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
+          
           <div className="flex items-center gap-3 mb-2">
-            <img src={logo} alt="Plumtrips" className="h-10 w-10 rounded" />
+            <img  src={logo} alt="Plumtrips" className="h-10 w-10 rounded" />
             <span className="font-bold text-xl text-[#00477f]">Plumtrips</span>
           </div>
           <p className="text-xs text-gray-600">Marketing Control Panel</p>

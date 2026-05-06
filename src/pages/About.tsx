@@ -18,7 +18,7 @@ export default function AboutPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/70 px-3 py-1 text-[11px] md:text-xs text-slate-200">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 ai-pulse" />
-                SYSTEM ONLINE Â· Travel OS // AI-enabled
+                SYSTEM ONLINE Travel OS // AI-enabled
               </div>
 
               <h1 className="mt-4 text-3xl leading-tight md:text-4xl lg:text-[2.9rem] lg:leading-[1.1] font-extrabold tracking-tight">
@@ -63,7 +63,7 @@ export default function AboutPage() {
 
               <div className="os-grid rounded-3xl border border-slate-800 bg-slate-900/80 p-5 md:p-6 shadow-[0_18px_60px_rgba(15,23,42,0.85)]">
                 <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>MODULE Â· Core Values</span>
+                  <span>Core Values</span>
                   <span className="ai-pulse text-emerald-400">LIVE</span>
                 </div>
                 <div className="mt-3 text-xs font-semibold tracking-wide text-sky-300">
@@ -108,7 +108,7 @@ export default function AboutPage() {
       <section className="bg-slate-950/95 border-t border-slate-800/70">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Vision / Mission</span>
+            <span>Vision / Mission</span>
             <span className="text-sky-300">SYSTEM LAYER // PURPOSE</span>
           </div>
 
@@ -160,7 +160,7 @@ export default function AboutPage() {
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Origin Story</span>
+            <span> Origin Story</span>
             <span className="text-emerald-300">SYSTEM LOG // CONTEXT</span>
           </div>
 
@@ -237,7 +237,7 @@ export default function AboutPage() {
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 pb-12 md:pb-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Architecture</span>
+            <span> Architecture</span>
             <span className="text-sky-300">TRAVEL OS // B2B LAYER</span>
           </div>
 
@@ -284,7 +284,7 @@ export default function AboutPage() {
       <section className="border-y border-slate-800 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Intelligence Layer</span>
+            <span>Intelligence Layer</span>
             <span className="text-sky-300">AI ENGINE // pluto.ai</span>
           </div>
 
@@ -292,7 +292,7 @@ export default function AboutPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 bg-sky-500/10 px-3 py-1 text-[11px] md:text-xs text-sky-100">
                 <span className="h-2 w-2 rounded-full bg-sky-300 ai-pulse" />
-                pluto.ai Â· AI co-pilot for Plumtrips
+                pluto.ai  AI co-pilot for Plumtrips
               </div>
               <h2 className="mt-4 text-xl md:text-2xl font-semibold text-slate-50">
                 pluto.ai - the intelligence that sits behind every journey
@@ -358,7 +358,7 @@ export default function AboutPage() {
       <section className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Human Layer</span>
+            <span>Human Layer</span>
             <span className="text-emerald-300">CREW // EXPERTISE</span>
           </div>
 
@@ -448,7 +448,7 @@ export default function AboutPage() {
       <section className="border-t border-slate-800 bg-slate-950">
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Guardrails</span>
+            <span> Guardrails</span>
             <span className="text-rose-300">GOVERNANCE // PRINCIPLES</span>
           </div>
 
@@ -513,7 +513,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
         <div className="mx-auto max-w-6xl px-4 pb-14 pt-10 md:pb-16 md:pt-14">
           <div className="mb-5 flex items-center justify-between text-[11px] md:text-xs text-slate-400">
-            <span>MODULE Â· Roadmap</span>
+            <span> Roadmap</span>
             <span className="text-sky-300">RELEASE CHANNEL // IN PROGRESS</span>
           </div>
 

@@ -733,14 +733,10 @@ export async function updateCruise(
   payload: Omit<Cruise, "id">,
   imageFile?: File
 ): Promise<Cruise> {
-  const { image: _image, ...fields } = payload;
-  const raw = await sendForm<RawCruise>(
-    "PUT",
-    `/cruises/${id}`,
-    fields,
-    imageFile,
-    "image"
-  );
+  const { image, ...rest } = payload;
+  // Only drop image URL if we're uploading a new file; otherwise send it along
+  const fields = imageFile ? rest : { ...rest, image };
+  const raw = await sendForm<RawCruise>("PUT", `/cruises/${id}`, fields, imageFile, "image");
   return normalizeCruise(raw);
 }
 
@@ -769,14 +765,9 @@ export async function updateHoliday(
   payload: Omit<Holiday, "id">,
   imageFile?: File
 ): Promise<Holiday> {
-  const { image: _image, ...fields } = payload;
-  const raw = await sendForm<RawHoliday>(
-    "PUT",
-    `/holidays/${id}`,
-    fields,
-    imageFile,
-    "image"
-  );
+  const { image, ...rest } = payload;
+  const fields = imageFile ? rest : { ...rest, image };
+  const raw = await sendForm<RawHoliday>("PUT", `/holidays/${id}`, fields, imageFile, "image");
   return normalizeHoliday(raw);
 }
 
@@ -805,7 +796,8 @@ export async function updateOffer(
   payload: Omit<Offer, "id">,
   imageFile?: File
 ): Promise<Offer> {
-  const { img: _img, ...fields } = payload;
+  const { img, ...rest } = payload;
+  const fields = imageFile ? rest : { ...rest, img };
   const raw = await sendForm<RawOffer>("PUT", `/offers/${id}`, fields, imageFile, "img");
   return normalizeOffer(raw);
 }
