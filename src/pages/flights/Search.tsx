@@ -306,19 +306,19 @@ export default function SearchPage() {
             onClick={() => setSortBy("cheapest")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "cheapest" ? "bg-emerald-100 text-emerald-900" : "bg-white"} border`}
           >
-            ðŸ’¸ CHEAPEST
+            CHEAPEST
           </button>
           <button
             onClick={() => setSortBy("nonstop")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "nonstop" ? "bg-blue-100 text-blue-900" : "bg-white"} border`}
           >
-            â›³ NON STOP FIRST
+            NON STOP FIRST
           </button>
           <button
             onClick={() => setSortBy("prefer")}
             className={`rounded-md px-3 py-2 text-xs font-medium ${sortBy === "prefer" ? "bg-zinc-100 text-zinc-900" : "bg-white"} border`}
           >
-            â­ YOU MAY PREFER
+            YOU MAY PREFER
           </button>
         </div>
       </div>
