@@ -66,6 +66,7 @@ import Cruise from "./pages/marketing/Cruises";
 import Offer from "./pages/marketing/Offers"
 
 import RequireMarketAuth from "./components/RequireMarketAuth";
+import FrontpagePage from "./pages/marketing/Frontpage";
 
 // BLOG (lazy to speed initial load)
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -165,6 +166,7 @@ export const router = createBrowserRouter(
     { path: "holidays", element: <Holiday /> },
     { path: "offers", element: <Offer /> },
     { path: "blogs", element: <Blog /> },
+    { path: "frontpage", element: <FrontpagePage/> },
   ],
 },
     // ✅ All other routes (with header/footer)

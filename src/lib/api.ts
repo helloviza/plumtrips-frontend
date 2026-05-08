@@ -1,8 +1,7 @@
 // apps/frontend/src/lib/api.ts
 
 // Minimal client for your backend (runs in browser)
-const BACKEND =
-  import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
+const BACKEND = import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
 
 // Default timeout (ms) for network calls. You can override per call below.
 const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_HTTP_TIMEOUT_MS || 90000); // 90s
@@ -654,6 +653,7 @@ async function del(path: string): Promise<void> {
 
 export type CruiseScope = "International" | "Domestic";
 export type HolidayScope = "International" | "Domestic";
+export type FrontpageScope = "VISAS" | "HOLIDAYS" | "STOPOVER" | "CRUISES" | "OFFERS" | "BLOGS" | "FLIGHTS" | "HOTELS";
 export type OfferType =
   | "Hotel"
   | "Flight"
@@ -663,7 +663,10 @@ export type OfferType =
   | "Package"
   | "Other";
 
-export interface Cruise {
+
+
+
+  export interface Cruise {
   id: string;
   title: string;
   subtitle: string;
@@ -696,11 +699,27 @@ export interface Offer {
   active: boolean;
 }
 
+export interface Frontpage{
+  id: string;
+  title:string;
+  subtitle:string;
+  scope:FrontpageScope;
+  tag_one:string;
+  tag_two:string;
+  trending:boolean;
+  active:boolean;
+  image:string;
+  href:string;
+  extra_info?:string;
+
+}
+
 // ─── Raw shape returned by MongoDB (uses _id) ─────────────────────────────────
 
 type RawCruise = Omit<Cruise, "id"> & { _id: string };
 type RawHoliday = Omit<Holiday, "id"> & { _id: string };
 type RawOffer = Omit<Offer, "id"> & { _id: string };
+type RawFrontpage = Omit<Frontpage, "id"> & { _id: string };
 
 function normalizeCruise(r: RawCruise): Cruise {
   return { ...r, id: r._id };
@@ -709,6 +728,9 @@ function normalizeHoliday(r: RawHoliday): Holiday {
   return { ...r, id: r._id };
 }
 function normalizeOffer(r: RawOffer): Offer {
+  return { ...r, id: r._id };
+}
+function normalizeFrontpage(r: RawFrontpage): Frontpage {
   return { ...r, id: r._id };
 }
 
@@ -805,3 +827,35 @@ export async function updateOffer(
 export async function deleteOffer(id: string): Promise<void> {
   return del(`/offers/${id}`);
 }
+
+// ─── Frontpage API ─────────────────────────────────────────────────────────────────
+export async function getFrontpage() {
+  const raw = await get<RawFrontpage[]>("/frontpage");
+  return raw.map(normalizeFrontpage);
+
+}
+
+export async function createFrontpage(
+  payload: Omit<Frontpage, "id">,
+  imageFile: File
+): Promise<Frontpage> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawFrontpage>("POST", "/frontpage", fields, imageFile, "image");
+  return normalizeFrontpage(raw);
+}
+
+export async function updateFrontpage(
+  id: string,
+  payload: Omit<Frontpage, "id">,
+  imageFile?: File  
+): Promise<Frontpage> {
+  const { image, ...rest } = payload;
+  const fields = imageFile ? rest : { ...rest, image };
+  const raw = await sendForm<RawFrontpage>("PUT", `/frontpage/${id}`, fields, imageFile, "image");
+  return normalizeFrontpage(raw);
+}
+
+export async function deleteFrontpage(id: string): Promise<void> {
+  return del(`/frontpage/${id}`);
+}
+

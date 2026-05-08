@@ -103,6 +103,12 @@ export default function MarketingDash() {
             isActive={activeTab === "blogs"}
             onClick={() => navigate("/marketing-dash/blogs")}
           />
+          <NavItem
+            icon="🏠"
+            label="Frontpage"
+            isActive={activeTab === "frontpage"}
+            onClick={() => navigate("/marketing-dash/frontpage")}
+          />
         </div>
 
         {/* Footer logout */}
@@ -126,6 +132,7 @@ export default function MarketingDash() {
             {activeTab === "holidays" && "Holiday Packages Management"}
             {activeTab === "offers" && "Offers & Promotions Management"}
             {activeTab === "blogs" && "Journal & Blog Management"}
+            {activeTab === "frontpage" && "Frontpage Management"}
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">📧 {userEmail}</span>
