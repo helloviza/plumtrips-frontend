@@ -1,4 +1,4 @@
-// apps/frontend/src/pages/About.tsx
+﻿// apps/frontend/src/pages/About.tsx
 import "../index.css";
 import { useState, useEffect, useRef } from "react";
 import bannerImg from "../assets/flights.jpeg";

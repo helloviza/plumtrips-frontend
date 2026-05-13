@@ -132,7 +132,7 @@ const ImageUploadField: React.FC<{
       alert(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value='';
+      if (fileRef.current) fileRef.current.value ='';
     }
   };
 

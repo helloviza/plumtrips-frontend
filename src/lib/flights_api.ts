@@ -364,6 +364,10 @@ export type FlightSearchResult = {
   outbound: DisplayFlight[];
   returnFlights?: DisplayFlight[];
   multiLegFlights?: DisplayFlight[][];
+  // FIX #4: Surface the TBO "no results" reason so ResultsPage can show a
+  // helpful message like "No flights on this route for the selected date"
+  // instead of a blank empty-state with no context.
+  noResultReason?: string;
 };
 
 export async function apiSearchFlights(
@@ -422,7 +426,6 @@ export async function apiSearchFlights(
   });
 
   if (!res.ok) {
-    // FIX #3: Try to extract a meaningful error message from the backend response body.
     let errMsg = `Search failed (HTTP ${res.status})`;
     try {
       const errJson = await res.json();
@@ -434,21 +437,23 @@ export async function apiSearchFlights(
 
   const json = await res.json();
 
-  // FIX #3: Backend envelope check with graceful fallback — handle both
-  // { ok: true, data: {...} } and raw TBO response shapes.
   const responseData = json?.ok === false
     ? (() => { throw new Error(json.message ?? "Search failed"); })()
-    : json?.data ?? json; // support both wrapped and unwrapped responses
+    : json?.data ?? json;
 
   const traceId: string = responseData?.Response?.TraceId ?? "";
   const rawResults = responseData?.Response?.Results ?? [];
+
   // TBO sometimes returns TBOFlightResult[] instead of TBOFlightResult[][]
   const results: import("./types_t").TBOFlightResult[][] = Array.isArray(rawResults[0])
     ? rawResults
     : rawResults.length > 0 ? [rawResults] : [];
 
   if (!results.length) {
-    return { outbound: [] };
+    // FIX #4: Pass the human-readable reason (set by backend when ErrorCode 25/6)
+    // to the UI so ResultsPage can render a meaningful empty state message.
+    const noResultReason: string | undefined = responseData?.Response?.NoResultReason;
+    return { outbound: [], noResultReason };
   }
 
   const outbound = (results[0] ?? []).map((r) => tboResultToDisplay(r, traceId));
@@ -493,11 +498,6 @@ export type FareQuoteResult = {
   fareChanged: boolean;
 };
 
-/**
- * FIX: apiFareQuote now returns real FareTier[] built from TBO FareQuote API data
- * (cancellation policies, actual OfferedFare, baggage from the live result).
- * In MOCK_MODE it falls back to getMockFareTiers so the UI still works locally.
- */
 export async function apiFareQuote(
   flight: import("./types_t").DisplayFlight
 ): Promise<FareQuoteResult> {
@@ -544,9 +544,6 @@ export async function apiFareQuote(
   const cancelFee = policyLabel(policies, 1);
   const changeFee = policyLabel(policies, 4);
 
-  // TBO only returns a single resultIndex per FareQuote.
-  // We expose one real "Saver" tier (the quoted fare) and two upsell tiers
-  // whose prices are computed relative to the real base fare.
   const tiers: FareTier[] = [
     {
       name: "Saver",
@@ -565,20 +562,17 @@ export async function apiFareQuote(
       price: livePrice + 549,
       cabinBag,
       checkinBag,
-      // Flexi relaxes the cancel fee by a fixed bracket — indicative only
       cancellationFee: cancelFee === "Free" ? "Free" : `~₹${Math.max(0, (policies[0]?.Amount ?? 0) - 1000).toLocaleString("en-IN")} (flexible)`,
       dateChangeFee: changeFee === "Free" ? "Free" : "₹999 (flexible)",
       seatSelection: "Free (Standard)",
       meals: result.IsLCC ? "Chargeable" : "Complimentary",
       recommended: true,
-      // Flexi shares the same ResultIndex — agent books then upgrades at desk
       resultIndex: result.ResultIndex,
     },
     {
       name: "Premium",
       price: livePrice + 3199,
       cabinBag,
-      // Premium: bump check-in to 20 Kg if not already higher
       checkinBag: parseInt(checkinBag) >= 20 ? checkinBag : "20 Kg",
       cancellationFee: "₹799 (3 days+)",
       dateChangeFee: "Free Date Change",
@@ -651,11 +645,6 @@ export async function apiBookFlight(
 
 // ── Airports ────────────────────────────────────────────────
 
-/**
- * FIX #4: Exported so SearchPage can call it and populate the airport
- * autocomplete with live data instead of the hardcoded MOCK_AIRPORTS list.
- * Falls back to MOCK_AIRPORTS on any error so the UI never breaks.
- */
 export async function apiGetAirports(): Promise<Airport[]> {
   if (MOCK_MODE) return MOCK_AIRPORTS;
   try {

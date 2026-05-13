@@ -1,115 +1,337 @@
 ﻿// apps/frontend/src/components/Footer.tsx
 import { Link } from "react-router-dom";
+import { createCallbackRequest } from "../lib/api";
+import { useState } from "react";
 
 const BG = "#f8fafc";
 const TEXT = "#00477f";
 const DIV = "rgba(0,71,127,0.25)";
 
-export default function Footer() {
-  const year = new Date().getFullYear();
+/* ===== Callback Popup ===== */
+function CallbackPopup({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+
+
+// then in handleSubmit:
+const handleSubmit = async (e: React.MouseEvent) => {
+  e.preventDefault();
+  if (!form.name || !form.email || !form.phone) return;
+  try {
+    setLoading(true);
+    await createCallbackRequest(form, "footer");
+    setSubmitted(true);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
-    <footer style={{ backgroundColor: BG, color: TEXT }}>
-      <div className="mx-auto max-w-6xl px-4 py-10"> 
-        {/* ---------- TOP ROW: 4 link columns + brand/contact on the RIGHT ---------- */}
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
-          <Group title="PRODUCTS" className="md:col-span-2">
-            <FLink to="/go/visa">Visa</FLink>
-            <FLink to="/cruises">Cruises</FLink>
-            <FLink to="/hotels">Hotels</FLink>
-            <FLink to="/flights-new">Flights</FLink>
-          </Group>
+    /* Backdrop */
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,30,60,0.45)",
+        backdropFilter: "blur(4px)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+    >
+      {/* Modal card */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: BG,
+          borderRadius: "16px",
+          width: "100%",
+          maxWidth: "420px",
+          boxShadow: "0 24px 60px rgba(0,71,127,0.18)",
+          overflow: "hidden",
+          fontFamily: "inherit",
+          animation: "popIn 0.22s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
+        <style>{`
+          @keyframes popIn {
+            from { opacity: 0; transform: scale(0.92) translateY(12px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0); }
+          }
+          .cb-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid rgba(0,71,127,0.22);
+            border-radius: 8px;
+            background: #fff;
+            color: ${TEXT};
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+          }
+          .cb-input:focus {
+            border-color: ${TEXT};
+          }
+          .cb-input::placeholder {
+            color: rgba(0,71,127,0.4);
+          }
+          .cb-btn {
+            width: 100%;
+            padding: 11px;
+            background: ${TEXT};
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            letter-spacing: 0.02em;
+          }
+          .cb-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+          .cb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        `}</style>
 
-          <Group title="USEFUL LINKS" className="md:col-span-2">
-            <FLink to="/about">About Us</FLink>
-            <FLink to="/blogs">Blogs</FLink>
-            <FLink to="/offers">Offers</FLink>
-            <FLink to="/contact">Contact</FLink>
-          </Group>
-
-          <Group title="FOR AGENTS" className="md:col-span-2">
-            <FLink to="/auth/register">Sign Up</FLink>
-            <FLink to="/auth/login">Login</FLink>
-            <FLink to="/marketing-login">Marketing Login</FLink>
-          </Group>
-
-          <Group title="OTHERS" className="md:col-span-2">
-            <FLink to="/privacy-policy">Privacy Policy</FLink>
-            <FLink to="/terms-and-conditions">Terms &amp; Conditions</FLink>
-            <FLink to="/cancellation-and-refund">Cancellation &amp; Refund</FLink>
-            <FLink to="/cookies-policy">Cookies Policy</FLink>
-          </Group>
-
-          {/* Brand + Contact lives in the same top row, right aligned */}
-          <div className="md:col-span-4 flex items-start justify-end">
-            <div className="flex flex-col items-end gap-3">
-              {/* <img
-                src="/assets/logo.png"
-                alt="Plumtrips"
-                className="h-12 w-auto object-contain"
-              /> */}
-              <div className="text-base font-semibold">
-                <a
-                  href="tel:+917065932396"
-                  className="hover:underline"
-                  style={{ color: TEXT }}
-                >
-                  +91 70659 32396
-                </a>
-              </div>
-              <div className="text-sm">
-                <a
-                  href="mailto:hello@Plumtrips.com"
-                  className="hover:underline"
-                  style={{ color: TEXT }}
-                >
-                  hello@Plumtrips.com
-                </a>
-              </div>
+        {/* Header stripe */}
+        <div
+          style={{
+            background: TEXT,
+            padding: "20px 24px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div style={{ color: "#fff", fontSize: "17px", fontWeight: 700, letterSpacing: "0.01em" }}>
+              Request a Callback
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px", marginTop: "3px" }}>
+              We'll reach out within 24 hours
             </div>
           </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              border: "none",
+              borderRadius: "50%",
+              width: "32px",
+              height: "32px",
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+              color: "#fff",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Divider */}
-        <div className="mt-10 h-px w-full" style={{ background: DIV }} />
-
-        {/* ---------- Social row ---------- */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6">
-          <Social
-            href="https://www.facebook.com/profile.php?id=61581639161240"
-            label="Facebook"
-          >
-            <FacebookIcon />
-          </Social>
-          <Social href="https://x.com/Plumtrips" label="X">
-            <XIcon />
-          </Social>
-          <Social href="https://www.instagram.com/Plumtrips/" label="Instagram">
-            <InstagramIcon />
-          </Social>
-          <Social
-            href="https://www.linkedin.com/company/plum-trips-and-events"
-            label="LinkedIn"
-          >
-            <LinkedInIcon />
-          </Social>
-          <Social
-            href="https://www.youtube.com/@Plumtrips.official"
-            label="YouTube"
-          >
-            <YouTubeIcon />
-          </Social>
-        </div>
-
-        {/* Divider */}
-        <div className="mt-6 h-px w-full" style={{ background: DIV }} />
-
-        {/* Bottom note */}
-        <div className="flex items-center justify-between pt-6 text-xs">
-          <p>© {year} - Peachmint Trips and Planners Private Limited</p>
+        {/* Body */}
+        <div style={{ padding: "24px" }}>
+          {submitted ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}>✅</div>
+              <div style={{ color: TEXT, fontWeight: 700, fontSize: "16px" }}>
+                We've got your details!
+              </div>
+              <div style={{ color: "rgba(0,71,127,0.65)", fontSize: "13px", marginTop: "6px" }}>
+                Our team will call you back soon.
+              </div>
+              <button
+                className="cb-btn"
+                onClick={onClose}
+                style={{ marginTop: "20px" }}
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: TEXT, marginBottom: "5px", letterSpacing: "0.04em" }}>
+                  FULL NAME
+                </label>
+                <input
+                  className="cb-input"
+                  name="name"
+                  placeholder="Jane Smith"
+                  value={form.name}
+                  onChange={handleChange}
+                  autoComplete="name"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: TEXT, marginBottom: "5px", letterSpacing: "0.04em" }}>
+                  EMAIL ADDRESS
+                </label>
+                <input
+                  className="cb-input"
+                  name="email"
+                  type="email"
+                  placeholder="jane@example.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: TEXT, marginBottom: "5px", letterSpacing: "0.04em" }}>
+                  PHONE NUMBER
+                </label>
+                <input
+                  className="cb-input"
+                  name="phone"
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                  value={form.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                />
+              </div>
+              <button
+                className="cb-btn"
+                onClick={handleSubmit}
+                disabled={loading || !form.name || !form.email || !form.phone}
+                style={{ marginTop: "4px" }}
+              >
+                {loading ? "Submitting…" : "Request Callback"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
-    </footer>
+    </div>
+  );
+}
+
+export default function Footer() {
+  const year = new Date().getFullYear();
+  const [showPopup, setShowPopup] = useState(false);
+
+  return (
+    <>
+      {showPopup && <CallbackPopup onClose={() => setShowPopup(false)} />}
+
+      <footer style={{ backgroundColor: BG, color: TEXT }}>
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          {/* ---------- TOP ROW: 4 link columns + callback CTA on the RIGHT ---------- */}
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
+            <Group title="PRODUCTS" className="md:col-span-2">
+              <FLink to="/go/visa">Visa</FLink>
+              <FLink to="/cruises">Cruises</FLink>
+              <FLink to="/hotels">Hotels</FLink>
+              <FLink to="/flights-new">Flights</FLink>
+            </Group>
+
+            <Group title="USEFUL LINKS" className="md:col-span-2">
+              <FLink to="/about">About Us</FLink>
+              <FLink to="/blogs">Blogs</FLink>
+              <FLink to="/offers">Offers</FLink>
+              <FLink to="/contact">Contact</FLink>
+            </Group>
+
+            <Group title="FOR AGENTS" className="md:col-span-2">
+              <FLink to="/auth/register">Sign Up</FLink>
+              <FLink to="/auth/login">Login</FLink>
+              <FLink to="/marketing-login">Marketing Login</FLink>
+            </Group>
+
+            <Group title="OTHERS" className="md:col-span-2">
+              <FLink to="/privacy-policy">Privacy Policy</FLink>
+              <FLink to="/terms-and-conditions">Terms &amp; Conditions</FLink>
+              <FLink to="/cancellation-and-refund">Cancellation &amp; Refund</FLink>
+              <FLink to="/cookies-policy">Cookies Policy</FLink>
+            </Group>
+
+            {/* Request a Callback — right aligned */}
+            <div className="md:col-span-4 flex items-start justify-end">
+              <button
+                onClick={() => setShowPopup(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: TEXT,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 18px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
+                  transition: "opacity 0.2s, transform 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.opacity = "0.85";
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+                }}
+              >
+                {/* Phone ring icon */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.02 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.13 1 .37 1.97.72 2.9a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.18-1.18a2 2 0 012.11-.45c.93.35 1.9.59 2.9.72A2 2 0 0122 14.92z"/>
+                </svg>
+                Request a Callback
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="mt-10 h-px w-full" style={{ background: DIV }} />
+
+          {/* ---------- Social row ---------- */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6">
+            <Social href="https://www.facebook.com/profile.php?id=61581639161240" label="Facebook">
+              <FacebookIcon />
+            </Social>
+            <Social href="https://x.com/Plumtrips" label="X">
+              <XIcon />
+            </Social>
+            <Social href="https://www.instagram.com/Plumtrips/" label="Instagram">
+              <InstagramIcon />
+            </Social>
+            <Social href="https://www.linkedin.com/company/plum-trips-and-events" label="LinkedIn">
+              <LinkedInIcon />
+            </Social>
+            <Social href="https://www.youtube.com/@Plumtrips.official" label="YouTube">
+              <YouTubeIcon />
+            </Social>
+          </div>
+
+          {/* Divider */}
+          <div className="mt-6 h-px w-full" style={{ background: DIV }} />
+
+          {/* Bottom note */}
+          <div className="flex items-center justify-between pt-6 text-xs">
+            <p>© {year} - Peachmint Trips and Planners Private Limited</p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }
 

@@ -1,25 +1,20 @@
 ﻿// src/content/blogs/registry.tsx
 
 
-const cover_affordable = new URL(
-  "./10-affordable-trips-you-can-book-through-Plumtrips/cover-affordable.jpg",
-  import.meta.url
-).href;
+// const cover_culinary = new URL(
+//   "./10-culinary-delights-from-around-the-world-a-journey-for-your-taste-buds/cover-culinary.jpg",
+//   import.meta.url
+// ).href;
 
-const cover_culinary = new URL(
-  "./10-culinary-delights-from-around-the-world-a-journey-for-your-taste-buds/cover-culinary.jpg",
-  import.meta.url
-).href;
+// const cover_luxury = new URL(
+//   "./10-luxurious-vacation-destinations-you-can-find-on-Plumtrips/cover-luxury.jpg",
+//   import.meta.url
+// ).href;
 
-const cover_luxury = new URL(
-  "./10-luxurious-vacation-destinations-you-can-find-on-Plumtrips/cover-luxury.jpg",
-  import.meta.url
-).href;
-
-const cover_germany_paradise = new URL(
-  "./10-short-flights-from-germany-to-paradise-book-with-Plumtrips/cover-germany-paradise.jpg",
-  import.meta.url
-).href;
+// const cover_germany_paradise = new URL(
+//   "./10-short-flights-from-germany-to-paradise-book-with-Plumtrips/cover-germany-paradise.jpg",
+//   import.meta.url
+// ).href;
 
 const cover_crystal = new URL(
   "./crystal-clear-waters-dream-destinations-around-the-world-not-just-in-the-maldives/cover-crystal-clear.jpg",
@@ -42,10 +37,10 @@ const cover_hiddenresorts = new URL(
   import.meta.url
 ).href;
 
-const cover_undiscovered = new URL(
-  "./magical-holiday-destinations-that-are-still-undiscovered-hidden-gems-with-Plumtrips/cover-undiscovered.jpg",
-  import.meta.url
-).href;
+// const cover_undiscovered = new URL(
+//   "./magical-holiday-destinations-that-are-still-undiscovered-hidden-gems-with-Plumtrips/cover-undiscovered.jpg",
+//   import.meta.url
+// ).href;
 
 const cover_wellness_de = new URL(
   "./pure-relaxation-the-best-wellness-destinations-in-germany-for-a-relaxing-weekend/cover-germany-wellness.jpg",
@@ -72,25 +67,25 @@ const cover_maldives_best = new URL(
   import.meta.url
 ).href;
 
-const cover_world_beaches = new URL(
-  "./the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips/cover-world-beaches.jpg",
-  import.meta.url
-).href;
+// const cover_world_beaches = new URL(
+//   "./the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips/cover-world-beaches.jpg",
+//   import.meta.url
+// ).href;
 
-const cover_europe_places = new URL(
-  "./the-most-beautiful-places-in-europe-discover-the-best-travel-destinations-on-Plumtrips/cover-europe-places.jpg",
-  import.meta.url
-).href;
+// const cover_europe_places = new URL(
+//   "./the-most-beautiful-places-in-europe-discover-the-best-travel-destinations-on-Plumtrips/cover-europe-places.jpg",
+//   import.meta.url
+// ).href;
 
 const cover_exotic = new URL(
   "./the-most-exotic-countries-in-the-world-an-adventure-beyond-the-familiar/cover-exotic.jpg",
   import.meta.url
 ).href;
 
-const cover_autumn = new URL(
-  "./top-10-vacation-spots-for-autumn-holidays-discover-the-best-destinations-on-Plumtrips/cover-autumn.jpg",
-  import.meta.url
-).href;
+// const cover_autumn = new URL(
+//   "./top-10-vacation-spots-for-autumn-holidays-discover-the-best-destinations-on-Plumtrips/cover-autumn.jpg",
+//   import.meta.url
+// ).href;
 
 const cover_dubai = new URL(
   "./travel-to-dubai-top-10-hotels-and-activities/cover-dubai.jpg",
@@ -107,46 +102,38 @@ const cover_nature_food = new URL(
   import.meta.url
 ).href;
 
-const cover_winter_de = new URL(
-  "./winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips/cover-winter-de.jpg",
-  import.meta.url
-).href;
+// const cover_winter_de = new URL(
+//   "./winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips/cover-winter-de.jpg",
+//   import.meta.url
+// ).href;
 
 export const BLOGS = [
-  {
-    slug: "10-affordable-trips-you-can-book-through-Plumtrips",
-    title: "10 Affordable Trips You Can Book Through Plumtrips",
-    excerpt:
-      "From boutique hostels in Budapest to sunset escapes in Lisbon, here's your Gen Z-friendly guide to 10 pocket-smart adventures without compromising luxury.",
-    tags: ["Gen Z", "Luxury Travel", "Budget Chic"],
-    cover: cover_affordable,
-  },
-  {
-    slug: "10-culinary-delights-from-around-the-world-a-journey-for-your-taste-buds",
-    title:
-      "10 Culinary Delights From Around The World - A Journey For Your Taste Buds",
-    excerpt:
-      "From Tokyo ramen counters to Barcelona tapas bars - the world's tastiest cities, served the Plum way.",
-    tags: ["Food Trips", "City Breaks", "Gen Z"],
-    cover: cover_culinary,
-  },
-  {
-    slug: "10-luxurious-vacation-destinations-you-can-find-on-Plumtrips",
-    title: "10 Luxurious Vacation Destinations You Can Find On Plumtrips",
-    excerpt:
-      "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service - here's the Plumrips shortlist for your next flex.",
-    tags: ["Luxury", "Honeymoon", "Bucket List"],
-    cover: cover_luxury,
-  },
-  {
-    slug: "10-short-flights-from-germany-to-paradise-book-with-Plumtrips",
-    title:
-      "10 Short Flights From Germany To Paradise - Book With Plumtrips",
-    excerpt:
-      "Weekend escapes, sunny coasts, island bliss - 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
-    tags: ["Weekend Getaways", "Island Vibes", "Europe"],
-    cover: cover_germany_paradise,
-  },
+  // {
+  //   slug: "10-culinary-delights-from-around-the-world-a-journey-for-your-taste-buds",
+  //   title:
+  //     "10 Culinary Delights From Around The World - A Journey For Your Taste Buds",
+  //   excerpt:
+  //     "From Tokyo ramen counters to Barcelona tapas bars - the world's tastiest cities, served the Plum way.",
+  //   tags: ["Food Trips", "City Breaks", "Gen Z"],
+  //   cover: cover_culinary,
+  // },
+  // {
+  //   slug: "10-luxurious-vacation-destinations-you-can-find-on-Plumtrips",
+  //   title: "10 Luxurious Vacation Destinations You Can Find On Plumtrips",
+  //   excerpt:
+  //     "Overwater dawns, cliff-edge sunsets, private pools & whisper-quiet service - here's the Plumrips shortlist for your next flex.",
+  //   tags: ["Luxury", "Honeymoon", "Bucket List"],
+  //   cover: cover_luxury,
+  // },
+  // {
+  //   slug: "10-short-flights-from-germany-to-paradise-book-with-Plumtrips",
+  //   title:
+  //     "10 Short Flights From Germany To Paradise - Book With Plumtrips",
+  //   excerpt:
+  //     "Weekend escapes, sunny coasts, island bliss - 10 destinations under 4 hours from Germany, curated the Plumtrips way.",
+  //   tags: ["Weekend Getaways", "Island Vibes", "Europe"],
+  //   cover: cover_germany_paradise,
+  // },
   {
     slug: "crystal-clear-waters-dream-destinations-around-the-world-not-just-in-the-maldives",
     title:
@@ -185,15 +172,15 @@ export const BLOGS = [
     tags: ["Hidden Gems", "Nature", "Wellness"],
     cover: cover_hiddenresorts,
   },
-  {
-    slug: "magical-holiday-destinations-that-are-still-undiscovered-hidden-gems-with-Plumtrips",
-    title:
-      "Magical Holiday Destinations That Are Still Undiscovered - Hidden Gems With Plumtrips",
-    excerpt:
-      "Under-the-radar shores and heritage towns - go now, before everyone else.",
-    tags: ["Undiscovered", "Islands", "Culture"],
-    cover: cover_undiscovered,
-  },
+  // {
+  //   slug: "magical-holiday-destinations-that-are-still-undiscovered-hidden-gems-with-Plumtrips",
+  //   title:
+  //     "Magical Holiday Destinations That Are Still Undiscovered - Hidden Gems With Plumtrips",
+  //   excerpt:
+  //     "Under-the-radar shores and heritage towns - go now, before everyone else.",
+  //   tags: ["Undiscovered", "Islands", "Culture"],
+  //   cover: cover_undiscovered,
+  // },
   {
     slug: "pure-relaxation-the-best-wellness-destinations-in-germany-for-a-relaxing-weekend",
     title:
@@ -238,24 +225,24 @@ export const BLOGS = [
     tags: ["Maldives", "Overwater", "Honeymoon"],
     cover: cover_maldives_best,
   },
-  {
-    slug: "the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips",
-    title:
-      "The Most Beautiful Beaches In The World - Your Dream Vacation With Plumtrips",
-    excerpt:
-      "From Caribbean shallows to Greek coves - the world's prettiest sands, curated.",
-    tags: ["Beaches", "Bucket List", "Islands"],
-    cover: cover_world_beaches,
-  },
-  {
-    slug: "the-most-beautiful-places-in-europe-discover-the-best-travel-destinations-on-Plumtrips",
-    title:
-      "The Most Beautiful Places In Europe - Discover The Best Travel Destinations On Plumtrips",
-    excerpt:
-      "Clifftop villages, alpine mirrors, storybook streets - Europe's best, distilled.",
-    tags: ["Europe", "City+Nature", "Inspo"],
-    cover: cover_europe_places,
-  },
+  // {
+  //   slug: "the-most-beautiful-beaches-in-the-world-your-dream-vacation-with-Plumtrips",
+  //   title:
+  //     "The Most Beautiful Beaches In The World - Your Dream Vacation With Plumtrips",
+  //   excerpt:
+  //     "From Caribbean shallows to Greek coves - the world's prettiest sands, curated.",
+  //   tags: ["Beaches", "Bucket List", "Islands"],
+  //   cover: cover_world_beaches,
+  // },
+  // {
+  //   slug: "the-most-beautiful-places-in-europe-discover-the-best-travel-destinations-on-Plumtrips",
+  //   title:
+  //     "The Most Beautiful Places In Europe - Discover The Best Travel Destinations On Plumtrips",
+  //   excerpt:
+  //     "Clifftop villages, alpine mirrors, storybook streets - Europe's best, distilled.",
+  //   tags: ["Europe", "City+Nature", "Inspo"],
+  //   cover: cover_europe_places,
+  // },
   {
     slug: "the-most-exotic-countries-in-the-world-an-adventure-beyond-the-familiar",
     title:
@@ -265,15 +252,15 @@ export const BLOGS = [
     tags: ["Exotic", "Culture", "Adventure"],
     cover: cover_exotic,
   },
-  {
-    slug: "top-10-vacation-spots-for-autumn-holidays-discover-the-best-destinations-on-Plumtrips",
-    title:
-      "Top 10 Vacation Spots For Autumn Holidays - Discover The Best Destinations On Plumtrips",
-    excerpt:
-      "Fall color, warm seas, truffle nights - the sweet spot of the year.",
-    tags: ["Autumn", "Seasonal", "Short Breaks"],
-    cover: cover_autumn,
-  },
+  // {
+  //   slug: "top-10-vacation-spots-for-autumn-holidays-discover-the-best-destinations-on-Plumtrips",
+  //   title:
+  //     "Top 10 Vacation Spots For Autumn Holidays - Discover The Best Destinations On Plumtrips",
+  //   excerpt:
+  //     "Fall color, warm seas, truffle nights - the sweet spot of the year.",
+  //   tags: ["Autumn", "Seasonal", "Short Breaks"],
+  //   cover: cover_autumn,
+  // },
   {
     slug: "travel-to-dubai-top-10-hotels-and-activities",
     title: "Travel To Dubai - Top 10 Hotels & Activities",
@@ -299,13 +286,13 @@ export const BLOGS = [
     tags: ["Nature", "Food", "Slow Travel"],
     cover: cover_nature_food,
   },
-  {
-    slug: "winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips",
-    title:
-      "Winterurlaubsorte - Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
-    excerpt:
-      "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme - dein perfekter Wintertrip.",
-    tags: ["Winter", "SonneOderSchnee", "DE"],
-    cover: cover_winter_de,
-  },
+  // {
+  //   slug: "winterurlaubsorte-kalte-oder-warme-finde-dein-perfektes-reiseziel-uber-Plumtrips",
+  //   title:
+  //     "Winterurlaubsorte - Kalte Oder Warme? Finde Dein Perfektes Reiseziel Ãœber Plumtrips",
+  //   excerpt:
+  //     "Sonne oder Schnee? Von Alpenzauber bis InselwÃ¤rme - dein perfekter Wintertrip.",
+  //   tags: ["Winter", "SonneOderSchnee", "DE"],
+  //   cover: cover_winter_de,
+  // },
 ];

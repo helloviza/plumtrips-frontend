@@ -459,6 +459,12 @@ export async function getBlog(idOrSlug: string) {
   return getJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${idOrSlug}`);
 }
 
+export async function getBlogsStatus(status: string) {
+  return getJson<{ success: boolean; data: Post[]} >(
+    `/api/abx/blogs?status=${status}`
+  );
+}
+
 export async function createBlog(blog: Partial<Post>) {
   return postJson<{ success: boolean; data: Post }>(`/api/abx/blogs`, blog);
 }
@@ -859,3 +865,69 @@ export async function deleteFrontpage(id: string): Promise<void> {
   return del(`/frontpage/${id}`);
 }
 
+// ─── Callback Request API ──────────────────────────────────────────────────────
+// Add these imports at the top of api.ts (alongside your existing model imports):
+// import type { CallbackRequestPayload, CallbackRequestResponse } from "../models/request.model";
+// import { buildCallbackPayload } from "../models/request.model";
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+export type CallbackStatus = "pending" | "contacted" | "resolved";
+
+export interface CallbackRequest {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  submittedAt: string;
+  source: string;
+  status: CallbackStatus;
+  createdAt: string;
+}
+
+
+
+// ─── Raw shape returned by MongoDB (uses _id) ─────────────────────────────────
+
+type RawCallbackRequest = Omit<CallbackRequest, "id"> & { _id: string };
+
+function normalizeCallbackRequest(r: RawCallbackRequest): CallbackRequest {
+  return { ...r, id: r._id };
+}
+
+// ─── Callback Request API ─────────────────────────────────────────────────────
+
+export interface CallbackRequestForm {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export interface CallbackRequestResponse {
+  success: boolean;
+  message: string;
+  requestId?: string;
+}
+
+export async function getCallbackRequests(): Promise<CallbackRequest[]> {
+  const raw = await get<RawCallbackRequest[]>("/requests");
+  return raw.map(normalizeCallbackRequest);
+}
+
+export async function createCallbackRequest(
+  form: CallbackRequestForm,
+  source: string = "footer"
+): Promise<CallbackRequestResponse> {
+  return postJson<CallbackRequestResponse>("/api/abx/requests", {
+    ...form,
+    name: form.name.trim(),
+    email: form.email.trim().toLowerCase(),
+    phone: form.phone.trim(),
+    submittedAt: new Date().toISOString(),
+    source,
+  });
+}
+
+export async function deleteCallbackRequest(id: string): Promise<void> {
+  return del(`/requests/${id}`);
+}

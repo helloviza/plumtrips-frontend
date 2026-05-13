@@ -11,7 +11,7 @@ import { getOffers, type Offer } from "../../lib/api";
  * - CTA: Concierge
  */
 
-const HERO_BG = "/assets/offers/offerhero.jpg"; // put your hero image here
+const HERO_BG = "/assets/offers/offers123.jpeg"; // put your hero image here
 
 const OFFERS = [
   {
@@ -83,24 +83,31 @@ export default function OffersPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       {/* HERO */}
-      <section className="relative bg-gradient-to-r from-[#00477f] to-[#0a5fa3] text-white py-20 px-6">
-                <div className="absolute inset-0">
-          <div
-            className="h-full w-full bg-center bg-cover opacity-45"
-            style={{ backgroundImage: `url(${HERO_BG})` }}
-          />
-        </div>
-        <div className="mx-auto max-w-5xl text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-            Exclusive Travel Offers - Holidays, Flights & Hotels
-          </h1>
-          <p className="mt-4 text-lg md:text-xl opacity-90">
-            Experience luxury for less. Plumtrips brings curated offers that combine
-            best-in-class pricing with unmatched service - perfect for leisure travelers
-            and corporates alike.
-          </p>
-        </div>
-      </section>
+      <section className="relative text-white py-20 px-6 overflow-hidden">
+  {/* Background */}
+  <div className="absolute inset-0">
+    <div
+      className="h-full w-full bg-center bg-cover"
+      style={{ backgroundImage: `url(${HERO_BG})` }}
+    />
+    
+    {/* Optional dark overlay */}
+    <div className="absolute inset-0 bg-black/50" />
+  </div>
+
+  {/* Content */}
+  <div className="relative z-10 mx-auto max-w-5xl text-center">
+    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
+      Exclusive Travel Offers - Holidays, Flights & Hotels
+    </h1>
+
+    <p className="mt-4 text-lg md:text-xl opacity-90">
+      Experience luxury for less. Plumtrips brings curated offers that combine
+      best-in-class pricing with unmatched service - perfect for leisure travelers
+      and corporates alike.
+    </p>
+  </div>
+</section>
 
       {/* TABS */}
       <div className="mx-auto max-w-7xl px-6 mt-10">

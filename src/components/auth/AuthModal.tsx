@@ -173,7 +173,7 @@ export default function AuthModal() {
                 {authModeLocked ? (
                   // Opened from Business: show Biz only
                   <div className="rounded-full bg-[#0b5c99] px-4 py-2 text-sm font-semibold text-white shadow">
-                    MYBIZ ACCOUNT
+                    Self Booking Travel
                   </div>
                 ) : (
                   <>
@@ -201,7 +201,7 @@ export default function AuthModal() {
                         setAuthStep("mobile");
                       }}
                     >
-                      MYBIZ ACCOUNT
+                      Self Booking Travel
                     </button>
                   </>
                 )}
