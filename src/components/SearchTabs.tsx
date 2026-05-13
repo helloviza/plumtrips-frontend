@@ -28,7 +28,8 @@ export default function SearchTabs() {
   const showTripTabs = active === "flights";
 
   return (
-    <div className="w-full mx-auto mt-10 sm:mt-14 max-w-5xl">
+    <div className="w-full mt-10 sm:mt-14">
+
       {/* Header row */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         {/* left: Flights / Hotels */}

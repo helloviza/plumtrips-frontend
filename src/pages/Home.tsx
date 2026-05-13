@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import HeroCarousel from "../components/HeroCarousel";
 import HomeExplore from "../components/home/HomeExplore";
+import SearchTabs from "../components/SearchTabs";
 
 export default function Home() {
   const heroBg = `
@@ -28,113 +29,9 @@ export default function Home() {
         <div className="relative z-[1] mx-auto max-w-6xl px-4 py-7">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-10">
             {/* LEFT */}
-            <div className="lg:col-span-7">
-              <div className="relative max-w-[920px]">
-                {/* Local glows */}
-                <div
-                  className="pointer-events-none absolute -left-20 -top-10 h-44 w-44 rounded-full bg-cyan-400/22 blur-3xl ai-pulse-slow"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none absolute -right-16 top-6 h-56 w-56 rounded-full bg-emerald-400/18 blur-3xl ai-pulse-slower"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none absolute left-1/3 top-20 h-32 w-32 -translate-x-1/2 rounded-full bg-indigo-400/18 blur-3xl ai-pulse-slow"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none ai-orbit-ring absolute -left-8 top-2 h-52 w-52 rounded-full border border-dashed border-cyan-200/22"
-                  aria-hidden
-                />
-
-                {/* Header badges */}
-                <div className="mb-2.5 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/16 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.9)] ai-pulse-dot" />
-                    AI Travel OS
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/16 px-2.5 py-1 text-[10px] font-medium text-sky-100">
-                    <span className="h-3 w-3 rounded-full bg-gradient-to-tr from-sky-300 to-cyan-200" />
-                    Powered by pluto.ai
-                  </span>
-
-                  <span className="ml-auto hidden items-center gap-1 rounded-full bg-white/6 px-2 py-1 text-[10px] font-medium text-sky-100/90 sm:inline-flex">
-                    <span className="h-1 w-4 rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 ai-scan-beam" />
-                    Live - sandbox preview
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h1 className="text-[18px] font-semibold leading-snug text-sky-50 sm:text-[21px] md:text-[23px]">
-                  One AI-native workspace for{" "}
-                  <span className="font-extrabold text-[#d06549]">flights, hotels, visas & holidays</span>.
-                </h1>
-
-                {/* Copy */}
-                <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-sky-100/90 sm:text-[12px]">
-                  Plumtrips is building a{" "}
-                  <span className="font-semibold text-sky-50">travel operating system for B2B</span>: real-time content
-                  from global suppliers, wrapped in a human UI and assisted by{" "}
-                  <span className="font-semibold text-amber-200">pluto.ai</span> for policy-aware, exception-ready
-                  journeys.
-                </p>
-
-                {/* BRAND PANEL (brand background) */}
-                <div className="ai-brand-panel mt-4 rounded-[34px] p-3 sm:p-4">
-                  {/* Micro chips (white glass) */}
-                  <div className="flex flex-wrap items-center gap-2 text-[9.5px] font-semibold">
-                    <span className="ai-white-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
-                      <ChipSparkIcon />
-                      <span className="ai-white-chip-text">Gen-AI trip design</span>
-                    </span>
-
-                    <span className="ai-white-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
-                      <ChipShieldCheckIcon />
-                      <span className="ai-white-chip-text">Policy-aware fares</span>
-                    </span>
-
-                    <span className="ai-white-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
-                      <ChipRouteIcon />
-                      <span className="ai-white-chip-text">Supplier-agnostic routing</span>
-                    </span>
-                  </div>
-
-                  {/* Action links (white glass cards) */}
-                  <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    <AIActionLink href="https://www.plumtrips.in" label="AI Flight Engine" caption="Search & book flights in real time">
-                      <AIChipIcon />
-                    </AIActionLink>
-
-                    <AIActionLink href="https://www.plumtrips.in/hotels" label="AI Hotel Finder" caption="Smart stays for teams & guests">
-                      <AIHotelIcon />
-                    </AIActionLink>
-
-                    <AIActionLink href="https://www.plumtrips.in/holidays" label="Smart Holidays" caption="Curated itineraries with human help">
-                      <AIGlobeIcon />
-                    </AIActionLink>
-
-                    <AIActionLink href="https://www.helloviza.com" label="e-Visas" caption="Guided visa journeys & support">
-                      <AIVisaIcon />
-                    </AIActionLink>
-
-                    <AIActionLink href="https://www.plumtrips.in/bus" label="Intercity Bus Travel" caption="Pan-India routes for your travellers">
-                      <AIBusIcon />
-                    </AIActionLink>
-
-                    <AIActionLink href="https://www.plumtrips.in/insurance" label="Travel Insurance" caption="Coverage that moves with your people">
-                      <AIShieldIcon />
-                    </AIActionLink>
-                  </div>
-
-                  <p className="mt-3 text-[10px] leading-relaxed ai-brand-muted">
-                    For now, booking flows run on <span className="font-extrabold">plumtrips.in</span> while we wire the
-                    full AI OS. Your data and payments remain with our accredited engine partners.
-                  </p>
-                </div>
-              </div>
-            </div>
+           <div className="lg:col-span-7">
+            <SearchTabs />
+           </div>
 
             {/* RIGHT */}
             <div className="lg:col-span-3">

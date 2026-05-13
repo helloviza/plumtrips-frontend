@@ -17,7 +17,7 @@ export default function Footer() {
             <FLink to="/go/visa">Visa</FLink>
             <FLink to="/cruises">Cruises</FLink>
             <FLink to="/hotels">Hotels</FLink>
-            <FLink to="/flights">Flights</FLink>
+            <FLink to="/flights-new">Flights</FLink>
           </Group>
 
           <Group title="USEFUL LINKS" className="md:col-span-2">

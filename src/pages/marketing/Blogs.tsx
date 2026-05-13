@@ -110,6 +110,64 @@ const createEmptyPost = (): Omit<Post, 'id'> => {
   };
 };
 
+// ─── Reusable image upload field ──────────────────────────────────────────────
+const ImageUploadField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+  placeholder?: string;
+  previewHeight?: number;
+}> = ({ label, value, onChange, placeholder = 'Paste image URL or upload', previewHeight = 160 }) => {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const response = await uploadBlogImage(file);
+      if (response.success) onChange(response.data.url);
+    } catch (err) {
+      alert(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value='';
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</label>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{ backgroundColor: uploading ? '#ccc' : '#007bff', color: '#fff', whiteSpace: 'nowrap' }}
+        >
+          {uploading ? '⏳ Uploading…' : '📤 Upload'}
+        </button>
+        {value && <span style={{ fontSize: 12, color: '#28a745' }}>✓ Image set</span>}
+      </div>
+      <input
+        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13 }}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={uploading}
+      />
+      {value && (
+        <div style={{ borderRadius: 10, overflow: 'hidden', maxHeight: previewHeight, background: '#f0f0f0' }}>
+          <img src={value} alt="Preview" style={{ width: '100%', maxHeight: previewHeight, objectFit: 'cover' }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Block Editor ─────────────────────────────────────────────────────────────
 const BlogBlockEditor: React.FC<{
   block: PostBlock;
@@ -147,52 +205,61 @@ const BlogBlockEditor: React.FC<{
     fileInputRef.current?.click();
   };
 
+  const blockTypeLabel: Record<string, string> = {
+    h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3', p: 'Paragraph',
+    quote: 'Pull Quote', image: 'Image', cover: 'Cover Image',
+    gallery: 'Gallery', numlist: 'Numbered List', hotel: 'Hotel Card',
+    map: 'Map', video: 'Video', newsletter: 'Newsletter',
+  };
+
   return (
     <div className="block-editor" style={{ border: '1px solid #ddd', borderRadius: 12, padding: 16, marginBottom: 16, background: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <strong>{block.type.toUpperCase()}</strong>
+        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#888', background: '#f0f0f0', padding: '4px 10px', borderRadius: 999 }}>
+          {blockTypeLabel[block.type] || block.type}
+        </span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-sm" onClick={onMoveUp}>↑</button>
-          <button type="button" className="btn btn-sm" onClick={onMoveDown}>↓</button>
-          <button type="button" className="btn btn-sm" onClick={onDuplicate}>⎘</button>
-          <button type="button" className="btn btn-sm" onClick={onDelete}>✕</button>
+          <button type="button" className="btn btn-sm" onClick={onMoveUp} title="Move up">↑</button>
+          <button type="button" className="btn btn-sm" onClick={onMoveDown} title="Move down">↓</button>
+          <button type="button" className="btn btn-sm" onClick={onDuplicate} title="Duplicate">⎘</button>
+          <button type="button" className="btn btn-sm" onClick={onDelete} title="Delete" style={{ color: '#dc3545' }}>✕</button>
         </div>
       </div>
 
       {['h1', 'h2', 'h3', 'p'].includes(block.type) && (
-        <textarea style={{ width: '100%', minHeight: 80, marginBottom: 12 }} value={block.text || ''} onChange={(e) => updateField('text', e.target.value)} placeholder="Block text" />
+        <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.text || ''} onChange={(e) => updateField('text', e.target.value)} placeholder="Block text" />
       )}
 
       {block.type === 'quote' && (
         <>
-          <textarea style={{ width: '100%', minHeight: 80, marginBottom: 12 }} value={block.text || ''} onChange={(e) => updateField('text', e.target.value)} placeholder="Quote text" />
-          <input style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.cite || ''} onChange={(e) => updateField('cite', e.target.value)} placeholder="Quote credit" />
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Quote text</label>
+          <textarea style={{ width: '100%', minHeight: 80, marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.text || ''} onChange={(e) => updateField('text', e.target.value)} placeholder="Quote text" />
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Attribution / credit</label>
+          <input style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.cite || ''} onChange={(e) => updateField('cite', e.target.value)} placeholder="— Person Name" />
         </>
       )}
 
       {(block.type === 'image' || block.type === 'cover') && (
         <>
-          <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} style={{ display: 'none' }} />
-              <button type="button" className="btn btn-sm" onClick={() => triggerUpload('src')} disabled={uploading} style={{ backgroundColor: uploading ? '#ccc' : '#007bff', color: 'white' }}>
-                {uploading ? '⏳ Uploading...' : '📤 Upload Image'}
-              </button>
-              {block.src && <span style={{ fontSize: 12, color: '#666' }}>✓ Image uploaded</span>}
-            </div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} style={{ display: 'none' }} />
+          <ImageUploadField
+            label={block.type === 'cover' ? 'Cover / Hero image' : 'Image'}
+            value={block.src || ''}
+            onChange={(url) => updateField('src', url)}
+            previewHeight={220}
+          />
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Caption</label>
+            <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.caption || ''} onChange={(e) => updateField('caption', e.target.value)} placeholder="Image caption (optional)" />
           </div>
-          <textarea style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd', minHeight: 60, fontSize: 12 }} value={block.src || ''} onChange={(e) => updateField('src', e.target.value)} placeholder="Or paste image URL directly" disabled={uploading} />
-          {block.src && (
-            <div style={{ marginBottom: 12, borderRadius: 8, overflow: 'hidden', maxHeight: 300, backgroundColor: '#f5f5f5' }}>
-              <img src={block.src} alt="Preview" style={{ width: '100%', maxHeight: 300, objectFit: 'cover' }} />
-            </div>
-          )}
-          <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.caption || ''} onChange={(e) => updateField('caption', e.target.value)} placeholder="Caption" disabled={uploading} />
         </>
       )}
 
       {block.type === 'gallery' && (
-        <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={(block.images || []).join('\n')} onChange={(e) => updateField('images', e.target.value.split('\n').map((v) => v.trim()).filter(Boolean))} placeholder="One image URL per line" />
+        <>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Image URLs (one per line)</label>
+          <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={(block.images || []).join('\n')} onChange={(e) => updateField('images', e.target.value.split('\n').map((v) => v.trim()).filter(Boolean))} placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg" />
+        </>
       )}
 
       {block.type === 'numlist' && (
@@ -200,35 +267,42 @@ const BlogBlockEditor: React.FC<{
           {(block.items || []).map((item, index) => (
             <div key={index} style={{ border: '1px solid #eee', padding: 12, borderRadius: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                <strong>Entry {index + 1}</strong>
+                <strong style={{ fontSize: 13 }}>Entry {index + 1}</strong>
                 <button type="button" className="btn btn-xs" onClick={() => updateItems((block.items || []).filter((_, i) => i !== index))}>Remove</button>
               </div>
-              {['title', 'loc', 'img'].map((field) => (
-                <input key={field} style={{ width: '100%', marginBottom: 8, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={(item as any)[field] || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], [field]: e.target.value }; updateItems(next); }} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} />
+              {[{ f: 'title', ph: 'Title' }, { f: 'loc', ph: 'Location' }, { f: 'img', ph: 'Image URL' }].map(({ f, ph }) => (
+                <div key={f} style={{ marginBottom: 8 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>{ph}</label>
+                  <input style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }} value={(item as any)[f] || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], [f]: e.target.value }; updateItems(next); }} placeholder={ph} />
+                </div>
               ))}
-              <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={item.body || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], body: e.target.value }; updateItems(next); }} placeholder="Body text" />
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>Body text</label>
+              <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={item.body || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], body: e.target.value }; updateItems(next); }} placeholder="Description…" />
             </div>
           ))}
-          <button type="button" className="btn btn-sm" onClick={() => updateItems([...(block.items || []), { n: (block.items || []).length + 1, title: '', loc: '', body: '', img: '' }])}>Add list entry</button>
+          <button type="button" className="btn btn-sm" onClick={() => updateItems([...(block.items || []), { n: (block.items || []).length + 1, title: '', loc: '', body: '', img: '' }])}>+ Add list entry</button>
         </div>
       )}
 
       {block.type === 'hotel' && (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {(['kicker', 'name', 'loc', 'price', 'nights'] as const).map((field) => (
-            <input key={field} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={(block as any)[field] || ''} onChange={(e) => updateField(field, e.target.value)} placeholder={field.charAt(0).toUpperCase() + field.slice(1)} />
-          ))}
-          <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.desc || ''} onChange={(e) => updateField('desc', e.target.value)} placeholder="Description" />
-          <div style={{ display: 'grid', gap: 8 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button type="button" className="btn btn-sm" onClick={() => triggerUpload('img')} disabled={uploading} style={{ backgroundColor: uploading ? '#ccc' : '#007bff', color: 'white' }}>
-                {uploading ? '⏳ Uploading...' : '📤 Upload Hotel Image'}
-              </button>
-              {block.img && <span style={{ fontSize: 12, color: '#666' }}>✓ Image uploaded</span>}
+        <div style={{ display: 'grid', gap: 10 }}>
+          {([
+            { f: 'kicker', ph: 'Kicker (e.g. Editor\'s pick)' },
+            { f: 'name', ph: 'Hotel / Property name' },
+            { f: 'loc', ph: 'Location / City' },
+            { f: 'price', ph: 'Price (e.g. from ₹8,000/night)' },
+            { f: 'nights', ph: 'Suggested nights (e.g. 2–3 nights)' },
+          ] as const).map(({ f, ph }) => (
+            <div key={f}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>{ph.split('(')[0].trim()}</label>
+              <input style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }} value={(block as any)[f] || ''} onChange={(e) => updateField(f, e.target.value)} placeholder={ph} />
             </div>
-            <textarea style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', minHeight: 60, fontSize: 12 }} value={block.img || ''} onChange={(e) => updateField('img', e.target.value)} placeholder="Or paste image URL directly" disabled={uploading} />
-            {block.img && <div style={{ borderRadius: 8, overflow: 'hidden', maxHeight: 200 }}><img src={block.img} alt="Hotel preview" style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }} /></div>}
+          ))}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>Description</label>
+            <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.desc || ''} onChange={(e) => updateField('desc', e.target.value)} placeholder="Hotel description…" />
           </div>
+          <ImageUploadField label="Hotel image" value={block.img || ''} onChange={(url) => updateField('img', url)} previewHeight={180} />
         </div>
       )}
 
@@ -237,29 +311,38 @@ const BlogBlockEditor: React.FC<{
           {(block.pins || []).map((pin, index) => (
             <div key={index} style={{ display: 'grid', gap: 8, border: '1px solid #eee', padding: 10, borderRadius: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <strong>Pin {index + 1}</strong>
+                <strong style={{ fontSize: 13 }}>Pin {index + 1}</strong>
                 <button type="button" className="btn btn-xs" onClick={() => updatePins((block.pins || []).filter((_, i) => i !== index))}>Remove</button>
               </div>
-              <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={pin.label || ''} onChange={(e) => { const next = [...(block.pins || [])]; next[index] = { ...next[index], label: e.target.value }; updatePins(next); }} placeholder="Label" />
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#888' }}>Label</label>
+              <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={pin.label || ''} onChange={(e) => { const next = [...(block.pins || [])]; next[index] = { ...next[index], label: e.target.value }; updatePins(next); }} placeholder="Pin label" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {(['x', 'y'] as const).map((axis) => (
-                  <input key={axis} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={String(pin[axis] ?? '')} onChange={(e) => { const next = [...(block.pins || [])]; next[index] = { ...next[index], [axis]: Number(e.target.value) }; updatePins(next); }} placeholder={`${axis.toUpperCase()} %`} />
+                  <div key={axis}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>{axis.toUpperCase()} position (%)</label>
+                    <input style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd', width: '100%' }} value={String(pin[axis] ?? '')} onChange={(e) => { const next = [...(block.pins || [])]; next[index] = { ...next[index], [axis]: Number(e.target.value) }; updatePins(next); }} placeholder={`${axis.toUpperCase()} %`} />
+                  </div>
                 ))}
               </div>
             </div>
           ))}
-          <button type="button" className="btn btn-sm" onClick={() => updatePins([...(block.pins || []), { x: 50, y: 50, label: 'New pin' }])}>Add pin</button>
+          <button type="button" className="btn btn-sm" onClick={() => updatePins([...(block.pins || []), { x: 50, y: 50, label: 'New pin' }])}>+ Add pin</button>
         </div>
       )}
 
       {block.type === 'video' && (
-        <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.url || ''} onChange={(e) => updateField('url', e.target.value)} placeholder="Video URL" />
+        <>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Video URL</label>
+          <input style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.url || ''} onChange={(e) => updateField('url', e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+        </>
       )}
 
       {block.type === 'newsletter' && (
         <>
-          <input style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.title || ''} onChange={(e) => updateField('title', e.target.value)} placeholder="Newsletter title" />
-          <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.body || ''} onChange={(e) => updateField('body', e.target.value)} placeholder="Newsletter body" />
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Newsletter title</label>
+          <input style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.title || ''} onChange={(e) => updateField('title', e.target.value)} placeholder="Join the newsletter" />
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Body text</label>
+          <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.body || ''} onChange={(e) => updateField('body', e.target.value)} placeholder="Subscribe for weekly travel stories…" />
         </>
       )}
     </div>
@@ -353,10 +436,11 @@ const PubBlock: React.FC<{ block: PostBlock }> = ({ block }) => {
   }
 };
 
-// ─── Blog Post View ───────────────────────────────────────────────────────────
+// ─── Travel Blog Post View (Read / Preview) ───────────────────────────────────
 const BlogPostView: React.FC<{ post: Post; layout?: 'magazine' | 'listicle' | 'essay'; displayFont?: 'serif' | 'sans' }> = ({ post, layout = 'magazine', displayFont = 'serif' }) => {
   const [progress, setProgress] = useState(0);
   const [activeToc, setActiveToc] = useState(0);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -365,6 +449,7 @@ const BlogPostView: React.FC<{ post: Post; layout?: 'magazine' | 'listicle' | 'e
     const onScroll = () => {
       const max = el.scrollHeight - el.clientHeight;
       setProgress(max > 0 ? (el.scrollTop / max) * 100 : 0);
+      setHeaderScrolled(el.scrollTop > 320);
       const entries = el.querySelectorAll('.pub-numlist .nentry');
       let best = 0;
       entries.forEach((entry, i) => { if ((entry as HTMLElement).getBoundingClientRect().top < 200) best = i; });
@@ -385,105 +470,198 @@ const BlogPostView: React.FC<{ post: Post; layout?: 'magazine' | 'listicle' | 'e
     }
   };
 
+  const formattedDate = new Date(post.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
-    <div className="pub" data-layout={layout} data-display-font={displayFont} ref={ref} style={{ height: '100%', overflow: 'auto' }}>
-      <div className="pub-progress"><div className="bar" style={{ width: `${progress}%` }} /></div>
-      <nav className="pub-nav">
-        <div className="brand"><span className="mark">P</span> Plumtrips</div>
-        <div className="links"><a>Hotels</a><a>Destinations</a><a>Journal</a><a>Concierge</a></div>
-        <div className="right">
-          <button className="btn btn-sm">Sign in</button>
-          <button className="btn btn-sm btn-primary">Plan a trip</button>
-        </div>
-      </nav>
-      <header className="pub-hero">
-        <div className="crumbs">
-          <a>Journal</a><span>/</span>
-          {post.categories.map((c, i) => (<React.Fragment key={c}>{i > 0 && <span> · </span>}<a>{c}</a></React.Fragment>))}
-        </div>
-        <h1>{post.title}</h1>
-        <p className="deck">{post.subtitle}</p>
-        <div className="meta">
-          <div className="author">
-            <div className="avatar" style={{ backgroundImage: `url(${post.author.avatar})`, backgroundSize: 'cover' }}>{!post.author.avatar && post.author.initials}</div>
-            <div>
-              <div style={{ fontWeight: 500 }}>{post.author.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '.12em', textTransform: 'uppercase' }}>{post.author.role}</div>
-            </div>
+    <div
+      className="pub"
+      data-layout={layout}
+      data-display-font={displayFont}
+      ref={ref}
+      style={{ height: '100%', overflow: 'auto', background: 'var(--paper, #fff)' }}
+    >
+      {/* Reading progress bar */}
+      <div className="pub-progress" style={{ position: 'sticky', top: 0, zIndex: 100, height: 3, background: 'var(--line-2, #eee)' }}>
+        <div className="bar" style={{ width: `${progress}%`, height: '100%', background: 'var(--accent, #c8943a)', transition: 'width .1s linear' }} />
+      </div>
+
+      {/* ── Hero Section ── */}
+      <div style={{ position: 'relative', minHeight: 520, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden' }}>
+        {/* Hero background image */}
+        {post.cover?.src && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            <img
+              src={post.cover.src}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {/* Gradient overlay for readability */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.72) 80%, rgba(0,0,0,0.85) 100%)',
+            }} />
           </div>
-          <span className="sep" />
-          <span>{new Date(post.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-          <span className="sep" />
-          <span>{post.readingTime} min read</span>
+        )}
+
+        {/* Hero text content */}
+        <div style={{ position: 'relative', zIndex: 1, padding: '60px 32px 40px', maxWidth: 820, margin: '0 auto', width: '100%' }}>
+          {/* Breadcrumb / categories */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.12)',
+              padding: '4px 12px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)',
+            }}>
+              {post.categories[0] || 'Travel'}
+            </span>
+            {post.categories.slice(1).map((c) => (
+              <span key={c} style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>· {c}</span>
+            ))}
+          </div>
+
+          {/* Title */}
+          <h1 style={{
+            fontFamily: 'var(--font-display, Georgia, serif)',
+            fontSize: 'clamp(28px, 5vw, 52px)',
+            fontWeight: 600,
+            lineHeight: 1.12,
+            color: '#fff',
+            margin: '0 0 16px',
+            textShadow: '0 2px 16px rgba(0,0,0,0.3)',
+          }}>
+            {post.title}
+          </h1>
+
+          {/* Subtitle */}
+          {post.subtitle && (
+            <p style={{
+              fontSize: 'clamp(14px, 2vw, 18px)',
+              color: 'rgba(255,255,255,0.82)',
+              margin: '0 0 28px',
+              fontStyle: 'italic',
+              maxWidth: 600,
+              lineHeight: 1.5,
+            }}>
+              {post.subtitle}
+            </p>
+          )}
+
+          {/* Author + meta row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: '50%',
+              backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              border: '2px solid rgba(255,255,255,0.4)',
+              display: 'grid', placeItems: 'center',
+              color: '#fff', fontSize: 13, fontWeight: 700, flexShrink: 0,
+            }}>
+              {!post.author.avatar && post.author.initials}
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{post.author.name}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '.08em', textTransform: 'uppercase' }}>{post.author.role}</div>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{formattedDate}</div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{post.readingTime} min read</div>
+          </div>
         </div>
-      </header>
-      {post.cover && (
-        <div className="pub-cover">
-          <div className="frame">{post.cover.src && <img src={post.cover.src} alt="" />}</div>
-          {post.cover.caption && <div className="cap">{post.cover.caption}</div>}
+      </div>
+
+      {/* Optional cover caption */}
+      {post.cover?.caption && (
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted, #999)', padding: '8px 24px', fontStyle: 'italic', borderBottom: '1px solid var(--line-2, #eee)' }}>
+          {post.cover.caption}
         </div>
       )}
-      <div className="pub-body">
+
+      {/* ── Body ── */}
+      <div className="pub-body" style={{ display: 'grid', gridTemplateColumns: hasToc ? '220px 1fr' : '1fr', gap: 48, maxWidth: 1060, margin: '0 auto', padding: '48px 24px', alignItems: 'start' }}>
+
+        {/* Sidebar TOC */}
         {hasToc && (
-          <aside className="pub-toc">
-            <h6>In this article</h6>
-            <ol>
+          <aside className="pub-toc" style={{
+            position: 'sticky', top: 24,
+            background: 'var(--paper-2, #f9f6f1)',
+            border: '1px solid var(--line-2, #ece9e2)',
+            borderRadius: 14,
+            padding: '20px 18px',
+          }}>
+            <h6 style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted, #999)', margin: '0 0 14px', fontWeight: 700 }}>In this article</h6>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
               {numlistBlock?.items?.map((it: any, i: number) => (
-                <li key={i} className={i === activeToc ? 'active' : ''} onClick={() => scrollTo(i)}>{it.title}</li>
+                <li
+                  key={i}
+                  onClick={() => scrollTo(i)}
+                  style={{
+                    fontSize: 13, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                    fontWeight: i === activeToc ? 600 : 400,
+                    color: i === activeToc ? 'var(--accent, #c8943a)' : 'var(--ink-2, #555)',
+                    background: i === activeToc ? 'var(--accent-soft, rgba(200,148,58,0.08))' : 'transparent',
+                    borderLeft: i === activeToc ? '2px solid var(--accent, #c8943a)' : '2px solid transparent',
+                    transition: 'all .15s',
+                  }}
+                >
+                  <span style={{ opacity: 0.5, fontSize: 11, marginRight: 6, fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                  {it.title}
+                </li>
               ))}
             </ol>
           </aside>
         )}
-        <article className="pub-content">
+
+        {/* Main article */}
+        <article className="pub-content" style={{ minWidth: 0 }}>
           {post.blocks.map((block) => <PubBlock key={block.id} block={block} />)}
-          <div className="pub-tags">{post.tags.map((tag) => <span key={tag} className="tag">#{tag}</span>)}</div>
-          <div className="pub-author">
-            <div className="avatar" style={{ backgroundImage: `url(${post.author.avatar})`, backgroundSize: 'cover' }} />
-            <div>
-              <div className="role">{post.author.role}</div>
-              <h4 className="name">{post.author.name}</h4>
+
+          {/* Tags */}
+          {post.tags.length > 0 && (
+            <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--line-2, #eee)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {post.tags.map((tag) => (
+                <span key={tag} style={{
+                  fontSize: 12, padding: '5px 14px', borderRadius: 999,
+                  background: 'var(--paper-2, #f5f2ec)',
+                  color: 'var(--ink-2, #666)',
+                  border: '1px solid var(--line-2, #ece9e2)',
+                  letterSpacing: '.04em',
+                }}>#{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Author bio card */}
+          <div style={{
+            marginTop: 40,
+            padding: '24px 28px',
+            borderRadius: 16,
+            background: 'var(--paper-2, #f9f6f1)',
+            border: '1px solid var(--line-2, #ece9e2)',
+            display: 'flex',
+            gap: 20,
+            alignItems: 'flex-start',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+              backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundColor: 'var(--line-2, #ddd)',
+              display: 'grid', placeItems: 'center',
+              color: 'var(--ink, #333)', fontSize: 16, fontWeight: 700,
+              border: '2px solid var(--line-2, #ddd)',
+            }}>
+              {!post.author.avatar && post.author.initials}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--muted, #999)', marginBottom: 4, fontWeight: 600 }}>Written by</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink, #1a1a1a)', marginBottom: 2 }}>{post.author.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-2, #666)' }}>{post.author.role}</div>
             </div>
           </div>
         </article>
-        {layout === 'magazine' && (
-          <aside className="pub-aside-r">
-            <div className="share">
-              <span>Share</span>
-              <div className="share-btns">
-                <button className="btn btn-sm">⤴</button>
-                <button className="btn btn-sm">𝕏</button>
-                <button className="btn btn-sm">in</button>
-                <button className="btn btn-sm">✉</button>
-              </div>
-            </div>
-          </aside>
-        )}
       </div>
-      <section className="pub-related">
-        <h3>You might also like</h3>
-        <div className="grid">
-          {post.related.map((r, i) => (
-            <div className="card" key={i}>
-              <div className="thumb" style={{ backgroundImage: `url(${r.thumb})` }} />
-              <div className="cat">{r.cat}</div>
-              <h4>{r.title}</h4>
-              <p className="excerpt">{r.excerpt}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <footer className="pub-foot">
-        <div className="inner">
-          <div>
-            <div className="brand"><span className="mark">P</span> Plumtrips</div>
-            <p className="blurb">A members' concierge for travellers who care where they sleep, eat and wake up.</p>
-          </div>
-          <div><h6>Travel</h6><ul><li><a>Hotels</a></li><li><a>Destinations</a></li><li><a>Itineraries</a></li></ul></div>
-          <div><h6>Read</h6><ul><li><a>Journal</a></li><li><a>Dispatch newsletter</a></li></ul></div>
-          <div><h6>Plumtrips</h6><ul><li><a>Membership</a></li><li><a>About</a></li><li><a>Contact</a></li></ul></div>
-        </div>
-        <div className="legal"><span>© 2026 Plumtrips Ltd</span><span>Terms · Privacy · Cookies</span></div>
-      </footer>
     </div>
   );
 };
@@ -500,6 +678,7 @@ const BlogEditor: React.FC<{
   saving?: boolean;
 }> = ({ post, onChange, onSave, onPreview, onCancel, onDelete, onAddBlock, saving }) => {
   const updatePost = (patch: Partial<Post>) => onChange({ ...post, ...patch });
+  const updateAuthor = (patch: Partial<Post['author']>) => updatePost({ author: { ...post.author, ...patch } });
 
   const updateBlock = (id: string, next: PostBlock) => {
     onChange({ ...post, blocks: post.blocks.map((b) => (b.id === id ? next : b)) });
@@ -525,64 +704,215 @@ const BlogEditor: React.FC<{
     onChange({ ...post, blocks: next });
   };
 
+  const sectionStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '1px solid #e8e8e8',
+    borderRadius: 14,
+    padding: '24px 24px',
+    marginBottom: 20,
+  };
+
+  const sectionHeadStyle: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '.1em',
+    color: '#888',
+    margin: '0 0 18px',
+    paddingBottom: 12,
+    borderBottom: '1px solid #f0f0f0',
+  };
+
+  const fieldLabel: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#555',
+    marginBottom: 4,
+    display: 'block',
+    textTransform: 'uppercase',
+    letterSpacing: '.06em',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid #ddd',
+    fontSize: 14,
+    background: '#fafafa',
+    boxSizing: 'border-box',
+  };
+
   return (
-    <div className="blog-editor" style={{ padding: 24, background: '#f7f7f7', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+    <div className="blog-editor" style={{ padding: 24, background: '#f4f4f4', minHeight: '100vh' }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0 }}>Edit blog</h1>
-          <p style={{ margin: '8px 0 0', color: '#666' }}>Write and update the blog content, then preview the published post.</p>
+          <h1 style={{ margin: 0, fontSize: 22 }}>Edit Blog Post</h1>
+          <p style={{ margin: '6px 0 0', color: '#666', fontSize: 13 }}>Edit content, then preview the published post before saving.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel}>Back</button>
-          <button type="button" className="btn btn-sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" className="btn btn-sm btn-primary" onClick={onPreview}>Preview</button>
-          <button type="button" className="btn btn-sm" style={{ background: '#ff5c5c', color: '#fff' }} onClick={onDelete}>Delete</button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel}>← Back</button>
+          <button type="button" className="btn btn-sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : '💾 Save'}</button>
+          <button type="button" className="btn btn-sm btn-primary" onClick={onPreview}>👁 Preview</button>
+          <button type="button" className="btn btn-sm" style={{ background: '#ff5c5c', color: '#fff' }} onClick={onDelete}>🗑 Delete</button>
         </div>
       </div>
 
-      <section style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
-        <input style={{ width: '100%', fontSize: 24, padding: 12, borderRadius: 12, border: '1px solid #ddd' }} value={post.title} onChange={(e) => updatePost({ title: e.target.value })} placeholder="Headline" />
-        <input style={{ width: '100%', fontSize: 16, padding: 12, borderRadius: 12, border: '1px solid #ddd' }} value={post.subtitle} onChange={(e) => updatePost({ subtitle: e.target.value })} placeholder="Subtitle" />
-        <textarea style={{ width: '100%', minHeight: 120, padding: 12, borderRadius: 12, border: '1px solid #ddd' }} value={post.excerpt} onChange={(e) => updatePost({ excerpt: e.target.value })} placeholder="Excerpt" />
-      </section>
-
-      <section style={{ display: 'grid', gap: 12, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
-          <input value={post.slug} onChange={(e) => updatePost({ slug: e.target.value })} placeholder="Slug" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-          <input type="date" value={post.publishDate} onChange={(e) => updatePost({ publishDate: e.target.value })} style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
+      {/* ── Post Details ── */}
+      <div style={sectionStyle}>
+        <p style={sectionHeadStyle}>📄 Post Details</p>
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div>
+            <label style={fieldLabel}>Headline / Title</label>
+            <input style={{ ...inputStyle, fontSize: 18 }} value={post.title} onChange={(e) => updatePost({ title: e.target.value })} placeholder="Your blog headline" />
+          </div>
+          <div>
+            <label style={fieldLabel}>Subtitle / Deck</label>
+            <input style={inputStyle} value={post.subtitle} onChange={(e) => updatePost({ subtitle: e.target.value })} placeholder="A short subtitle that teases the story" />
+          </div>
+          <div>
+            <label style={fieldLabel}>Excerpt (shown in listing)</label>
+            <textarea style={{ ...inputStyle, minHeight: 90, resize: 'vertical' } as React.CSSProperties} value={post.excerpt} onChange={(e) => updatePost({ excerpt: e.target.value })} placeholder="Short summary for the blog list card" />
+          </div>
         </div>
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
-          <input value={post.categories.join(', ')} onChange={(e) => updatePost({ categories: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })} placeholder="Categories (comma separated)" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-          <input value={post.tags.join(', ')} onChange={(e) => updatePost({ tags: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })} placeholder="Tags (comma separated)" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-          <select value={post.status} onChange={(e) => updatePost({ status: e.target.value as Post['status'] })} style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }}>
-            <option value="draft">Draft</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
-          <input value={post.cover?.src || ''} onChange={(e) => updatePost({ cover: { src: e.target.value, caption: post.cover?.caption || '' } })} placeholder="Cover image URL" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-          <input value={post.cover?.caption || ''} onChange={(e) => updatePost({ cover: { caption: e.target.value, src: post.cover?.src || '' } })} placeholder="Cover caption" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-        </div>
-      </section>
+      </div>
 
-      <section style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>SEO & metadata</h2>
-        <input value={post.seo.title} onChange={(e) => updatePost({ seo: { ...post.seo, title: e.target.value } })} placeholder="SEO title" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-        <textarea style={{ width: '100%', minHeight: 80, padding: 12, borderRadius: 12, border: '1px solid #ddd' }} value={post.seo.description} onChange={(e) => updatePost({ seo: { ...post.seo, description: e.target.value } })} placeholder="SEO description" />
-        <input value={post.seo.ogImage} onChange={(e) => updatePost({ seo: { ...post.seo, ogImage: e.target.value } })} placeholder="OG image URL" style={{ padding: 12, borderRadius: 12, border: '1px solid #ddd' }} />
-      </section>
+      {/* ── Cover Image ── */}
+      <div style={sectionStyle}>
+        <p style={sectionHeadStyle}>🖼 Cover / Hero Image</p>
+        <div style={{ display: 'grid', gap: 14 }}>
+          <ImageUploadField
+            label="Cover image"
+            value={post.cover?.src || ''}
+            onChange={(url) => updatePost({ cover: { src: url, caption: post.cover?.caption || '' } })}
+            previewHeight={220}
+            placeholder="Upload or paste cover image URL"
+          />
+          <div>
+            <label style={fieldLabel}>Cover caption</label>
+            <input style={inputStyle} value={post.cover?.caption || ''} onChange={(e) => updatePost({ cover: { src: post.cover?.src || '', caption: e.target.value } })} placeholder="Caption shown below the hero image" />
+          </div>
+        </div>
+      </div>
 
-      <section style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0 }}>Content blocks</h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {/* ── Author Info ── */}
+      <div style={sectionStyle}>
+        <p style={sectionHeadStyle}>✍️ Author</p>
+
+        {/* Avatar preview */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 18, padding: '14px 16px', background: '#f9f9f9', borderRadius: 10, border: '1px solid #eee' }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: '50%',
+            backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundColor: '#e0e0e0', display: 'grid', placeItems: 'center',
+            color: '#666', fontSize: 16, fontWeight: 700, flexShrink: 0,
+            border: '2px solid #ddd',
+          }}>
+            {!post.author.avatar && (post.author.initials || '?')}
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>{post.author.name || 'Author name'}</div>
+            <div style={{ fontSize: 12, color: '#888' }}>{post.author.role || 'Role'}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={fieldLabel}>Full name</label>
+              <input style={inputStyle} value={post.author.name} onChange={(e) => updateAuthor({ name: e.target.value })} placeholder="Author's full name" />
+            </div>
+            <div>
+              <label style={fieldLabel}>Role / Title</label>
+              <input style={inputStyle} value={post.author.role} onChange={(e) => updateAuthor({ role: e.target.value })} placeholder="e.g. Travel Editor" />
+            </div>
+          </div>
+          <div>
+            <label style={fieldLabel}>Initials (shown if no avatar)</label>
+            <input style={{ ...inputStyle, maxWidth: 100 }} value={post.author.initials} onChange={(e) => updateAuthor({ initials: e.target.value })} placeholder="AB" maxLength={3} />
+          </div>
+          <ImageUploadField
+            label="Author avatar"
+            value={post.author.avatar || ''}
+            onChange={(url) => updateAuthor({ avatar: url })}
+            previewHeight={100}
+            placeholder="Upload or paste avatar URL"
+          />
+        </div>
+      </div>
+
+      {/* ── Publishing Settings ── */}
+      <div style={sectionStyle}>
+        <p style={sectionHeadStyle}>⚙️ Publishing Settings</p>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={fieldLabel}>URL slug</label>
+              <input style={inputStyle} value={post.slug} onChange={(e) => updatePost({ slug: e.target.value })} placeholder="url-friendly-slug" />
+            </div>
+            <div>
+              <label style={fieldLabel}>Publish date</label>
+              <input type="date" style={inputStyle} value={post.publishDate} onChange={(e) => updatePost({ publishDate: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={fieldLabel}>Status</label>
+              <select style={inputStyle} value={post.status} onChange={(e) => updatePost({ status: e.target.value as Post['status'] })}>
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div>
+              <label style={fieldLabel}>Categories</label>
+              <input style={inputStyle} value={post.categories.join(', ')} onChange={(e) => updatePost({ categories: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })} placeholder="Travel, Asia, Food" />
+            </div>
+            <div>
+              <label style={fieldLabel}>Tags</label>
+              <input style={inputStyle} value={post.tags.join(', ')} onChange={(e) => updatePost({ tags: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })} placeholder="india, monsoon, solo" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SEO ── */}
+      <div style={sectionStyle}>
+        <p style={sectionHeadStyle}>🔍 SEO & Metadata</p>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div>
+            <label style={fieldLabel}>SEO title</label>
+            <input style={inputStyle} value={post.seo.title} onChange={(e) => updatePost({ seo: { ...post.seo, title: e.target.value } })} placeholder="Search engine title" />
+          </div>
+          <div>
+            <label style={fieldLabel}>Meta description</label>
+            <textarea style={{ ...inputStyle, minHeight: 70, resize: 'vertical' } as React.CSSProperties} value={post.seo.description} onChange={(e) => updatePost({ seo: { ...post.seo, description: e.target.value } })} placeholder="Short description for search results (150–160 chars)" />
+          </div>
+          <div>
+            <label style={fieldLabel}>OG / Social share image URL</label>
+            <input style={inputStyle} value={post.seo.ogImage} onChange={(e) => updatePost({ seo: { ...post.seo, ogImage: e.target.value } })} placeholder="https://…/og-image.jpg" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content Blocks ── */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap' }}>
+          <p style={{ ...sectionHeadStyle, margin: 0, paddingBottom: 0, border: 'none' }}>📝 Content Blocks</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {BLOCK_LIBRARY.map((b) => (
-              <button key={b.type} type="button" className="btn btn-xs" onClick={() => onAddBlock(b.type)} style={{ whiteSpace: 'nowrap' }}>+ {b.label}</button>
+              <button key={b.type} type="button" className="btn btn-xs" onClick={() => onAddBlock(b.type)} style={{ whiteSpace: 'nowrap', fontSize: 11 }} title={b.desc}>+ {b.label}</button>
             ))}
           </div>
         </div>
+        {post.blocks.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: '#bbb', border: '2px dashed #eee', borderRadius: 10 }}>
+            No content blocks yet. Add one above.
+          </div>
+        )}
         {post.blocks.map((block) => (
           <BlogBlockEditor
             key={block.id}
@@ -594,7 +924,7 @@ const BlogEditor: React.FC<{
             onDuplicate={() => duplicateBlock(block.id)}
           />
         ))}
-      </section>
+      </div>
     </div>
   );
 };
@@ -687,20 +1017,14 @@ const Blogs: React.FC<BlogsProps> = ({
   onPostClick,
   showListView = true,
 }) => {
-  // postsState always holds normalized posts (id guaranteed from _id)
   const [postsState, setPostsState] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // KEY FIX: store the actual post object being edited/viewed, not just an ID
   const [activePost, setActivePost] = useState<Post | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(showListView ? 'list' : 'preview');
 
-  // ── Load posts on mount ──
-  useEffect(() => {
-    loadBlogs();
-  }, []);
+  useEffect(() => { loadBlogs(); }, []);
 
   const loadBlogs = async () => {
     setLoading(true);
@@ -708,9 +1032,7 @@ const Blogs: React.FC<BlogsProps> = ({
     try {
       const response = await getBlogs();
       if (response.success) {
-        // Normalize: ensure every post has .id from MongoDB _id
-        const normalized = response.data.posts.map(normalizePost);
-        setPostsState(normalized);
+        setPostsState(response.data.posts.map(normalizePost));
       }
     } catch (err) {
       setError(mapErrorMessage(err));
@@ -719,22 +1041,16 @@ const Blogs: React.FC<BlogsProps> = ({
     }
   };
 
-  // If posts are passed as props (e.g. from a parent), normalize and use them
   useEffect(() => {
-    if (propPosts.length > 0) {
-      setPostsState(propPosts.map(normalizePost));
-    }
+    if (propPosts.length > 0) setPostsState(propPosts.map(normalizePost));
   }, [propPosts]);
 
-  // ── Open a post for reading or editing ──
-  // KEY FIX: store the whole post object so we never lose it
   const openPost = (post: Post, mode: ViewMode) => {
     setActivePost(post);
     setViewMode(mode);
     if (mode === 'preview') onPostClick?.(post);
   };
 
-  // ── Create a new post ──
   const createPost = async () => {
     setError(null);
     try {
@@ -742,7 +1058,6 @@ const Blogs: React.FC<BlogsProps> = ({
       if (response.success) {
         const normalized = normalizePost(response.data);
         setPostsState((prev) => [normalized, ...prev]);
-        // KEY FIX: set the full object immediately so editor has it
         setActivePost(normalized);
         setViewMode('editor');
       }
@@ -751,15 +1066,11 @@ const Blogs: React.FC<BlogsProps> = ({
     }
   };
 
-  // ── Local-first update: update activePost state immediately, then sync to server ──
   const handlePostChange = (next: Post) => {
-    // Update the active post for immediate UI responsiveness
     setActivePost(next);
-    // Also keep the list in sync
     setPostsState((prev) => prev.map((p) => (p.id === next.id ? next : p)));
   };
 
-  // ── Save post to server ──
   const savePost = async (post?: Post) => {
     const target = post ?? activePost;
     if (!target?.id) return;
@@ -779,7 +1090,6 @@ const Blogs: React.FC<BlogsProps> = ({
     }
   };
 
-  // ── Delete post ──
   const deletePost = async (id: string) => {
     if (!window.confirm('Delete this blog post? This cannot be undone.')) return;
     try {
@@ -794,34 +1104,20 @@ const Blogs: React.FC<BlogsProps> = ({
     }
   };
 
-  // ── Add block to active post ──
   const addBlock = (type: BlockType) => {
     if (!activePost) return;
     const newBlock = defaultBlock(type);
-    const updated = { ...activePost, blocks: [...activePost.blocks, newBlock] };
-    handlePostChange(updated);
+    handlePostChange({ ...activePost, blocks: [...activePost.blocks, newBlock] });
   };
-
-  // ─── Render ───────────────────────────────────────────────────────────────
 
   if (viewMode === 'editor' && activePost) {
     return (
       <BlogEditor
         post={activePost}
         onChange={handlePostChange}
-        onSave={async () => {
-          await savePost(activePost);
-          setViewMode('list');
-        }}
-        onPreview={() => {
-          // Auto-save then preview
-          savePost(activePost);
-          setViewMode('preview');
-        }}
-        onCancel={() => {
-          savePost(activePost); // save on back
-          setViewMode('list');
-        }}
+        onSave={async () => { await savePost(activePost); setViewMode('list'); }}
+        onPreview={() => { savePost(activePost); setViewMode('preview'); }}
+        onCancel={() => { savePost(activePost); setViewMode('list'); }}
         onDelete={() => { if (activePost.id) deletePost(activePost.id); }}
         onAddBlock={addBlock}
         saving={saving}
@@ -831,19 +1127,36 @@ const Blogs: React.FC<BlogsProps> = ({
 
   if (viewMode === 'preview' && activePost) {
     return (
-      <div style={{ position: 'relative' }}>
-        <div style={{ position: 'fixed', top: 20, left: 20, zIndex: 1000, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-sm" onClick={() => setViewMode('list')}>← Back to list</button>
-          <button type="button" className="btn btn-sm btn-primary" onClick={() => setViewMode('editor')}>Edit post</button>
+      <div style={{ position: 'relative', height: '100%' }}>
+        {/* Floating toolbar */}
+        <div style={{
+          position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 1000, display: 'flex', gap: 8,
+          background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(10px)',
+          borderRadius: 999, padding: '8px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+        }}>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => setViewMode('list')}
+            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999 }}
+          >
+            ← List
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => setViewMode('editor')}
+            style={{ borderRadius: 999 }}
+          >
+            ✏️ Edit
+          </button>
         </div>
-        <div style={{ paddingTop: 80 }}>
-          <BlogPostView post={activePost} layout={layout} displayFont={displayFont} />
-        </div>
+        <BlogPostView post={activePost} layout={layout} displayFont={displayFont} />
       </div>
     );
   }
 
-  // Default: list view
   return (
     <BlogListView
       posts={postsState}

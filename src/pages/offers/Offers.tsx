@@ -1,6 +1,6 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-
+import { getOffers, type Offer } from "../../lib/api";
 /**
  * Plumtrips Offers Page
  * Path: frontend/src/pages/offers/Offers.tsx
@@ -59,7 +59,23 @@ const OFFERS = [
 ];
 
 export default function OffersPage() {
-  const [activeTab, setActiveTab] = useState<"All" | "Holiday" | "Flight" | "Hotel">("All");
+  const [activeTab, setActiveTab] = useState<"All" |"Hotel"| "Flight"| "Tour"|"Transfer"|"Activity"| "Package"| "Other">("All");
+    const [items, setItems] = useState<Offer[]>([]);
+    const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getOffers();
+      setItems(data);
+    } catch {
+      console.error("Failed to load offers");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const filteredOffers =
     activeTab === "All" ? OFFERS : OFFERS.filter((o) => o.type === activeTab);
@@ -89,7 +105,7 @@ export default function OffersPage() {
       {/* TABS */}
       <div className="mx-auto max-w-7xl px-6 mt-10">
         <div className="flex justify-center gap-4 flex-wrap">
-          {["All", "Holiday", "Flight", "Hotel"].map((tab) => (
+          {["All","Hotel", "Flight", "Tour", "Transfer", "Activity", "Package", "Other"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as typeof activeTab)}

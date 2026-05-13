@@ -1,6 +1,7 @@
+
 // src/router.tsx
-import type { ReactNode, ReactElement } from "react";
-import { useEffect, lazy, Suspense } from "react";
+
+import { type ReactElement, lazy, Suspense, useEffect } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -34,7 +35,7 @@ import Concierge from "./pages/go/Concierge";
 import ContactPage from "./pages/contact/ContactPage";
 
 // Flights
-import SearchPage from "./pages/flights/Search";
+import FlightSearchPage from "./pages/flights/Search";
 import FarePage from "./pages/flights/Fare";
 import FlightsForm from "./pages/Flights";
 
@@ -42,7 +43,7 @@ import FlightsForm from "./pages/Flights";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
-// Account (protected)
+// Account
 import AccountLayout from "./pages/account/AccountLayout";
 import MyProfile from "./pages/account/MyProfile";
 import CoTravellers from "./pages/account/CoTravellers";
@@ -54,31 +55,35 @@ import MyWishlist from "./pages/account/MyWishlist";
 import ResetPassword from "./pages/account/ResetPassword";
 import Logout from "./pages/account/Logout";
 
-// Providers & guard
+// Providers & guards
 import { AuthProvider } from "./context/AuthContext";
 import { UiProvider } from "./context/UiContext";
 import RequireAuth from "./components/RequireAuth";
+
 import MarketingDash from "./pages/marketing/MarketingDash";
 import MarketingLogin from "./pages/auth/MarketingLogin";
 import Holiday from "./pages/marketing/Holidays";
-import Blog from "./pages/marketing/Blogs"
+import Blog from "./pages/marketing/Blogs";
 import Cruise from "./pages/marketing/Cruises";
-import Offer from "./pages/marketing/Offers"
-
-import RequireMarketAuth from "./components/RequireMarketAuth";
+import Offer from "./pages/marketing/Offers";
 import FrontpagePage from "./pages/marketing/Frontpage";
 
-// BLOG (lazy to speed initial load)
+import RequireMarketAuth from "./components/RequireMarketAuth";
+
+// New Flight Flow
+import FlightsFlow from "./pages/flights_new/FlightsFlow";
+import SearchPage from "./pages/flights/Search";
+import Search from "./pages/flights/Search";
+import SearchTabs from "./components/SearchTabs";
+
+// BLOG
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/blogs/BlogPost"));
 
-// CAREERS (lazy)
+// CAREERS
 const Careers = lazy(() => import("./pages/careers/Careers"));
 
-
-
-// Tiny fallback while lazy chunks load
-function RouteFallback() {
+function RouteFallback(): ReactElement {
   return (
     <div className="px-4 py-10 text-center text-slate-600">
       Loading…
@@ -86,7 +91,7 @@ function RouteFallback() {
   );
 }
 
-// ---------- HelloViza SSO forward ----------
+// ---------- SSO Forward ----------
 function SsoForward(): ReactElement {
   const [sp] = useSearchParams();
 
@@ -100,6 +105,7 @@ function SsoForward(): ReactElement {
     const ret = sp.get("ret") || "/go-for-visa";
 
     const url = new URL("/sso/consume", HV_BASE);
+
     if (ticket) url.searchParams.set("ticket", ticket);
     if (ret) url.searchParams.set("ret", ret);
 
@@ -110,12 +116,16 @@ function SsoForward(): ReactElement {
     import.meta.env.VITE_HV_BACKEND ||
     import.meta.env.VITE_HV_SSO_CONSUMER_BASE ||
     "http://localhost:5055";
-  const ticket = (sp.get("ticket") || "").toString();
-  const ret = (sp.get("ret") || "/go-for-visa").toString();
+
+  const ticket = sp.get("ticket") || "";
+  const ret = sp.get("ret") || "/go-for-visa";
+
   const href = (() => {
     const u = new URL("/sso/consume", hvBase);
+
     if (ticket) u.searchParams.set("ticket", ticket);
     if (ret) u.searchParams.set("ret", ret);
+
     return u.toString();
   })();
 
@@ -127,18 +137,9 @@ function SsoForward(): ReactElement {
   );
 }
 
-// Wrap the app with providers
-const withProviders = (node: ReactNode): ReactElement => (
-  <AuthProvider>
-    <UiProvider>{node}</UiProvider>
-  </AuthProvider>
-);
-
 export const router = createBrowserRouter(
   [
-
     {
-      // Single root element that wraps ALL routes
       element: (
         <AuthProvider>
           <UiProvider>
@@ -146,163 +147,292 @@ export const router = createBrowserRouter(
           </UiProvider>
         </AuthProvider>
       ),
+
       children: [
-    // ✅ Route WITHOUT header/footer
-    {path: "/marketing-login",element: withProviders(<MarketingLogin />)},
-    { path: "auth/login", element: withProviders(<Login />) }, 
-    { path: "auth/register", element: withProviders(<Register />) },
-    { path: "signin", element: withProviders(<Navigate to="/auth/login" replace />) },
-            //Marketing Admin Panel
-    {
-  path: "/marketing-dash",
-  element: withProviders(
-    <RequireMarketAuth>
-      <MarketingDash />
-    </RequireMarketAuth>
-  ),
-  children: [
-    { index: true, element: <Cruise /> },
-    { path: "cruises", element: <Cruise /> },
-    { path: "holidays", element: <Holiday /> },
-    { path: "offers", element: <Offer /> },
-    { path: "blogs", element: <Blog /> },
-    { path: "frontpage", element: <FrontpagePage/> },
-  ],
-},
-    // ✅ All other routes (with header/footer)
-    {
-      path: "/",
-      element: withProviders(<MainLayout />), // MainLayout must render <Outlet />
-      children: [
-        { index: true, element: <Home /> },
-
-        // Flights
-        { path: "flights", element: <SearchPage /> },
-        { path: "engine/flights", element: <FlightsEnginePage /> },
-        { path: "flights/form", element: <FlightsForm /> },
+        // AUTH
         {
-          path: "flights/fare",
-          element: (
-            <RequireAuth>
-              <FarePage />
-            </RequireAuth>
-          ),
-        },
-        { path: "flights/search", element: <Navigate to="/flights" replace /> },
-        {
-          path: "flights/review",
-          element: (
-            <RequireAuth>
-              <FarePage />
-            </RequireAuth>
-          ),
-        },
-        { path: "flight", element: <Navigate to="/flights/fare" replace /> },
-
-        // Hotels + engines
-        { path: "hotels", element: <Hotels /> },
-        { path: "engine/hotels", element: <HotelsEnginePage /> },
-
-        // Core sections
-        { path: "holidays", element: <HolidaysPage /> },
-        { path: "mice", element: <MicePage /> },
-        { path: "support", element: <Support /> },
-        { path: "cruises", element: <CruisesPage /> },
-        { path: "contact", element: <ContactPage /> },
-        { path: "offers", element: <OffersPage /> },
-
-        // Legal pages
-        { path: "privacy-policy", element: <PrivacyPage /> },
-        { path: "terms-and-conditions", element: <TermsPage /> },
-        { path: "cancellation-and-refund", element: <CancellationPage /> },
-        { path: "cookies-policy", element: <CookiesPage /> },
-
-        // About Us
-        { path: "about", element: <AboutPage /> },
-
-        // Visa
-        { path: "go/visa", element: <GoVisa /> },
-        { path: "visa", element: <Navigate to="/go/visa" replace /> },
-        { path: "visas", element: <Navigate to="/go/visa" replace /> },
-
-        // Concierge
-        { path: "go/concierge", element: <Concierge /> },
-        { path: "concierge", element: <Navigate to="/go/concierge" replace /> },
-
-
-        // Careers
-        {
-          path: "careers",
-          element: (
-            <Suspense fallback={<RouteFallback />}>
-              <Careers />
-            </Suspense>
-          ),
+          path: "/marketing-login",
+          element: <MarketingLogin />,
         },
 
-        // BLOG
         {
-          path: "blogs",
-          element: (
-            <Suspense fallback={<RouteFallback />}>
-              <BlogIndex />
-            </Suspense>
-          ),
-        },
-        {
-          path: "blogs/:slug",
-          element: (
-            <Suspense fallback={<RouteFallback />}>
-              <BlogPost />
-            </Suspense>
-          ),
-        },
-        { path: "blog", element: <Navigate to="/blogs" replace /> },
-        {
-          path: "blog/:slug",
-          element: (
-            <Suspense fallback={<RouteFallback />}>
-              <BlogPost />
-            </Suspense>
-          ),
+          path: "auth/login",
+          element: <Login />,
         },
 
-        // SSO forward
-        { path: "sso/consume", element: <SsoForward /> },
-
-        // Account (protected)
         {
-          path: "account",
+          path: "auth/register",
+          element: <Register />,
+        },
+
+        {
+          path: "signin",
+          element: <Navigate to="/auth/login" replace />,
+        },
+
+        // MARKETING DASH
+        {
+          path: "/marketing-dash",
           element: (
-            <RequireAuth>
-              <AccountLayout />
-            </RequireAuth>
+            <RequireMarketAuth>
+              <MarketingDash />
+            </RequireMarketAuth>
           ),
+
           children: [
-            { index: true, element: <MyProfile /> },
-            { path: "profile", element: <MyProfile /> },
-            { path: "co-travellers", element: <CoTravellers /> },
-            { path: "devices", element: <Devices /> },
-            { path: "reset-password", element: <ResetPassword /> },
-            { path: "trips", element: <MyTrips /> },
-            { path: "wallet", element: <MyWallet /> },
-            { path: "payments", element: <MyPayments /> },
-            { path: "wishlist", element: <MyWishlist /> },
-            { path: "logout", element: <Logout /> },
+            { index: true, element: <Cruise /> },
+            { path: "cruises", element: <Cruise /> },
+            { path: "holidays", element: <Holiday /> },
+            { path: "offers", element: <Offer /> },
+            { path: "blogs", element: <Blog /> },
+            { path: "frontpage", element: <FrontpagePage /> },
           ],
         },
 
-        // Shortcut
-        { path: "my-trips", element: <Navigate to="/account/trips" replace /> },
+        // MAIN LAYOUT
+        {
+          path: "/",
+          element: <MainLayout />,
 
-        
+          children: [
+            { index: true, element: <Home /> },
 
-        // 404
-        { path: "*", element: <NotFound /> },
+            // Flights
+            {
+              path: "flights",
+              element: <FlightSearchPage />,
+            },
+
+
+            {
+              path: "engine/flights",
+              element: <FlightsEnginePage />,
+            },
+
+            {
+              path: "flights/form",
+              element: <FlightsForm />,
+            },
+
+            {
+              path: "flights/fare",
+              element: (
+                <RequireAuth>
+                  <FarePage />
+                </RequireAuth>
+              ),
+            },
+
+            {
+              path: "flights/search",
+              element: <Navigate to="/flights" replace />,
+            },
+
+            {
+              path: "flights/review",
+              element: (
+                <RequireAuth>
+                  <FarePage />
+                </RequireAuth>
+              ),
+            },
+
+            {
+              path: "flight",
+              element: <Navigate to="/flights/fare" replace />,
+            },
+
+            // Hotels
+            {
+              path: "hotels",
+              element: <Hotels />,
+            },
+
+            {
+              path: "engine/hotels",
+              element: <HotelsEnginePage />,
+            },
+
+            // Sections
+            {
+              path: "holidays",
+              element: <HolidaysPage />,
+            },
+
+            {
+              path: "mice",
+              element: <MicePage />,
+            },
+
+            {
+              path: "support",
+              element: <Support />,
+            },
+
+            {
+              path: "cruises",
+              element: <CruisesPage />,
+            },
+
+            {
+              path: "contact",
+              element: <ContactPage />,
+            },
+
+            {
+              path: "offers",
+              element: <OffersPage />,
+            },
+
+            // Legal
+            {
+              path: "privacy-policy",
+              element: <PrivacyPage />,
+            },
+
+            {
+              path: "terms-and-conditions",
+              element: <TermsPage />,
+            },
+
+           {
+              path: "flights-new",
+              element: <FlightsFlow />,
+            },
+
+            {
+              path: "cancellation-and-refund",
+              element: <CancellationPage />,
+            },
+
+            {
+              path: "cookies-policy",
+              element: <CookiesPage />,
+            },
+
+            // About
+            {
+              path: "about",
+              element: <AboutPage />,
+            },
+
+            // Visa
+            {
+              path: "go/visa",
+              element: <GoVisa />,
+            },
+
+            {
+              path: "visa",
+              element: <Navigate to="/go/visa" replace />,
+            },
+
+            {
+              path: "visas",
+              element: <Navigate to="/go/visa" replace />,
+            },
+
+            // Concierge
+            {
+              path: "go/concierge",
+              element: <Concierge />,
+            },
+
+            {
+              path: "concierge",
+              element: <Navigate to="/go/concierge" replace />,
+            },
+
+            // Careers
+            {
+              path: "careers",
+              element: (
+                <Suspense fallback={<RouteFallback />}>
+                  <Careers />
+                </Suspense>
+              ),
+            },
+
+            // Blogs
+            {
+              path: "blogs",
+              element: (
+                <Suspense fallback={<RouteFallback />}>
+                  <BlogIndex />
+                </Suspense>
+              ),
+            },
+
+            {
+              path: "blogs/:slug",
+              element: (
+                <Suspense fallback={<RouteFallback />}>
+                  <BlogPost />
+                </Suspense>
+              ),
+            },
+
+            {
+              path: "blog",
+              element: <Navigate to="/blogs" replace />,
+            },
+
+            {
+              path: "blog/:slug",
+              element: (
+                <Suspense fallback={<RouteFallback />}>
+                  <BlogPost />
+                </Suspense>
+              ),
+            },
+
+            // SSO
+            {
+              path: "sso/consume",
+              element: <SsoForward />,
+            },
+
+            // Account
+            {
+              path: "account",
+
+              element: (
+                <RequireAuth>
+                  <AccountLayout />
+                </RequireAuth>
+              ),
+
+              children: [
+                { index: true, element: <MyProfile /> },
+                { path: "profile", element: <MyProfile /> },
+                { path: "co-travellers", element: <CoTravellers /> },
+                { path: "devices", element: <Devices /> },
+                { path: "reset-password", element: <ResetPassword /> },
+                { path: "trips", element: <MyTrips /> },
+                { path: "wallet", element: <MyWallet /> },
+                { path: "payments", element: <MyPayments /> },
+                { path: "wishlist", element: <MyWishlist /> },
+                { path: "logout", element: <Logout /> },
+              ],
+            },
+
+            {
+              path: "my-trips",
+              element: <Navigate to="/account/trips" replace />,
+            },
+
+            // 404
+            {
+              path: "*",
+              element: <NotFound />,
+            },
+          ],
+        },
       ],
     },
   ],
-},
-  ],
-  { basename: import.meta.env.BASE_URL }
+  {
+    basename: import.meta.env.BASE_URL,
+  }
 );
+
