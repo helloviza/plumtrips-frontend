@@ -7,7 +7,7 @@ import { getBlog } from "../../lib/api";
 import type { Post } from "../../lib/api";
 
 export default function ReadBlogPage() {
-  const { id } = useParams();
+  const { id } = useParams(); 
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
