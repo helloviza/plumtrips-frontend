@@ -86,7 +86,7 @@ export default function BlogIndex() {
             excerpt={b.excerpt}
             cover={resolveCover(b.cover)}
             tags={b.tags}
-            href={`/blogs/${b.slug}`}
+            href={`/readblogs/${b.id}`}
           />
         ))}
       </section>

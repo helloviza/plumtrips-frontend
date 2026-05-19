@@ -43,6 +43,18 @@ import FlightsForm from "./pages/Flights";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
+// Hotel booking flow
+import HotelSearch from "./pages/hotels/HotelSearch";
+import HotelResults from "./pages/hotels/HotelResults";
+import HotelDetail from "./pages/hotels/HotelDetail";
+import RoomSelection from "./pages/hotels/RoomSelection";
+import GuestDetails from "./pages/hotels/GuestDetails";
+import Checkout from "./pages/hotels/Checkout";
+import BookingConfirmation from "./pages/hotels/BookingConfirmation";
+
+//Read Blogs
+import ReadBlogPage from "./pages/blogs/ReadBlogPage";
+
 // Account
 import AccountLayout from "./pages/account/AccountLayout";
 import MyProfile from "./pages/account/MyProfile";
@@ -243,16 +255,32 @@ export const router = createBrowserRouter(
             },
 
             // Hotels
-            {
-              path: "hotels",
-              element: <Hotels />,
-            },
+            // {
+            //   path: "hotels",
+            //   element: <Hotels />,
+            // },
 
             {
               path: "engine/hotels",
               element: <HotelsEnginePage />,
             },
 
+                    // Hotels + engines
+        { path: "hotels", element: <HotelSearch /> },
+        { path: "hotels/results", element: <HotelResults /> },
+        { path: "hotels/:id", element: <HotelDetail /> },
+        { path: "hotels/:id/rooms", element: <RoomSelection /> },
+        { path: "hotels/guest-details", element: <GuestDetails /> },
+        { path: "hotels/checkout", element: <Checkout /> },
+        { path: "hotels/confirmation", element: <BookingConfirmation /> },
+        { path: "engine/hotels", element: <HotelsEnginePage /> },
+
+
+        //Read Blogs
+
+        {
+          path: "readblogs/:id", element: <ReadBlogPage/>
+        },
             // Sections
             {
               path: "holidays",

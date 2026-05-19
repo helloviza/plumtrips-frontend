@@ -8,6 +8,8 @@ import { formatINR, MOCK_MODE } from "../../lib/flights_api";
 interface ConfirmationPageProps {
   flight: DisplayFlight;
   tier: FareTier;
+  returnFlight?: DisplayFlight;
+  returnTier?: FareTier;
   bookingId?: number;
   pnr?: string;
   passengerNames?: string[];
@@ -16,8 +18,9 @@ interface ConfirmationPageProps {
 }
 
 export default function ConfirmationPage({
-  flight, tier, bookingId, pnr, passengerNames, contactEmail, onSearchAgain,
+  flight, tier, returnFlight, returnTier, bookingId, pnr, passengerNames, contactEmail, onSearchAgain,
 }: ConfirmationPageProps) {
+  const isRoundTrip = !!returnFlight && !!returnTier;
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
@@ -73,7 +76,9 @@ export default function ConfirmationPage({
 
                 {/* Flight details */}
                 <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Flight</div>
+                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">
+                    {isRoundTrip ? "Outbound Flight" : "Flight"}
+                  </div>
                   <div className="font-bold text-slate-800">{flight.airline} · {flight.flightNumber}</div>
                 </div>
                 <div>
@@ -88,6 +93,22 @@ export default function ConfirmationPage({
                   <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Arrival</div>
                   <div className="font-black text-slate-800 text-lg">{flight.arriveTime}</div>
                 </div>
+                {isRoundTrip && returnFlight && returnTier && (
+                  <>
+                    <div className="col-span-2 border-t border-dashed border-slate-100 pt-2 mt-1">
+                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Flight</div>
+                      <div className="font-bold text-slate-800">{returnFlight.airline} · {returnFlight.flightNumber}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Date</div>
+                      <div className="font-bold text-slate-800">{returnFlight.departDate}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Times</div>
+                      <div className="font-black text-slate-800 text-lg">{returnFlight.departTime} → {returnFlight.arriveTime}</div>
+                    </div>
+                  </>
+                )}
                 <div>
                   <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Fare Type</div>
                   <div className="font-bold text-slate-800">{tier.name}</div>

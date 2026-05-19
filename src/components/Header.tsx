@@ -9,7 +9,6 @@ const logo = "/assets/logo.png";
 
 // External destinations (as requested)
 const EXTERNAL_FLIGHTS_URL = "https://www.Plumtrips.in";
-const EXTERNAL_HOTELS_URL = "https://www.Plumtrips.in/hotels";
 const EXTERNAL_VISA_URL = "https://www.helloviza.com";
 
 const allNav = [
@@ -53,7 +52,6 @@ export default function Header() {
     () =>
       ({
         Flights: EXTERNAL_FLIGHTS_URL,
-        Hotels: EXTERNAL_HOTELS_URL,
         Visa: EXTERNAL_VISA_URL,
       }) as Record<string, string>,
     []

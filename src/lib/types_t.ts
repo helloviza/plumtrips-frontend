@@ -7,9 +7,17 @@
 
 export interface Airport {
   code: string;
-  city: string;
   name: string;
-  country?: string;
+  city: string;
+  cityCode: string;
+  country: string;
+  countryCode: string;
+  label: string;
+}
+
+export interface Airline {
+    code: string;
+  name: string;
 }
 
 export type TripType = "oneWay" | "roundTrip" | "multiCity";

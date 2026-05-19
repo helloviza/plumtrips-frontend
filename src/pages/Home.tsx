@@ -19,19 +19,24 @@ export default function Home() {
 
   return (
     <div className="relative">
-      {/* HERO */}
-      <div className="relative overflow-hidden text-white" style={{ background: heroBg }}>
-        {/* GLOBAL AI ENERGY RING */}
+      {/* HERO
+          ↑ FIX: removed `overflow-hidden` — it was clipping all upward-opening
+            dropdowns (airport search, calendar, passenger picker).
+            The AI ring is now clipped by its own wrapper div instead. */}
+      <div className="relative text-white" style={{ background: heroBg }}>
+
+        {/* GLOBAL AI ENERGY RING — clipped inside its own overflow-hidden wrapper
+            so the ring never bleeds out, but the form dropdowns are free to overflow */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
           <div className="ai-global-ring absolute left-1/2 top-1/2 h-[980px] w-[980px] -translate-x-1/2 -translate-y-1/2 rounded-full" />
         </div>
 
         <div className="relative z-[1] mx-auto max-w-6xl px-4 py-7">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-10">
-            {/* LEFT */}
-           <div className="lg:col-span-7">
-            <SearchTabs />
-           </div>
+            {/* LEFT — overflow-visible so upward popups escape the hero boundary */}
+            <div className="lg:col-span-7 overflow-visible">
+              <SearchTabs />
+            </div>
 
             {/* RIGHT */}
             <div className="lg:col-span-3">
@@ -165,7 +170,7 @@ export default function Home() {
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
         }
-        .ai-white-chip-text{ color: rgba(17,24,39,0.92); letter-spacing: 0.01em; } /* dark charcoal */
+        .ai-white-chip-text{ color: rgba(17,24,39,0.92); letter-spacing: 0.01em; }
 
         .ai-white-chip svg{ color: rgba(0,71,127,0.96); }
 
@@ -182,16 +187,14 @@ export default function Home() {
           border-color: rgba(0,71,127,0.24);
         }
 
-        .ai-card-title{ color: rgba(17,24,39,0.96); } /* dark charcoal */
-
-.ai-card-caption{ color: rgba(31,41,55,0.78); } /* charcoal muted */
+        .ai-card-title{ color: rgba(17,24,39,0.96); }
+        .ai-card-caption{ color: rgba(31,41,55,0.78); }
 
         .ai-icon-wrap{
-  background: rgba(17,24,39,0.06);
-  border: 1px solid rgba(17,24,39,0.14);
-  color: rgba(17,24,39,0.85);
-}
-
+          background: rgba(17,24,39,0.06);
+          border: 1px solid rgba(17,24,39,0.14);
+          color: rgba(17,24,39,0.85);
+        }
 
         .ai-go-pill{
           background: #00477f;
@@ -240,7 +243,6 @@ function AIActionLink({
   );
 }
 
-/* Arrow as SVG (copy-safe, no weird encoding) */
 function GoArrowIcon() {
   return (
     <svg
@@ -255,20 +257,11 @@ function GoArrowIcon() {
   );
 }
 
-/* ---------- Micro chip icons (inherit color) ---------- */
 function ChipSparkIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
-      <path
-        d="M12 3l1.1 4.2L17 8.3l-3.3 2.3.9 4.1L12 12.7 9.4 14.7l.9-4.1L7 8.3l3.9-1.1L12 3z"
-        fill="currentColor"
-        opacity="0.95"
-      />
-      <path
-        d="M19.2 4.6l.35 1.2 1.2.35-1.2.35-.35 1.2-.35-1.2-1.2-.35 1.2-.35.35-1.2z"
-        fill="currentColor"
-        opacity="0.7"
-      />
+      <path d="M12 3l1.1 4.2L17 8.3l-3.3 2.3.9 4.1L12 12.7 9.4 14.7l.9-4.1L7 8.3l3.9-1.1L12 3z" fill="currentColor" opacity="0.95" />
+      <path d="M19.2 4.6l.35 1.2 1.2.35-1.2.35-.35 1.2-.35-1.2-1.2-.35 1.2-.35.35-1.2z" fill="currentColor" opacity="0.7" />
     </svg>
   );
 }
@@ -276,21 +269,8 @@ function ChipSparkIcon() {
 function ChipShieldCheckIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
-      <path
-        d="M12 4 7 6v5.6c0 3 2.1 5.4 5 6.3 2.9-.9 5-3.3 5-6.3V6l-5-2z"
-        className="stroke-current"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-        opacity="0.95"
-      />
-      <path
-        d="M9.5 11.7 11.2 13.4 14.7 9.9"
-        className="stroke-current"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.95"
-      />
+      <path d="M12 4 7 6v5.6c0 3 2.1 5.4 5 6.3 2.9-.9 5-3.3 5-6.3V6l-5-2z" className="stroke-current" strokeWidth="1.7" strokeLinejoin="round" opacity="0.95" />
+      <path d="M9.5 11.7 11.2 13.4 14.7 9.9" className="stroke-current" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
     </svg>
   );
 }
@@ -300,44 +280,19 @@ function ChipRouteIcon() {
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" aria-hidden>
       <circle cx="5" cy="7" r="2" fill="currentColor" opacity="0.9" />
       <circle cx="19" cy="17" r="2" fill="currentColor" opacity="0.9" />
-      <path
-        d="M7 7h8.5a4.5 4.5 0 0 1 4.5 4.5V13"
-        className="stroke-current"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-      <path
-        d="M7.5 16.5h7a3.5 3.5 0 0 0 3.5-3.5V12"
-        className="stroke-current"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        opacity="0.55"
-      />
-      <path
-        d="M7.5 16.5l1.6-1M7.5 16.5l1.6 1"
-        className="stroke-current"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
+      <path d="M7 7h8.5a4.5 4.5 0 0 1 4.5 4.5V13" className="stroke-current" strokeWidth="1.7" strokeLinecap="round" opacity="0.9" />
+      <path d="M7.5 16.5h7a3.5 3.5 0 0 0 3.5-3.5V12" className="stroke-current" strokeWidth="1.7" strokeLinecap="round" opacity="0.55" />
+      <path d="M7.5 16.5l1.6-1M7.5 16.5l1.6 1" className="stroke-current" strokeWidth="1.7" strokeLinecap="round" opacity="0.8" />
     </svg>
   );
 }
 
-/* ---------- Tiny AI icons (inherit currentColor from wrappers) ---------- */
 function AIChipIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
       <rect x="6" y="6" width="12" height="12" rx="3" className="stroke-current" strokeWidth="1.4" opacity="0.95" />
       <rect x="10" y="10" width="4" height="4" rx="1" fill="currentColor" opacity="0.85" />
-      <path
-        d="M12 2v3M12 19v3M4 12h3M17 12h3"
-        className="stroke-current"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
+      <path d="M12 2v3M12 19v3M4 12h3M17 12h3" className="stroke-current" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
     </svg>
   );
 }
@@ -346,13 +301,7 @@ function AIHotelIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
       <rect x="5" y="8" width="14" height="10" rx="2" className="stroke-current" strokeWidth="1.4" opacity="0.95" />
-      <path
-        d="M7 11h3M7 14h3M14 11h3M14 14h3"
-        className="stroke-current"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
+      <path d="M7 11h3M7 14h3M14 11h3M14 14h3" className="stroke-current" strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
       <circle cx="12" cy="5" r="1.4" className="stroke-current" strokeWidth="1.2" opacity="0.8" />
     </svg>
   );
@@ -362,20 +311,8 @@ function AIGlobeIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="8" className="stroke-current" strokeWidth="1.4" opacity="0.95" />
-      <path
-        d="M4.5 10.5c2 .5 3.5.7 5.5-.5 1.5-.9 3-.9 4.5 0 1.7 1 3 1 5 0"
-        className="stroke-current"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
-      <path
-        d="M9 7c0 4 1.5 6.5 3 6.5S15 11 15 7"
-        className="stroke-current"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.6"
-      />
+      <path d="M4.5 10.5c2 .5 3.5.7 5.5-.5 1.5-.9 3-.9 4.5 0 1.7 1 3 1 5 0" className="stroke-current" strokeWidth="1.2" strokeLinecap="round" opacity="0.75" />
+      <path d="M9 7c0 4 1.5 6.5 3 6.5S15 11 15 7" className="stroke-current" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
     </svg>
   );
 }
@@ -405,22 +342,8 @@ function AIBusIcon() {
 function AIShieldIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-      <path
-        d="M12 4 7 6v5.5c0 3.1 2.2 5.6 5 6.5 2.8-.9 5-3.4 5-6.5V6l-5-2z"
-        className="stroke-current"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.95"
-      />
-      <path
-        d="M9.5 11.5 11 13l3-3"
-        className="stroke-current"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.85"
-      />
+      <path d="M12 4 7 6v5.5c0 3.1 2.2 5.6 5 6.5 2.8-.9 5-3.4 5-6.5V6l-5-2z" className="stroke-current" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
+      <path d="M9.5 11.5 11 13l3-3" className="stroke-current" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
     </svg>
   );
 }

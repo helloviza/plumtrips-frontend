@@ -46,18 +46,23 @@ function minToLabel(m: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
-export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, traceId: string): DisplayFlight {
-  const allSegs = result.Segments[0];
+export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, traceId: string,legIndex = 0  ): DisplayFlight {
+  
+  const allSegs = result.Segments[legIndex] ?? result.Segments[0];
+  
+
   const seg = allSegs[0];
   const lastSeg = allSegs[allSegs.length - 1];
   const totalDuration = allSegs.reduce((acc, s) => acc + s.Duration, 0);
   const stops = allSegs.length - 1;
+  
 
   const depISO = seg.Origin.DepTime;
   const arrISO = lastSeg.Destination.ArrTime;
 
   const baggage = result.Baggage?.[0];
   const cabinBag = result.CabinBaggage?.[0];
+ 
 
   // Build per-segment details
   const segments: import("./types_t").FlightSegmentDetail[] = allSegs.map((s) => ({
@@ -85,6 +90,7 @@ export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, 
     craft: s.Craft || undefined,
     groundTime: s.GroundTime || undefined,
     mile: s.Mile || undefined,
+    
   }));
 
   return {
@@ -142,31 +148,44 @@ export function formatINR(n: number): string {
 
 // ─── MOCK AIRPORTS ─────────────────────────────────────────
 
-export const MOCK_AIRPORTS: Airport[] = [
-  { code: "DEL", city: "New Delhi", name: "Indira Gandhi International" },
-  { code: "BOM", city: "Mumbai", name: "Chhatrapati Shivaji Maharaj International" },
-  { code: "BLR", city: "Bengaluru", name: "Kempegowda International" },
-  { code: "HYD", city: "Hyderabad", name: "Rajiv Gandhi International" },
-  { code: "MAA", city: "Chennai", name: "Chennai International" },
-  { code: "CCU", city: "Kolkata", name: "Netaji Subhas Chandra Bose International" },
-  { code: "GOI", city: "Goa", name: "Goa International" },
-  { code: "AMD", city: "Ahmedabad", name: "Sardar Vallabhbhai Patel International" },
-  { code: "PNQ", city: "Pune", name: "Pune International" },
-  { code: "JAI", city: "Jaipur", name: "Jaipur International" },
-  { code: "BKK", city: "Bangkok", name: "Suvarnabhumi International", country: "Thailand" },
-  { code: "DXB", city: "Dubai", name: "Dubai International", country: "UAE" },
-  { code: "SIN", city: "Singapore", name: "Changi International", country: "Singapore" },
-  { code: "LHR", city: "London", name: "Heathrow", country: "UK" },
-  { code: "NRT", city: "Tokyo", name: "Narita International", country: "Japan" },
-  { code: "CDG", city: "Paris", name: "Charles de Gaulle", country: "France" },
-  { code: "JFK", city: "New York", name: "John F. Kennedy International", country: "USA" },
-];
+// export const MOCK_AIRPORTS: Airport[] = [
+//   { code: "DEL", city: "New Delhi", name: "Indira Gandhi International" },
+//   { code: "BOM", city: "Mumbai", name: "Chhatrapati Shivaji Maharaj International" },
+//   { code: "BLR", city: "Bengaluru", name: "Kempegowda International" },
+//   { code: "HYD", city: "Hyderabad", name: "Rajiv Gandhi International" },
+//   { code: "MAA", city: "Chennai", name: "Chennai International" },
+//   { code: "CCU", city: "Kolkata", name: "Netaji Subhas Chandra Bose International" },
+//   { code: "GOI", city: "Goa", name: "Goa International" },
+//   { code: "AMD", city: "Ahmedabad", name: "Sardar Vallabhbhai Patel International" },
+//   { code: "PNQ", city: "Pune", name: "Pune International" },
+//   { code: "JAI", city: "Jaipur", name: "Jaipur International" },
+//   { code: "BKK", city: "Bangkok", name: "Suvarnabhumi International", country: "Thailand" },
+//   { code: "DXB", city: "Dubai", name: "Dubai International", country: "UAE" },
+//   { code: "SIN", city: "Singapore", name: "Changi International", country: "Singapore" },
+//   { code: "LHR", city: "London", name: "Heathrow", country: "UK" },
+//   { code: "NRT", city: "Tokyo", name: "Narita International", country: "Japan" },
+//   { code: "CDG", city: "Paris", name: "Charles de Gaulle", country: "France" },
+//   { code: "JFK", city: "New York", name: "John F. Kennedy International", country: "USA" },
+// ];
 
 // ─── MOCK FLIGHTS ──────────────────────────────────────────
 
 export function getMockFlights(from: string, to: string, date: string): DisplayFlight[] {
-  const airportLookup: Record<string, { city: string; name: string }> = {};
-  for (const a of MOCK_AIRPORTS) airportLookup[a.code] = { city: a.city, name: a.name };
+  const airportLookup: Record<string, { city: string; name: string }> = {
+  DEL: { city: "New Delhi",   name: "Indira Gandhi International" },
+  BOM: { city: "Mumbai",      name: "Chhatrapati Shivaji Maharaj International" },
+  BLR: { city: "Bengaluru",  name: "Kempegowda International" },
+  HYD: { city: "Hyderabad",  name: "Rajiv Gandhi International" },
+  MAA: { city: "Chennai",    name: "Chennai International" },
+  CCU: { city: "Kolkata",    name: "Netaji Subhas Chandra Bose International" },
+  GOI: { city: "Goa",        name: "Goa International" },
+  AMD: { city: "Ahmedabad",  name: "Sardar Vallabhbhai Patel International" },
+  BKK: { city: "Bangkok",    name: "Suvarnabhumi International" },
+  DXB: { city: "Dubai",      name: "Dubai International" },
+  SIN: { city: "Singapore",  name: "Changi International" },
+  LHR: { city: "London",     name: "Heathrow" },
+  JFK: { city: "New York",   name: "John F. Kennedy International" },
+};
   const fromInfo = airportLookup[from] ?? { city: from, name: from };
   const toInfo = airportLookup[to] ?? { city: to, name: to };
 
@@ -382,14 +401,18 @@ export async function apiSearchFlights(
         returnFlights: getMockReturnFlights(form.from.code, form.to.code, form.returnDate),
       };
     }
-    if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
-      return {
-        outbound: getMockFlights(multiLegs[0].from.code, multiLegs[0].to.code, multiLegs[0].departDate),
-        multiLegFlights: multiLegs.map((leg) =>
-          getMockFlights(leg.from.code, leg.to.code, leg.departDate)
-        ),
-      };
-    }
+    // Mock path — already correct structure, just add _legIndex tags
+if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
+  const multiLegFlights = multiLegs.map((leg, legIdx) =>
+    getMockFlights(leg.from.code, leg.to.code, leg.departDate).map(f => ({
+      ...f, _legIndex: legIdx,
+    }))
+  );
+  return {
+    outbound: multiLegFlights[0] ?? [],
+    multiLegFlights,
+  };
+}
     return { outbound: getMockFlights(form.from.code, form.to.code, form.departDate) };
   }
 
@@ -458,19 +481,56 @@ export async function apiSearchFlights(
 
   const outbound = (results[0] ?? []).map((r) => tboResultToDisplay(r, traceId));
 
-  if (form.tripType === "roundTrip" && results[1]) {
+// flights_api.ts — replace the round-trip block
+if (form.tripType === "roundTrip") {
+  // Case A: TBO gave us two separate arrays (standard)
+  if (results[1] && results[1].length > 0) {
     return {
       outbound,
-      returnFlights: (results[1] ?? []).map((r) => tboResultToDisplay(r, traceId)),
+      returnFlights: results[1].map((r) => tboResultToDisplay(r, traceId)),
     };
   }
-  if (form.tripType === "multiCity" && results.length > 1) {
-    return {
-      outbound,
-      multiLegFlights: results.map((leg) => leg.map((r) => tboResultToDisplay(r, traceId))),
-    };
+  // Case B: TBO gave us one flat array — split by origin code
+  const returnCode = form.to.code.toUpperCase();
+  const returnFlights = (results[0] ?? [])
+    .filter(r => r.Segments?.[0]?.[0]?.Origin?.Airport?.AirportCode === returnCode)
+    .map(r => tboResultToDisplay(r, traceId));
+  const filteredOutbound = outbound.filter(
+    f => f.fromCode !== returnCode
+  );
+  if (returnFlights.length > 0) {
+    return { outbound: filteredOutbound, returnFlights };
   }
   return { outbound };
+}
+
+// ── Multi-City ────────────────────────────────────────────
+if (form.tripType === "multiCity") {
+  const legCount = multiLegs?.length ?? 2;
+
+  const allResults = results[0] ?? [];
+
+  const multiLegFlights: DisplayFlight[][] = Array.from({ length: legCount }, (_, legIdx) =>
+    allResults
+      .filter(r => r.Segments?.[legIdx] && r.Segments[legIdx].length > 0)
+      .map(r => ({
+        ...tboResultToDisplay(r, traceId, legIdx),
+        _legIndex: legIdx,
+      } as DisplayFlight & { _legIndex: number }))
+  );
+
+  return {
+    outbound: multiLegFlights[0] ?? [],
+    multiLegFlights,
+    noResultReason:
+      multiLegFlights.some(leg => leg.length === 0)
+        ? "Some legs returned no flights — try different dates"
+        : undefined,
+  };
+}
+
+// ── One-Way fallback ─────────────────────────────────────
+return { outbound };
 }
 
 // ── FareQuote ───────────────────────────────────────────────
@@ -646,15 +706,8 @@ export async function apiBookFlight(
 // ── Airports ────────────────────────────────────────────────
 
 export async function apiGetAirports(): Promise<Airport[]> {
-  if (MOCK_MODE) return MOCK_AIRPORTS;
-  try {
-    const res = await fetch(`${API_BASE}/api/v1/flights/tbo/airports`);
-    if (!res.ok) throw new Error("airports fetch failed");
-    const json = await res.json();
-    const data = json?.data ?? json;
-    if (Array.isArray(data) && data.length > 0) return data as Airport[];
-    return MOCK_AIRPORTS;
-  } catch {
-    return MOCK_AIRPORTS;
-  }
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/airports`);
+  if (!res.ok) throw new Error("Failed to fetch airports");
+  const json = await res.json();
+  return (json?.data ?? json) as Airport[];
 }

@@ -2,6 +2,15 @@
 import { useMemo, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import {
+  Ship,
+  Umbrella,
+  Tag,
+  Pencil,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+} from "lucide-react";
 
 const logo = "/assets/logo.png";
 
@@ -10,14 +19,12 @@ export default function MarketingDash() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ ALL hooks must be called before any early return
-  const activeTab = location.pathname.split("/")[2] || "cruises"; // default to holidays if no subpath
+  const activeTab = location.pathname.split("/")[2] || "cruises";
 
   const userEmail = useMemo(() => {
     return user?.email || "marketing@plumtrips.com";
   }, [user]);
 
-  // Auth redirect — runs as a side-effect, not an early return
   useEffect(() => {
     if (!loading && !user) {
       navigate("/marketing-login");
@@ -34,7 +41,6 @@ export default function MarketingDash() {
     }
   };
 
-  // ✅ Conditional renders AFTER all hooks
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -48,99 +54,103 @@ export default function MarketingDash() {
 
   if (!user) return null;
 
+  const headerTitle: Record<string, string> = {
+    cruises: "Cruise Management",
+    holidays: "Holiday Packages Management",
+    offers: "Offers & Promotions Management",
+    blogs: "Journal & Blog Management",
+    frontpage: "Frontpage Management",
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-xl overflow-y-auto border-r border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          
-          <div className="flex items-center gap-3 mb-2">
-            <img  src={logo} alt="Plumtrips" className="h-10 w-10 rounded" />
-            <span className="font-bold text-xl text-[#00477f]">Plumtrips</span>
-          </div>
-          <p className="text-xs text-gray-600">Marketing Control Panel</p>
+
+      {/* ── Sidebar ── */}
+      <div className="w-60 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+
+        {/*
+          KEY FIX: sidebar-top is h-16 (64px) — exactly the same height as the
+          main header. This locks the logo block and "Cruise Management" heading
+          onto the same horizontal band, giving perfect side-by-side alignment.
+        */}
+        <div className="h-16 border-b border-gray-200 px-4 flex flex-col justify-center gap-0.5 flex-shrink-0">
+          <img
+            src={logo}
+            alt="Plumtrips"
+            className="h-9 w-auto object-contain"
+          />
+          <p className="text-[10px] text-center text-gray-400 font-medium tracking-wide uppercase">
+            Marketing Control Panel
+          </p>
         </div>
 
-        {/* Welcome */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-blue-50 to-blue-100">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-[#d06549] flex items-center justify-center text-white font-bold">
-              {(user?.email?.[0] || "M").toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">Welcome!</p>
-              <p className="text-xs text-gray-600 truncate">{userEmail}</p>
-            </div>
-          </div>
-          <div className="text-xs text-gray-700 bg-white rounded px-2 py-1 text-center font-medium">
-            Marketing Admin
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="p-4 space-y-2">
+        {/* Nav — scrollable, fills remaining space */}
+        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5">
           <NavItem
-            icon="🚢"
+            icon={<Ship size={17} />}
             label="Cruises"
             isActive={activeTab === "cruises"}
             onClick={() => navigate("/marketing-dash/cruises")}
           />
           <NavItem
-            icon="🏖️"
+            icon={<Umbrella size={17} />}
             label="Holidays"
             isActive={activeTab === "holidays"}
             onClick={() => navigate("/marketing-dash/holidays")}
           />
           <NavItem
-            icon="🎁"
+            icon={<Tag size={17} />}
             label="Offers"
             isActive={activeTab === "offers"}
             onClick={() => navigate("/marketing-dash/offers")}
           />
           <NavItem
-            icon="📝"
+            icon={<Pencil size={17} />}
             label="Blogs"
             isActive={activeTab === "blogs"}
             onClick={() => navigate("/marketing-dash/blogs")}
           />
           <NavItem
-            icon="🏠"
+            icon={<LayoutDashboard size={17} />}
             label="Frontpage"
             isActive={activeTab === "frontpage"}
             onClick={() => navigate("/marketing-dash/frontpage")}
           />
-        </div>
+        </nav>
 
-        {/* Footer logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white w-64">
+        {/* Footer logout — flex-shrink-0, NOT absolute */}
+        <div className="p-3 border-t border-gray-200 flex-shrink-0">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition font-medium text-sm"
           >
-            <span>🚪</span>
+            <LogOut size={15} />
             <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="bg-white shadow border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#00477f]">
-            {activeTab === "cruises" && "Cruise Management"}
-            {activeTab === "holidays" && "Holiday Packages Management"}
-            {activeTab === "offers" && "Offers & Promotions Management"}
-            {activeTab === "blogs" && "Journal & Blog Management"}
-            {activeTab === "frontpage" && "Frontpage Management"}
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        {/*
+          KEY FIX: header is also h-16 (64px) — matches sidebar-top exactly.
+          items-center keeps everything vertically centred in that same band.
+        */}
+        <div className="h-16 bg-white border-b border-gray-200 px-8 flex items-center justify-between flex-shrink-0">
+          <h1 className="text-xl font-semibold text-[#00477f]">
+            {headerTitle[activeTab] ?? ""}
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">📧 {userEmail}</span>
+            <span className="text-sm text-gray-500 flex items-center gap-1.5">
+              <Mail size={14} />
+              {userEmail}
+            </span>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 bg-[#d06549] text-white rounded-lg hover:bg-[#c85a42] transition font-semibold text-sm"
             >
-              <span>🚪</span>
+              <LogOut size={14} />
               Logout
             </button>
           </div>
@@ -155,14 +165,14 @@ export default function MarketingDash() {
   );
 }
 
-// ─── Nav Item ─────────────────────────────────────────────────────────────────
+// ─── Nav Item ────────────────────────────────────────────────────────────────
 function NavItem({
   icon,
   label,
   isActive,
   onClick,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   isActive: boolean;
   onClick: () => void;
@@ -170,13 +180,13 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium text-left ${
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors font-medium text-sm text-left ${
         isActive
-          ? "bg-[#d06549] text-white shadow-lg"
-          : "text-gray-700 hover:bg-gray-100"
+          ? "bg-[#d06549] text-white"
+          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
       }`}
     >
-      <span className="text-xl">{icon}</span>
+      <span className="flex-shrink-0">{icon}</span>
       <span>{label}</span>
     </button>
   );
