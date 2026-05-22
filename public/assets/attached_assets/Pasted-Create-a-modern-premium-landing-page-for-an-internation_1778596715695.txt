@@ -1,0 +1,248 @@
+Create a modern premium landing page for an international travel planning brand focused on LEAD GENERATION only, not online booking or transactions.
+
+The goal of the website is to generate high-quality travel inquiry leads through forms and WhatsApp conversations.
+
+BRAND POSITIONING:
+A premium travel concierge that helps users plan unforgettable international experiences.
+
+The brand should feel:
+
+* modern
+* premium
+* trustworthy
+* aspirational
+* experience-led
+* stress-free
+
+NOT like:
+
+* a cheap travel agency
+* a crowded booking portal
+* MakeMyTrip clone
+* hotel aggregator
+
+The emotional message:
+“Experience the world, not just the landmarks.”
+
+Subheadline:
+“Flights, hotels, visas, and unforgettable local experiences — all seamlessly planned.”
+
+TARGET AUDIENCE:
+
+* Couples
+* Honeymoon travelers
+* Young professionals
+* Families
+* Premium experience seekers
+* International first-time travelers
+
+IMPORTANT:
+This is NOT an end-to-end booking platform.
+Users should NOT:
+
+* book flights
+* pay online
+* select hotels
+* transact
+
+Instead, the website should:
+
+* inspire users
+* build trust
+* showcase experiences
+* collect leads
+* encourage WhatsApp consultation
+* push inquiry submissions
+
+PRIMARY CTA:
+
+* “Plan My Journey”
+* “Get My Trip Plan”
+* “Talk to a Travel Expert”
+* “Get Custom Itinerary”
+
+DESIGN STYLE:
+
+* Luxury modern SaaS aesthetic
+* Apple-inspired clean layout
+* Cinematic travel visuals
+* Soft gradients
+* Minimal typography
+* Large spacing
+* Elegant cards
+* Warm premium colors
+* Mobile-first responsive
+* Glassmorphism used subtly
+* Smooth animations
+* High-end travel brand feel
+
+TECH STACK:
+
+* React
+* Tailwind CSS
+* Framer Motion
+* Reusable components
+* Fully responsive
+
+LANDING PAGE STRUCTURE:
+
+1. HERO SECTION
+   Full-screen cinematic background video/image of experiential travel:
+
+* Tuscany wine tasting
+* Bali sunset
+* Japanese alley cafés
+* yacht/sailing
+* mountain stays
+* local cultural moments
+
+Headline:
+“Experience the world, not just the landmarks.”
+
+Subheadline:
+“Flights, hotels, visas, and unforgettable local experiences — all seamlessly planned.”
+
+Add a premium lead generation form card:
+Fields:
+
+* Destination interested in
+* Departure city
+* Budget range
+* Travel month
+* Number of travelers
+
+CTA Button:
+“Get My Trip Plan”
+
+Secondary CTA:
+“Chat on WhatsApp”
+
+IMPORTANT:
+The form should feel elegant and minimal.
+This is only for inquiry collection.
+
+2. TRUST SECTION
+   Minimal horizontal trust bar:
+
+* 500+ curated journeys
+* Visa guidance included
+* Personalized itineraries
+* Transparent planning
+* Dedicated travel expert
+
+3. EXPERIENCE SECTION
+   Large cinematic cards showcasing experiences instead of destinations.
+
+Examples:
+
+* Wine tasting in Tuscany
+* Private island hopping in Thailand
+* Hidden cafés in Tokyo
+* Northern lights in Iceland
+* Desert luxury stays in Dubai
+
+Each card should feel editorial and immersive.
+
+4. HOW IT WORKS
+   Simple elegant 3-step process:
+
+5. Tell us your dream trip
+
+6. We curate your journey
+
+7. Travel stress-free
+
+Add soft animated timeline UI.
+
+5. DESTINATION SHOWCASE
+   Premium cards for:
+
+* Italy
+* Thailand
+* Japan
+* Bali
+* Dubai
+* Vietnam
+
+Each card includes:
+
+* best experience
+* ideal duration
+* starting budget
+* travel vibe
+
+NO BOOK NOW BUTTONS.
+
+Only:
+“Get Custom Plan”
+
+6. SAMPLE ITINERARY SECTION
+   Show one premium example itinerary:
+
+“Romantic Italy Escape”
+
+Include:
+
+* Tuscany wine tour
+* Venice canals
+* Amalfi Coast stay
+* boutique hotels
+* local experiences
+
+Make it visually rich and luxurious.
+
+7. TESTIMONIALS
+   Modern floating testimonial cards.
+   Focus on:
+
+* stress-free planning
+* smooth visa support
+* personalized experience
+* responsive communication
+
+8. FINAL CTA SECTION
+   Dark premium section with bold typography.
+
+Headline:
+“Your next unforgettable journey starts here.”
+
+Subheadline:
+“Tell us where you want to go — we’ll handle the planning.”
+
+CTA:
+“Get My Personalized Trip Plan”
+
+9. FOOTER
+   Minimal footer with:
+
+* logo
+* WhatsApp
+* Instagram
+* email
+* quick links
+* privacy policy
+
+UX REQUIREMENTS:
+
+* Sticky mobile CTA button
+* Floating WhatsApp button
+* Smooth scroll animations
+* Hover interactions
+* Minimal clutter
+* Premium typography
+* Fast loading
+* Clean responsive layout
+
+AVOID:
+
+* crowded travel portal UI
+* tables
+* search-engine style layouts
+* ticket-booking interfaces
+* price comparison designs
+* generic tourism stock look
+* cheap bright colors
+* cluttered forms
+
+The page should feel like:
+“A luxury travel concierge that helps plan meaningful international journeys.”

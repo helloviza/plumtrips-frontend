@@ -1,91 +1,60 @@
 ﻿// apps/frontend/src/components/Header.tsx
-import { Link, NavLink } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 
 // Public logo (placed in apps/frontend/public/assets/logo.png)
-const logo = "/assets/logo.png";
-
-// External destinations (as requested)
-const EXTERNAL_FLIGHTS_URL = "https://www.Plumtrips.in";
-const EXTERNAL_VISA_URL = "https://www.helloviza.com";
+const logo = "/assets/logoW&OO.png";
 
 const allNav = [
-  { to: "/flights", label: "Flights" },
+  { to: "/flights-new/results", label: "Flights" },
   { to: "/hotels", label: "Hotels" },
-  { to: "/go/visa", label: "Visa" },
   { to: "/holidays", label: "Holidays" },
   { to: "/mice", label: "Group Booking" },
   { to: "/blogs", label: "Blogs" },
   { to: "/offers", label: "Offers" },
   { to: "/business", label: "Business" },
-  { to: "/cruises", label: "Cruises" },
-];
-
-const flashPhrases = [
-  "Corporate Booking",
-  "Enterprise Bookings",
-  "Social Booking",
-  "MICE Booking",
-  "Holiday Booking",
-  "VISA Booking",
 ];
 
 export default function Header() {
-  const [idx, setIdx] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openAuth } = useUi();
+  const location = useLocation();
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setIdx((i) => (i + 1) % flashPhrases.length);
-    }, 2600);
-    return () => clearInterval(id);
-  }, []);
+  // Only merge with hero on the home page
+  const isHome = location.pathname === "/";
+  const isTransparent = isHome && !scrolled;
 
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
-  // Map label -> external URL for special routing
-  const externalByLabel = useMemo(
-    () =>
-      ({
-        Flights: EXTERNAL_FLIGHTS_URL,
-        Visa: EXTERNAL_VISA_URL,
-      }) as Record<string, string>,
-    []
-  );
+  // Close mobile menu on route change
+  useEffect(() => {
+    closeMobile();
+  }, [location.pathname]);
+
+  // Scroll listener — threshold 10px so it triggers almost immediately
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    // Set initial state in case page loads mid-scroll (e.g. browser back)
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const renderNavItemDesktop = (item: { to: string; label: string }) => {
-    const externalUrl = externalByLabel[item.label];
-
     if (item.label === "Business") {
       return (
         <button
           key={item.label}
           onClick={() => openAuth("mobile", "biz", true)}
-          className="relative pb-1 font-medium text-white/90 hover:text-white transition-colors"
+          className="nav-item relative pb-1 font-medium text-white/90 transition-colors"
           aria-label="Business sign in (MyBiz)"
         >
           {item.label}
         </button>
-      );
-    }
-
-    if (externalUrl) {
-      return (
-        <a
-          key={item.label}
-          href={externalUrl}
-          target="_self"
-          rel="noopener noreferrer"
-          className="relative pb-1 font-medium text-white/90 hover:text-white transition-colors"
-          onClick={closeMobile}
-          aria-label={`${item.label} (opens external site)`}
-        >
-          {item.label}
-        </a>
       );
     }
 
@@ -94,8 +63,8 @@ export default function Header() {
         key={item.to}
         to={item.to}
         className={({ isActive }) =>
-          `relative pb-1 font-medium transition-colors ${
-            isActive ? "text-white" : "text-white/90 hover:text-white"
+          `nav-item relative pb-1 font-medium transition-colors ${
+            isActive ? "text-white" : "text-white/90"
           }`
         }
         onClick={closeMobile}
@@ -113,8 +82,6 @@ export default function Header() {
   };
 
   const renderNavItemMobile = (item: { to: string; label: string }) => {
-    const externalUrl = externalByLabel[item.label];
-
     if (item.label === "Business") {
       return (
         <button
@@ -123,26 +90,10 @@ export default function Header() {
             openAuth("mobile", "biz", true);
             closeMobile();
           }}
-          className="block rounded px-1 py-1.5 text-left text-white/90"
+          className="nav-item-mobile block rounded px-1 py-1.5 text-left text-white/90"
         >
           {item.label}
         </button>
-      );
-    }
-
-    if (externalUrl) {
-      return (
-        <a
-          key={item.label}
-          href={externalUrl}
-          target="_self"
-          rel="noopener noreferrer"
-          className="block rounded px-1 py-1.5 text-white/90"
-          onClick={closeMobile}
-          aria-label={`${item.label} (opens external site)`}
-        >
-          {item.label}
-        </a>
       );
     }
 
@@ -151,7 +102,7 @@ export default function Header() {
         key={item.to}
         to={item.to}
         className={({ isActive }) =>
-          `block rounded px-1 py-1.5 ${
+          `nav-item-mobile block rounded px-1 py-1.5 ${
             isActive ? "font-semibold text-white" : "text-white/90"
           }`
         }
@@ -164,7 +115,13 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#00477f] text-white shadow-md">
+      <header
+        className={`sticky top-0 z-50 text-white transition-[background-color,box-shadow] duration-300 ease-in-out ${
+          isTransparent
+            ? "bg-transparent shadow-none"
+            : "bg-[#00477f] shadow-md"
+        }`}
+      >
         <div className="mx-auto flex h-[72px] max-w-screen-2xl items-center px-4 md:px-6">
 
           {/* ── LEFT: Logo ── */}
@@ -178,7 +135,7 @@ export default function Header() {
               <img
                 src={logo}
                 alt="Plumtrips"
-                className="h-10 w-auto select-none object-contain pointer-events-none"
+                className="h-36 w-auto select-none object-contain pointer-events-none"
               />
             </Link>
           </div>
@@ -190,7 +147,9 @@ export default function Header() {
 
           {/* ── RIGHT: UserMenu + mobile burger ── */}
           <div className="flex-shrink-0 flex items-center gap-3">
-            <UserMenu />
+            <div className="signin-wrapper">
+              <UserMenu />
+            </div>
 
             {/* Mobile burger (only < md) */}
             <button
@@ -222,7 +181,7 @@ export default function Header() {
 
         {/* ── Mobile slide-down menu ── */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-white/20 bg-[#00477f]">
+          <div className="md:hidden border-t border-white/20 bg-[#439be2]">
             <nav className="mx-auto max-w-screen-2xl px-4 py-3 flex flex-col gap-2 text-sm">
               {allNav.map(renderNavItemMobile)}
             </nav>
@@ -234,7 +193,33 @@ export default function Header() {
       <style>{`
         :root {
           --spark: #f3cfae;
+          --accent: #d06549;
         }
+
+        /* ── Desktop nav hover ── */
+        .nav-item:hover {
+          color: var(--accent) !important;
+        }
+
+        /* ── Mobile nav hover ── */
+        .nav-item-mobile:hover {
+          color: var(--accent) !important;
+          background-color: rgba(208, 101, 73, 0.15);
+        }
+
+        /* ── Sign-in button background ── */
+        .signin-wrapper button,
+        .signin-wrapper a[role="button"] {
+          background-color: var(--accent) !important;
+          border-color: var(--accent) !important;
+          color: white !important;
+        }
+        .signin-wrapper button:hover,
+        .signin-wrapper a[role="button"]:hover {
+          background-color: #b8503a !important;
+          border-color: #b8503a !important;
+        }
+
         @keyframes flyCore {
           0%   { opacity: 0; transform: scale(.88) translateY(10%); letter-spacing: .02em; filter: blur(5px); }
           55%  { opacity: .98; transform: scale(1.04) translateY(0);   filter: blur(.35px); }

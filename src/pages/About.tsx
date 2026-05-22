@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef } from "react";
 
-import "../styles/about.module.css"
+import "../styles/about.css"
+import { Link } from "react-router-dom";
 
 // ── Inline SVG icon component using Google Material Symbols font ──
 function Icon({ name, className = "" }: { name: string; className?: string }) {
@@ -65,7 +66,7 @@ const INTELLIGENCE_CARDS = [
 
 const TEAM_MEMBERS = [
   { title: "Airline Ops", subtitle: "Ex-IATA Veterans", img: "https://images.unsplash.com/photo-1551887488-13343d412680?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
-  { title: "Product & UX", subtitle: "Design Leaders", img: "https://images.unsplash.com/photo-1633184148650-f66c6a1c5c30?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
+  {title: "Hotel Ops",subtitle: "Hospitality Leaders",img: "https://images.unsplash.com/photo-1652348716053-3447e551dd1f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aG90ZWxzJTIwb3BzfGVufDB8fDB8fHww"},
   { title: "AI & Data", subtitle: "Applied ML Pros", img: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
   { title: "Global Ops", subtitle: "Strategic Scale", img: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
   { title: "Strategy", subtitle: "Policy Thinkers", img: "https://images.unsplash.com/photo-1623652554515-91c833e3080e?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" },
@@ -109,9 +110,9 @@ function HeroSection({ addRef }: { addRef: (el: HTMLElement | null) => void }) {
         </p>
         <div className="hero-ctas">
           <button className="btn-hero-primary">Plan my trip</button>
-          <button className="btn-hero-ghost">
-            Read our story <Icon name="arrow_forward" />
-          </button>
+          <Link to="/about" className="btn-hero-ghost">
+  Read our story <Icon name="arrow_forward" />
+</Link>
         </div>
       </div>
     </section>
@@ -372,7 +373,7 @@ export default function About() {
   const addRef = useReveal();
 
   return (
-    <main>
+    <main className="about-page">
       <HeroSection addRef={addRef} />
       <StatsBar addRef={addRef} />
       <OurStorySection addRef={addRef} />

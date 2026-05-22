@@ -33,7 +33,7 @@ export default function SearchTabs() {
       "flightSearch",
       JSON.stringify({ form, multiLegs: multiLegs ?? null })
     );
-    navigate("/flights-new");
+    navigate("/flights-new/results");
   }
 
   return (

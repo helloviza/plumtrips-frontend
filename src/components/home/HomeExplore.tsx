@@ -25,33 +25,6 @@ type Feature = {
 
 type ChipItem = string | { label: string; to?: string };
 
-const visas: Feature[] = [
-  {
-    badge: "Visa",
-    tag: "Dubai Visa",
-    title: "Dubai Visa",
-    subtitle: "Get a 100% refund in case of rejection",
-    to: "/visas/dubai",
-    img: "/assets/home/visa-dubai.jpg",
-  },
-  {
-    badge: "Visa",
-    tag: "Worldwide Visas",
-    title: "Worldwide Visas",
-    subtitle: "Our easy visa application process at great prices",
-    to: "/visas",
-    img: "/assets/home/visa-world.jpg",
-  },
-  {
-    badge: "Visa",
-    tag: "Singapore Visa",
-    title: "Singapore Visa",
-    subtitle: "Get best price with expert assistance",
-    to: "/visas/singapore",
-    img: "/assets/home/visa-singapore.jpg",
-  },
-];
-
 const holidaysRow1: Feature[] = [
   {
     badge: "Holidays",
@@ -198,7 +171,7 @@ export default function HomeExplore() {
         {/* Desktop button */}
         <Link
           to="/offers"
-          className={`hidden md:inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] sm:text-xs font-semibold ${BRAND.primaryText} border-zinc-200 hover:bg-zinc-50`}
+          className={`hidden md:inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white border-zinc-200 hover:bg-zinc-50 hover:text-[#00477f]`}
         >
           View offers
           <ArrowRight />
@@ -218,15 +191,7 @@ export default function HomeExplore() {
       {/* Top grid (main + sidebar) */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         {/* Main */}
-        <div className="space-y-5 lg:col-span-9">
-          <CardRow features={visas} />
-
-          <PromoBanner
-            img="/assets/home/visa-promo.jpg"
-            title="Get 100% Refund in Case of Visa Rejection"
-            caption="On select visas - Terms apply"
-          />
-
+        <div className="space-y-8 lg:col-span-9">
           <CardRow features={holidaysRow1} />
           <CardRow features={holidaysRow2} />
         </div>
@@ -318,7 +283,9 @@ export default function HomeExplore() {
 
 function CardRow({ features }: { features: Feature[] }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    // ↑ gap increased to gap-6 on mobile and gap-8 on lg for more horizontal breathing room
+    // Cards are narrower because the grid now has more gap consuming space
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
       {features.map((f, i) => (
         <FeatureCard key={i} f={f} />
       ))}
@@ -345,21 +312,42 @@ function computeFeatureLink(f: Feature): string {
   return f.to || "#";
 }
 
+/**
+ * FeatureCard — image-only, no white bottom section.
+ * Title, subtitle, and badge overlay the image via a gradient.
+ * The entire card (image + overlay) is clickable.
+ *
+ * CHANGED: aspect-[4/3] → aspect-[3/4] for taller cards (portrait orientation)
+ */
 function FeatureCard({ f }: { f: Feature }) {
   const to = computeFeatureLink(f);
   const navigate = useNavigate();
 
+  const handleClick = () => navigate(to);
+
   return (
     <div
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition
-                  hover:shadow-md hover:ring-2 hover:ring-[#00477f]/15`}
+      className="group relative overflow-hidden rounded-2xl border border-zinc-200 shadow-sm transition
+                 hover:shadow-md hover:ring-2 hover:ring-[#00477f]/15 cursor-pointer"
+      onClick={handleClick}
+      role="link"
+      tabIndex={0}
+      aria-label={`${f.title} — ${f.subtitle}`}
+      onKeyDown={(e) => e.key === "Enter" && handleClick()}
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden sm:aspect-[4/3]">
+      {/* Full-size image — aspect-[3/4] makes cards taller than wide (portrait) */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden">
         <Thumb src={f.img} alt={f.title} />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0 opacity-0 transition group-hover:opacity-100" />
+
+        {/* Hover zoom overlay */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-black/0" />
+
+        {/* Badge top-left */}
         <div className="absolute left-3 top-3 rounded-md bg-amber-400/95 px-2 py-1 text-[11px] font-semibold text-zinc-900 shadow">
           {f.badge}
         </div>
+
+        {/* Tag top-right */}
         {f.tag && (
           <div
             className={`absolute right-3 top-3 rounded-md px-2 py-1 text-[11px] font-semibold text-white shadow ${BRAND.primaryBg}`}
@@ -367,57 +355,14 @@ function FeatureCard({ f }: { f: Feature }) {
             {f.tag}
           </div>
         )}
-      </div>
-      <div className="flex flex-1 flex-col p-3">
-        <div className="text-[13px] font-semibold text-zinc-900 sm:text-sm">
-          {f.title}
-        </div>
-        <div className="mt-1 line-clamp-2 text-[11px] text-zinc-600 sm:text-xs">
-          {f.subtitle}
-        </div>
-        <div className="mt-2.5">
-          <Link
-            to={to}
-            className={`inline-flex items-center gap-1 text-[11px] font-semibold sm:text-xs ${BRAND.primaryText} hover:underline`}
-            onClick={(e) => {
-              e.preventDefault();
-              navigate(to);
-            }}
-          >
-            {f.cta || "Know more"}
-            <ArrowRight className="transition group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function PromoBanner({
-  img,
-  title,
-  caption,
-}: {
-  img?: string;
-  title: string;
-  caption?: string;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-r from-sky-50 to-amber-50">
-      <div className="relative aspect-[4/3] w-full sm:aspect-[16/5] lg:aspect-[24/5]">
-        <Thumb src={img} alt={title} />
-        <div className="absolute inset-0 flex items-center">
-          <div className="mx-4 max-w-sm rounded-xl bg-white/92 px-3 py-2 shadow ring-1 ring-zinc-200 backdrop-blur sm:mx-6 sm:px-3 sm:py-2.5">
-            <div
-              className={`text-[11px] font-bold sm:text-xs ${BRAND.primaryText}`}
-            >
-              {title}
-            </div>
-            {caption && (
-              <div className="mt-0.5 text-[10px] text-zinc-600 sm:text-[11px]">
-                {caption}
-              </div>
-            )}
+        {/* Title + subtitle over the image bottom */}
+        <div className="absolute bottom-0 left-0 right-0 px-3 pb-4 pt-8">
+          <div className="text-[13px] font-semibold text-white drop-shadow sm:text-sm">
+            {f.title}
+          </div>
+          <div className="mt-0.5 line-clamp-1 text-[11px] text-white/80 drop-shadow sm:text-xs">
+            {f.subtitle}
           </div>
         </div>
       </div>
