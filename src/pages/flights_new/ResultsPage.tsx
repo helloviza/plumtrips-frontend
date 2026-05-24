@@ -1,45 +1,5 @@
 // ============================================================
-//  ResultsPage.tsx — RESTYLED UI + BUG FIXES
-//
-//  FIXES:
-//
-//  [Fix 1] onSearch in OneSearchBar now receives multiLegs:
-//          Previously: onSearch={(f) => onNewSearch?.(f)}
-//          Now:        onSearch={(f, legs) => onNewSearch?.(f, legs)}
-//          This was silently dropping multiLegs on every
-//          re-search from the bar inside the results page.
-//
-//  [Fix 2] Blank page on first load / direct URL navigation:
-//          fetchFlights was called inside a useEffect whose
-//          deps array was [form.from?.code, form.to?.code, ...].
-//          On a direct URL hit, React renders with the initial
-//          prop values, fires the effect, then the effect
-//          calls fetchFlights() — but fetchFlights itself was
-//          a useCallback whose closure captured the initial
-//          form/multiLegs. Because `form` is a prop (not state),
-//          if the parent re-renders and passes a different form
-//          object with the same field values, the deps don't
-//          change, the effect never re-fires, and flights are
-//          never fetched for the new search.
-//
-//          Root cause: the deps array was watching individual
-//          fields, but fetchFlights captured the entire form
-//          object. Any time there's a new search (even with
-//          same route), the results would be stale.
-//
-//          Fix: add a `searchKey` prop (a stable string that
-//          the parent bumps on every new search) and use it
-//          as the sole dep for the fetch effect. Falls back
-//          to a JSON-serialized key if the prop isn't provided,
-//          guaranteeing a fresh fetch on every distinct search.
-//
-//  [Fix 3] Guard against undefined form: when navigating
-//          directly to /flights-new/results without state,
-//          `form` can be undefined. Added a graceful
-//          "no search" empty state instead of a crash.
-//
-//  All logic, state, API calls, types and props are otherwise
-//  UNCHANGED. Only the three issues above are addressed.
+//  ResultsPage.tsx — DateStrip removed
 // ============================================================
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
@@ -595,113 +555,6 @@ function FlightCard({
   );
 }
 
-// ─── DATE STRIP ────────────────────────────────────────────
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
-
-interface DatePrice {
-  date: string;
-  price: number | null;
-  loading: boolean;
-}
-
-function DateStrip({
-  baseDate, form, onSelect,
-}: {
-  baseDate: string;
-  form: SearchForm;
-  onSelect: (d: string) => void;
-}) {
-  const base = new Date(baseDate + "T00:00:00");
-  const dates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(base);
-    d.setDate(d.getDate() + i - 3);
-    return d.toISOString().split("T")[0];
-  });
-
-  const [prices, setPrices] = useState<Record<string, DatePrice>>(() => {
-    const init: Record<string, DatePrice> = {};
-    dates.forEach(d => { init[d] = { date: d, price: null, loading: true }; });
-    return init;
-  });
-
-  const fetchedRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    const newDates = dates.filter(d => !fetchedRef.current.has(d));
-    if (newDates.length === 0) return;
-    newDates.forEach(d => fetchedRef.current.add(d));
-    newDates.forEach((dateStr, i) => {
-      setTimeout(async () => {
-        try {
-          const body = {
-            origin: form.from?.code, destination: form.to?.code,
-            departDate: dateStr, cabinClass: 2,
-            adults: form.adults ?? 1, children: form.children ?? 0, infants: form.infants ?? 0,
-          };
-          const res = await fetch(`${API_BASE}/api/v1/flights/tbo/search`, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-          });
-          const json = await res.json();
-          const results: any[] = json?.data?.Response?.Results ?? [];
-          let minPrice: number | null = null;
-          for (const r of results) {
-            const p = r?.Fare?.PublishedFare ?? r?.Fare?.OfferedFare;
-            if (p && (minPrice === null || p < minPrice)) minPrice = p;
-          }
-          setPrices(prev => ({ ...prev, [dateStr]: { date: dateStr, price: minPrice, loading: false } }));
-        } catch {
-          setPrices(prev => ({ ...prev, [dateStr]: { date: dateStr, price: null, loading: false } }));
-        }
-      }, i * 150);
-    });
-  }, [baseDate, form.from?.code, form.to?.code]);
-
-  return (
-    <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.1)", overflowX: "auto" }}>
-      {dates.map(dateStr => {
-        const isActive = dateStr === baseDate;
-        const info = prices[dateStr];
-        const dow = new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short" });
-        const dom = new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-        return (
-          <button
-            key={dateStr}
-            onClick={() => onSelect(dateStr)}
-            style={{
-              flexShrink: 0, flex: 1, minWidth: 76,
-              textAlign: "center", padding: "10px 8px",
-              background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
-              border: "none",
-              borderBottom: `2px solid ${isActive ? "#fff" : "transparent"}`,
-              cursor: "pointer", transition: "all .2s",
-            }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 600, color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)" }}>{dow}</div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: isActive ? "#fff" : "rgba(255,255,255,0.7)", fontFamily: "'Sora',sans-serif" }}>{dom}</div>
-            <div style={{ marginTop: 3, height: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {info?.loading ? (
-                <div style={{
-                  width: 10, height: 10, borderRadius: "50%",
-                  border: "1.5px solid rgba(255,255,255,0.3)",
-                  borderTopColor: "rgba(255,255,255,0.7)",
-                  animation: "spin 0.8s linear infinite",
-                }} />
-              ) : info?.price !== null ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? "#fff" : S.accentLt, fontFamily: "'Sora',sans-serif" }}>
-                  ₹{Math.round((info.price!) / 1000)}k
-                </span>
-              ) : (
-                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>—</span>
-              )}
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── FILTER PANEL ──────────────────────────────────────────
 
 interface ExtendedFilters extends ActiveFilters {
@@ -872,7 +725,6 @@ function FilterPanel({
               const minPrice = Math.min(...flights.filter(f => f.airline === a).map(f => f.price));
               const checked = filters.airlines.length === 0 || filters.airlines.includes(a);
               const code = flights.find(f => f.airline === a)?.airlineCode ?? "";
-              const logoColor = AIRLINE_COLORS[code] ?? { bg: "#475569", text: "#fff" };
               return (
                 <div
                   key={a}
@@ -1041,13 +893,9 @@ interface ResultsPageProps {
   multiLegs?: CityLeg[];
   onBack: () => void;
   onBook: (flight: DisplayFlight, tier: FareTier, legIndex?: number) => void;
-  onDateChange?: (newDate: string) => void;
   onNewSearch?: (form: SearchForm, legs?: CityLeg[]) => void;
   selectedOutboundFlight?: DisplayFlight | null;
   selectedLegs?: Array<{ flight: DisplayFlight; tier: FareTier } | null>;
-  // [Fix 2] Optional search key — bump this string to force a fresh fetch
-  // even if from/to/date haven't changed (e.g. same route, new search intent).
-  // Falls back to a JSON hash of form+multiLegs if not provided.
   searchKey?: string;
 }
 
@@ -1072,14 +920,12 @@ export default function ResultsPage({
   multiLegs,
   onBack,
   onBook,
-  onDateChange,
-  selectedOutboundFlight,
   onNewSearch,
+  selectedOutboundFlight,
   selectedLegs,
   searchKey,
 }: ResultsPageProps) {
-  // [Fix 3] Guard: if form is undefined (direct URL hit with no state), show a
-  // friendly prompt rather than crashing with "cannot read properties of undefined".
+  // Guard: if form is undefined (direct URL hit with no state)
   if (!form) {
     return (
       <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1122,7 +968,6 @@ export default function ResultsPage({
   const isMultiCity = form.tripType === "multiCity";
   const legs = multiLegs ?? [];
 
-  // Auto-advance activeTab to next unselected multi-city leg
   useEffect(() => {
     if (!isMultiCity || !selectedLegs) return;
     const nextUnselected = selectedLegs.findIndex(l => !l);
@@ -1133,9 +978,6 @@ export default function ResultsPage({
     if (isMultiCity) { setFilters(defaultFilters()); setSortKey("price"); }
   }, [activeTab]); // eslint-disable-line
 
-  // [Fix 2] Compute a stable key from the search params. If the parent passes
-  // an explicit searchKey, use that (fastest). Otherwise derive one from the
-  // form + multiLegs so any change in search intent triggers a fresh fetch.
   const derivedSearchKey = searchKey ?? JSON.stringify({
     from: form.from?.code,
     to: form.to?.code,
@@ -1174,9 +1016,6 @@ export default function ResultsPage({
       .catch((e: any) => { setSearchError(e?.message ?? "Search failed"); setLoading(false); });
   }, [form, multiLegs]); // eslint-disable-line
 
-  // [Fix 2] Use derivedSearchKey as the sole dep. This fires on every genuinely
-  // new search (including same route, new intent), and does NOT fire on unrelated
-  // re-renders. It also fires on the very first mount, fixing the blank-page issue.
   useEffect(() => {
     fetchFlights();
   }, [derivedSearchKey]); // eslint-disable-line
@@ -1225,35 +1064,22 @@ export default function ResultsPage({
   return (
     <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans',sans-serif" }}>
 
-      {/* ── GOOGLE FONTS ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
       `}</style>
 
-      {/* ══════════════════════════════════════════════════════
-          HEADER
-      ══════════════════════════════════════════════════════ */}
+      {/* ── HEADER ── */}
       <header style={{
         background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
       }}>
         <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px" }}>
 
-          {/* [Fix 1] Pass multiLegs through on re-search */}
           <OneSearchBar
             form={form}
             onSearch={(f, legs) => onNewSearch?.(f, legs)}
           />
-
-          {/* Date strip — one-way / round-trip only */}
-          {!isMultiCity && (
-            <DateStrip
-              baseDate={form.departDate}
-              form={form}
-              onSelect={d => { if (onDateChange) onDateChange(d); }}
-            />
-          )}
 
           {/* Multi-city leg tabs */}
           {isMultiCity && legs.length > 0 && (
@@ -1382,9 +1208,7 @@ export default function ResultsPage({
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          BODY — sidebar filters + results list
-      ══════════════════════════════════════════════════════ */}
+      {/* ── BODY ── */}
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 24px", display: "flex", gap: 20 }}>
 
         {/* Desktop sidebar */}

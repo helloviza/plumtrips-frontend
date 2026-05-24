@@ -18,7 +18,7 @@ import type {
 export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE === "true";
 
 /** Backend proxy base URL — all TBO calls go through here. */
-const API_BASE = import.meta.env.VITE_BACKEND_ORIGIN ?? "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 // ─── HELPERS: TBO → DisplayFlight ─────────────────────────
 

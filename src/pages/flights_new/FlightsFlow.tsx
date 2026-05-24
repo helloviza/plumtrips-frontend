@@ -21,19 +21,6 @@ import type { SearchForm, DisplayFlight, FareTier, Airport } from "../../lib/typ
 export type CityLeg = { from: Airport; to: Airport; departDate: string };
 
 const SESSION_KEY = "flightFlowState";
-const DEFAULT_SEARCH_FORM: SearchForm = {
-  tripType: "oneWay",
-  from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-  to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-  departDate:  new Date().toLocaleDateString("en-CA"),
-  returnDate:  "",
-  adults:      1,
-  children:    0,
-  infants:     0,
-  cabinClass:  "Economy",
-  nonStopOnly: false,
-  fareType:    "Regular",
-};
 
 // ── International route detection ─────────────────────────────────────────────
 const INTERNATIONAL_CODES = new Set([
@@ -78,6 +65,20 @@ const DEFAULT_STATE: FlightState = {
   selectedReturnFlight: null,
   selectedReturnTier: null,
   selectedLegs: [],
+};
+
+const DEFAULT_SEARCH_FORM: SearchForm = {
+  tripType: "oneWay",
+  from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+  to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+  departDate:  new Date().toLocaleDateString("en-CA"),
+  returnDate:  "",
+  adults:      1,
+  children:    0,
+  infants:     0,
+  cabinClass:  "Economy",
+  nonStopOnly: false,
+  fareType:    "Regular",
 };
 
 // ── Restore state from sessionStorage on refresh ──────────────────────────────
@@ -228,6 +229,7 @@ export default function FlightsFlow() {
     navigate("/");
     window.scrollTo({ top: 0 });
   }
+  
 
   // ── Render based on URL ──────────────────────────────────────────────────────
   const page = urlToPage(location.pathname);
@@ -246,7 +248,6 @@ case "results":
       onBack={handleReset}
       onBook={handleBook}
       onNewSearch={handleSearch}
-      onDateChange={handleDateChange}
       selectedOutboundFlight={state.selectedFlight}
       selectedLegs={state.selectedLegs}
     />
