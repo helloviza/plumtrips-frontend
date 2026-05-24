@@ -1,13 +1,14 @@
 ﻿import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import m1 from "../../../public/assets/mice/m1.jpeg";
+import m1 from "../../../public/mice/m12.jpeg";
 import m2 from "../../../public/assets/mice/m2.jpeg";
-import m3 from "../../../public/assets/mice/m3.jpeg";
-import m4 from "../../../public/assets/mice/m4.jpeg";
+import m3 from "../../../public/mice/a2.jpeg";
+import m4 from "../../../public/mice/a9.jpeg";
 
 /* ─── Brand ─────────────────────────────────────────── */
 const BRAND = "#00477f";
 const ACCENT = "#d06549";
+const xyz="#000000"
 
 /* ─── Data ───────────────────────────────────────────── */
 type EventKey = "Meetings" | "Incentives" | "Conferences" | "Exhibitions";
@@ -101,12 +102,12 @@ const STATS = [
 ];
 
 const WHY = [
-  { icon: "⚡", title: "Proven Delivery", text: "Board meetings to 2,000-delegate conferences — flawlessly executed every time." },
-  { icon: "🤝", title: "Negotiation Power", text: "Preferred rates through global hotel & airline partnerships for real savings." },
-  { icon: "🎬", title: "Creative Production", text: "Stage design, AV storytelling, and brand experiences your audience remembers." },
-  { icon: "🌐", title: "Global + Local", text: "Worldwide reach with local specialists to navigate culture, permits, and logistics." },
-  { icon: "🛡️", title: "Risk Management", text: "Compliance, traveler safety, and contingency planning built in from day one." },
-  { icon: "🎯", title: "Concierge Support", text: "Dedicated PMO, VIP handling, and 24×7 traveler assistance throughout." },
+  { icon: "/assets/mice1/x1.png", title: "Proven Delivery", text: "Board meetings to 2,000-delegate conferences — flawlessly executed every time." },
+  { icon: "/assets/mice1/x2.png", title: "Negotiation Power", text: "Preferred rates through global hotel & airline partnerships for real savings." },
+  { icon: "/assets/mice1/x3.png", title: "Creative Production", text: "Stage design, AV storytelling, and brand experiences your audience remembers." },
+  { icon: "/assets/mice1/x4.png", title: "Global + Local", text: "Worldwide reach with local specialists to navigate culture, permits, and logistics." },
+  { icon: "/assets/mice1/x5.png", title: "Risk Management", text: "Compliance, traveler safety, and contingency planning built in from day one." },
+  { icon: "/assets/mice1/x6.png", title: "Concierge Support", text: "Dedicated PMO, VIP handling, and 24×7 traveler assistance throughout." },
 ];
 
 const TESTIMONIALS = [
@@ -122,7 +123,7 @@ const TESTIMONIALS = [
   },
 ];
 
-const LOGO_SLOTS = ["logo-1", "logo-2", "logo-3", "logo-4", "logo-5", "logo-6"];
+// const LOGO_SLOTS = ["logo-1", "logo-2", "logo-3", "logo-4", "logo-5", "logo-6"];
 
 /* ─── Sub-components ─────────────────────────────────── */
 function CheckRow({ text }: { text: string }) {
@@ -169,13 +170,13 @@ export default function MicePage() {
         {/* BG image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(/assets/mice/micem3.jpeg)` }}
+          style={{ backgroundImage: `url(/assets/mice/miceevents.png)` }}
         />
         {/* Overlay */}
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, ${BRAND}ee 0%, ${BRAND}99 50%, #1a6fa844 100%)`,
+            background: `linear-gradient(125deg, ${xyz}ee 0%, ${xyz}99 30%, #1a6fa844 70%)`,
           }}
         />
 
@@ -197,7 +198,7 @@ export default function MicePage() {
             <span style={{ color: "#ffb89a" }}>people forward.</span>
           </h1>
 
-          <p className="mt-5 text-white/75 max-w-xl text-base leading-relaxed">
+          <p className="mt-5 text-white max-w-xl text-lg leading-relaxed">
             Meetings, Incentives, Conferences & Exhibitions — crafted with concierge precision from concept to applause.
           </p>
 
@@ -404,7 +405,7 @@ export default function MicePage() {
               key={w.title}
               className="bg-white rounded-2xl p-5 ring-1 ring-slate-100 shadow-sm flex gap-4 hover:shadow-md transition-shadow"
             >
-              <span className="text-2xl mt-0.5">{w.icon}</span>
+              <img src={w.icon} alt={w.title} className="w-10 h-10 mt-0.5 flex-none object-contain" />
               <div>
                 <div className="font-bold text-slate-800 text-sm">{w.title}</div>
                 <div className="mt-1 text-xs text-slate-500 leading-5">{w.text}</div>
@@ -517,7 +518,7 @@ export default function MicePage() {
       {/* ════════════════════════════════════════
           TRUSTED BY
       ════════════════════════════════════════ */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
+      {/* <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
         <div className="bg-white rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
           <p className="text-center text-xs font-bold uppercase tracking-widest text-slate-400">
             Trusted by teams from
@@ -533,7 +534,7 @@ export default function MicePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ════════════════════════════════════════
           RFP FORM

@@ -134,10 +134,10 @@ const chips = {
     "Delhi → Paris",
   ] as ChipItem[],
   blogs: [
-    "Visa Rejections: What to do?",
-    "Dubai Shopping Festival",
-    "Guide: Singapore",
-    "Guide: Australia",
+    "Discover Bali",
+    "Phi Phi Islands -Nature’s Way of Showing off",
+    "Phuket Diaries",
+    "Koh Samui -Nature’s Place",
     "Guide: Kerala",
   ] as ChipItem[],
 };
@@ -247,7 +247,7 @@ export default function HomeExplore() {
 
       {/* Chip clouds */}
       <div className="mt-8 space-y-6">
-        <ChipsGroup heading="Tourist Visas" items={chips.visas} baseTo="/visas" />
+        {/* <ChipsGroup heading="Tourist Visas" items={chips.visas} baseTo="/visas" />
         <ChipsGroup
           heading="Top holiday ideas"
           items={chips.holidays}
@@ -263,12 +263,11 @@ export default function HomeExplore() {
           heading="International flights"
           items={chips.internationalRoutes}
           baseTo="/flights"
-        />
+        /> */}
         <ChipsGroup heading="Blogs" items={chips.blogs} baseTo="/blogs" />
         <ChipsGroup
           heading="Customer care"
           items={[
-            { label: "Web check-in", to: "/checkin" },
             { label: "Contact us", to: "/contact" },
             { label: "Careers", to: "/careers" },
           ]}

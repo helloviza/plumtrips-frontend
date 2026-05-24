@@ -49,19 +49,8 @@ export default function BlogIndex() {
       </header>
 
       <section className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Static blogs — untouched */}
-        {BLOGS.map((b) => (
-          <BlogCard
-            key={b.slug}
-            title={b.title}
-            excerpt={b.excerpt}
-            cover={b.cover}
-            tags={b.tags}
-            href={`/blogs/${b.slug}`}
-          />
-        ))}
 
-        {/* DB blogs loading skeletons */}
+                {/* DB blogs loading skeletons */}
         {loading && Array.from({ length: 3 }).map((_, i) => (
           <div key={`skel-${i}`} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden animate-pulse">
             <div className="aspect-[16/9] bg-slate-200" />
@@ -89,6 +78,21 @@ export default function BlogIndex() {
             href={`/readblogs/${b.id}`}
           />
         ))}
+
+
+        {/* Static blogs — untouched */}
+        {BLOGS.map((b) => (
+          <BlogCard
+            key={b.slug}
+            title={b.title}
+            excerpt={b.excerpt}
+            cover={b.cover}
+            tags={b.tags}
+            href={`/blogs/${b.slug}`}
+          />
+        ))}
+
+
       </section>
     </main>
   );
