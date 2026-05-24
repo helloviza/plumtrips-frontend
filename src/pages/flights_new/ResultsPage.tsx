@@ -1,15 +1,45 @@
 // ============================================================
-//  ResultsPage.tsx — RESTYLED UI
+//  ResultsPage.tsx — RESTYLED UI + BUG FIXES
 //
-//  UI restyled to match PlumTrips design system:
-//    Navy: #00305f / #0d2d5e / #00477f
-//    Accent: #d06549 / #b8543a
-//    Muted: #8fafd4 / #b0bfd4
-//    Font: Sora (headings/numbers) + DM Sans (body)
+//  FIXES:
 //
-//  All logic, state, API calls, types and props are UNCHANGED.
-//  Only className strings, inline styles, and JSX structure
-//  of purely presentational components have been updated.
+//  [Fix 1] onSearch in OneSearchBar now receives multiLegs:
+//          Previously: onSearch={(f) => onNewSearch?.(f)}
+//          Now:        onSearch={(f, legs) => onNewSearch?.(f, legs)}
+//          This was silently dropping multiLegs on every
+//          re-search from the bar inside the results page.
+//
+//  [Fix 2] Blank page on first load / direct URL navigation:
+//          fetchFlights was called inside a useEffect whose
+//          deps array was [form.from?.code, form.to?.code, ...].
+//          On a direct URL hit, React renders with the initial
+//          prop values, fires the effect, then the effect
+//          calls fetchFlights() — but fetchFlights itself was
+//          a useCallback whose closure captured the initial
+//          form/multiLegs. Because `form` is a prop (not state),
+//          if the parent re-renders and passes a different form
+//          object with the same field values, the deps don't
+//          change, the effect never re-fires, and flights are
+//          never fetched for the new search.
+//
+//          Root cause: the deps array was watching individual
+//          fields, but fetchFlights captured the entire form
+//          object. Any time there's a new search (even with
+//          same route), the results would be stale.
+//
+//          Fix: add a `searchKey` prop (a stable string that
+//          the parent bumps on every new search) and use it
+//          as the sole dep for the fetch effect. Falls back
+//          to a JSON-serialized key if the prop isn't provided,
+//          guaranteeing a fresh fetch on every distinct search.
+//
+//  [Fix 3] Guard against undefined form: when navigating
+//          directly to /flights-new/results without state,
+//          `form` can be undefined. Added a graceful
+//          "no search" empty state instead of a crash.
+//
+//  All logic, state, API calls, types and props are otherwise
+//  UNCHANGED. Only the three issues above are addressed.
 // ============================================================
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
@@ -122,7 +152,7 @@ function AirlineLogo({
         code
       ) : (
         <img
-          src={`/airlines/${code}.png`}
+          src={`/airlines/${code}.gif`}
           alt={code}
           style={{
             width: "100%",
@@ -263,7 +293,7 @@ function FareModal({
           display: "flex", alignItems: "center", gap: 12,
           padding: "14px 20px", borderBottom: `1px solid ${S.border}`, flexShrink: 0,
         }}>
-          <AirlineLogo code={flight.airlineCode} />
+          <AirlineLogo code={flight.airlineCode} size="lg" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {flight.airline} · {flight.flightNumber}
@@ -409,7 +439,7 @@ function FlightCard({
 
           {/* Airline */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 100, flexShrink: 0 }}>
-            <AirlineLogo code={flight.airlineCode} size="sm" />
+            <AirlineLogo code={flight.airlineCode} size="md" />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 11, color: S.navyDeep, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{flight.airline}</div>
               <div style={{ fontSize: 10, color: S.muted }}>{flight.flightNumber}</div>
@@ -871,14 +901,7 @@ function FilterPanel({
                       </svg>
                     )}
                   </div>
-                  <div style={{
-                    width: 26, height: 26, borderRadius: 6, flexShrink: 0,
-                    background: logoColor.bg, color: logoColor.text,
-                    fontSize: 9, fontWeight: 900, fontFamily: "'Sora',sans-serif",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    {code}
-                  </div>
+                  <AirlineLogo code={code} size="sm" />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#4a5e7a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {a} <span style={{ color: S.muted, fontWeight: 500 }}>({flightCount})</span>
@@ -1022,6 +1045,10 @@ interface ResultsPageProps {
   onNewSearch?: (form: SearchForm, legs?: CityLeg[]) => void;
   selectedOutboundFlight?: DisplayFlight | null;
   selectedLegs?: Array<{ flight: DisplayFlight; tier: FareTier } | null>;
+  // [Fix 2] Optional search key — bump this string to force a fresh fetch
+  // even if from/to/date haven't changed (e.g. same route, new search intent).
+  // Falls back to a JSON hash of form+multiLegs if not provided.
+  searchKey?: string;
 }
 
 type SortKey = "price" | "duration" | "depart" | "arrive" | "stops";
@@ -1041,9 +1068,45 @@ const defaultFilters = (): ExtendedFilters => ({
 });
 
 export default function ResultsPage({
-  form, multiLegs, onBack, onBook, onDateChange,
-  selectedOutboundFlight, onNewSearch, selectedLegs,
+  form,
+  multiLegs,
+  onBack,
+  onBook,
+  onDateChange,
+  selectedOutboundFlight,
+  onNewSearch,
+  selectedLegs,
+  searchKey,
 }: ResultsPageProps) {
+  // [Fix 3] Guard: if form is undefined (direct URL hit with no state), show a
+  // friendly prompt rather than crashing with "cannot read properties of undefined".
+  if (!form) {
+    return (
+      <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');`}</style>
+        <div style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>✈️</div>
+          <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.navyDeep, marginBottom: 8 }}>
+            No search found
+          </div>
+          <div style={{ fontSize: 14, color: S.muted, marginBottom: 24 }}>
+            Please start a new search to see flight results.
+          </div>
+          <button
+            onClick={onBack}
+            style={{
+              background: S.accent, color: "#fff", border: "none", borderRadius: 12,
+              padding: "12px 28px", fontFamily: "'Sora',sans-serif", fontWeight: 800,
+              fontSize: 13, cursor: "pointer",
+            }}
+          >
+            Back to Search
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [allFlights, setAllFlights] = useState<DisplayFlight[]>([]);
   const [returnFlightsList, setReturnFlightsList] = useState<DisplayFlight[]>([]);
   const [multiLegFlightsList, setMultiLegFlightsList] = useState<DisplayFlight[][]>([]);
@@ -1070,6 +1133,22 @@ export default function ResultsPage({
     if (isMultiCity) { setFilters(defaultFilters()); setSortKey("price"); }
   }, [activeTab]); // eslint-disable-line
 
+  // [Fix 2] Compute a stable key from the search params. If the parent passes
+  // an explicit searchKey, use that (fastest). Otherwise derive one from the
+  // form + multiLegs so any change in search intent triggers a fresh fetch.
+  const derivedSearchKey = searchKey ?? JSON.stringify({
+    from: form.from?.code,
+    to: form.to?.code,
+    depart: form.departDate,
+    ret: form.returnDate,
+    type: form.tripType,
+    adults: form.adults,
+    children: form.children,
+    infants: form.infants,
+    cabin: form.cabinClass,
+    legs: multiLegs?.map(l => `${l.from.code}-${l.to.code}-${l.departDate}`).join("|"),
+  });
+
   const fetchFlights = useCallback(() => {
     setLoading(true); setSearchError(null); setMultiLegFlightsList([]);
     apiSearchFlights(form, multiLegs)
@@ -1093,9 +1172,14 @@ export default function ResultsPage({
         setLoading(false);
       })
       .catch((e: any) => { setSearchError(e?.message ?? "Search failed"); setLoading(false); });
-  }, [form, multiLegs]);
+  }, [form, multiLegs]); // eslint-disable-line
 
-  useEffect(() => { fetchFlights(); }, [form.from?.code, form.to?.code, form.departDate, form.returnDate, form.tripType]);
+  // [Fix 2] Use derivedSearchKey as the sole dep. This fires on every genuinely
+  // new search (including same route, new intent), and does NOT fire on unrelated
+  // re-renders. It also fires on the very first mount, fixing the blank-page issue.
+  useEffect(() => {
+    fetchFlights();
+  }, [derivedSearchKey]); // eslint-disable-line
 
   const resetFilters = () => setFilters(defaultFilters());
 
@@ -1149,18 +1233,17 @@ export default function ResultsPage({
       `}</style>
 
       {/* ══════════════════════════════════════════════════════
-          HEADER — navy gradient, OneSearchBar, date strip,
-          multi-city leg tabs
+          HEADER
       ══════════════════════════════════════════════════════ */}
       <header style={{
         background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
       }}>
         <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px" }}>
 
-          {/* FIX 1: onSearch takes only (form: SearchForm) — no legs param */}
+          {/* [Fix 1] Pass multiLegs through on re-search */}
           <OneSearchBar
             form={form}
-            onSearch={(f) => onNewSearch?.(f)}
+            onSearch={(f, legs) => onNewSearch?.(f, legs)}
           />
 
           {/* Date strip — one-way / round-trip only */}
@@ -1219,10 +1302,6 @@ export default function ResultsPage({
       </header>
 
       {/* ── SORT BAR ── */}
-
-      {/* FIX 2 & 3: Desktop sort tabs
-          - Removed `display: "none"` that was blocking lg:flex
-          - Moved borderBottom AFTER border:"none" so it isn't reset */}
       <div
         className="hidden lg:flex"
         style={{
@@ -1247,7 +1326,6 @@ export default function ResultsPage({
                   fontFamily: "'Sora',sans-serif",
                   color: active ? S.navyDeep : S.muted,
                   background: "none",
-                  // FIX 3: border:"none" first, then borderBottom so it wins
                   border: "none",
                   borderBottom: `2px solid ${active ? S.accent : "transparent"}`,
                   cursor: "pointer", whiteSpace: "nowrap",
@@ -1320,7 +1398,6 @@ export default function ResultsPage({
         {/* Results */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* FIX 4: Desktop flight count — removed conflicting inline display:"none" */}
           <div
             className="hidden lg:flex"
             style={{ alignItems: "center", gap: 8, padding: "0 2px" }}

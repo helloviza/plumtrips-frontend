@@ -1,168 +1,171 @@
 // ============================================================
-//  ConfirmationPage.tsx — Post-booking confirmation
+//  BookingStep7Confirmation.tsx — Step 7: Booking Confirmed
 // ============================================================
 
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import { formatINR, MOCK_MODE } from "../../lib/flights_api";
+import { formatINR } from "../../lib/flights_api";
+import { AIRLINE_COLORS } from "./BookingShared";
 
-interface ConfirmationPageProps {
+interface Step7Props {
   flight: DisplayFlight;
   tier: FareTier;
   returnFlight?: DisplayFlight;
   returnTier?: FareTier;
+  multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   bookingId?: number;
   pnr?: string;
   passengerNames?: string[];
   contactEmail?: string;
-  onSearchAgain: () => void;
+  totalPaid: number;
+  isInternational: boolean;
+  onDone: () => void;
 }
 
-export default function ConfirmationPage({
-  flight, tier, returnFlight, returnTier, bookingId, pnr, passengerNames, contactEmail, onSearchAgain,
-}: ConfirmationPageProps) {
+export default function BookingStep7Confirmation({
+  flight, tier, returnFlight, returnTier, multiCityLegs,
+  bookingId, pnr, passengerNames, contactEmail,
+  totalPaid, isInternational, onDone,
+}: Step7Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
+  const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+
+  const allLegs = [
+    { flight, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight" },
+    ...(isRoundTrip && returnFlight ? [{ flight: returnFlight, label: "Return" }] : []),
+    ...(isMultiCity ? (multiCityLegs ?? []).slice(1).map((l, i) => ({ flight: l.flight, label: `Leg ${i + 2}` })) : []),
+  ];
+
+  const pnrList = pnr ? pnr.split(", ") : [];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-100">
-        <div className="max-w-2xl mx-auto px-6 h-16 flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-black text-xs">P</span>
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {/* Success banner */}
+      <div className="text-center mb-8">
+        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 className="font-black text-3xl text-slate-900 tracking-tight mb-2">Booking Confirmed!</h1>
+        <p className="text-slate-500 text-sm">
+          Your e-ticket has been sent to{" "}
+          <span className="font-bold text-slate-700">{contactEmail}</span>
+        </p>
+      </div>
+
+      {/* PNR / Booking ref */}
+      {(pnr || bookingId) && (
+        <div className="bg-gradient-to-br from-slate-900 to-slate-700 rounded-3xl p-6 mb-6 text-white">
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Booking Reference</div>
+          <div className="flex flex-wrap gap-4 mb-4">
+            {bookingId && (
+              <div>
+                <div className="text-[10px] text-slate-500 mb-0.5">Booking ID</div>
+                <div className="font-black text-xl font-mono">#{bookingId}</div>
+              </div>
+            )}
+            {pnrList.map((p, i) => (
+              <div key={i}>
+                <div className="text-[10px] text-slate-500 mb-0.5">{pnrList.length > 1 ? `PNR (Leg ${i + 1})` : "PNR"}</div>
+                <div className="font-black text-xl font-mono tracking-widest text-emerald-400">{p}</div>
+              </div>
+            ))}
           </div>
-          <span className="text-slate-800 font-black">plumtrips</span>
+          <p className="text-xs text-slate-500">Use this reference for check-in, changes, or cancellations.</p>
+        </div>
+      )}
+
+      {/* Flight details */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-4">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flight Itinerary</div>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {allLegs.map(({ flight: f, label }, i) => (
+            <div key={i} className="flex items-center gap-4 p-5">
+              <div
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xs font-black shrink-0"
+                style={{ background: AIRLINE_COLORS[f.airlineCode] ?? "#64748b" }}
+              >
+                {f.airlineCode}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="font-bold text-slate-900 text-sm">{f.airline} · {f.flightNumber}</span>
+                  <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">{label}</span>
+                </div>
+                <div className="text-xs text-slate-500">{f.fromCode} → {f.toCode} · {f.departDate}</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-black text-slate-900 text-sm">{f.departTime}</div>
+                <div className="text-[10px] text-slate-400">→ {f.arriveTime}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-2xl">
-          {/* Success card */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden mb-4">
-            {/* Green header */}
-            <div className="bg-emerald-600 px-8 py-8 text-center">
-              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
+      {/* Passengers */}
+      {passengerNames && passengerNames.length > 0 && (
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-4">
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Passengers</div>
+          <div className="space-y-2">
+            {passengerNames.map((name, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black flex items-center justify-center shrink-0">{i + 1}</div>
+                <span className="text-sm font-semibold text-slate-800">{name}</span>
               </div>
-              <div className="text-white font-black text-2xl mb-1">Booking Confirmed!</div>
-              <div className="text-emerald-100 text-sm font-medium">
-                {contactEmail
-                  ? `Your e-ticket will be sent to ${contactEmail}`
-                  : "Your e-ticket will be sent to your email shortly"}
-              </div>
-              {MOCK_MODE && (
-                <div className="mt-3 text-xs font-bold text-amber-200 bg-amber-900/30 px-3 py-1.5 rounded-full inline-block">
-                  ⚠ Mock mode — no real booking was made
-                </div>
-              )}
-            </div>
-
-            {/* Details */}
-            <div className="p-8">
-              {/* Booking ref row */}
-              <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-slate-100">
-                {bookingId && (
-                  <div>
-                    <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Booking ID</div>
-                    <div className="font-black text-slate-800 text-lg">{bookingId}</div>
-                  </div>
-                )}
-                {pnr && (
-                  <div>
-                    <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">PNR</div>
-                    <div className="font-black text-slate-800 text-lg tracking-widest">{pnr}</div>
-                  </div>
-                )}
-
-                {/* Flight details */}
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">
-                    {isRoundTrip ? "Outbound Flight" : "Flight"}
-                  </div>
-                  <div className="font-bold text-slate-800">{flight.airline} · {flight.flightNumber}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Date</div>
-                  <div className="font-bold text-slate-800">{flight.departDate}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Departure</div>
-                  <div className="font-black text-slate-800 text-lg">{flight.departTime}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Arrival</div>
-                  <div className="font-black text-slate-800 text-lg">{flight.arriveTime}</div>
-                </div>
-                {isRoundTrip && returnFlight && returnTier && (
-                  <>
-                    <div className="col-span-2 border-t border-dashed border-slate-100 pt-2 mt-1">
-                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Flight</div>
-                      <div className="font-bold text-slate-800">{returnFlight.airline} · {returnFlight.flightNumber}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Date</div>
-                      <div className="font-bold text-slate-800">{returnFlight.departDate}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Return Times</div>
-                      <div className="font-black text-slate-800 text-lg">{returnFlight.departTime} → {returnFlight.arriveTime}</div>
-                    </div>
-                  </>
-                )}
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Fare Type</div>
-                  <div className="font-bold text-slate-800">{tier.name}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-1">Amount Paid</div>
-                  <div className="font-black text-blue-600 text-lg">{formatINR(tier.price)}</div>
-                </div>
-              </div>
-
-              {/* Passengers */}
-              {passengerNames && passengerNames.length > 0 && (
-                <div className="mb-6 pb-6 border-b border-slate-100">
-                  <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mb-3">Passengers</div>
-                  <div className="space-y-2">
-                    {passengerNames.map((name, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-black flex items-center justify-center shrink-0">
-                          {i + 1}
-                        </div>
-                        <div className="font-semibold text-slate-800 text-sm">{name || `Passenger ${i + 1}`}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Baggage reminder */}
-              <div className="flex gap-3 mb-6 p-4 bg-blue-50 rounded-2xl">
-                <span className="text-xl shrink-0">🧳</span>
-                <div className="text-sm text-blue-800">
-                  <span className="font-bold">Cabin:</span> {tier.cabinBag} &nbsp;·&nbsp;
-                  <span className="font-bold">Check-in:</span> {tier.checkinBag}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button className="flex-1 border-2 border-slate-200 text-slate-700 font-bold py-3 rounded-2xl text-sm hover:border-slate-300 transition-colors">
-                  Download E-Ticket
-                </button>
-                <button
-                  onClick={onSearchAgain}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl text-sm transition-colors"
-                >
-                  Search Again
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-
-          <p className="text-xs text-slate-400 text-center">
-            Need help? Contact PlumTrips support · Booking powered by TBO Global API
-          </p>
         </div>
+      )}
+
+      {/* Payment confirmation */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Amount Paid</div>
+            <div className="text-[10px] text-emerald-600">Inclusive of all taxes and fees</div>
+          </div>
+          <div className="font-black text-3xl text-emerald-700">{formatINR(totalPaid)}</div>
+        </div>
+      </div>
+
+      {/* What's next */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-6">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">What's Next</div>
+        <div className="space-y-3">
+          {[
+            { icon: "📧", title: "Check your email", desc: "Your e-ticket and booking confirmation has been sent." },
+            { icon: "📱", title: "Download airline app", desc: "Check in online 48 hours before departure." },
+            { icon: isInternational ? "🛂" : "🪪", title: isInternational ? "Prepare your passport" : "Carry valid photo ID", desc: isInternational ? "All passengers need valid passports at the airport." : "Government-issued ID required for all passengers." },
+            { icon: "⏰", title: `Arrive ${isInternational ? "3 hours" : "2 hours"} early`, desc: `Check-in closes ${isInternational ? "60" : "45"} minutes before departure.` },
+          ].map(({ icon, title, desc }) => (
+            <div key={title} className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center text-lg shrink-0">{icon}</div>
+              <div>
+                <div className="font-bold text-slate-800 text-sm">{title}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button
+          onClick={onDone}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200"
+        >
+          Back to Home
+        </button>
+        <button
+          onClick={() => window.print()}
+          className="flex-1 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-2xl text-sm hover:border-slate-300 hover:bg-white transition-all"
+        >
+          🖨️ Print Itinerary
+        </button>
       </div>
     </div>
   );
