@@ -7,7 +7,7 @@ import {
   Navigate,
   Outlet,
   useSearchParams,
-} from "react-router-dom";
+} from "react-router-dom";   
 
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
@@ -323,10 +323,10 @@ export const router = createBrowserRouter(
               element: <TermsPage />,
             },
 
-           {
-              path: "flights-new",
-              element: <FlightsFlow />,
-            },
+       {path:"/flights-new", element:<FlightsFlow/>},
+       {path:"/flights-new/results" ,element:<FlightsFlow /> },
+       {path:"/flights-new/booking", element:<FlightsFlow /> },
+       {path:"/flights-new/confirmation" ,element:<FlightsFlow />},
 
             {
               path: "cancellation-and-refund",

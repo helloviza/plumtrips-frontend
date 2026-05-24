@@ -106,6 +106,7 @@ export interface DisplayFlight {
   isPassportRequired: boolean;
   airlineRemark?: string;
   segments: FlightSegmentDetail[];
+  fareVariants?: DisplayFlight[]; // all fare options for same physical flight
 }
 
 export interface FareTier {
