@@ -1,0 +1,243 @@
+{
+  "id": "thailand-corporate",
+  "name": "Thailand",
+  "type": "corporate",
+  "pageTheme": {
+    "bg": "#f5f0e6",
+    "text": "#0a1c2b",
+    "selectionBg": "#e35d29",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "",
+        "title": {
+          "regular": "The kind of trip teams ",
+          "italic": "bring up later."
+        },
+        "description": "Life-changing offsites designed around your team's unique dynamic.",
+        "backgroundImage": "../../../public/assets/attached_assets/dest-thailand.png",
+        "form": {
+          "title": "Plan a team trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": true
+        }
+      }
+    },
+    {
+      "id": "text-grid-light",
+      "type": "TextGrid",
+      "data": {
+        "theme": "light",
+        "badge": "Why Us",
+        "title": {
+          "regular": "Not another offsite. ",
+          "italic": "Something people remember."
+        },
+        "items": [
+          {
+            "title": "A team for you",
+            "desc": "Dedicated experts crafting every detail."
+          },
+          {
+            "title": "Everything handled",
+            "desc": "From flights to local transport, it's done."
+          },
+          {
+            "title": "Curated access",
+            "desc": "Skip the lines and get exclusive entry."
+          },
+          {
+            "title": "Local hosts",
+            "desc": "Experience the city like a true local."
+          }
+        ]
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "The kind of evenings ",
+          "italic": "people quote later."
+        },
+        "description": "Discover the stunning aesthetics through our exclusive access.",
+        "items": [
+          {
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "Local Immersion",
+            "loc": "Culture & Heritage",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "title": "Hidden Spots",
+            "loc": "Nature & Scenery",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Culinary Journey",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-dubai.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "itinerary",
+      "type": "Itinerary",
+      "data": {
+        "badge": "The Flow",
+        "title": {
+          "regular": "The shape of a trip ",
+          "italic": "people remember in detail."
+        },
+        "description": "Every transfer, detail, and experience beautifully arranged.",
+        "items": [
+          {
+            "day": "Day 1",
+            "title": "Arrival",
+            "desc": "Touch down and transfer to your premium stay."
+          },
+          {
+            "day": "Day 2",
+            "title": "Exploration",
+            "desc": "Full day of curated experiences and local immersion."
+          },
+          {
+            "day": "Day 3",
+            "title": "Departure",
+            "desc": "Farewell and private transfer to the airport."
+          }
+        ]
+      }
+    },
+    {
+      "id": "text-grid-dark",
+      "type": "TextGrid",
+      "data": {
+        "theme": "dark",
+        "badge": "Seamless",
+        "title": {
+          "regular": "Everything else ",
+          "italic": "you can out-source to feel."
+        },
+        "items": [
+          {
+            "title": "Flight booking",
+            "desc": "We find the best routes and rates."
+          },
+          {
+            "title": "Visa processing",
+            "desc": "End-to-end support for your visas."
+          },
+          {
+            "title": "Hotel selection",
+            "desc": "Curated stays matching your vibe."
+          },
+          {
+            "title": "Local transfers",
+            "desc": "Private luxury transport everywhere."
+          },
+          {
+            "title": "Restaurant reservations",
+            "desc": "Tables at the most exclusive spots."
+          },
+          {
+            "title": "24/7 Support",
+            "desc": "Always available via WhatsApp."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "Curated Stays",
+        "title": {
+          "regular": "A trip this unique. ",
+          "italic": "Okay, entirely yours."
+        },
+        "description": "Choose the level of luxury that fits your journey.",
+        "theme": "light",
+        "tiers": [
+          {
+            "stars": "5 Star Luxury",
+            "price": "Custom",
+            "location1": "City Center",
+            "hotel1": "Premium Hotel",
+            "nights1": "3 Nights",
+            "location2": "",
+            "hotel2": "",
+            "nights2": "",
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "badge": "Meet the teams",
+        "title": {
+          "regular": "A trip this unique. ",
+          "italic": "Okay, entirely yours."
+        },
+        "testimonials": [
+          {
+            "quote": "A seamless experience from start to finish. We truly felt like VIPs the entire trip.",
+            "author": "Sarah Jenkins",
+            "company": "TechFlow Inc.",
+            "location": "San Francisco"
+          },
+          {
+            "quote": "The attention to detail was beyond anything we expected. Unforgettable.",
+            "author": "Michael Chen",
+            "company": "Design Space",
+            "location": "New York"
+          },
+          {
+            "quote": "They took care of every little thing. We just showed up and enjoyed the magic.",
+            "author": "Emma Watson",
+            "company": "Global Media",
+            "location": "London"
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "badge": "The Next Step",
+        "title": {
+          "regular": "The journeys people remember are ",
+          "italic": "usually planned differently."
+        },
+        "description": "Tell us where you want to go — we’ll handle the planning.",
+        "buttonText": "Get My Personalized Trip Plan"
+      }
+    }
+  ]
+}

@@ -249,9 +249,9 @@ export default function Footer() {
               <FLink to="/contact">Contact</FLink>
             </Group>
 
-            <Group title="FOR AGENTS" className="md:col-span-2">
-              <FLink to="/auth/register">Sign Up</FLink>
-              <FLink to="/auth/login">Login</FLink>
+            <Group title="FOR TEAMS" className="md:col-span-2">
+              {/* <FLink to="/auth/register">Sign Up</FLink>
+              <FLink to="/auth/login">Login</FLink> */}
               <FLink to="/marketing-login">Marketing Login</FLink>
             </Group>
 

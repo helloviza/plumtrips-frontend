@@ -1,0 +1,197 @@
+{
+  "id": "thailand-personal",
+  "name": "Thailand",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f5f0e6",
+    "text": "#0a1c2b",
+    "selectionBg": "#e35d29",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "",
+        "title": {
+          "regular": "Wandering with ",
+          "italic": "wandering minds"
+        },
+        "description": "The kind of trip you didn't know you needed.",
+        "backgroundImage": "../../../public/assets/attached_assets/dest-thailand.png",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "The kind of evenings ",
+          "italic": "people quote later."
+        },
+        "description": "Discover the stunning aesthetics through our exclusive access.",
+        "items": [
+          {
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "Local Immersion",
+            "loc": "Culture & Heritage",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "title": "Hidden Spots",
+            "loc": "Nature & Scenery",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Culinary Journey",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-dubai.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "memories",
+      "type": "FeatureList",
+      "data": {
+        "title": {
+          "regular": "And a team that's obsessively ",
+          "italic": "detail oriented."
+        },
+        "theme": "light",
+        "items": [
+          {
+            "title": "Ha Long Bay",
+            "desc": "The morning we woke up in Ha Long Bay."
+          },
+          {
+            "title": "Beach bonfire",
+            "desc": "The bonfire under the stars."
+          },
+          {
+            "title": "Lantern festival",
+            "desc": "The lantern festival that felt like a movie."
+          },
+          {
+            "title": "Night market",
+            "desc": "The midnight street food run."
+          }
+        ],
+        "image": "../../../public/assets/attached_assets/exp-thailand.png"
+      }
+    },
+    {
+      "id": "inclusions",
+      "type": "InclusionsExclusions",
+      "data": {
+        "theme": "light",
+        "inclusions": [
+          "5 nights accommodation",
+          "Daily breakfast",
+          "Private transfers",
+          "All entrance fees"
+        ],
+        "exclusions": [
+          "International flights",
+          "Personal insurance",
+          "Visa fees"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "badge": "Our very best work",
+        "title": {
+          "regular": "Our very best work. ",
+          "italic": "Okay, entirely yours."
+        },
+        "testimonials": [
+          {
+            "quote": "A seamless experience from start to finish. We truly felt like VIPs the entire trip.",
+            "author": "Sarah Jenkins",
+            "company": "TechFlow Inc.",
+            "location": "San Francisco"
+          },
+          {
+            "quote": "The attention to detail was beyond anything we expected. Unforgettable.",
+            "author": "Michael Chen",
+            "company": "Design Space",
+            "location": "New York"
+          },
+          {
+            "quote": "They took care of every little thing. We just showed up and enjoyed the magic.",
+            "author": "Emma Watson",
+            "company": "Global Media",
+            "location": "London"
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "Everything we ",
+          "italic": "got asked frequently."
+        },
+        "faqs": [
+          {
+            "question": "How does the planning process work?",
+            "answer": "Once you submit an inquiry, our travel experts will contact you via WhatsApp to understand your preferences. We then craft a custom itinerary tailored specifically for you."
+          },
+          {
+            "question": "Are flights and visas included?",
+            "answer": "Yes, we handle all flight bookings and provide complete end-to-end visa assistance to ensure a completely stress-free experience."
+          },
+          {
+            "question": "Can I customize the itinerary?",
+            "answer": "Absolutely. The itinerary is fully customizable. We work with you to adjust the pacing, hotels, and experiences until it perfectly matches your vision."
+          },
+          {
+            "question": "Do you offer support during the trip?",
+            "answer": "Yes, you will have a dedicated travel expert available 24/7 on WhatsApp throughout your entire journey to handle any requests or emergencies."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "badge": "The Next Step",
+        "title": {
+          "regular": "The journeys people remember are ",
+          "italic": "usually planned differently."
+        },
+        "description": "Tell us where you want to go — we’ll handle the planning.",
+        "buttonText": "Get My Personalized Trip Plan"
+      }
+    }
+  ]
+}

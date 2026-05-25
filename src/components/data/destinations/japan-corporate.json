@@ -1,0 +1,279 @@
+{
+  "id": "japan-corporate",
+  "name": "Japan",
+  "type": "corporate",
+  "pageTheme": {
+    "bg": "#f5f0e6",
+    "text": "#0a1c2b",
+    "selectionBg": "#e35d29",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "dark",
+        "badge": "CORPORATE OFF-SITES",
+        "title": {
+          "regular": "Tokyo nights.\nKyoto mornings.\n",
+          "italic": "The team somewhere in between."
+        },
+        "description": "A corporate retreat that feels less like a boardroom and more like a cultural immersion. Curated for the modern team.",
+        "backgroundImage": "../../../public/assets/attached_assets/dest-japan.png",
+        "form": {
+          "title": "Tell us about the offsite",
+          "buttonText": "Get a proposal",
+          "isCorporate": true
+        }
+      }
+    },
+    {
+      "id": "intro-text-grid",
+      "type": "TextGrid",
+      "data": {
+        "badge": "THE OFF-SITE REIMAGINED",
+        "title": {
+          "regular": "Not another offsite. ",
+          "italic": "A country built on intentionality."
+        },
+        "description": "Tokyo’s precision meets Kyoto’s serenity. It’s where strategy meets stillness.",
+        "items": [
+          {
+            "title": "Where strategy meets serenity.",
+            "desc": "Escape the everyday and find focus in environments designed for clarity and deep work."
+          },
+          {
+            "title": "A culture of precision.",
+            "desc": "Learn from a culture that values meticulous attention to detail and long-term thinking."
+          },
+          {
+            "title": "Tokyo's innovation.",
+            "desc": "Immerse your team in the relentless energy and forward-thinking dynamics of the capital."
+          },
+          {
+            "title": "Kyoto's tranquility.",
+            "desc": "Balance the rush with reflective spaces that encourage meaningful connections and insights."
+          }
+        ]
+      }
+    },
+    {
+      "id": "after-dark",
+      "type": "Experiences",
+      "data": {
+        "badge": "TEAM BUILDING IN JAPAN",
+        "title": {
+          "regular": "Tokyo after dark ",
+          "italic": "changes the pace of conversations."
+        },
+        "description": "The best ideas don’t happen in a conference room. They happen over sake in a hidden izakaya.",
+        "items": [
+          {
+            "img": "../../../public/assets/attached_assets/dest-japan.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-iceland.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "itinerary",
+      "type": "Itinerary",
+      "data": {
+        "badge": "SAMPLE ITINERARY",
+        "title": {
+          "regular": "The country divides ",
+          "italic": "by the shinkansen."
+        },
+        "description": "A seamless flow between hyper-modernity and ancient tradition.",
+        "items": [
+          {
+            "day": "Days 1-3",
+            "title": "Tokyo: Strategy & Innovation",
+            "activities": [
+              "Workshops in high-tech hubs",
+              "Private dining in Ginza",
+              "Team building in Akihabara"
+            ]
+          },
+          {
+            "day": "Days 4-5",
+            "title": "Kyoto: Reflection & Culture",
+            "activities": [
+              "Zen meditation at a private temple",
+              "Strategic reviews in a ryokan",
+              "Traditional tea ceremonies"
+            ]
+          },
+          {
+            "day": "Days 6-7",
+            "title": "Osaka: Culinary Connections",
+            "activities": [
+              "Street food tours in Dotonbori",
+              "Wrap-up sessions",
+              "Farewell omakase dinner"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "expertise",
+      "type": "FeatureList",
+      "data": {
+        "theme": "dark",
+        "badge": "LOCAL EXPERTISE",
+        "title": {
+          "regular": "The Japan that ",
+          "italic": "offsite experts know."
+        },
+        "items": [
+          {
+            "title": "Private Ryokan Buyouts",
+            "desc": "Exclusive use of traditional inns for absolute privacy and focus."
+          },
+          {
+            "title": "Zen Meditation Workshops",
+            "desc": "Guided mindfulness sessions with actual monks to center the team."
+          },
+          {
+            "title": "Behind-the-scenes Tech",
+            "desc": "Exclusive access to Japan's leading innovation centers and labs."
+          },
+          {
+            "title": "Omakase Dining",
+            "desc": "Curated culinary journeys that serve as perfect ice-breakers."
+          },
+          {
+            "title": "Shinkansen Logistics",
+            "desc": "Flawless execution of group travel across the country."
+          },
+          {
+            "title": "Cultural Liaisons",
+            "desc": "Bilingual experts to navigate nuances and ensure smooth operations."
+          }
+        ],
+        "image": "../../../public/assets/attached_assets/exp-tokyo.png"
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "theme": "light",
+        "badge": "WHAT TEAMS SAY",
+        "title": {
+          "regular": "Lessons offsite. ",
+          "italic": "Move as a corporate."
+        },
+        "testimonials": [
+          {
+            "quote": "The contrast between Tokyo's energy and Kyoto's calm gave our team exactly the perspective shift we needed.",
+            "author": "David Chen",
+            "company": "TechVision Partners",
+            "location": "Singapore"
+          },
+          {
+            "quote": "Flawless execution. Moving 40 people across Japan via bullet train sounds like a nightmare, but Plumtrips made it effortless.",
+            "author": "Sarah Miller",
+            "company": "Global Design Co.",
+            "location": "London"
+          },
+          {
+            "quote": "The private izakaya dinner they arranged was where our best strategy for Q3 was actually born.",
+            "author": "Kenji Sato",
+            "company": "Innovate Labs",
+            "location": "New York"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "FLEXIBLE PLANNING",
+        "title": {
+          "regular": "Built for teams ",
+          "italic": "that travel differently."
+        },
+        "tiers": [
+          {
+            "name": "Executive Retreat",
+            "price": "Custom",
+            "description": "Intimate, high-touch planning for leadership teams.",
+            "features": [
+              "5-star luxury accommodations",
+              "Private helicopters & transfers",
+              "Exclusive cultural access",
+              "Dedicated 24/7 concierge"
+            ]
+          },
+          {
+            "name": "Team Offsite",
+            "price": "Custom",
+            "description": "Balanced itineraries for mid-sized teams.",
+            "features": [
+              "Premium boutique hotels",
+              "Curated team-building activities",
+              "Private group dining",
+              "Seamless logistics"
+            ],
+            "highlight": true
+          },
+          {
+            "name": "Company Wide",
+            "price": "Custom",
+            "description": "Large-scale event planning and execution.",
+            "features": [
+              "Full hotel buyouts",
+              "Conference venue sourcing",
+              "Multi-track activities",
+              "On-ground event staff"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "dark",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "Some places quietly ",
+          "italic": "change how teams think."
+        },
+        "description": "Let's design a Japan offsite that your team will talk about for years.",
+        "buttonText": "Get a proposal"
+      }
+    }
+  ]
+}

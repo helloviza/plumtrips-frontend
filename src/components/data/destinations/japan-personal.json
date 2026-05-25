@@ -1,0 +1,219 @@
+{
+  "id": "japan-personal",
+  "name": "Japan",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#fdf8f5",
+    "text": "#0a1c2b",
+    "selectionBg": "#e35d29",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "A country that never sleeps",
+        "title": {
+          "regular": "Neon nights. Ancient mornings.\n",
+          "italic": "Japan is a feeling."
+        },
+        "description": "The kind of trip you didn't know you needed.",
+        "backgroundImage": "../../../public/assets/attached_assets/dest-japan.png",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "From shinkansen to sanctuaries. ",
+          "italic": "We curate your path."
+        },
+        "description": "Discover the stunning aesthetics through our exclusive access.",
+        "items": [
+          {
+            "img": "../../../public/assets/attached_assets/dest-japan.png",
+            "title": "Local Immersion",
+            "loc": "Culture & Heritage",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
+            "title": "Neon Horizons",
+            "loc": "City & Nightlife",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Tranquil Escapes",
+            "loc": "Nature & Scenery",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "Culinary Journey",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-iceland.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "itinerary",
+      "type": "Itinerary",
+      "data": {
+        "badge": "SAMPLE ITINERARY",
+        "title": {
+          "regular": "A country that demands ",
+          "italic": "a nuanced itinerary."
+        },
+        "description": "Perfectly paced to absorb both the electric energy and the profound stillness.",
+        "items": [
+          {
+            "day": "Days 1-4",
+            "title": "Tokyo: Neon & Culture",
+            "activities": [
+              "Explore Shibuya & Shinjuku",
+              "Private sushi making class",
+              "Visit historic Asakusa"
+            ]
+          },
+          {
+            "day": "Days 5-7",
+            "title": "Kyoto: Temples & Traditions",
+            "activities": [
+              "Wander through Arashiyama Bamboo Grove",
+              "Traditional Geisha dinner in Gion",
+              "Visit the Golden Pavilion (Kinkaku-ji)"
+            ]
+          },
+          {
+            "day": "Days 8-10",
+            "title": "Hakone: Onsens & Mt. Fuji",
+            "activities": [
+              "Relax in a private hot spring",
+              "Cruise on Lake Ashi",
+              "Enjoy a kaiseki dinner"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "inclusions",
+      "type": "InclusionsExclusions",
+      "data": {
+        "theme": "light",
+        "badge": "WHAT'S INCLUDED",
+        "title": {
+          "regular": "What we handle. ",
+          "italic": "So you can simply travel."
+        },
+        "inclusions": [
+          "Luxury Ryokan & Hotel stays",
+          "Private Shinkansen transfers",
+          "Exclusive tea ceremonies",
+          "Daily gourmet breakfasts",
+          "24/7 bilingual concierge"
+        ],
+        "exclusions": [
+          "International flights",
+          "Personal shopping & souvenirs",
+          "Travel insurance",
+          "Visa processing fees"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "theme": "dark",
+        "badge": "Traveler Stories",
+        "title": {
+          "regular": "The world's most subtle ",
+          "italic": "country changes you."
+        },
+        "testimonials": [
+          {
+            "quote": "Plumtrips showed us a side of Japan we would have never discovered on our own. The balance of cities and nature was perfect.",
+            "author": "The Martinez Family",
+            "company": "",
+            "location": "Chicago"
+          },
+          {
+            "quote": "From the moment we landed, everything was handled. The ryokan stay in Hakone was the highlight of our entire year.",
+            "author": "Elena Rossi",
+            "company": "",
+            "location": "Milan"
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "What to know before ",
+          "italic": "the neon calls."
+        },
+        "faqs": [
+          {
+            "question": "When is the best time to visit Japan?",
+            "answer": "Spring (cherry blossoms) and Autumn (fall foliage) are the most popular, offering mild weather and stunning scenery."
+          },
+          {
+            "question": "Is the itinerary flexible?",
+            "answer": "Absolutely. We build the itinerary around your pace, ensuring you have enough free time to explore spontaneously."
+          },
+          {
+            "question": "Do I need to speak Japanese?",
+            "answer": "Not at all. We provide a 24/7 bilingual concierge on WhatsApp, and English is widely understood in major cities."
+          },
+          {
+            "question": "How do we travel between cities?",
+            "answer": "We arrange all your Shinkansen (bullet train) passes and provide detailed platform instructions, making inter-city travel seamless."
+          },
+          {
+            "question": "Can you accommodate dietary restrictions?",
+            "answer": "Yes. We communicate all dietary needs to hotels and restaurants in advance to ensure a smooth culinary experience."
+          },
+          {
+            "question": "Are private guides included?",
+            "answer": "We can include private local guides for specific cultural days, while leaving other days open for independent exploration."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "dark",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "Your journey into Japan ",
+          "italic": "begins now."
+        },
+        "description": "Tell us how you want to experience Japan.",
+        "buttonText": "Start Planning"
+      }
+    }
+  ]
+}

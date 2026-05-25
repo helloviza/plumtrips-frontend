@@ -1,11 +1,12 @@
 ﻿// apps/frontend/src/components/Header.tsx
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 
 // Public logo (placed in apps/frontend/public/assets/logo.png)
 const logo = "/assets/logoW&OO.png";
+const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
 
 const allNav = [
   { to: "/flights-new/results", label: "Flights" },
@@ -44,19 +45,31 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const externalByLabel = useMemo(
+  () =>
+    ({
+      Business: EXTERNAL_BUSINESS_URL,
+    }) as Record<string, string>,
+  []
+);
+
   const renderNavItemDesktop = (item: { to: string; label: string }) => {
-    if (item.label === "Business") {
-      return (
-        <button
-          key={item.label}
-          onClick={() => openAuth("mobile", "biz", true)}
-          className="nav-item relative pb-1 font-medium text-white/90 transition-colors"
-          aria-label="Business sign in (MyBiz)"
-        >
-          {item.label}
-        </button>
-      );
-    }
+    const externalUrl = externalByLabel[item.label];
+    if (externalUrl) {
+  return (
+    <a
+      key={item.label}
+      href={externalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative pb-1 font-medium text-white/90 hover:text-white transition-colors"
+      onClick={closeMobile}
+      aria-label={`${item.label} (opens external site)`}
+    >
+      {item.label}
+    </a>
+  );
+}
 
     return (
       <NavLink
@@ -82,20 +95,22 @@ export default function Header() {
   };
 
   const renderNavItemMobile = (item: { to: string; label: string }) => {
-    if (item.label === "Business") {
-      return (
-        <button
-          key={item.label}
-          onClick={() => {
-            openAuth("mobile", "biz", true);
-            closeMobile();
-          }}
-          className="nav-item-mobile block rounded px-1 py-1.5 text-left text-white/90"
-        >
-          {item.label}
-        </button>
-      );
-    }
+    const externalUrl = externalByLabel[item.label];
+    if (externalUrl) {
+  return (
+    <a
+      key={item.label}
+      href={externalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded px-1 py-1.5 text-white/90"
+      onClick={closeMobile}
+      aria-label={`${item.label} (opens external site)`}
+    >
+      {item.label}
+    </a>
+  );
+}
 
     return (
       <NavLink

@@ -7,10 +7,14 @@ import {
   Navigate,
   Outlet,
   useSearchParams,
+  useParams
 } from "react-router-dom";   
 
 import MainLayout from "./layouts/MainLayout";
 import Home from "./pages/Home";
+
+
+import DynamicDestination from "./pages/DynamicDestination";
 
 import HolidaysPage from "./pages/holidays/HolidaysPage";
 import MicePage from "./pages/mice/MicePage";
@@ -87,6 +91,7 @@ import FlightsFlow from "./pages/flights_new/FlightsFlow";
 import SearchPage from "./pages/flights/Search";
 import Search from "./pages/flights/Search";
 import SearchTabs from "./components/SearchTabs";
+import Home_Holiday from "./pages/Home_Holiday";
 
 // BLOG
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -100,6 +105,18 @@ function RouteFallback(): ReactElement {
     <div className="px-4 py-10 text-center text-slate-600">
       Loading…
     </div>
+  );
+}
+
+function DynamicDestinationWrapper(): ReactElement {
+  const params = useParams();
+
+  return (
+    <DynamicDestination
+      params={{
+        slug: params.slug || "",
+      }}
+    />
   );
 }
 
@@ -160,7 +177,18 @@ export const router = createBrowserRouter(
         </AuthProvider>
       ),
 
+      
+
       children: [
+
+                    {
+  path: ":slug",
+  element: <DynamicDestinationWrapper />,
+},
+            {
+              path: "holidays",
+              element: <Home_Holiday />,
+            },
         // AUTH
         {
           path: "/marketing-login",
@@ -282,10 +310,9 @@ export const router = createBrowserRouter(
           path: "readblogs/:id", element: <ReadBlogPage/>
         },
             // Sections
-            {
-              path: "holidays",
-              element: <HolidaysPage />,
-            },
+
+
+
 
             {
               path: "mice",

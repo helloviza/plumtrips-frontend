@@ -1,0 +1,261 @@
+{
+  "id": "vietnam-personal",
+  "name": "Vietnam",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#fdf8f5",
+    "text": "#0a1c2b",
+    "selectionBg": "#e35d29",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "dark",
+        "badge": "A country that never sleeps",
+        "title": {
+          "regular": "Long dinners.\nWarm nights.\n",
+          "italic": "Vietnam for groups."
+        },
+        "description": "The kind of trip you didn't know you needed. Curated for the modern traveler.",
+        "backgroundImage": "../../../public/assets/attached_assets/hero-bg.png",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "conversations",
+      "type": "Experiences",
+      "data": {
+        "badge": "CURATED MOMENTS",
+        "title": {
+          "regular": "The best conversations ",
+          "italic": "rarely happen at home."
+        },
+        "description": "Discover the stunning aesthetics through our exclusive access.",
+        "items": [
+          {
+            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "title": "Curated Moment",
+            "loc": "Experience",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
+            "title": "Curated Moment",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "details",
+      "type": "TextGrid",
+      "data": {
+        "badge": "WHAT WE HANDLE",
+        "title": {
+          "regular": "The details quietly ",
+          "italic": "take care of themselves."
+        },
+        "description": "Everything you need, handled seamlessly.",
+        "items": [
+          {
+            "title": "Curated Hotels",
+            "desc": "We handpick boutique stays and luxury resorts that match your exact vibe."
+          },
+          {
+            "title": "Dining Reservations",
+            "desc": "Access to the hardest-to-book restaurants and hidden culinary gems."
+          },
+          {
+            "title": "Private Transfers",
+            "desc": "Seamless transport from airport arrivals to inter-city journeys."
+          },
+          {
+            "title": "Local Access",
+            "desc": "Skip the line and experience culture through the eyes of locals."
+          },
+          {
+            "title": "Full Itinerary",
+            "desc": "A perfectly paced schedule that balances activity and relaxation."
+          },
+          {
+            "title": "Concierge",
+            "desc": "24/7 on-ground support for any spontaneous requests or changes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "morning-mountain",
+      "type": "FeatureList",
+      "data": {
+        "badge": "THE JOURNEY",
+        "title": {
+          "regular": "A morning. A mountain. ",
+          "italic": "A place to land."
+        },
+        "items": [
+          {
+            "title": "A long walk on the sand",
+            "desc": "Start your days with tranquil walks on pristine private beaches.",
+            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "align": "left"
+          },
+          {
+            "title": "The water check",
+            "desc": "Explore breathtaking waterways and floating markets with our expert guides.",
+            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "align": "right"
+          },
+          {
+            "title": "Views that outlive summer",
+            "desc": "Savor sunsets from cliffside infinity pools overlooking the ocean.",
+            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "align": "left"
+          }
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "theme": "dark",
+        "badge": "Traveler Stories",
+        "title": {
+          "regular": "They came back already ",
+          "italic": "planning the next one."
+        },
+        "testimonials": [
+          {
+            "quote": "Plumtrips showed us a side of Vietnam we would have never discovered on our own.",
+            "author": "The Martinez Family",
+            "company": "",
+            "location": "Chicago"
+          },
+          {
+            "quote": "From the moment we landed, everything was handled perfectly.",
+            "author": "Elena Rossi",
+            "company": "",
+            "location": "Milan"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "FLEXIBLE PLANNING",
+        "title": {
+          "regular": "Clear in the service. ",
+          "italic": "Clear in the logic."
+        },
+        "tiers": [
+          {
+            "name": "Classic Escape",
+            "price": "Custom",
+            "description": "Essential planning for your perfect getaway.",
+            "features": [
+              "Boutique accommodations",
+              "Private airport transfers",
+              "Curated itinerary",
+              "WhatsApp support"
+            ]
+          },
+          {
+            "name": "Premium Journey",
+            "price": "Custom",
+            "description": "Elevated experiences and premium stays.",
+            "features": [
+              "5-star luxury hotels",
+              "Exclusive local experiences",
+              "Private driver",
+              "Priority 24/7 concierge"
+            ],
+            "highlight": true
+          },
+          {
+            "name": "Ultimate Luxury",
+            "price": "Custom",
+            "description": "The absolute pinnacle of personalized travel.",
+            "features": [
+              "Ultra-luxury resort villas",
+              "Helicopter & yacht charters",
+              "Celebrity chef dining",
+              "Dedicated travel manager"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "Everything you would want ",
+          "italic": "to know answered."
+        },
+        "faqs": [
+          {
+            "question": "When is the best time to visit Vietnam?",
+            "answer": "Vietnam is a year-round destination, but spring (Feb-April) and autumn (Aug-Oct) offer the most pleasant weather."
+          },
+          {
+            "question": "Is the itinerary flexible?",
+            "answer": "Absolutely. We build the itinerary around your pace, ensuring you have enough free time to explore spontaneously."
+          },
+          {
+            "question": "Do I need a visa?",
+            "answer": "We assist with the entire visa process, ensuring you have all necessary documentation before arrival."
+          },
+          {
+            "question": "Are private guides included?",
+            "answer": "We can include private local guides for specific cultural days, while leaving other days open for independent exploration."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "dark",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "A few days. ",
+          "italic": "One very good decision."
+        },
+        "description": "Tell us how you want to experience Vietnam.",
+        "buttonText": "Start Planning"
+      }
+    }
+  ]
+}
