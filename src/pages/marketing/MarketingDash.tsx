@@ -9,7 +9,7 @@ import {
   Pencil,
   LayoutDashboard,
   LogOut,
-  Mail,
+  Mail, Image
 } from "lucide-react";
 
 const logo = "/assets/logo.png";
@@ -60,6 +60,7 @@ export default function MarketingDash() {
     offers: "Offers & Promotions Management",
     blogs: "Journal & Blog Management",
     frontpage: "Frontpage Management",
+    Carousel: "Homepage Carousel Management",
   };
 
   return (
@@ -116,6 +117,12 @@ export default function MarketingDash() {
             isActive={activeTab === "frontpage"}
             onClick={() => navigate("/marketing-dash/frontpage")}
           />
+          <NavItem
+            icon={<Image size={17} />}
+            label="Home Carousel"
+            isActive={activeTab === "homecarousel"}
+            onClick={() => navigate("/marketing-dash/homecarousel")}
+           />
         </nav>
 
         {/* Footer logout — flex-shrink-0, NOT absolute */}

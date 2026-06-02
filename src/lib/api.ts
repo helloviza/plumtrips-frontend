@@ -1053,3 +1053,53 @@ export async function getCountryEnquiries(): Promise<CountryEnquiry[]> {
 export async function deleteCountryEnquiry(id: string): Promise<void> {
     return del(`/countryenquiry/${id}`);
 }
+
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+// Add to your existing lib/api.ts
+
+export interface HomeCarousel {
+  id: string;
+  name: string;
+  image: string;
+}
+
+type RawHomeCarousel = Omit<HomeCarousel, "id"> & { _id: string };
+
+// ─── Normalizer ───────────────────────────────────────────────────────────────
+
+function normalizeHomeCarousel(r: RawHomeCarousel): HomeCarousel {
+  return { ...r, id: r._id };
+}
+
+// ─── API Functions ────────────────────────────────────────────────────────────
+
+export async function getHomeCarousels(): Promise<HomeCarousel[]> {
+  const raw = await get<RawHomeCarousel[]>("/homeCarousel");
+  return raw.map(normalizeHomeCarousel);
+}
+
+export async function createHomeCarousel(
+  payload: Omit<HomeCarousel, "id">,
+  imageFile: File
+): Promise<HomeCarousel> {
+  const { image: _image, ...fields } = payload;
+  const raw = await sendForm<RawHomeCarousel>("POST", "/homeCarousel", fields, imageFile, "image");
+  return normalizeHomeCarousel(raw);
+}
+
+export async function updateHomeCarousel(
+  id: string,
+  payload: Omit<HomeCarousel, "id">,
+  imageFile?: File
+): Promise<HomeCarousel> {
+  const { image, ...rest } = payload;
+  // Only drop image URL if we're uploading a new file; otherwise send it along
+  const fields = imageFile ? rest : { ...rest, image };
+  const raw = await sendForm<RawHomeCarousel>("PUT", `/homeCarousel/${id}`, fields, imageFile, "image");
+  return normalizeHomeCarousel(raw);
+}
+
+export async function deleteHomeCarousel(id: string): Promise<void> {
+  return del(`/homeCarousel/${id}`);
+}

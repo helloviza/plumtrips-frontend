@@ -20,6 +20,7 @@ import HolidaysPage from "./pages/holidays/HolidaysPage";
 import MicePage from "./pages/mice/MicePage";
 import CruisesPage from "./pages/cruises/CruisesPage";
 import OffersPage from "./pages/offers/Offers";
+import HomeCarouselPage from "./pages/marketing/HomeCarousel";
 
 import TermsPage from "./pages/legal/TermsPage";
 import PrivacyPage from "./pages/legal/PrivacyPage";
@@ -228,6 +229,7 @@ export const router = createBrowserRouter(
             { path: "offers", element: <Offer /> },
             { path: "blogs", element: <Blog /> },
             { path: "frontpage", element: <FrontpagePage /> },
+            { path: "homecarousel", element: <HomeCarouselPage /> },
           ],
         },
 
@@ -330,6 +332,7 @@ export const router = createBrowserRouter(
               path: "cruises",
               element: <CruisesPage />,
             },
+
 
             {
               path: "contact",

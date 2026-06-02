@@ -307,18 +307,8 @@ import SearchTabs from "../components/SearchTabs";
 
 
 
-/**
- * Home.tsx — Plumtrips Landing Page
- *
- * TWO PLACEHOLDER SLOTS you can replace with your own components:
- *
- *   1. <FlightSearchWidget />  (line ~60)  — swap with your flight search component
- *   2. <TopFlightsCarousel />  (line ~75)  — swap with your flights carousel component
- *
- * Everything else is faithfully converted from the original HTML.
- */
-
 import { useEffect, useRef, useState } from "react";
+
 
 
 // ---------------------------------------------------------------------------
@@ -417,19 +407,18 @@ export default function Home() {
         }
       `}</style>
 
+      {/* ================================================================
+          HERO SECTION
+          KEY CHANGE: -mt-[72px] moved here to the outermost wrapper container. 
+          This pulls the entire Home component up behind the sticky
+          transparent header so the margin doesn't collapse improperly.
+      ================================================================ */}
       <div
-        className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden"
+        className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[72px]"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
-        {/* ================================================================
-            HERO SECTION
-            KEY CHANGE: -mt-[72px] pulls the hero up behind the sticky
-            transparent header (same as the first file).
-            pt-[72px] inside the content area pushes content back down so
-            it's not hidden behind the header.
-        ================================================================ */}
         <div
-          className="relative flex flex-col overflow-hidden -mt-[72px]"
+          className="relative flex flex-col overflow-hidden"
           style={{ minHeight: 800 }}
           onMouseMove={handleHeroMouseMove}
           onMouseLeave={handleHeroMouseLeave}
@@ -457,8 +446,7 @@ export default function Home() {
           </div>
 
           {/* Hero content
-              pt-[72px] = header height offset so SearchTabs starts BELOW the header
-              Additional pt-8 gives breathing room above the widget             */}
+              pt-[88px] gives breathing room above the widget and accounts for header offset */}
           <div className="relative z-10 flex-grow flex items-center w-full">
             <div className="relative z-[3] mx-auto max-w-6xl w-full px-6 pt-[88px] pb-16">
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-10 items-start">
