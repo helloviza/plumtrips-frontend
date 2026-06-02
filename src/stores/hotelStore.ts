@@ -11,6 +11,7 @@ export interface Guest {
   paxType?: 1 | 2;   // 1=Adult, 2=Child
   age?: number;
   leadGuest?: boolean;
+  pan?: string;
   gender?: 'Male' | 'Female' | 'Other';
   passportNumber?: string;
   passportExpiry?: string;
@@ -32,6 +33,7 @@ export interface Room {
   price: number;
   originalPrice?: number;
   taxesAndFees: number;
+  additionalCharges?: number;
   quantity: number;
   /** Extra name lines from supplier (e.g. TBO Name[1]) */
   roomSubtitle?: string;
@@ -74,6 +76,7 @@ export interface Hotel {
   _mealType?: string;
   _rooms?: any[];
   _taxes?: number;
+  _traceId?: string;
 }
 
 export interface SearchParams {
@@ -89,6 +92,7 @@ export interface SearchParams {
   hourlyStay: boolean;
   hourlyDuration?: 3 | 6 | 12;
   travelStyle?: 'Friends' | 'Family' | 'Couple' | 'Solo';
+  destinationCountryCode?: string;
 }
 
 export interface Filters {
@@ -229,6 +233,8 @@ interface HotelBookingState {
   setViewMode: (mode: 'list' | 'map') => void;
   sortBy: 'cheapest' | 'rating' | 'distance' | 'reviews';
   setSortBy: (sort: 'cheapest' | 'rating' | 'distance' | 'reviews') => void;
+  sortDirection: 'asc' | 'desc';
+  setSortDirection: (dir: 'asc' | 'desc') => void;
 
   // Reset
   resetBooking: () => void;
@@ -302,6 +308,7 @@ export const useHotelStore = create<HotelBookingState>()(
       promoDiscount: 0,
       viewMode: 'list',
       sortBy: 'cheapest',
+      sortDirection: 'asc',
 
       setSearchParams: (params) =>
         set((s) => ({ searchParams: { ...s.searchParams, ...params } })),
@@ -379,6 +386,7 @@ export const useHotelStore = create<HotelBookingState>()(
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSortBy: (sort) => set({ sortBy: sort }),
+      setSortDirection: (dir) => set({ sortDirection: dir }),
 
       resetBooking: () =>
         set({

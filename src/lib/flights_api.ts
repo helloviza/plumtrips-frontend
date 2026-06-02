@@ -46,23 +46,148 @@ function minToLabel(m: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`;
 }
 
-export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, traceId: string,legIndex = 0  ): DisplayFlight {
-  
-  const allSegs = result.Segments[legIndex] ?? result.Segments[0];
-  
+// ─── TBO FARE CLASS → HUMAN-READABLE NAME ─────────────────
+/**
+ * TBO returns raw fare class codes (RR, SO, GG, F, Y, etc.) in FareClass.
+ * FareType gives the category (Regular, SME, Student, etc.).
+ * This mapper turns them into readable names for display in the fare tier cards.
+ *
+ * Priority order:
+ *  1. FareType (if not "Regular") — e.g. "SME", "Student", "Armed Forces"
+ *  2. FareClass code lookup — map known IATA/TBO codes to friendly names
+ *  3. Cabin class fallback based on first letter heuristic
+ *  4. Generic fallback "Option N"
+ */
 
+// Known TBO / IATA fare class code → friendly label
+const TBO_FARE_CLASS_MAP: Record<string, string> = {
+  // Economy — Saver / Basic
+  Y:  "Economy Flex",
+  B:  "Economy",
+  M:  "Economy",
+  H:  "Economy Saver",
+  K:  "Economy Saver",
+  L:  "Economy Lite",
+  V:  "Economy Value",
+  S:  "Economy Smart",
+  N:  "Economy",
+  Q:  "Economy",
+  T:  "Economy",
+  O:  "Economy",
+  G:  "Economy",
+  X:  "Economy",
+  E:  "Economy",
+  Z:  "Business Flex",
+  W:  "Premium Economy",
+  // TBO-specific / airline-specific codes
+  RR: "Regular Fare",
+  SO: "Special Offer",
+  GG: "Group Fare",
+  SR: "Super Saver",
+  SP: "Saver Plus",
+  FL: "Flexi",
+  PF: "Premium Flexi",
+  CF: "Corporate Fare",
+  SF: "Student Fare",
+  AF: "Armed Forces",
+  SE: "Senior Citizen",
+  // Business / First
+  J:  "Business",
+  C:  "Business Flex",
+  D:  "Business Saver",
+  I:  "Business",
+  F:  "First Class",
+  A:  "First Class",
+  P:  "First Class Flex",
+  R:  "First Saver",
+  // IndiGo specific
+  "6E_SAVER":    "IndiGo Saver",
+  "6E_FLEXI":    "IndiGo Flexi",
+  "6E_SUPERMAX": "IndiGo SuperMax",
+  // Air India
+  AI_SAVER:  "AI Saver",
+  AI_FLEXI:  "AI Flexi",
+  AI_VALUE:  "AI Value",
+};
+
+// FareType overrides (when TBO sends a non-"Regular" FareType)
+const TBO_FARE_TYPE_MAP: Record<string, string> = {
+  SME:              "Corporate / SME",
+  Student:          "Student Fare",
+  ArmedForces:      "Armed Forces",
+  SeniorCitizen:    "Senior Citizen",
+  DoubleSeat:       "Double Seat",
+  Tactical:         "Special Offer",
+  Offer:            "Special Offer",
+  "Special Return": "Special Return",
+  Series:           "Series Fare",
+  Default:          "Standard",
+};
+
+/**
+ * Resolves a human-readable fare tier name from TBO response fields.
+ * @param fareClass  - e.g. "RR", "SO", "Y", "J"
+ * @param fareType   - e.g. "Regular", "SME", "Student"
+ * @param index      - position among variants (0-based), used only as last resort
+ */
+function resolveFareName(
+  fareClass: string | undefined,
+  fareType: string | undefined,
+  index: number,
+  supplierFareClass?: string,
+  fareClassificationType?: string,
+): string {
+  // 1. SupplierFareClass — most human-readable, directly from TBO segment
+  //    e.g. "Saver (Regular)", "UpFront", "FlexMax"
+  if (supplierFareClass && supplierFareClass.trim() !== "") {
+    return supplierFareClass.trim();
+  }
+
+  // 2. FareClassification.Type — same value, second source
+  if (
+    fareClassificationType &&
+    fareClassificationType.trim() !== "" &&
+    fareClassificationType.toLowerCase() !== "regular"
+  ) {
+    return fareClassificationType.trim();
+  }
+
+  // 3. Non-generic FareType
+  if (
+    fareType &&
+    fareType !== "Regular" &&
+    fareType !== "RegularFare" &&
+    fareType !== "Default" &&
+    fareType !== ""
+  ) {
+    return TBO_FARE_TYPE_MAP[fareType] ?? fareType;
+  }
+
+  // 4. FareClass code lookup
+  if (fareClass && fareClass !== "") {
+    const mapped = TBO_FARE_CLASS_MAP[fareClass.toUpperCase()];
+    if (mapped) return mapped;
+    return `Class ${fareClass.toUpperCase()}`;
+  }
+
+  // 5. Index fallback 
+  const fallbacks = ["Economy", "Economy Flexi", "Economy Premium", "Business", "First Class"];
+  return fallbacks[index] ?? `Option ${index + 1}`;
+}
+
+export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, traceId: string, legIndex = 0): DisplayFlight {
+
+  const allSegs = result.Segments[legIndex] ?? result.Segments[0];
   const seg = allSegs[0];
   const lastSeg = allSegs[allSegs.length - 1];
   const totalDuration = allSegs.reduce((acc, s) => acc + s.Duration, 0);
   const stops = allSegs.length - 1;
-  
 
   const depISO = seg.Origin.DepTime;
   const arrISO = lastSeg.Destination.ArrTime;
 
   const baggage = result.Baggage?.[0];
   const cabinBag = result.CabinBaggage?.[0];
- 
 
   // Build per-segment details
   const segments: import("./types_t").FlightSegmentDetail[] = allSegs.map((s) => ({
@@ -90,7 +215,6 @@ export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, 
     craft: s.Craft || undefined,
     groundTime: s.GroundTime || undefined,
     mile: s.Mile || undefined,
-    
   }));
 
   return {
@@ -142,7 +266,6 @@ function groupByFlight(flights: DisplayFlight[]): DisplayFlight[] {
   const map = new Map<string, DisplayFlight[]>();
 
   for (const f of flights) {
-    // Key = same physical flight (airline + number + dep time + arr time)
     const key = `${f.airlineCode}-${f.flightNumber}-${f.departISO}-${f.arriveISO}`;
     const group = map.get(key);
     if (group) group.push(f);
@@ -151,12 +274,10 @@ function groupByFlight(flights: DisplayFlight[]): DisplayFlight[] {
 
   const result: DisplayFlight[] = [];
   for (const variants of map.values()) {
-    // Sort by price — cheapest first
     variants.sort((a, b) => a.price - b.price);
-    // Cheapest is the primary card, rest are fareVariants
     result.push({
       ...variants[0],
-      fareVariants: variants, // all including itself
+      fareVariants: variants,
     });
   }
 
@@ -173,44 +294,22 @@ export function formatINR(n: number): string {
 
 // ─── MOCK AIRPORTS ─────────────────────────────────────────
 
-// export const MOCK_AIRPORTS: Airport[] = [
-//   { code: "DEL", city: "New Delhi", name: "Indira Gandhi International" },
-//   { code: "BOM", city: "Mumbai", name: "Chhatrapati Shivaji Maharaj International" },
-//   { code: "BLR", city: "Bengaluru", name: "Kempegowda International" },
-//   { code: "HYD", city: "Hyderabad", name: "Rajiv Gandhi International" },
-//   { code: "MAA", city: "Chennai", name: "Chennai International" },
-//   { code: "CCU", city: "Kolkata", name: "Netaji Subhas Chandra Bose International" },
-//   { code: "GOI", city: "Goa", name: "Goa International" },
-//   { code: "AMD", city: "Ahmedabad", name: "Sardar Vallabhbhai Patel International" },
-//   { code: "PNQ", city: "Pune", name: "Pune International" },
-//   { code: "JAI", city: "Jaipur", name: "Jaipur International" },
-//   { code: "BKK", city: "Bangkok", name: "Suvarnabhumi International", country: "Thailand" },
-//   { code: "DXB", city: "Dubai", name: "Dubai International", country: "UAE" },
-//   { code: "SIN", city: "Singapore", name: "Changi International", country: "Singapore" },
-//   { code: "LHR", city: "London", name: "Heathrow", country: "UK" },
-//   { code: "NRT", city: "Tokyo", name: "Narita International", country: "Japan" },
-//   { code: "CDG", city: "Paris", name: "Charles de Gaulle", country: "France" },
-//   { code: "JFK", city: "New York", name: "John F. Kennedy International", country: "USA" },
-// ];
-
-// ─── MOCK FLIGHTS ──────────────────────────────────────────
-
 export function getMockFlights(from: string, to: string, date: string): DisplayFlight[] {
   const airportLookup: Record<string, { city: string; name: string }> = {
-  DEL: { city: "New Delhi",   name: "Indira Gandhi International" },
-  BOM: { city: "Mumbai",      name: "Chhatrapati Shivaji Maharaj International" },
-  BLR: { city: "Bengaluru",  name: "Kempegowda International" },
-  HYD: { city: "Hyderabad",  name: "Rajiv Gandhi International" },
-  MAA: { city: "Chennai",    name: "Chennai International" },
-  CCU: { city: "Kolkata",    name: "Netaji Subhas Chandra Bose International" },
-  GOI: { city: "Goa",        name: "Goa International" },
-  AMD: { city: "Ahmedabad",  name: "Sardar Vallabhbhai Patel International" },
-  BKK: { city: "Bangkok",    name: "Suvarnabhumi International" },
-  DXB: { city: "Dubai",      name: "Dubai International" },
-  SIN: { city: "Singapore",  name: "Changi International" },
-  LHR: { city: "London",     name: "Heathrow" },
-  JFK: { city: "New York",   name: "John F. Kennedy International" },
-};
+    DEL: { city: "New Delhi",   name: "Indira Gandhi International" },
+    BOM: { city: "Mumbai",      name: "Chhatrapati Shivaji Maharaj International" },
+    BLR: { city: "Bengaluru",  name: "Kempegowda International" },
+    HYD: { city: "Hyderabad",  name: "Rajiv Gandhi International" },
+    MAA: { city: "Chennai",    name: "Chennai International" },
+    CCU: { city: "Kolkata",    name: "Netaji Subhas Chandra Bose International" },
+    GOI: { city: "Goa",        name: "Goa International" },
+    AMD: { city: "Ahmedabad",  name: "Sardar Vallabhbhai Patel International" },
+    BKK: { city: "Bangkok",    name: "Suvarnabhumi International" },
+    DXB: { city: "Dubai",      name: "Dubai International" },
+    SIN: { city: "Singapore",  name: "Changi International" },
+    LHR: { city: "London",     name: "Heathrow" },
+    JFK: { city: "New York",   name: "John F. Kennedy International" },
+  };
   const fromInfo = airportLookup[from] ?? { city: from, name: from };
   const toInfo = airportLookup[to] ?? { city: to, name: to };
 
@@ -231,7 +330,6 @@ export function getMockFlights(from: string, to: string, date: string): DisplayF
   const seats = [7, 22, 3, 15, 9, 28];
   const fareClasses = ["V", "S", "Q", "Y", "K", "L"];
 
-  // FIX #2 applied: use T00:00:00 to force local date interpretation
   const safeDate = date || new Date().toISOString().split("T")[0];
   const dispDate = fmtDateLocal(safeDate);
 
@@ -270,7 +368,7 @@ export function getMockFlights(from: string, to: string, date: string): DisplayF
       durationLabel: `${Math.floor(dur / 60)}h ${dur % 60}m`,
       craft: crafts[i],
     };
-    
+
     return {
       resultIndex: `MOCK_R${i}`,
       traceId: "MOCK_TRACE_001",
@@ -400,7 +498,93 @@ export const PROMO_OFFERS = [
 ];
 
 // ─── FRONTEND API LAYER ─────────────────────────────────────
-// All calls go through our backend proxy — never direct to TBO.
+
+// ── Calendar Prices ─────────────────────────────────────────
+
+/**
+ * Returns a map of { "YYYY-MM-DD": lowestFareINR } for a given route
+ * across the next ~90 days. Used to display price hints on the calendar.
+ */
+export async function apiGetCalendarPrices(
+  fromCode: string,
+  toCode: string,
+  cabinClass: SearchForm["cabinClass"] = "Economy"
+): Promise<Record<string, number>> {
+  if (MOCK_MODE) {
+    return buildMockCalendarPrices(fromCode, toCode);
+  }
+
+  try {
+    const params = new URLSearchParams({
+      from: fromCode,
+      to: toCode,
+      cabinClass: String(cabinClassCode(cabinClass)),
+    });
+
+    const res = await fetch(
+      `${API_BASE}/api/v1/flights/calendar-prices?${params.toString()}`
+    );
+
+    if (!res.ok) {
+      console.warn(`[apiGetCalendarPrices] HTTP ${res.status} — falling back to mock`);
+      return buildMockCalendarPrices(fromCode, toCode);
+    }
+
+    const json = await res.json();
+    const data: Record<string, number> = json?.data ?? json;
+
+    if (typeof data !== "object" || Array.isArray(data)) {
+      console.warn("[apiGetCalendarPrices] Unexpected response shape — falling back");
+      return buildMockCalendarPrices(fromCode, toCode);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return buildMockCalendarPrices(fromCode, toCode);
+    }
+
+    return data;
+  } catch (err) {
+    console.warn("[apiGetCalendarPrices] Network error — falling back to mock", err);
+    return buildMockCalendarPrices(fromCode, toCode);
+  }
+}
+
+function buildMockCalendarPrices(
+  fromCode: string,
+  toCode: string
+): Record<string, number> {
+  const routeSeed = [...`${fromCode}${toCode}`].reduce(
+    (acc, c) => acc + c.charCodeAt(0),
+    0
+  );
+
+  const isIntl = ["DXB", "SIN", "BKK", "LHR", "JFK", "NRT", "CDG"].includes(toCode);
+  const basePrice = isIntl
+    ? 12000 + (routeSeed % 8000)
+    : 3500 + (routeSeed % 5500);
+
+  const map: Record<string, number> = {};
+  const today = new Date();
+
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const key = d.toLocaleDateString("en-CA");
+
+    const dow = d.getDay();
+    const isWeekend = dow === 0 || dow === 6 || dow === 5;
+    const isSaleDay = (i + routeSeed) % 11 === 0;
+
+    const variance = Math.sin(i * 0.4 + routeSeed) * 0.12 + (Math.random() * 0.08 - 0.04);
+    const weekendMult = isWeekend ? 1.15 : 1;
+    const saleMult = isSaleDay ? 0.82 : 1;
+
+    const price = Math.round(basePrice * (1 + variance) * weekendMult * saleMult / 10) * 10;
+    map[key] = Math.max(1499, price);
+  }
+
+  return map;
+}
 
 // ── Search ──────────────────────────────────────────────────
 
@@ -408,9 +592,6 @@ export type FlightSearchResult = {
   outbound: DisplayFlight[];
   returnFlights?: DisplayFlight[];
   multiLegFlights?: DisplayFlight[][];
-  // FIX #4: Surface the TBO "no results" reason so ResultsPage can show a
-  // helpful message like "No flights on this route for the selected date"
-  // instead of a blank empty-state with no context.
   noResultReason?: string;
 };
 
@@ -426,22 +607,20 @@ export async function apiSearchFlights(
         returnFlights: getMockReturnFlights(form.from.code, form.to.code, form.returnDate),
       };
     }
-    // Mock path — already correct structure, just add _legIndex tags
-if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
-  const multiLegFlights = multiLegs.map((leg, legIdx) =>
-    getMockFlights(leg.from.code, leg.to.code, leg.departDate).map(f => ({
-      ...f, _legIndex: legIdx,
-    }))
-  );
-  return {
-    outbound: multiLegFlights[0] ?? [],
-    multiLegFlights,
-  };
-}
+    if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
+      const multiLegFlights = multiLegs.map((leg, legIdx) =>
+        getMockFlights(leg.from.code, leg.to.code, leg.departDate).map(f => ({
+          ...f, _legIndex: legIdx,
+        }))
+      );
+      return {
+        outbound: multiLegFlights[0] ?? [],
+        multiLegFlights,
+      };
+    }
     return { outbound: getMockFlights(form.from.code, form.to.code, form.departDate) };
   }
 
-  // ── Live TBO via backend proxy ──────────────────────────
   const body: Record<string, unknown> = {
     origin: form.from.code,
     destination: form.to.code,
@@ -479,7 +658,7 @@ if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
       const errJson = await res.json();
       if (errJson?.message) errMsg = errJson.message;
       else if (errJson?.error) errMsg = errJson.error;
-    } catch { /* ignore parse errors, keep generic message */ }
+    } catch { /* ignore */ }
     throw new Error(errMsg);
   }
 
@@ -492,93 +671,184 @@ if (form.tripType === "multiCity" && multiLegs && multiLegs.length >= 2) {
   const traceId: string = responseData?.Response?.TraceId ?? "";
   const rawResults = responseData?.Response?.Results ?? [];
 
-  // TBO sometimes returns TBOFlightResult[] instead of TBOFlightResult[][]
   const results: import("./types_t").TBOFlightResult[][] = Array.isArray(rawResults[0])
     ? rawResults
     : rawResults.length > 0 ? [rawResults] : [];
 
   if (!results.length) {
-    // FIX #4: Pass the human-readable reason (set by backend when ErrorCode 25/6)
-    // to the UI so ResultsPage can render a meaningful empty state message.
     const noResultReason: string | undefined = responseData?.Response?.NoResultReason;
     return { outbound: [], noResultReason };
   }
 
   const outbound = (results[0] ?? []).map((r) => tboResultToDisplay(r, traceId));
 
-// flights_api.ts — replace the round-trip block
-if (form.tripType === "roundTrip") {
-  // Case A: TBO gave us two separate arrays (standard)
-  if (results[1] && results[1].length > 0) {
+  if (form.tripType === "roundTrip") {
+    if (results[1] && results[1].length > 0) {
+      return {
+        outbound: groupByFlight(outbound),
+        returnFlights: results[1].map((r) => tboResultToDisplay(r, traceId)),
+      };
+    }
+    const returnCode = form.to.code.toUpperCase();
+    const returnFlights = (results[0] ?? [])
+      .filter(r => r.Segments?.[0]?.[0]?.Origin?.Airport?.AirportCode === returnCode)
+      .map(r => tboResultToDisplay(r, traceId));
+    const filteredOutbound = outbound.filter(f => f.fromCode !== returnCode);
+    if (returnFlights.length > 0) {
+      return { outbound: filteredOutbound, returnFlights };
+    }
+    return { outbound };
+  }
+
+  if (form.tripType === "multiCity") {
+    const legCount = multiLegs?.length ?? 2;
+    const allResults = results[0] ?? [];
+
+    const multiLegFlights: DisplayFlight[][] = Array.from({ length: legCount }, (_, legIdx) =>
+      groupByFlight(
+        allResults
+          .filter(r => r.Segments?.[legIdx] && r.Segments[legIdx].length > 0)
+          .map(r => ({
+            ...tboResultToDisplay(r, traceId, legIdx),
+            _legIndex: legIdx,
+          } as DisplayFlight & { _legIndex: number }))
+      )
+    );
+
     return {
-      outbound: groupByFlight(outbound),
-      returnFlights: results[1].map((r) => tboResultToDisplay(r, traceId)),
+      outbound: multiLegFlights[0] ?? [],
+      multiLegFlights,
+      noResultReason:
+        multiLegFlights.some(leg => leg.length === 0)
+          ? "Some legs returned no flights — try different dates"
+          : undefined,
     };
   }
-  // Case B: TBO gave us one flat array — split by origin code
-  const returnCode = form.to.code.toUpperCase();
-  const returnFlights = (results[0] ?? [])
-    .filter(r => r.Segments?.[0]?.[0]?.Origin?.Airport?.AirportCode === returnCode)
-    .map(r => tboResultToDisplay(r, traceId));
-  const filteredOutbound = outbound.filter(
-    f => f.fromCode !== returnCode
-  );
-  if (returnFlights.length > 0) {
-    return { outbound: filteredOutbound, returnFlights };
-  }
-  return { outbound };
-}
 
-// ── Multi-City ────────────────────────────────────────────
-if (form.tripType === "multiCity") {
-  const legCount = multiLegs?.length ?? 2;
-
-  const allResults = results[0] ?? [];
-
-  const multiLegFlights: DisplayFlight[][] = Array.from({ length: legCount }, (_, legIdx) =>
-    groupByFlight(
-    allResults
-      .filter(r => r.Segments?.[legIdx] && r.Segments[legIdx].length > 0)
-      .map(r => ({
-        ...tboResultToDisplay(r, traceId, legIdx),
-        _legIndex: legIdx,
-      } as DisplayFlight & { _legIndex: number }))
-    )
-  );
-
-  return {
-    outbound: multiLegFlights[0] ?? [],
-    multiLegFlights,
-    noResultReason:
-      multiLegFlights.some(leg => leg.length === 0)
-        ? "Some legs returned no flights — try different dates"
-        : undefined,
-  };
-}
-
-// ── One-Way fallback ─────────────────────────────────────
-return { outbound: groupByFlight(outbound) };
+  return { outbound: groupByFlight(outbound) };
 }
 
 // ── FareQuote ───────────────────────────────────────────────
 
 /**
- * Converts a TBO cancellation policy amount + hour range into a human-readable string.
- * PolicyType: 1 = cancellation charge, 4 = date change charge
+ * Parses TBO CancellationPolicy[] into a human-readable string.
+ *
+ * TBO PolicyType:
+ *   1 = Cancellation fee
+ *   4 = Date change fee
+ *
+ * Amount=0 means free. ToHours=0 means "from X hours onwards" (no upper bound).
+ * We sort by FromHours ascending and show the most common/relevant window.
  */
 function policyLabel(
-  policies: import("./types_t").TBOCancellationPolicy[],
+  policies: import("./types_t").TBOCancellationPolicy[] | undefined,
   type: 1 | 4
 ): string {
-  const matches = policies.filter((p) => p.PolicyType === type);
+  if (!policies || !Array.isArray(policies) || policies.length === 0) {
+    return "As per airline";
+  }
+
+  const matches = policies.filter((p) => p && p.PolicyType === type);
   if (!matches.length) return "As per airline";
-  // Sort by FromHours ascending — show the first (most common) bracket
-  matches.sort((a, b) => a.FromHours - b.FromHours);
-  const p = matches[0];
-  if (p.Amount === 0) return "Free";
-  const hrs = p.ToHours > 0 ? `${p.FromHours}h – ${p.ToHours}h before` : `${p.FromHours}h+ before`;
-  return `₹${p.Amount.toLocaleString("en-IN")} (${hrs})`;
+
+  // Sort by FromHours ascending
+  matches.sort((a, b) => (a.FromHours ?? 0) - (b.FromHours ?? 0));
+
+  // Build a human-readable summary (pick up to 2 most important windows)
+  const lines = matches.slice(0, 2).map((p) => {
+    // Build time window string
+    const fromHours = p.FromHours ?? 0;
+    const toHours = p.ToHours ?? 0;
+    const amount = p.Amount ?? 0;
+    const percentage = p.Percentage ?? 0;
+
+    let window: string;
+    if (fromHours === 0 && toHours === 0) {
+      window = "Anytime";
+    } else if (toHours > 0) {
+      window = `${fromHours}h–${toHours}h before`;
+    } else {
+      window = `${fromHours}h+ before`;
+    }
+
+    // Build fee string
+    if (amount === 0 && percentage === 0) {
+      return `Free (${window})`;
+    } else if (amount === 0 && percentage > 0) {
+      return `${percentage}% (${window})`;
+    } else if (percentage > 0) {
+      return `₹${amount.toLocaleString("en-IN")} + ${percentage}% (${window})`;
+    } else {
+      return `₹${amount.toLocaleString("en-IN")} (${window})`;
+    }
+  });
+
+  return lines.join(" / ") || "As per airline";
 }
+
+
+/**
+ * Parses TBO MiniFareRules[] into a human-readable fee string.
+ *
+ * MiniFareRules element shape:
+ *   { Type: "Cancellation"|"Reissue", From: "0", To: "3", Unit: "DAYS", Details: "INR 3999" }
+ *
+ * Unit can be "HOURS" or "DAYS".
+ * To="" means "onwards" (no upper bound).
+ * Details can be "INR 999", "NIL", "NILL", "FREE".
+ */
+function miniFareRuleLabel(
+  rules: Array<{
+    Type: string;
+    From: string;
+    To: string;
+    Unit: string;
+    Details: string;
+  }> | undefined,
+  type: "Cancellation" | "Reissue"
+): string {
+  if (!rules || !Array.isArray(rules) || rules.length === 0) return "As per airline";
+
+  const matches = rules.filter(r => r && r.Type === type);
+  if (!matches.length) return "As per airline";
+
+  // Sort by From ascending numerically
+  matches.sort((a, b) => Number(a.From ?? 0) - Number(b.From ?? 0));
+
+  // Build label for each window, show up to 2
+  const lines = matches.slice(0, 2).map(r => {
+    const from    = r.From ?? "0";
+    const to      = r.To ?? "";
+    const rawUnit = (r.Unit ?? "HOURS").toUpperCase();
+    const unit    = rawUnit === "DAYS" ? "d" : "h";
+    const details = (r.Details ?? "").trim();
+
+    // Build time window string
+    let window: string;
+    if (from === "0" && to === "") {
+      window = "Anytime";
+    } else if (to !== "") {
+      window = `${from}${unit}–${to}${unit} before`;
+    } else {
+      window = `${from}${unit}+ before`;
+    }
+
+    // Parse fee from Details
+    const upper = details.toUpperCase();
+    if (upper === "NIL" || upper === "NILL" || upper === "FREE" || upper === "") {
+      return `Free (${window})`;
+    }
+    const match = details.match(/[\d,]+/);
+    if (match) {
+      const amount = parseInt(match[0].replace(/,/g, ""), 10);
+      return `₹${amount.toLocaleString("en-IN")} (${window})`;
+    }
+    return `${details} (${window})`;
+  });
+
+  return lines.join(" / ") || "As per airline";
+}
+
 
 export type FareQuoteResult = {
   tiers: FareTier[];
@@ -588,20 +858,16 @@ export type FareQuoteResult = {
 export async function apiFareQuote(
   flight: DisplayFlight
 ): Promise<FareQuoteResult> {
-  // ── MOCK path (unchanged) ──────────────────────────────
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 900));
     return { tiers: getMockFareTiers(flight), fareChanged: false };
   }
 
-  // ── LIVE path ──────────────────────────────────────────
-  // Use fareVariants if available, otherwise just this flight
-  const variants: DisplayFlight[] = 
+  const variants: DisplayFlight[] =
     (flight.fareVariants && flight.fareVariants.length > 0)
       ? flight.fareVariants
       : [flight];
 
-  // Call fare-quote for all variants in parallel
   const responses = await Promise.all(
     variants.map(async (v) => {
       try {
@@ -613,10 +879,18 @@ export async function apiFareQuote(
             resultIndex: v.resultIndex,
           }),
         });
+        // 410 = session expired — throw so BookingPage catches it and
+        // redirects the user back to search with a clear message.
+        if (res.status === 410) {
+          const errJson = await res.json();
+          throw new Error(errJson?.message ?? "Your search has expired. Please search again.");
+        }
         if (!res.ok) return null;
         const json = await res.json();
         return json?.data ?? json;
-      } catch {
+      } catch (e: any) {
+        // Re-throw session expiry — don't swallow it
+        if (e.message?.includes("expired") || e.message?.includes("search again")) throw e;
         return null;
       }
     })
@@ -625,63 +899,174 @@ export async function apiFareQuote(
   const tiers: FareTier[] = [];
   let fareChanged = false;
 
-  responses.forEach((responseData, i) => {
-    if (!responseData) return;
+responses.forEach((responseData, i) => {
+    if (!responseData) {
+      // API call failed — build a best-effort tier from cached flight data
+      tiers.push({
+        name: resolveFareName(
+          variants[i].fareClass,
+          variants[i].fareType,
+          i,
+          undefined,
+          undefined,
+        ),
+        price: variants[i].price,
+        cabinBag: variants[i].cabinBaggage,
+        checkinBag: variants[i].checkinBaggage,
+        cancellationFee: "As per airline",
+        dateChangeFee: "As per airline",
+        seatSelection: variants[i].isLCC ? "Chargeable" : "Free (Standard)",
+        meals: variants[i].isLCC ? "Chargeable" : "Complimentary",
+        recommended: i === 0,
+        resultIndex: variants[i].resultIndex,
+      });
+      return;
+    }
 
     const response = responseData?.Response;
     if (!response?.Results) return;
-
     const result = response.Results;
-    const fare = result.Fare;
-console.log("RAW FARE QUOTE RESPONSE:", JSON.stringify(response?.Results, null, 2));
-console.log("CANCELLATION POLICIES:", JSON.stringify(response?.CancellationPolicies, null, 2));
-    const policies: import("./types_t").TBOCancellationPolicy[] =
-      response.CancellationPolicies ?? [];
+    const fare   = result.Fare;
 
     if (response.IsFareChanged) fareChanged = true;
 
-    const cabinBag =
-      result.CabinBaggage?.[0]?.CabinBaggage ?? variants[i].cabinBaggage;
-    const checkinBag =
-      result.Baggage?.[0]?.Baggage ?? variants[i].checkinBaggage;
-    const livePrice = fare.OfferedFare;
-    const cancelFee = policyLabel(policies, 1);
-    const changeFee = policyLabel(policies, 4);
+    // ── Fare Name ────────────────────────────────────────────────────────────
+    // Priority: SupplierFareClass > FareClassification.Type > FareClass code > FareType > fallback
+    const supplierFareClass: string =
+      result.Segments?.[0]?.[0]?.SupplierFareClass ?? "";
 
-    // Fare name: use TBO's actual fare type/class
-    const fareName =
-      result.FareType ||
-      result.FareClass ||
-      variants[i].fareType ||
-      variants[i].fareClass ||
-      `Option ${i + 1}`;
+    const fareClassificationType: string =
+      result.FareClassification?.Type ??
+      result.Segments?.[0]?.[0]?.FareClassification?.Type ??
+      "";
 
-    tiers.push({
-      name: fareName,
-      price: livePrice,
-      cabinBag,
-      checkinBag,
-      cancellationFee: cancelFee,
-      dateChangeFee: changeFee,
-      seatSelection: result.IsLCC ? "Chargeable" : "Free (Standard)",
-      meals: result.IsLCC ? "Chargeable" : "Complimentary",
-      // Mark cheapest as recommended
-      recommended: i === 0,
-      resultIndex: result.ResultIndex,
-    });
-  });
+    const fareClassCode: string =
+      result.Segments?.[0]?.[0]?.Airline?.FareClass ??
+      variants[i].fareClass ??
+      "";
 
-  // Fallback: if all fare-quote calls failed, show single tier
-  // from original search data so user isn't stuck
+    const fareTypeRaw: string =
+      result.FareType ?? result.ResultFareType ?? variants[i].fareType ?? "Regular";
+
+    const fareName = resolveFareName(
+      fareClassCode,
+      fareTypeRaw,
+      i,
+      supplierFareClass,
+      fareClassificationType,
+    );
+
+    // ── Baggage ──────────────────────────────────────────────────────────────
+    // Priority 1: Segments[0][0].Baggage / CabinBaggage (most reliable in FareQuote)
+    const segCheckin = result.Segments?.[0]?.[0]?.Baggage ?? "";
+    const segCabin   = result.Segments?.[0]?.[0]?.CabinBaggage ?? "";
+
+    // Priority 2: FareBreakdown SegmentDetails
+    const fbCheckin  =
+      result.FareBreakdown?.[0]?.SegmentDetails?.[0]?.CheckedInBaggage?.FreeText ?? "";
+    const fbCabin    =
+      result.FareBreakdown?.[0]?.SegmentDetails?.[0]?.CabinBaggage?.FreeText ?? "";
+
+    const checkinBagRaw =
+      (segCheckin && segCheckin !== "0 KG" && segCheckin !== "0"
+        ? segCheckin : null) ??
+      (fbCheckin  && fbCheckin  !== "0 KG" && fbCheckin  !== "0"
+        ? fbCheckin  : null) ??
+      result.Baggage?.[0]?.Baggage ??
+      variants[i].checkinBaggage ??
+      "15 Kg";
+
+    const cabinBagRaw =
+      (segCabin && segCabin !== "0 KG" && segCabin !== "0"
+        ? segCabin : null) ??
+      (fbCabin  && fbCabin  !== "0 KG" && fbCabin  !== "0"
+        ? fbCabin  : null) ??
+      result.CabinBaggage?.[0]?.CabinBaggage ??
+      variants[i].cabinBaggage ??
+      "7 Kg";
+
+    // ── Cancellation & Date Change ───────────────────────────────────────────
+    // TBO FareQuote returns MiniFareRules[0] (array of rules), NOT CancellationPolicies.
+    // MiniFareRules is array-of-arrays: [[rule1, rule2, ...]]
+    const miniFareRules: Array<{
+      Type: string; From: string; To: string; Unit: string; Details: string;
+    }> =
+      (result as any).MiniFareRules?.[0] ??   // normal: array-of-arrays
+      (result as any).MiniFareRules ??          // flat fallback
+      [];
+
+    const cancelFee = miniFareRules.length > 0
+      ? miniFareRuleLabel(miniFareRules, "Cancellation")
+      : policyLabel(response.CancellationPolicies, 1);   // legacy fallback
+
+    const changeFee = miniFareRules.length > 0
+      ? miniFareRuleLabel(miniFareRules, "Reissue")
+      : policyLabel(response.CancellationPolicies, 4);
+
+    // ── Refundable ───────────────────────────────────────────────────────────
+    const isRefundable =
+      response.IsRefundable ?? result.IsRefundable ?? variants[i].isRefundable ?? false;
+
+    // ── Seat & Meals ─────────────────────────────────────────────────────────
+    const isLCC = result.IsLCC ?? variants[i].isLCC ?? false;
+    const seatSelection = isLCC ? "Chargeable" : "Free (Standard)";
+    const meals         = isLCC ? "Chargeable" : "Complimentary";
+// ── FIX: Read per-pax fares directly from FareBreakdown ──────────────
+// TBO FareBreakdown[i].BaseFare + Tax = TOTAL for all pax of that type
+// Divide by PassengerCount to get per-pax fare
+
+const fareBreakdown: any[] = result.FareBreakdown ?? [];
+
+const adultBD  = fareBreakdown.find((b: any) => b.PassengerType === 1);
+const childBD  = fareBreakdown.find((b: any) => b.PassengerType === 2);
+const infantBD = fareBreakdown.find((b: any) => b.PassengerType === 3);
+
+// Per single passenger fare (BaseFare + Tax) / PassengerCount
+const adultFare = adultBD
+  ? Math.round((adultBD.BaseFare + adultBD.Tax) / Math.max(adultBD.PassengerCount, 1))
+  : (fare?.OfferedFare ?? variants[i].price);
+
+const childFare = childBD
+  ? Math.round((childBD.BaseFare + childBD.Tax) / Math.max(childBD.PassengerCount, 1))
+  : undefined;
+
+const infantFare = infantBD
+  ? Math.round((infantBD.BaseFare + infantBD.Tax) / Math.max(infantBD.PassengerCount, 1))
+  : undefined;
+
+tiers.push({
+  name:            fareName,
+  price:           adultFare,                          // per adult, from API
+  cabinBag:        cabinBagRaw,
+  checkinBag:      checkinBagRaw,
+  cancellationFee: cancelFee,
+  dateChangeFee:   changeFee,
+  seatSelection,
+  meals,
+  recommended:     i === 0,
+  resultIndex:     result.ResultIndex ?? variants[i].resultIndex,
+  isRefundable,
+  taxesIncluded:   true,                               // TBO OfferedFare always includes all taxes
+  adultFare,                                           // per adult total (base+tax)
+  childFare,                                           // per child total (base+tax), undefined if no children
+  infantFare,                                          // per infant total (base+tax), undefined if no infants
+  totalOfferedFare: fare?.OfferedFare ?? variants[i].price, // grand total from TBO
+});
+});
+
+  // ── Fallback: if all variant calls failed, show a single tier from flight data ──
   if (tiers.length === 0) {
+    const cancelFee = policyLabel(flight.cancellationPolicies, 1);
+    const changeFee = policyLabel(flight.cancellationPolicies, 4);
+    
     tiers.push({
-      name: flight.fareType || "Standard",
+      name: resolveFareName(flight.fareClass, flight.fareType, 0),
       price: flight.price,
       cabinBag: flight.cabinBaggage,
       checkinBag: flight.checkinBaggage,
-      cancellationFee: "As per airline",
-      dateChangeFee: "As per airline",
-      seatSelection: flight.isLCC ? "Chargeable" : "Free",
+      cancellationFee: cancelFee,
+      dateChangeFee: changeFee,
+      seatSelection: flight.isLCC ? "Chargeable" : "Free (Standard)",
       meals: flight.isLCC ? "Chargeable" : "Complimentary",
       recommended: true,
       resultIndex: flight.resultIndex,
@@ -689,16 +1074,15 @@ console.log("CANCELLATION POLICIES:", JSON.stringify(response?.CancellationPolic
   }
 
   return { tiers, fareChanged };
-  
 }
 
 // ── SSR (Seats + Meals + Baggage) ───────────────────────────
 
 export type ApiSeat = {
-  code: string;        // "14A"
+  code: string;
   isOccupied: boolean;
   isPremium: boolean;
-  price: number;       // 0 = free
+  price: number;
   type: "Window" | "Middle" | "Aisle";
 };
 
@@ -746,9 +1130,8 @@ const MEAL_META: Record<string, { label: string; desc: string; emoji: string }> 
   CHML: { label: "Child Meal",    desc: "Kid-friendly",          emoji: "🧒" },
 };
 
-// Static fallbacks used when airline returns no SSR
 const FALLBACK_MEALS: SSRMeal[] = [
-  { code: "NONE",  label: "No meal",        description: "Skip meal selection",    price: 0,   emoji: "🚫" },
+  { code: "NoMeal",  label: "No meal",        description: "Skip meal selection",    price: 0,   emoji: "🚫" },
   { code: "VGML",  label: "Vegetarian",     description: "Fresh veg meal",         price: 299, emoji: "🥗" },
   { code: "NVML",  label: "Non-Vegetarian", description: "Chicken / mutton",       price: 349, emoji: "🍗" },
   { code: "VLML",  label: "Vegan",          description: "100% plant-based",       price: 349, emoji: "🌱" },
@@ -786,14 +1169,22 @@ function buildMockSeatMap(): ApiSeatMap {
 function parseTBOSSR(raw: any): SSRResult {
   const response = raw?.Response;
 
-  // ── SEATS ──────────────────────────────────────────────────
-  // CONFIRMED path from TBO logs:
-  // SeatDynamic[0].SegmentSeat[0].RowSeats = [{Seats:[{Code:"1A",RowNo:"1",SeatNo:"A",...}]}, ...]
-  // AvailablityType: 0=NoSeat, 1=Available, 2=Blocked, 3=Occupied
-  const rowSeats: any[] =
-    response?.SeatDynamic?.[0]?.SegmentSeat?.[0]?.RowSeats ?? [];
+  const allSegmentSeats: any[] = [];
+  const seatDynArr: any[] = response?.SeatDynamic ?? [];
+  for (const sd of seatDynArr) {
+    const segSeats: any[] = sd?.SegmentSeat ?? [];
+    for (const ss of segSeats) {
+      if (ss?.RowSeats?.length > 0) {
+        allSegmentSeats.push(ss);
+        break; // Take the first non-empty segment per SeatDynamic entry
+      }
+    }
+  }
+  // SeatDynamic can be indexed differently per carrier — try segment 0, then segment 1
+   const segSeat = allSegmentSeats[0] ?? null;
+  const rowSeats: any[] = segSeat?.RowSeats ?? [];
+  
 
-  // Skip the NoSeat placeholder row (RowNo "0")
   const validRows = rowSeats.filter((rowObj: any) => {
     const first = rowObj?.Seats?.[0];
     return first && String(first.RowNo).trim() !== "0" && first.Code !== "NoSeat";
@@ -801,7 +1192,6 @@ function parseTBOSSR(raw: any): SSRResult {
 
   let seatMap: ApiSeatMap;
   if (validRows.length > 0) {
-    // Derive columns from actual data — handles non-standard aircraft configs
     const colSet = new Set<string>();
     validRows.forEach((rowObj: any) => {
       (rowObj.Seats ?? []).forEach((s: any) => {
@@ -816,7 +1206,7 @@ function parseTBOSSR(raw: any): SSRResult {
       return {
         rowNumber: Number(rowNo),
         seats: seats.map((s: any) => ({
-          code: s.Code,                            // already "1A","4B" etc from TBO
+          code: s.Code,
           isOccupied: s.AvailablityType === 3 || s.AvailablityType === 2,
           isPremium: s.SeatType === 1 || Number(rowNo) <= 3,
           price: Number(s.Price ?? 0),
@@ -831,17 +1221,22 @@ function parseTBOSSR(raw: any): SSRResult {
   } else {
     seatMap = buildMockSeatMap();
   }
-
-  // ── MEALS ──────────────────────────────────────────────────
-  // CONFIRMED path: MealDynamic[0] = flat array of meal objects
-  // Each: { Code, AirlineDescription, Price, ... }
-  const rawMeals: any[] = response?.MealDynamic?.[0] ?? [];
-  const realMeals = rawMeals.filter((m: any) => m.Code && m.Code !== "NoMeal");
+// MealDynamic is array-of-arrays: [segment][mealItem]
+// Some carriers flatten it; handle both shapes
+const mealOuter: any = response?.MealDynamic?.[0] ?? [];
+const rawMeals: any[] = Array.isArray(mealOuter?.[0])
+  ? mealOuter[0]           // double-nested: [[meal1, meal2]]
+  : Array.isArray(mealOuter)
+    ? mealOuter            // single array: [meal1, meal2]
+    : [];
+const realMeals = rawMeals.filter(
+  (m: any) => m && m.Code && m.Code !== "NoMeal" && m.Code !== "NOML"
+);
 
   const meals: SSRMeal[] =
     realMeals.length > 0
       ? [
-          { code: "NONE", label: "No meal", description: "Skip meal selection", price: 0, emoji: "🚫" },
+          { code: "NoMeal", label: "No meal", description: "Skip meal selection", price: 0, emoji: "🚫" },
           ...realMeals.map((m: any) => {
             const meta = MEAL_META[m.Code];
             return {
@@ -855,11 +1250,13 @@ function parseTBOSSR(raw: any): SSRResult {
         ]
       : FALLBACK_MEALS;
 
-  // ── BAGGAGE ────────────────────────────────────────────────
-  // CONFIRMED path: Baggage[0] = flat array
-  // Each: { Code, Weight (number), Price (number), Text? }
-  // TBO sends duplicates per weight (different codes) — keep lowest price
-  const rawBaggage: any[] = response?.Baggage?.[0] ?? [];
+  // Baggage is also array-of-arrays per segment
+const bagOuter: any = response?.Baggage?.[0] ?? [];
+const rawBaggage: any[] = Array.isArray(bagOuter?.[0])
+  ? bagOuter[0]
+  : Array.isArray(bagOuter)
+    ? bagOuter
+    : [];
   const realBaggage = rawBaggage.filter(
     (b: any) => b.Code !== "NoBaggage" && Number(b.Weight ?? 0) > 0
   );
@@ -891,22 +1288,175 @@ function parseTBOSSR(raw: any): SSRResult {
   return { seatMap, meals, baggage };
 }
 
-// Fetch SSR for a single flight leg
-async function fetchSSRForFlight(flight: DisplayFlight): Promise<SSRResult> {
+function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
+  // Unwrap the Response envelope first
+  const resp = raw?.Response ?? raw;
+
+  const seatDynamic = resp?.SeatDynamic ?? [];
+  const mealDynamic = resp?.MealDynamic ?? [];
+  const baggage     = resp?.Baggage     ?? [];
+
+  // Each array index corresponds to a leg (0 = leg1, 1 = leg2, etc.)
+  const legSeatDynamic = seatDynamic[legIndex];
+  const legMealDynamic = mealDynamic[legIndex];
+  const legBaggage     = Array.isArray(baggage[legIndex])
+    ? baggage[legIndex]
+    : (Array.isArray(baggage[legIndex]?.[0]) ? baggage[legIndex][0] : []);
+
+  // If nothing for this leg — return truly empty (not FALLBACK mock data)
+  if (!legSeatDynamic && !legMealDynamic && legBaggage.length === 0) {
+    return { seatMap: buildMockSeatMap(), meals: [], baggage: [] };
+  }
+
+  // Build a mini-SSR object shaped like what parseTBOSSR expects, then call it
+  const miniRaw = {
+    Response: {
+      SeatDynamic: legSeatDynamic ? [legSeatDynamic] : [],
+      MealDynamic: legMealDynamic ? [legMealDynamic] : [],
+      Baggage:     legBaggage.length ? [legBaggage]  : [],
+    }
+  };
+  return parseTBOSSR(miniRaw);
+}
+
+
+// Parses SSR data for a specific leg index from the combined SSR response
+// function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
+//   const response = raw?.Response;
+
+//   // SeatDynamic[legIndex] contains that leg's seat data
+//   const seatDynForLeg = response?.SeatDynamic?.[legIndex] ?? null;
+// const segSeatArr: any[] = seatDynForLeg?.SegmentSeat ?? [];
+// const segSeat = segSeatArr.find((ss: any) => (ss?.RowSeats?.length ?? 0) > 0) ?? segSeatArr[0] ?? null;
+// const rowSeats: any[] = segSeat?.RowSeats ?? [];
+
+//   const validRows = rowSeats.filter((rowObj: any) => {
+//     const first = rowObj?.Seats?.[0];
+//     return first && String(first.RowNo).trim() !== "0" && first.Code !== "NoSeat";
+//   });
+
+//   let seatMap: ApiSeatMap;
+//   if (validRows.length > 0) {
+//     const colSet = new Set<string>();
+//     validRows.forEach((rowObj: any) => {
+//       (rowObj.Seats ?? []).forEach((s: any) => {
+//         if (s.SeatNo) colSet.add(String(s.SeatNo));
+//       });
+//     });
+//     const cols = [...colSet].sort();
+
+//     const rows: ApiSeatRow[] = validRows.map((rowObj: any) => {
+//       const seats: any[] = rowObj.Seats ?? [];
+//       const rowNo = String(seats[0]?.RowNo ?? "0").trim();
+//       return {
+//         rowNumber: Number(rowNo),
+//         seats: seats.map((s: any) => ({
+//           code: s.Code,
+//           isOccupied: s.AvailablityType === 3 || s.AvailablityType === 2,
+//           isPremium: s.SeatType === 1 || Number(rowNo) <= 3,
+//           price: Number(s.Price ?? 0),
+//           type:
+//             s.SeatNo === "A" || s.SeatNo === "F" ? "Window"
+//             : s.SeatNo === "C" || s.SeatNo === "D" ? "Aisle"
+//             : "Middle",
+//         })),
+//       };
+//     });
+//     seatMap = { rows, cols, totalRows: rows.length };
+//   } else {
+//     seatMap = buildMockSeatMap();
+//   }
+
+
+//   // ... same seat parsing as parseTBOSSR but using seatDynForLeg ...
+//   // (copy the existing valid rows / cols / seats logic from parseTBOSSR)
+
+//   // MealDynamic[legIndex] for that leg's meals
+//   const mealDynForLeg = response?.MealDynamic?.[legIndex] ?? response?.MealDynamic?.[0] ?? [];
+//   const rawMeals: any[] = Array.isArray(mealDynForLeg?.[0])
+//     ? mealDynForLeg[0]
+//     : Array.isArray(mealDynForLeg) ? mealDynForLeg : [];
+
+//   const realMeals = rawMeals.filter(
+//   (m: any) => m && m.Code && m.Code !== "NoMeal" && m.Code !== "NOML"
+// );
+
+//   const meals: SSRMeal[] =
+//     realMeals.length > 0
+//       ? [
+//           { code: "NONE", label: "No meal", description: "Skip meal selection", price: 0, emoji: "🚫" },
+//           ...realMeals.map((m: any) => {
+//             const meta = MEAL_META[m.Code];
+//             return {
+//               code: m.Code,
+//               label: meta?.label ?? m.AirlineDescription ?? m.Code,
+//               description: meta?.desc ?? m.AirlineDescription ?? "",
+//               price: Number(m.Price ?? 0),
+//               emoji: meta?.emoji ?? "🍽️",
+//             };
+//           }),
+//         ]
+//       : FALLBACK_MEALS;
+
+//   // Baggage[legIndex] for that leg
+//   const bagDynForLeg = response?.Baggage?.[legIndex] ?? response?.Baggage?.[0] ?? [];
+//   const rawBaggage: any[] = Array.isArray(bagDynForLeg?.[0])
+//     ? bagDynForLeg[0]
+//     : Array.isArray(bagDynForLeg) ? bagDynForLeg : [];
+//   const realBaggage = rawBaggage.filter(
+//     (b: any) => b.Code !== "NoBaggage" && Number(b.Weight ?? 0) > 0
+//   );
+
+//   const bagByWeight = new Map<number, any>();
+//   realBaggage.forEach((b: any) => {
+//     const kg = Number(b.Weight);
+//     const existing = bagByWeight.get(kg);
+//     if (!existing || Number(b.Price) < Number(existing.Price)) {
+//       bagByWeight.set(kg, b);
+//     }
+//   });
+
+//   const baggage: SSRBaggage[] =
+//     bagByWeight.size > 0
+//       ? [
+//           { kg: 0, label: "Included only", description: "Use fare allowance", price: 0 },
+//           ...[...bagByWeight.values()]
+//             .sort((a, b) => Number(a.Weight) - Number(b.Weight))
+//             .map((b: any) => ({
+//               kg: Number(b.Weight),
+//               label: `+ ${b.Weight} kg`,
+//               description: b.Text ?? `Extra ${b.Weight}kg check-in`,
+//               price: Number(b.Price),
+//             })),
+//         ]
+//       : FALLBACK_BAGGAGE;
+
+//   return { seatMap, meals, baggage };
+//   // ... rest same as parseTBOSSR ...
+// }
+
+
+async function fetchSSRForFlight(
+  flight: DisplayFlight,
+  skipFareQuote = false
+): Promise<SSRResult> {
   const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ traceId: flight.traceId, resultIndex: flight.resultIndex }),
+    body: JSON.stringify({
+      traceId:       flight.traceId,
+      resultIndex:   flight.resultIndex,
+      skipFareQuote,            // true for multi-city legs
+    }),
   });
   if (!res.ok) {
-    console.warn(`[apiGetSSR] HTTP ${res.status} for ${flight.resultIndex} — using fallback`);
+    console.warn(`[fetchSSRForFlight] HTTP ${res.status} for ${flight.resultIndex}`);
     return { seatMap: buildMockSeatMap(), meals: FALLBACK_MEALS, baggage: FALLBACK_BAGGAGE };
   }
   const json = await res.json();
   return parseTBOSSR(json?.data ?? json);
 }
 
-// Single-leg SSR (one-way)
 export async function apiGetSSR(flight: DisplayFlight): Promise<SSRResult> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 700));
@@ -915,11 +1465,9 @@ export async function apiGetSSR(flight: DisplayFlight): Promise<SSRResult> {
   return fetchSSRForFlight(flight);
 }
 
-// Multi-leg SSR — returns one SSRResult per leg in order
-// For round-trip: [outboundSSR, returnSSR]
-// For multi-city: [leg0SSR, leg1SSR, leg2SSR, ...]
 export async function apiGetSSRForLegs(
-  legs: DisplayFlight[]
+  legs: DisplayFlight[],
+  isMultiCity = false
 ): Promise<SSRResult[]> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 700));
@@ -929,8 +1477,9 @@ export async function apiGetSSRForLegs(
       baggage: FALLBACK_BAGGAGE,
     }));
   }
-  // Fetch all legs in parallel
-  return Promise.all(legs.map((f) => fetchSSRForFlight(f)));
+  // For multi-city: skip FareQuote pre-call on each leg
+  // because TBO SSR for multi-city uses the original search ResultIndex directly
+  return Promise.all(legs.map((f) => fetchSSRForFlight(f, isMultiCity)));
 }
 
 // ── Book ────────────────────────────────────────────────────
@@ -959,6 +1508,11 @@ export type BookFlightInput = {
     GSTCompanyEmail?: string;
     GSTCompanyAddress?: string;
   };
+  segments?: Array<Array<{
+    Origin: { Airport?: { CountryCode?: string } };
+    Destination: { Airport?: { CountryCode?: string } };
+    FlightNumber?: string;
+  }>>;
 };
 
 export async function apiBookFlight(
@@ -980,7 +1534,9 @@ export async function apiBookFlight(
     let errMsg = `Booking failed (HTTP ${res.status})`;
     try {
       const errJson = await res.json();
+      console.error("[apiBookFlight] Backend error response:", errJson);
       if (errJson?.message) errMsg = errJson.message;
+      if (errJson?.error) errMsg = errJson.error;
     } catch { /* ignore */ }
     throw new Error(errMsg);
   }
@@ -988,7 +1544,8 @@ export async function apiBookFlight(
   const responseData = json?.data ?? json;
   const response = responseData?.Response;
   if (!response?.PNR) throw new Error("Booking succeeded but PNR is missing from response");
-  return { pnr: response.PNR, bookingId: response.BookingId };
+  return { pnr : response?.FlightItinerary?.PNR ||response?.PNR 
+  , bookingId:  response?.FlightItinerary?.BookingId || response.BookingId };
 }
 
 // ── Airports ────────────────────────────────────────────────
@@ -999,3 +1556,49 @@ export async function apiGetAirports(): Promise<Airport[]> {
   const json = await res.json();
   return (json?.data ?? json) as Airport[];
 }
+
+
+// NEW FUNCTION — call SSR once for multi-city, return per-leg results
+export async function apiGetSSRForMultiCity(
+  legs: DisplayFlight[]
+): Promise<SSRResult[]> {
+  if (MOCK_MODE) {
+    await new Promise(r => setTimeout(r, 700));
+    return legs.map(() => ({
+      seatMap: buildMockSeatMap(),
+      meals: FALLBACK_MEALS,
+      baggage: FALLBACK_BAGGAGE,
+    }));
+  }
+
+  // For multi-city, all legs share the same traceId and the first leg's resultIndex
+  // TBO returns SeatDynamic[i] per leg index
+  const primaryFlight = legs[0];
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      traceId: primaryFlight.traceId,
+      resultIndex: primaryFlight.resultIndex,
+    }),
+  });
+
+  if (!res.ok) {
+    return legs.map(() => ({
+      seatMap: buildMockSeatMap(),
+      meals: FALLBACK_MEALS,
+      baggage: FALLBACK_BAGGAGE,
+    }));
+  }
+
+  const json = await res.json();
+  const raw = json?.data ?? json;
+  const response = raw?.Response;
+
+  // Parse each leg's SSR from the corresponding SeatDynamic index
+  return legs.map((_, legIndex) => {
+    return parseTBOSSRForLeg(raw, legIndex);
+  });
+}
+
+

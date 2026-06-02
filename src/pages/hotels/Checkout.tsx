@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield, Tag, ChevronDown, ChevronUp,
-  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw
+  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw, Clock
 } from 'lucide-react';
 import { runHotelBook, runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
@@ -36,6 +36,32 @@ export default function Checkout() {
   const [preBooking, setPreBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
   const { openRazorpayCheckout } = useRazorpayCheckout();
+
+  // Timer state
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+  const [timerModalOpen, setTimerModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      if (!timerModalOpen) {
+        setTimerModalOpen(true);
+        setTimeout(() => {
+          navigate(selectedHotel ? `/hotels/${selectedHotel.id}/rooms` : '/hotels');
+        }, 10000);
+      }
+      return;
+    }
+    const timerId = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, [timeLeft, timerModalOpen, navigate, selectedHotel]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (sessionExpired) {
@@ -163,13 +189,14 @@ export default function Checkout() {
     }
 
     const bookGuests: BookGuest[] = guests.map((g, i) => ({
-      title: (g as { title?: BookGuest['title'] }).title as BookGuest['title'],
+      title: g.title as BookGuest['title'],
       firstName: g.firstName,
       middleName: g.middleName,
       lastName: g.lastName,
       paxType: (g.paxType ?? 1) as 1 | 2,
       leadGuest: i === 0,
       age: g.paxType === 2 ? g.age : undefined,
+      pan: g.pan,
     }));
 
     const bookTraceId = useHotelStore.getState().traceId?.trim();
@@ -185,8 +212,8 @@ export default function Checkout() {
     const confirmToast = toast.loading('Confirming booking…');
     try {
       const result = await runHotelBook({
-        traceId: bookTraceId,
         bookingCode: preBookResponse!.bookingCode,
+        traceId: preBookResponse!.traceId,
         guestNationality: 'IN',
         isVoucherBooking: true,
         rooms: searchParams.rooms,
@@ -352,6 +379,16 @@ export default function Checkout() {
       subtitle={selectedHotel?.name}
       onBack={() => navigate(-1)}
     >
+        <div className="flex items-center justify-between mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-red-600 animate-pulse" />
+            <span className="font-semibold text-red-800">Complete your booking soon!</span>
+          </div>
+          <div className="text-xl font-bold tabular-nums text-red-600">
+            {formatTime(timeLeft)}
+          </div>
+        </div>
+
         {priceChanged && (
           <div className="mb-4 flex items-start gap-3 rounded-xl border border-yellow-300 bg-yellow-50 p-4">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
@@ -511,7 +548,7 @@ export default function Checkout() {
 
               <button
                 onClick={handlePayment}
-                disabled={processing || paymentSubmitted || preBooking}
+                disabled={processing || paymentSubmitted || preBooking || timeLeft <= 0}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#003580] py-3.5 text-base font-bold text-white transition-colors hover:bg-[#00224f] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {processing || paymentSubmitted ? (
@@ -527,8 +564,23 @@ export default function Checkout() {
             </div>
           </div>
         </div>
+
+        {/* Timer Expired Modal */}
+        {timerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+              <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+              <h2 className="mb-2 text-xl font-bold text-gray-900">Booking Time Over</h2>
+              <p className="mb-6 text-gray-600">Your session has expired. You will be redirected to the previous page in 10 seconds.</p>
+              <button 
+                className="w-full rounded-lg bg-[#003580] py-3 text-white font-bold"
+                onClick={() => navigate(selectedHotel ? `/hotels/${selectedHotel.id}/rooms` : '/hotels')}
+              >
+                Go Back Now
+              </button>
+            </div>
+          </div>
+        )}
     </HotelBookingShell>
   );
 }
-
-

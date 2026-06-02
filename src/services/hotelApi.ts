@@ -86,6 +86,11 @@ export interface TboCity {
   CountryCode: string;
 }
 
+export interface TboCountry {
+  Code: string;
+  Name: string;
+}
+
 export interface CitySearchResponse {
   ok: boolean;
   data: { CityList: TboCity[] };
@@ -191,6 +196,7 @@ export interface BookGuest {
   paxType: 1 | 2;       // 1=Adult, 2=Child
   leadGuest: boolean;
   age?: number;          // required for children, 1-12
+  pan?: string;          // required for international bookings
 }
 
 export interface BookParams {
@@ -248,6 +254,21 @@ export async function searchHotelCities(
     `/api/v1/hotels/cities?${params.toString()}`
   );
   return res?.data?.CityList ?? [];
+}
+
+/**
+ * 1b. Get all countries — GET /api/v1/hotels/countries
+ */
+export async function getCountries(): Promise<TboCountry[]> {
+  const res = await get<{ ok: boolean; data: any }>('/api/v1/hotels/countries');
+  const raw = res?.data;
+  if (!raw) return [];
+  const list = raw.CountryList || raw.Countries || (raw.Response && raw.Response.CountryList) || [];
+  if (!Array.isArray(list)) return [];
+  return list.map((c: any) => ({
+    Code: String(c.Code || c.CountryCode || c.countryCode || '').trim(),
+    Name: String(c.Name || c.CountryName || c.countryName || '').trim()
+  })).filter(c => c.Code !== '');
 }
 
 /**

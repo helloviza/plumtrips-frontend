@@ -1,14 +1,15 @@
 // ============================================================
-//  BookingStep3Seats.tsx — Step 3: Seat Selection (FIXED)
+//  BookingStep3Seats.tsx — FIXED
 //
 //  Fixes:
-//  1. Props now use ssrDataPerLeg (array) consistently — no more
-//     mixed ssrData / ssrDataPerLeg mismatch.
-//  2. seatMaps is derived per-leg from ssrDataPerLeg[i], so
-//     round-trip and multi-city show the correct seat map per leg.
-//  3. legs array is memoized to avoid the useMemo dependency loop.
-//  4. Premium note reads from current active leg's SSR, not undefined.
-//  5. Completely redesigned aircraft-style seat map UI.
+//  1. handleContinue now writes ALL leg seat selections into
+//     passenger.selectedSeats (Record<legIdx, seatCode>) AND
+//     sets selectedSeat (leg 0) for backwards compatibility.
+//  2. Props use ssrDataPerLeg (array) consistently.
+//  3. seatMaps derived per-leg from ssrDataPerLeg[i].
+//  4. legs array memoized to avoid useMemo dependency loop.
+//  5. Premium note reads from current active leg's SSR.
+//  6. Aircraft-style seat map UI preserved from previous version.
 // ============================================================
 
 import { useState, useMemo } from "react";
@@ -23,7 +24,6 @@ interface Step3Props {
   flight: DisplayFlight;
   tier: FareTier;
   passengers: PassengerData[];
-  paxTypes: ("Adult" | "Child" | "Infant")[];
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   returnFlight?: DisplayFlight;
   isRoundTrip: boolean;
@@ -33,6 +33,8 @@ interface Step3Props {
   onChange: (passengers: PassengerData[]) => void;
   onNext: () => void;
   onBack: () => void;
+  onSeatMapsResolved?: (maps: Record<number, SeatMap>) => void;
+  returnTier?: FareTier;
 }
 
 // ─── HELPERS ────────────────────────────────────────────────
@@ -52,12 +54,28 @@ function ssrToSeatMap(ssr: SSRResult | null): SeatMap | null {
     apiMap.rows.flatMap((r) => r.seats.map((s) => [s.code, s.price]))
   );
 
+  const types: Record<string, "Window" | "Middle" | "Aisle"> = {};
+  const aisleAfterIndex =
+    apiMap.cols.length > 4
+      ? Math.floor(apiMap.cols.length / 2)
+      : Math.ceil(apiMap.cols.length / 2);
+
+  apiMap.cols.forEach((col, ci) => {
+    types[col] =
+      ci === 0 || ci === apiMap.cols.length - 1
+        ? "Window"
+        : ci === aisleAfterIndex - 1 || ci === aisleAfterIndex
+        ? "Aisle"
+        : "Middle";
+  });
+
   return {
     rows: apiMap.totalRows,
     cols: apiMap.cols,
     occupied,
     premium,
     prices,
+    types,
   };
 }
 
@@ -67,7 +85,6 @@ export default function BookingStep3Seats({
   flight,
   tier,
   passengers,
-  paxTypes,
   multiCityLegs,
   returnFlight,
   isRoundTrip,
@@ -77,22 +94,26 @@ export default function BookingStep3Seats({
   onChange,
   onNext,
   onBack,
+  onSeatMapsResolved,
+  returnTier,
 }: Step3Props) {
   const [activeLeg, setActiveLeg] = useState(0);
   const [activePax, setActivePax] = useState(0);
 
-  // ── Leg definitions (memoized so they don't cause useMemo loops) ──
+  // ── Leg definitions (memoized) ─────────────────────────────
   const legs = useMemo(
     () => [
       {
         flight,
         tier,
-        label:
-          isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Seat Map",
+        label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Seat Map",
       },
-      ...(isRoundTrip && returnFlight
-        ? [{ flight: returnFlight, tier, label: "Return" }]
-        : []),
+      
+
+// In legs useMemo, change:
+...(isRoundTrip && returnFlight
+  ? [{ flight: returnFlight, tier: returnTier ?? tier, label: "Return" }]
+  : []),
       ...(isMultiCity
         ? (multiCityLegs ?? []).slice(1).map((l, i) => ({
             ...l,
@@ -117,7 +138,22 @@ export default function BookingStep3Seats({
   );
 
   // ── Seat selections keyed as "legIdx-paxIdx" ──────────────
-  const [selections, setSelections] = useState<Record<string, string>>({});
+  // Pre-populate from existing passenger.selectedSeats if available
+  const [selections, setSelections] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    passengers.forEach((p, paxIdx) => {
+      // Restore from selectedSeats (multi-leg) map
+      if (p.selectedSeats) {
+        Object.entries(p.selectedSeats).forEach(([legIdx, seat]) => {
+          if (seat) initial[`${legIdx}-${paxIdx}`] = seat;
+        });
+      } else if (p.selectedSeat) {
+        // Fallback: selectedSeat is leg-0 only
+        initial[`0-${paxIdx}`] = p.selectedSeat;
+      }
+    });
+    return initial;
+  });
 
   function seatKey(legIdx: number, paxIdx: number) {
     return `${legIdx}-${paxIdx}`;
@@ -148,14 +184,35 @@ export default function BookingStep3Seats({
     });
   }
 
+  
+
+  // FIX: Write ALL leg seat selections back into passenger data.
+  // selectedSeat = leg-0 seat (backwards compat)
+  // selectedSeats = { legIdx: seatCode } for all legs
   function handleContinue() {
-    // Write leg-0 seat selections back into passenger data
-    const updated = passengers.map((p, i) => ({
-      ...p,
-      selectedSeat: selections[seatKey(0, i)] ?? p.selectedSeat,
-    }));
+    
+    const updated = passengers.map((p, paxIdx) => {
+      // Build per-leg seat map for this passenger
+      const selectedSeats: Record<number, string> = {};
+      legs.forEach((_, legIdx) => {
+        const seat = selections[seatKey(legIdx, paxIdx)];
+        if (seat) selectedSeats[legIdx] = seat;
+      });
+
+      return {
+        ...p,
+        // Leg 0 seat for backwards compatibility with Step 5 Review
+        selectedSeat: selectedSeats[0] ?? p.selectedSeat,
+        // All leg seats for Step 5 and booking payload
+        selectedSeats:
+          Object.keys(selectedSeats).length > 0 ? selectedSeats : p.selectedSeats,
+      };
+    });
     onChange(updated);
-    onNext();
+  const mapsRecord: Record<number, SeatMap> = {};
+  seatMaps.forEach((map, i) => { if (map) mapsRecord[i] = map; });
+  onSeatMapsResolved?.(mapsRecord);
+  onNext();
   }
 
   const currentMap = seatMaps[activeLeg];
@@ -163,10 +220,13 @@ export default function BookingStep3Seats({
 
   // Price of cheapest premium seat on this leg
   const premiumPrice = activeLegSSR
-    ? activeLegSSR.seatMap.rows
-        .flatMap((r) => r.seats)
-        .filter((s) => s.isPremium && s.price > 0)
-        .reduce((min, s) => (s.price < min ? s.price : min), Infinity)
+    ? (() => {
+        const prices = activeLegSSR.seatMap.rows
+          .flatMap((r) => r.seats)
+          .filter((s) => s.isPremium && s.price > 0)
+          .map((s) => s.price);
+        return prices.length > 0 ? Math.min(...prices) : null;
+      })()
     : null;
 
   // ── RENDER ─────────────────────────────────────────────────
@@ -273,7 +333,7 @@ export default function BookingStep3Seats({
           passengers={passengers}
           selections={selections}
           onSelectSeat={selectSeat}
-          premiumPrice={premiumPrice === Infinity ? null : premiumPrice}
+          premiumPrice={premiumPrice}
         />
       ) : (
         <UnavailableState />
@@ -364,17 +424,16 @@ function AircraftSeatMap({
     return `${legIdx}-${paxIdx}`;
   }
 
-  // Find the aisle position — split between column groups
-  // Standard: ABC | DEF  → aisle after index 2 (before D)
-  // Some aircraft: AB | CDE → aisle after 1
-  const aisleAfterIndex = map.cols.length > 4 ? Math.floor(map.cols.length / 2) : Math.ceil(map.cols.length / 2);
+  const aisleAfterIndex =
+    map.cols.length > 4
+      ? Math.floor(map.cols.length / 2)
+      : Math.ceil(map.cols.length / 2);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-4">
 
       {/* Aircraft nose graphic */}
       <div className="relative bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 py-5 flex flex-col items-center">
-        {/* Nose SVG */}
         <svg width="80" height="40" viewBox="0 0 80 40" className="mb-1 opacity-30">
           <path d="M40 2 C20 2, 4 12, 4 24 L4 38 L76 38 L76 24 C76 12, 60 2, 40 2 Z"
             fill="none" stroke="#64748b" strokeWidth="1.5" />
@@ -387,31 +446,11 @@ function AircraftSeatMap({
 
         {/* Legend */}
         <div className="flex items-center gap-4 mt-3 text-[10px]">
-          <LegendItem
-            color="bg-blue-600"
-            border=""
-            label="Your seat"
-          />
-          <LegendItem
-            color="bg-emerald-100"
-            border="border border-emerald-300"
-            label="Other pax"
-          />
-          <LegendItem
-            color="bg-amber-100"
-            border="border border-amber-300"
-            label="Premium"
-          />
-          <LegendItem
-            color="bg-slate-100"
-            border="border border-slate-200"
-            label="Available"
-          />
-          <LegendItem
-            color="bg-slate-700"
-            border=""
-            label="Taken"
-          />
+          <LegendItem color="bg-blue-600" border="" label="Your seat" />
+          <LegendItem color="bg-emerald-100" border="border border-emerald-300" label="Other pax" />
+          <LegendItem color="bg-amber-100" border="border border-amber-300" label="Premium" />
+          <LegendItem color="bg-slate-100" border="border border-slate-200" label="Available" />
+          <LegendItem color="bg-slate-700" border="" label="Taken" />
         </div>
       </div>
 
@@ -436,25 +475,17 @@ function AircraftSeatMap({
           {/* Seat rows */}
           {Array.from({ length: map.rows }, (_, ri) => {
             const row = ri + 1;
-            // Determine zone by row number for visual banding
-            const isExitRow =
-              row === 12 || row === 13 || row === 14 || row === 26 || row === 27;
-            const isFirstPremiumZone = row <= 3;
-            const isSecondPremiumZone =
-              (row === 12 || row === 13) && map.premium.some((s) => s.startsWith(`${row}`));
+            const isExitRow = row === 12 || row === 13 || row === 14 || row === 26 || row === 27;
 
             return (
               <div key={row}>
-                {/* Zone label */}
                 {row === 1 && (
                   <ZoneLabel label="Business / Premium" color="text-amber-500" />
                 )}
-                {row === 4 && !isSecondPremiumZone && (
+                {row === 4 && (
                   <ZoneLabel label="Economy" color="text-slate-400" />
                 )}
-                {isExitRow && row === 12 && (
-                  <ExitRowDivider />
-                )}
+                {isExitRow && row === 12 && <ExitRowDivider />}
 
                 <div className="flex items-center mb-1.5 group">
                   {/* Row number */}
@@ -469,15 +500,15 @@ function AircraftSeatMap({
                     const isPremium = map.premium.includes(seat);
                     const price = map.prices?.[seat] ?? 0;
 
-                    // Who has this seat?
                     const myKey = seatKey(activeLeg, activePax);
                     const isSelectedByMe = selections[myKey] === seat;
-                    const otherPaxIdx = Object.entries(selections).find(
+                    const otherEntry = Object.entries(selections).find(
                       ([k, v]) =>
                         v === seat &&
                         k.startsWith(`${activeLeg}-`) &&
                         k !== myKey
-                    )?.[0]?.split("-")[1];
+                    );
+                    const otherPaxIdx = otherEntry?.[0]?.split("-")[1];
                     const isSelectedByOther = otherPaxIdx !== undefined;
 
                     const seatType =
@@ -530,8 +561,7 @@ function AircraftSeatMap({
                           </>
                         ) : isSelectedByOther ? (
                           <span className="text-[8px] font-mono leading-none">
-                            {passengers[Number(otherPaxIdx)]?.firstName?.[0] ||
-                              "P"}
+                            {passengers[Number(otherPaxIdx)]?.firstName?.[0] || "P"}
                           </span>
                         ) : (
                           <>
@@ -544,7 +574,7 @@ function AircraftSeatMap({
                           </>
                         )}
 
-                        {/* Seat back indicator (bottom bar) */}
+                        {/* Seat back indicator */}
                         <span
                           className={[
                             "absolute bottom-0 left-1 right-1 h-1 rounded-full",
@@ -565,14 +595,12 @@ function AircraftSeatMap({
             );
           })}
 
-          {/* Tail of aircraft */}
+          {/* Tail */}
           <div className="flex flex-col items-center mt-4 opacity-30">
             <svg width="80" height="30" viewBox="0 0 80 30">
               <path
                 d="M4 2 L76 2 L76 14 C76 22, 60 28, 40 28 C20 28, 4 22, 4 14 Z"
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="1.5"
+                fill="none" stroke="#64748b" strokeWidth="1.5"
               />
             </svg>
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
@@ -598,32 +626,16 @@ function AircraftSeatMap({
 
 // ─── SMALL HELPERS ───────────────────────────────────────────
 
-function LegendItem({
-  color,
-  border,
-  label,
-}: {
-  color: string;
-  border: string;
-  label: string;
-}) {
+function LegendItem({ color, border, label }: { color: string; border: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <div
-        className={`w-5 h-4 rounded-t-lg rounded-b-sm ${color} ${border}`}
-      />
+      <div className={`w-5 h-4 rounded-t-lg rounded-b-sm ${color} ${border}`} />
       <span className="text-slate-500">{label}</span>
     </div>
   );
 }
 
-function ZoneLabel({
-  label,
-  color,
-}: {
-  label: string;
-  color: string;
-}) {
+function ZoneLabel({ label, color }: { label: string; color: string }) {
   return (
     <div className={`text-[9px] font-black uppercase tracking-widest ${color} py-1.5 text-center`}>
       {label}
@@ -647,9 +659,7 @@ function LoadingState() {
   return (
     <div className="bg-white rounded-3xl border border-slate-100 p-10 text-center mb-4">
       <div className="w-7 h-7 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-      <p className="text-sm font-medium text-slate-500 mb-1">
-        Loading seat map from airline…
-      </p>
+      <p className="text-sm font-medium text-slate-500 mb-1">Loading seat map from airline…</p>
       <p className="text-xs text-slate-400">This usually takes a few seconds</p>
     </div>
   );

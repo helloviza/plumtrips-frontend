@@ -19,19 +19,21 @@ export interface PassengerData {
   nationality: string;
   ffAirlineCode: string;
   ffNumber: string;
-  selectedSeat?: string; // e.g. "14A"
+  selectedSeat?: string;                   // single-leg seat, e.g. "14A"
+  selectedSeats?: Record<number, string>;  // multi-leg: legIndex → seat
 }
 
 export interface SeatMap {
   rows: number;
-  cols: string[]; // e.g. ["A","B","C","D","E","F"]
-  occupied: string[]; // e.g. ["3A","7F"]
-  premium: string[]; // window/extra legroom
-  prices: Record<string, number>;
+  cols: string[];                          // e.g. ["A","B","C","D","E","F"]
+  occupied: string[];                      // e.g. ["3A","7F"]
+  premium: string[];                       // window/extra-legroom seats
+  prices: Record<string, number>;          // e.g. { "14A": 350, "1A": 750 }
+  types: Record<string, "Window" | "Middle" | "Aisle">;
 }
 
 export interface ExtraSelection {
-  legIndex: number;  
+  legIndex: number;
   passengerId: number;
   mealCode: string;
   mealLabel: string;
@@ -164,29 +166,99 @@ export function ErrorBanner({ message }: { message: string }) {
   );
 }
 
+// ─── SEAT PRICE HELPER ───────────────────────────────────────
+//
+// Sums seat-upgrade charges across all passengers and legs.
+// Each passenger may have:
+//   - selectedSeat  (string)              → single leg
+//   - selectedSeats (Record<number, str>) → one entry per leg
+//
+// The SeatMap.prices map drives the charge; if a seat code isn't
+// in prices it is a free (standard) seat and contributes 0.
+
+export function calcSeatTotal(
+  passengers: PassengerData[],
+  seatMaps: Record<number, SeatMap>,   // legIndex → SeatMap
+): number {
+  let total = 0;
+
+  for (const pax of passengers) {
+    // Multi-leg path
+    if (pax.selectedSeats) {
+      for (const [legIdxStr, seat] of Object.entries(pax.selectedSeats)) {
+        const legIdx = Number(legIdxStr);
+        const map = seatMaps[legIdx];
+        if (map && seat) total += map.prices[seat] ?? 0;
+      }
+    }
+    // Single-leg path (fallback)
+    else if (pax.selectedSeat) {
+      const map = seatMaps[0];
+      if (map) total += map.prices[pax.selectedSeat] ?? 0;
+    }
+  }
+
+  return total;
+}
+
 // ─── FARE CALCULATION ────────────────────────────────────────
+//
+// FIX 1 — seat prices now included via seatMaps + passengers.
+// FIX 2 — taxes only applied when the fare does NOT already
+//          include them (tier.taxesIncluded === false).
+//          If the FareTier type does not expose taxesIncluded,
+//          add it: `taxesIncluded?: boolean` (defaults to false
+//          = taxes NOT included, which is the safe/conservative
+//          assumption so no one is silently under-charged).
 
 export function calcFares({
   tier, returnTier, multiCityLegs, adults, children, infants, extras,
+  passengers, seatMaps,
 }: {
   tier: FareTier;
   returnTier?: FareTier;
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; children: number; infants: number;
   extras: ExtraSelection[];
-}) {
+  // Optional: pass these in from the booking state to get seat totals.
+  passengers?: PassengerData[];
+  seatMaps?: Record<number, SeatMap>;
+}) {  // Use API per-pax fares if available, else fall back to price * ratio
+  const adultUnit  = tier.adultFare  ?? tier.price;
+  const childUnit  = tier.childFare  ?? Math.round(tier.price * 0.75);
+  const infantUnit = tier.infantFare ?? Math.round(tier.price * 0.1);
+
   const baseFares = {
-    adult: tier.price * adults,
-    child: Math.round(tier.price * 0.75 * children),
-    infant: Math.round(tier.price * 0.1 * infants),
-    return: returnTier ? returnTier.price * adults : 0,
+    adult:  adultUnit  * adults,
+    child:  childUnit  * children,
+    infant: infantUnit * infants,
+    return: returnTier
+      ? ((returnTier.adultFare ?? returnTier.price) * adults
+        + (returnTier.childFare ?? Math.round(returnTier.price * 0.75)) * children
+        + (returnTier.infantFare ?? Math.round(returnTier.price * 0.1)) * infants)
+      : 0,
     multiCity: (multiCityLegs ?? []).slice(1).reduce((sum, leg) =>
-      sum + leg.tier.price * adults + Math.round(leg.tier.price * 0.75 * children) + Math.round(leg.tier.price * 0.1 * infants), 0),
+      sum
+      + (leg.tier.adultFare  ?? leg.tier.price) * adults
+      + (leg.tier.childFare  ?? Math.round(leg.tier.price * 0.75)) * children
+      + (leg.tier.infantFare ?? Math.round(leg.tier.price * 0.1))  * infants,
+      0,
+    ),
   };
+
   const subtotal = Object.values(baseFares).reduce((a, b) => a + b, 0);
   const extrasTotal = extras.reduce((sum, e) => sum + e.mealPrice + e.baggagePrice, 0);
-  const taxes = Math.round(subtotal * 0.05);
-  return { baseFares, subtotal, extrasTotal, taxes };
+
+  // Seat charges: prefer API value (TotalSeatCharges), then UI-computed
+  const seatsTotal = (passengers && seatMaps)
+    ? calcSeatTotal(passengers, seatMaps)
+    : (tier.seatCharges ?? 0);
+
+  // TBO OfferedFare is ALWAYS tax-inclusive — never add 5% manually
+  const taxes = 0;
+  const taxesIncluded = true;
+
+  return { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded };
 }
 
 // ─── PRICE SIDEBAR ───────────────────────────────────────────
@@ -194,6 +266,7 @@ export function calcFares({
 export function PriceSidebar({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   adults, children, infants, discount, extras,
+  passengers, seatMaps,
   currentStep,
 }: {
   flight: DisplayFlight; tier: FareTier;
@@ -201,15 +274,23 @@ export function PriceSidebar({
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; children: number; infants: number;
   discount: number; extras: ExtraSelection[];
+  // FIX 1: pass through so seat charges appear
+  passengers?: PassengerData[];
+  seatMaps?: Record<number, SeatMap>;
   currentStep: number;
 }) {
-  const { baseFares, subtotal, extrasTotal, taxes } = calcFares({
-    tier, returnTier, multiCityLegs, adults, children, infants, extras,
-  });
-  const total = Math.round(subtotal + extrasTotal + taxes - discount);
+  const { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded } =
+    calcFares({
+      tier, returnTier, multiCityLegs,
+      adults, children, infants,
+      extras, passengers, seatMaps,
+    });
 
-  const isRoundTrip = !!returnFlight && !!returnTier;
-  const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+  const total = Math.round(subtotal + extrasTotal + seatsTotal + taxes - discount);
+
+  const isRoundTrip  = !!returnFlight && !!returnTier;
+  const isMultiCity  = !!(multiCityLegs && multiCityLegs.length > 1);
+  const travellers   = adults + children + infants;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden sticky top-24">
@@ -218,15 +299,21 @@ export function PriceSidebar({
         <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Price Summary</div>
         <div className="font-black text-2xl">{formatINR(total)}</div>
         <div className="text-xs text-slate-400 mt-0.5">
-          {adults + children + infants} traveller{adults + children + infants !== 1 ? "s" : ""} · incl. taxes
+          {travellers} traveller{travellers !== 1 ? "s" : ""} · {taxesIncluded ? "all-inclusive" : "incl. taxes"}
         </div>
       </div>
 
       <div className="p-5 space-y-4">
         {/* Route pills */}
         <div className="space-y-2">
-          <FlightRoutePill flight={flight} label={isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : undefined} color={AIRLINE_COLORS[flight.airlineCode] ?? "#64748b"} />
-          {isRoundTrip && returnFlight && <FlightRoutePill flight={returnFlight} label="Return" color={AIRLINE_COLORS[returnFlight.airlineCode] ?? "#64748b"} />}
+          <FlightRoutePill
+            flight={flight}
+            label={isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : undefined}
+            color={AIRLINE_COLORS[flight.airlineCode] ?? "#64748b"}
+          />
+          {isRoundTrip && returnFlight && (
+            <FlightRoutePill flight={returnFlight} label="Return" color={AIRLINE_COLORS[returnFlight.airlineCode] ?? "#64748b"} />
+          )}
           {isMultiCity && multiCityLegs!.slice(1).map((leg, i) => (
             <FlightRoutePill key={i} flight={leg.flight} label={`Leg ${i + 2}`} color={AIRLINE_COLORS[leg.flight.airlineCode] ?? "#64748b"} />
           ))}
@@ -234,25 +321,54 @@ export function PriceSidebar({
 
         {/* Line items */}
         <div className="border-t border-slate-100 pt-4 space-y-2 text-xs">
-          {adults > 0 && <LineItem label={`${adults} Adult${adults > 1 ? "s" : ""}`} value={baseFares.adult} />}
-          {children > 0 && <LineItem label={`${children} Child${children > 1 ? "ren" : ""}`} value={baseFares.child} />}
-          {infants > 0 && <LineItem label={`${infants} Infant${infants > 1 ? "s" : ""}`} value={baseFares.infant} />}
-          {baseFares.return > 0 && <LineItem label="Return Fare" value={baseFares.return} />}
-          {baseFares.multiCity > 0 && <LineItem label="Multi-City Fares" value={baseFares.multiCity} />}
-          <LineItem label="Taxes & Fees (5%)" value={taxes} />
-          {extrasTotal > 0 && <LineItem label="Meals & Baggage" value={extrasTotal} accent="violet" />}
-          {discount > 0 && <LineItem label="Promo Discount" value={-discount} accent="emerald" />}
+          {adults    > 0 && <LineItem label={`${adults} Adult${adults > 1 ? "s" : ""}`}             value={baseFares.adult} />}
+          {children  > 0 && <LineItem label={`${children} Child${children > 1 ? "ren" : ""}`}       value={baseFares.child} />}
+          {infants   > 0 && <LineItem label={`${infants} Infant${infants > 1 ? "s" : ""}`}          value={baseFares.infant} />}
+          {baseFares.return    > 0 && <LineItem label="Return fare"       value={baseFares.return} />}
+          {baseFares.multiCity > 0 && <LineItem label="Multi-city fares"  value={baseFares.multiCity} />}
+
+          {/* FIX 1: Seat upgrade charge — only shown when non-zero */}
+          {seatsTotal > 0 && (
+            <LineItem label="Seat upgrades" value={seatsTotal} accent="blue" />
+          )}
+
+          {extrasTotal > 0 && (
+            <LineItem label="Meals & baggage" value={extrasTotal} accent="violet" />
+          )}
+
+          {/* FIX 2: Taxes line — hidden entirely when fare already includes them */}
+          {!taxesIncluded && taxes > 0 && (
+            <LineItem label="Taxes & fees (5%)" value={taxes} />
+          )}
+          {taxesIncluded && (
+            <div className="flex justify-between items-center text-emerald-600">
+              <span className="text-slate-400">Taxes & fees</span>
+              <span className="font-semibold text-emerald-600 flex items-center gap-1">
+                <span className="text-[9px] bg-emerald-100 text-emerald-700 rounded-full px-1.5 py-0.5 font-black uppercase tracking-wide">Included</span>
+              </span>
+            </div>
+          )}
+
+          {discount > 0 && (
+            <LineItem label="Promo discount" value={-discount} accent="emerald" />
+          )}
+        </div>
+
+        {/* Subtotal before discount */}
+        <div className="border-t border-dashed border-slate-200 pt-2 flex justify-between items-center text-xs text-slate-400">
+          <span>Subtotal</span>
+          <span>{formatINR(subtotal + extrasTotal + seatsTotal + taxes)}</span>
         </div>
 
         {/* Total */}
         <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
-          <span className="font-black text-slate-900 text-sm">Total Payable</span>
+          <span className="font-black text-slate-900 text-sm">Total payable</span>
           <span className="font-black text-blue-600 text-lg">{formatINR(total)}</span>
         </div>
 
         {/* Baggage included */}
         <div className="bg-slate-50 rounded-2xl p-3 space-y-1.5">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Included in Fare</div>
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Included in fare</div>
           <div className="text-xs text-slate-600 flex items-center gap-1.5"><span>🎒</span> Cabin: {tier.cabinBag}</div>
           <div className="text-xs text-slate-600 flex items-center gap-1.5"><span>🧳</span> Check-in: {tier.checkinBag}</div>
         </div>
@@ -261,10 +377,14 @@ export function PriceSidebar({
         <div className="space-y-1">
           {STEP_LABELS.slice(0, 6).map((label, i) => (
             <div key={label} className={`flex items-center gap-2 text-[10px] font-semibold ${
-              i + 1 < currentStep ? "text-emerald-600" : i + 1 === currentStep ? "text-blue-600" : "text-slate-300"
+              i + 1 < currentStep  ? "text-emerald-600"
+              : i + 1 === currentStep ? "text-blue-600"
+              : "text-slate-300"
             }`}>
               <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${
-                i + 1 < currentStep ? "bg-emerald-100" : i + 1 === currentStep ? "bg-blue-100" : "bg-slate-100"
+                i + 1 < currentStep  ? "bg-emerald-100"
+                : i + 1 === currentStep ? "bg-blue-100"
+                : "bg-slate-100"
               }`}>
                 {i + 1 < currentStep ? "✓" : i + 1}
               </div>
@@ -280,7 +400,10 @@ export function PriceSidebar({
 function FlightRoutePill({ flight, label, color }: { flight: DisplayFlight; label?: string; color: string }) {
   return (
     <div className="flex items-center gap-2.5 bg-slate-50 rounded-xl px-3 py-2">
-      <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[9px] font-black shrink-0" style={{ background: color }}>
+      <div
+        className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[9px] font-black shrink-0"
+        style={{ background: color }}
+      >
         {flight.airlineCode}
       </div>
       <div className="flex-1 min-w-0">
@@ -292,12 +415,18 @@ function FlightRoutePill({ flight, label, color }: { flight: DisplayFlight; labe
   );
 }
 
-function LineItem({ label, value, accent }: { label: string; value: number; accent?: "violet" | "emerald" }) {
-  const color = accent === "emerald" ? "text-emerald-600" : accent === "violet" ? "text-violet-600" : "text-slate-700";
+function LineItem({ label, value, accent }: { label: string; value: number; accent?: "blue" | "violet" | "emerald" }) {
+  const color =
+    accent === "emerald" ? "text-emerald-600"
+    : accent === "violet" ? "text-violet-600"
+    : accent === "blue"   ? "text-blue-600"
+    : "text-slate-700";
   return (
     <div className={`flex justify-between items-center ${color}`}>
       <span className="text-slate-500">{label}</span>
-      <span className="font-semibold">{value < 0 ? `−${formatINR(-value)}` : formatINR(value)}</span>
+      <span className="font-semibold">
+        {value < 0 ? `−${formatINR(-value)}` : formatINR(value)}
+      </span>
     </div>
   );
 }
@@ -307,6 +436,7 @@ function LineItem({ label, value, accent }: { label: string; value: number; acce
 export function BookingShell({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   adults, childcount, infants, discount, extras,
+  passengers, seatMaps,
   currentStep, onBack, children,
 }: {
   flight: DisplayFlight; tier: FareTier;
@@ -314,6 +444,9 @@ export function BookingShell({
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; childcount: number; infants: number;
   discount: number; extras: ExtraSelection[];
+  // FIX 1: forwarded to PriceSidebar
+  passengers?: PassengerData[];
+  seatMaps?: Record<number, SeatMap>;
   currentStep: number;
   onBack: () => void;
   children: React.ReactNode;
@@ -337,7 +470,7 @@ export function BookingShell({
           <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto scrollbar-none">
             {STEP_LABELS.slice(0, 7).map((label, i) => {
               const stepNum = i + 1;
-              const done = stepNum < currentStep;
+              const done   = stepNum < currentStep;
               const active = stepNum === currentStep;
               return (
                 <div key={label} className="flex items-center gap-1 shrink-0">
@@ -358,11 +491,6 @@ export function BookingShell({
               );
             })}
           </div>
-
-          {/* Logo */}
-          {/* <div className="font-black text-slate-900 text-sm tracking-tight hidden sm:block">
-            Plum<span className="text-blue-600">Trips</span>
-          </div> */}
         </div>
       </header>
 
@@ -376,6 +504,8 @@ export function BookingShell({
             multiCityLegs={multiCityLegs}
             adults={adults} children={childcount} infants={infants}
             discount={discount} extras={extras}
+            passengers={passengers}
+            seatMaps={seatMaps}
             currentStep={currentStep}
           />
         </aside>

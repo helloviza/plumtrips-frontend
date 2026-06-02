@@ -194,7 +194,7 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeCategory, setActiveCategory] = React.useState('ALL STORIES');
 
-  const featuredBlog = dbBlogs[0] ?? null;
+  const featuredBlog = dbBlogs[2] ?? null;
   const remainingBlogs = dbBlogs.slice(1);
 
   // Use passed-in stories if provided, otherwise fall back to hardcoded STORIES
@@ -267,12 +267,12 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
                 </div>
                 {/* <div className="story-card__category">{story.category}</div> */}
                 <h3 className="story-card__title">{story.title}</h3>
-                <p className="story-card__excerpt">{story.excerpt}</p>
+                {/* <p className="story-card__excerpt">{story.excerpt}</p>
                 <div className="story-card__meta">
                   <span>{story.createdAt}</span>
                   <span className="story-card__meta-dot" />
                   <span>{story.readingTime} MIN READ</span>
-                </div>
+                </div> */}
                 <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
                   Read More
                   <span className="material-symbols-outlined">arrow_forward</span>

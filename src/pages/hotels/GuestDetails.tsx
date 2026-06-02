@@ -7,6 +7,8 @@ import { Mail, User, Loader2, AlertTriangle } from 'lucide-react';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
 import { runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
 import { useHotelStore } from '../../stores/hotelStore';
+import { useAuth } from '../../context/AuthContext';
+import { useUi } from '../../context/UiContext';
 import Button from '../../components/ui/Button';
 import { generateId, formatCurrency } from '../../lib/utils';
 import toast from 'react-hot-toast';
@@ -19,16 +21,39 @@ const guestSchema = z.object({
   paxType: z.union([z.literal(1), z.literal(2)]), // 1=Adult, 2=Child
   age: z.number().min(1).max(12).optional(),
   leadGuest: z.boolean(),
+  pan: z.string().optional(),
 });
 
-const formSchema = z.object({
+const getFormSchema = (isInternational: boolean) => z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/, 'Enter valid 10-digit mobile'),
   email: z.string().email('Enter valid email').optional().or(z.literal('')),
   guests: z.array(guestSchema).min(1, 'At least one guest required'),
   specialRequests: z.string().optional(),
+  isCorporate: z.boolean().optional(),
+  corporatePan: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.isCorporate) {
+    if (!data.corporatePan) {
+      ctx.addIssue({ path: ['corporatePan'], message: 'PAN is required for corporate bookings', code: z.ZodIssueCode.custom });
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(data.corporatePan)) {
+      ctx.addIssue({ path: ['corporatePan'], message: 'Enter a valid 10-character PAN (e.g., ABCDE1234F)', code: z.ZodIssueCode.custom });
+    }
+  }
+  if (isInternational) {
+    data.guests.forEach((guest, index) => {
+      if (guest.leadGuest) {
+        if (!guest.pan) {
+          ctx.addIssue({ path: ['guests', index, 'pan'], message: 'PAN is required for international bookings', code: z.ZodIssueCode.custom });
+        } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(guest.pan)) {
+          ctx.addIssue({ path: ['guests', index, 'pan'], message: 'Enter a valid 10-character PAN', code: z.ZodIssueCode.custom });
+        }
+      }
+    });
+  }
 });
 
-type FormData = z.infer<typeof formSchema>;
+// We need a dummy type since the schema is now a function, but we can derive it from the return type
+type FormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 export default function GuestDetails() {
   const navigate = useNavigate();
@@ -38,6 +63,18 @@ export default function GuestDetails() {
     setPreBookResponse, setBookingCode, traceId,
     setCurrentStep, sessionExpired,
   } = useHotelStore();
+
+  const { user: globalUser } = useAuth();
+  const { openAuth } = useUi();
+  const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [submitData, setSubmitData] = useState<FormData | null>(null);
+
+  useEffect(() => {
+    if (pendingSubmit && globalUser && submitData) {
+      setPendingSubmit(false);
+      processSubmit(submitData);
+    }
+  }, [globalUser, pendingSubmit, submitData]);
 
   const [preBooking, setPreBooking] = useState(false);
   const [roomUnavailable, setRoomUnavailable] = useState(false);
@@ -56,8 +93,8 @@ export default function GuestDetails() {
         const isLead = r === 0 && a === 0;
         arr.push({
           title: (isLead ? 'Mr' : 'Mr') as 'Mr' | 'Mrs' | 'Ms' | 'Miss' | 'Mstr',
-          firstName: isLead ? user.firstName || '' : '',
-          lastName: isLead ? user.lastName || '' : '',
+          firstName: '',
+          lastName: '',
           paxType: 1 as const,
           leadGuest: isLead,
         });
@@ -76,15 +113,34 @@ export default function GuestDetails() {
     return arr.length > 0 ? arr : [{ title: 'Mr' as const, firstName: user.firstName || '', lastName: user.lastName || '', paxType: 1 as const, leadGuest: true }];
   };
 
+  // Determine if international booking based on destinationCountryCode or fallback to locationId / location string
+  const isInternational = (() => {
+    if (searchParams.destinationCountryCode) {
+      return searchParams.destinationCountryCode.toUpperCase() !== 'IN';
+    }
+    if (searchParams.locationId && searchParams.locationId.includes(':')) {
+      return !searchParams.locationId.toUpperCase().startsWith('IN:');
+    }
+    if (searchParams.location) {
+      const loc = searchParams.location.toLowerCase();
+      if (loc.includes('india') || loc.includes(', in')) return false;
+    }
+    // If we really can't tell, assume it's international just to be safe and ask for PAN
+    return true; 
+  })();
+
   const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(getFormSchema(isInternational)),
     defaultValues: {
-      mobile: user.mobile || '',
-      email: user.email || '',
+      mobile: '',
+      email: '',
+      isCorporate: false,
+      corporatePan: '',
       guests: generateInitialGuests(),
     },
   });
 
+  const isCorporate = watch('isCorporate');
   const { fields } = useFieldArray({ control, name: 'guests' });
 
   // ── PreBook before proceeding to payment ─────────────────────────────────
@@ -126,9 +182,7 @@ export default function GuestDetails() {
     }
   };
 
-  const onSubmit = async (data: FormData) => {
-    if (data.guests.length < 1) { toast.error('At least one guest is required'); return; }
-
+  const processSubmit = async (data: FormData) => {
     setUser({
       mobile: data.mobile,
       ...(data.email ? { email: data.email } : {}),
@@ -144,7 +198,20 @@ export default function GuestDetails() {
     navigate('/hotels/checkout');
   };
 
-  const basePrice = selectedRooms.reduce((s, r) => s + (r.price + r.taxesAndFees) * r.quantity, 0);
+  const onSubmit = async (data: FormData) => {
+    if (data.guests.length < 1) { toast.error('At least one guest is required'); return; }
+
+    if (!globalUser) {
+      setSubmitData(data);
+      setPendingSubmit(true);
+      openAuth();
+      return;
+    }
+
+    processSubmit(data);
+  };
+
+  const basePrice = selectedRooms.reduce((s, r) => s + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0);
 
   // ── Room unavailable screen ───────────────────────────────────────────────
   if (roomUnavailable) {
@@ -223,6 +290,38 @@ export default function GuestDetails() {
             </div>
           </div>
 
+          {/* Corporate Booking Details */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-4 text-base font-bold text-gray-900">Booking Type</h2>
+            
+            <div className="mb-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  {...register('isCorporate')}
+                  className="w-4 h-4 text-[#003580] border-gray-300 rounded focus:ring-[#003580]"
+                />
+                <span className="text-sm font-medium text-gray-700">Is this a Corporate Booking?</span>
+              </label>
+            </div>
+
+            {isCorporate && (
+              <div className="animate-in slide-in-from-top-2 duration-300">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Corporate PAN Card Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  {...register('corporatePan')}
+                  type="text" 
+                  maxLength={10}
+                  placeholder="e.g. ABCDE1234F"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#003580] focus:outline-none uppercase"
+                />
+                {errors.corporatePan && <p className="mt-1 text-xs text-red-500">{errors.corporatePan.message}</p>}
+              </div>
+            )}
+          </div>
+
           {/* ── Guest Forms ── */}
           {fields.map((field, idx) => (
             <div key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -285,6 +384,20 @@ export default function GuestDetails() {
                     )}
                   </div>
                 )}
+                {/* PAN field — only shown for lead guest on international bookings for Indian nationals */}
+                {isInternational && watch(`guests.${idx}.leadGuest`) && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">PAN Number *</label>
+                    <input
+                      {...register(`guests.${idx}.pan`)}
+                      type="text" maxLength={10} placeholder="ABCDE1234F"
+                      className="w-full uppercase rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#003580] focus:outline-none"
+                    />
+                    {errors.guests?.[idx]?.pan && (
+                      <p className="mt-1 text-xs text-red-500">{errors.guests[idx]?.pan?.message}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -311,8 +424,8 @@ export default function GuestDetails() {
               </div>
             ))}
             <div className="flex justify-between text-sm text-gray-400">
-              <span>Taxes & fees</span>
-              <span>{formatCurrency(selectedRooms.reduce((s, r) => s + r.taxesAndFees * r.quantity, 0))}</span>
+              <span>Taxes, fees & surcharges</span>
+              <span>{formatCurrency(selectedRooms.reduce((s, r) => s + (r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0))}</span>
             </div>
             <div className="mt-3 flex justify-between border-t border-gray-100 pt-3 font-bold text-gray-900">
               <span>Estimated total</span>

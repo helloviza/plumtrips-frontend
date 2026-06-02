@@ -448,8 +448,12 @@ export default function HotelsSearchForm() {
             value={location}
             error={errors.location}
             placeholder="City, area or property"
-            onChange={(v, cityId) => {
-              setSearchParams({ location: v, ...(cityId ? { locationId: cityId } : {}) });
+            onChange={(v, cityId, countryCode) => {
+              setSearchParams({ 
+                location: v, 
+                ...(cityId ? { locationId: cityId } : {}),
+                ...(countryCode ? { destinationCountryCode: countryCode } : {})
+              });
               clearError("location");
             }}
           />

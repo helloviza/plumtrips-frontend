@@ -92,7 +92,7 @@ export interface DisplayFlight {
   baseFare: number;
   tax: number;
   cabinBaggage: string;
-  checkinBaggage: string;
+  checkinBaggage: string; 
   isRefundable: boolean;
   isLCC: boolean;
   fareType: string;
@@ -105,8 +105,15 @@ export interface DisplayFlight {
   isPanRequired: boolean;
   isPassportRequired: boolean;
   airlineRemark?: string;
+  fareClassification?: { Type?: string };
+resultFareType?: string;
+fareBreakdown?: Array<{
+  Baggage?: string;
+  FareBasis?: { BaggageDetails?: { FreeText?: string; Weight?: number; Unit?: string } };
+}>;
   segments: FlightSegmentDetail[];
   fareVariants?: DisplayFlight[]; // all fare options for same physical flight
+  cancellationPolicies?: TBOCancellationPolicy[]; // TBO policies for cancellation & reschedule
 }
 
 export interface FareTier {
@@ -121,6 +128,17 @@ export interface FareTier {
   meals: string;
   recommended?: boolean;
   resultIndex: string;        // each tier may have a different ResultIndex from TBO
+  isRefundable?: boolean;
+  // Line after `isRefundable?: boolean`
+taxesIncluded?: boolean;
+adultFare?: number;      // from FareBreakdown[PaxType=1].BaseFare + Tax
+childFare?: number;      // from FareBreakdown[PaxType=2]
+infantFare?: number;     // from FareBreakdown[PaxType=3]
+seatCharges?: number;    // from Fare.TotalSeatCharges (live API value)
+mealCharges?: number;    // from Fare.TotalMealCharges
+baggageCharges?: number; // from Fare.TotalBaggageCharges
+totalOfferedFare?: number; // Fare.OfferedFare — the final total from TBO
+  
 }
 
 export interface ActiveFilters {
@@ -189,6 +207,28 @@ export interface TBOFare {
   TdsOnIncentive: number;
 }
 
+export interface TBOBaggageDetails {
+  FreeText?: string;
+  Weight?: number;
+  Unit?: string;
+}
+
+export interface TBOFareBasis {
+  BaggageDetails?: TBOBaggageDetails;
+}
+
+export interface TBOFareBreakdownSegmentDetail {
+  FlightInfoIndex?: string;
+  CheckedInBaggage?: { FreeText?: string; Unit?: string; Value?: string };
+  CabinBaggage?: { FreeText?: string; Unit?: string; Value?: string };
+}
+
+export interface TBOFareBreakdown {
+  Baggage?: string;
+  FareBasis?: TBOFareBasis;
+  SegmentDetails?: TBOFareBreakdownSegmentDetail[];
+}
+
 export interface TBOFlightSegment {
   Airline: {
     AirlineCode: string;
@@ -233,6 +273,8 @@ export interface TBOFlightSegment {
   IsETicketEligible: boolean;
   FlightStatus: string;
   Status: string;
+  Baggage?: string;
+  CabinBaggage?: string;
 }
 
 export interface TBOFlightResult {
@@ -250,8 +292,10 @@ export interface TBOFlightResult {
   LastTicketingDate: string;
   TicketAdvisory: string;
   FareType: string;
+  FareClassification?: { Type?: string };
+  ResultFareType?: string;
   Fare: TBOFare;
-  FareBreakdown: unknown[];
+  FareBreakdown?: TBOFareBreakdown[];
   Segments: TBOFlightSegment[][];
   LastCancellationDate: string;
   Baggage: { AirlineCode: string; FlightNo: string; Baggage: string; CabinBaggage: string }[];
@@ -285,6 +329,7 @@ export interface TBOCancellationPolicy {
   Amount: number;
   FromHours: number;
   ToHours: number;
+  Percentage: number;
 }
 
 export interface TBOFareQuoteResponse {

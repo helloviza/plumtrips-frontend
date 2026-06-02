@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { SearchForm, Airport } from "../../lib/types_t";
-import { apiGetAirports } from "../../lib/flights_api";
+import { apiGetAirports, apiGetCalendarPrices } from "../../lib/flights_api";
+
 const MOCK_AIRPORTS: Airport[] = [
   { code: "DEL", city: "New Delhi",  name: "Indira Gandhi International",              cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
   { code: "BOM", city: "Mumbai",     name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
@@ -30,6 +31,13 @@ const boxBg: React.CSSProperties = {
   background: "white",
 };
 
+// ─── FORMAT HELPERS ────────────────────────────────────────
+
+function formatPriceShort(price: number): string {
+  if (price >= 100000) return `₹${(price / 100000).toFixed(1)}L`;
+  if (price >= 1000)   return `₹${(price / 1000).toFixed(1)}k`;
+  return `₹${price}`;
+}
 
 // ─── PORTAL POSITION HOOK ──────────────────────────────────
 
@@ -106,7 +114,6 @@ function AirportInput({ label, value, onChange, airports }: {
 
   const popupTop = pos.top - POPUP_H - 6;
 
-  // Has a value selected — show no label, just the value
   const hasValue = !!value?.code;
 
   return (
@@ -116,7 +123,6 @@ function AirportInput({ label, value, onChange, airports }: {
         onClick={() => { setOpen(true); setQuery(""); setTimeout(() => inputRef.current?.focus(), 10); }}
         className={fieldBtn}
       >
-        {/* Show label only when no value is selected */}
         {!hasValue && <div className={lbl}>{label}</div>}
         <div className={val}>{value.code} — {value.city}</div>
         <div className={sub}>{value.name}</div>
@@ -141,7 +147,6 @@ function AirportInput({ label, value, onChange, airports }: {
             flexDirection: "column",
           }}
         >
-          {/* Search input */}
           <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.10)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <svg style={{ width: 16, height: 16, color: "rgba(255,255,255,0.4)", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -154,7 +159,6 @@ function AirportInput({ label, value, onChange, airports }: {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          {/* Results */}
           <div style={{ overflowY: "auto", flex: 1 }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "24px 16px", fontSize: 14, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>No airports found</div>
@@ -195,10 +199,11 @@ function AirportInput({ label, value, onChange, airports }: {
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
-function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorRef }: {
+function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorRef, prices = {} }: {
   value: string; value2?: string; isRange?: boolean; min?: string;
   onChange: (d1: string, d2?: string) => void; onClose: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
+  prices?: Record<string, number>;
 }) {
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-CA");
@@ -206,7 +211,7 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
   const popupRef = useRef<HTMLDivElement>(null);
   const pos = usePortalPos(anchorRef, true);
 
-  const POPUP_H = isRange ? 460 : 400;
+  const POPUP_H = isRange ? 500 : 440;
 
   const parse = (s: string) => s ? new Date(s + "T00:00:00") : null;
   const [hovering, setHovering] = useState<string | null>(null);
@@ -247,6 +252,23 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
     else { if (s < value) onChange(s, value); else onChange(value, s); onClose(); }
   }
 
+  // Find min/max prices in visible months for colour-coding
+  const visibleDates: string[] = [];
+  for (let d = 1; d <= new Date(vy, vm + 1, 0).getDate(); d++) visibleDates.push(toStr(vy, vm, d));
+  for (let d = 1; d <= new Date(vy2, vm2 + 1, 0).getDate(); d++) visibleDates.push(toStr(vy2, vm2, d));
+  const visiblePrices = visibleDates.map(s => prices[s]).filter((p): p is number => p !== undefined && p > 0);
+  const minPrice = visiblePrices.length ? Math.min(...visiblePrices) : 0;
+  const maxPrice = visiblePrices.length ? Math.max(...visiblePrices) : 0;
+
+  function priceColor(price: number, isSel: boolean): string {
+    if (isSel) return "rgba(255,255,255,0.9)";
+    if (!price || minPrice === maxPrice) return "#059669";
+    const ratio = (price - minPrice) / (maxPrice - minPrice);
+    if (ratio < 0.33) return "#059669"; // green = cheapest
+    if (ratio < 0.66) return "#d97706"; // amber = mid
+    return "#dc2626";                   // red = expensive
+  }
+
   function renderMonth(y: number, m: number) {
     const days = new Date(y, m + 1, 0).getDate();
     const first = new Date(y, m, 1).getDay();
@@ -255,11 +277,14 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
     for (let d = 1; d <= days; d++) {
       const s = toStr(y, m, d);
       const disabled = s < minStr;
-      const sel = s === value || (isRange && s === value2);
+      const sel = Boolean(s === value || (isRange && s === value2));
       const inRange = isRange && value && value2 && s > value && s < value2;
       const hov = isRange && value && !value2 && hovering && selecting === "to" &&
         ((s > value && s < hovering) || (s > hovering && s < value));
       const isToday = s === todayStr;
+      const price = prices[s];
+      const pColor = priceColor(price ?? 0, sel);
+
       cells.push(
         <button
           key={d} type="button" disabled={disabled}
@@ -267,20 +292,36 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => clickDay(s)}
           style={{
-            height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            height: 46,
+            display: "flex", alignItems: "center", justifyContent: "center",
             background: (inRange || hov) && !disabled ? "rgba(0,71,127,0.10)" : "transparent",
             border: "none", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.25 : 1,
           }}
         >
           <span style={{
-            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-            borderRadius: "50%", fontSize: 12, fontWeight: 700,
+            width: 36, height: 40,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            gap: 1,
+            borderRadius: 8, fontSize: 12, fontWeight: 700,
             background: sel ? "#d06549" : "transparent",
             color: sel ? "white" : isToday && !disabled ? "#d06549" : disabled ? "#9ca3af" : "#0d2d5e",
             outline: isToday && !sel && !disabled ? "2px solid #d06549" : "none",
             outlineOffset: -2,
           }}>
-            {d}
+            <span style={{ lineHeight: 1 }}>{d}</span>
+            {price !== undefined && !disabled && (
+              <span style={{
+                fontSize: 7.5,
+                fontWeight: 800,
+                color: pColor,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.02em",
+              }}>
+                {formatPriceShort(price)}
+              </span>
+            )}
           </span>
         </button>
       );
@@ -370,6 +411,28 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
         ))}
       </div>
 
+      {/* Price legend */}
+      {Object.keys(prices).length > 0 && (
+        <div style={{ borderTop: "1px solid #e8eef8", padding: "8px 20px", display: "flex", alignItems: "center", gap: 16, background: "#fafcff" }}>
+          <span style={{ fontSize: 10, color: "#8fafd4", fontWeight: 600 }}>Fares:</span>
+          {[
+            { color: "#059669", label: "Low" },
+            { color: "#d97706", label: "Mid" },
+            { color: "#dc2626", label: "High" },
+          ].map(({ color, label }) => (
+            <span key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6a8ab5", fontWeight: 600 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block" }} />
+              {label}
+            </span>
+          ))}
+          {minPrice > 0 && (
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 700 }}>
+              From {formatPriceShort(minPrice)}
+            </span>
+          )}
+        </div>
+      )}
+
       <div style={{ borderTop: "1px solid #e8eef8", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f4f7fc" }}>
         <button type="button" onClick={() => onChange("", "")}
           style={{ fontSize: 12, color: "#8fafd4", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
@@ -407,7 +470,6 @@ function DateField({ label, value, isRange, disabled, onClick }: {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
       className={`${fieldBtn} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-      {/* Show label only when no date is selected */}
       {!hasValue && <div className={lbl}>{label}</div>}
       {f ? (
         <>
@@ -531,9 +593,10 @@ function PassengerPicker({ adults, children, infants, cabinClass, onChange }: {
 
 // ─── MULTI-CITY LEG ────────────────────────────────────────
 
-function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove }: {
+function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, prices }: {
   leg: CityLeg; index: number; total: number; today: string;
   airports: Airport[]; onUpdate: (l: Partial<CityLeg>) => void; onRemove: () => void;
+  prices: Record<string, number>;
 }) {
   const [calOpen, setCalOpen] = useState(false);
   const calAnchorRef = useRef<HTMLDivElement>(null);
@@ -552,7 +615,6 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove }
           </button>
         )}
       </div>
-      {/* No swap button — fields laid out as plain From | To | Date */}
       <div className={`flex ${glassCls} divide-x divide-white/10`} style={boxBg}>
         <div className="flex-1">
           <AirportInput label="From" value={leg.from} airports={airports} onChange={(a) => onUpdate({ from: a })} />
@@ -566,6 +628,7 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove }
             <CalendarPopup
               value={leg.departDate} min={today}
               anchorRef={calAnchorRef}
+              prices={prices}
               onChange={(d1) => { onUpdate({ departDate: d1 }); setCalOpen(false); }}
               onClose={() => setCalOpen(false)}
             />
@@ -591,6 +654,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
   useEffect(() => {
     apiGetAirports().then(setAirports).catch(() => setAirports(MOCK_AIRPORTS));
   }, []);
+
   const [form, setForm] = useState<SearchForm>({
     tripType: tripTypeProp ?? "oneWay",
     from: MOCK_AIRPORTS[0],
@@ -605,7 +669,6 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
     fareType: "Regular",
   });
 
-  // Sync tripType prop → form when parent changes it
   useEffect(() => {
     if (tripTypeProp) setForm((f) => ({ ...f, tripType: tripTypeProp }));
   }, [tripTypeProp]);
@@ -614,6 +677,24 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
     { from: MOCK_AIRPORTS[0], to: MOCK_AIRPORTS[1], departDate: today },
     { from: MOCK_AIRPORTS[1] ?? MOCK_AIRPORTS[0], to: MOCK_AIRPORTS[2] ?? MOCK_AIRPORTS[0], departDate: "" },
   ]);
+
+  // ── Calendar price state ────────────────────────────────
+  const [calPrices, setCalPrices] = useState<Record<string, number>>({});
+  const [pricesLoading, setPricesLoading] = useState(false);
+
+  useEffect(() => {
+    const fromCode = form.tripType === "multiCity" ? multiLegs[0]?.from?.code : form.from?.code;
+    const toCode   = form.tripType === "multiCity" ? multiLegs[0]?.to?.code   : form.to?.code;
+    if (!fromCode || !toCode || fromCode === toCode) return;
+
+    let cancelled = false;
+    setPricesLoading(true);
+    apiGetCalendarPrices(fromCode, toCode, form.cabinClass)
+      .then((prices) => { if (!cancelled) { setCalPrices(prices); setPricesLoading(false); } })
+      .catch(() => { if (!cancelled) setPricesLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [form.from?.code, form.to?.code, form.cabinClass, form.tripType, multiLegs]);
 
   const [calOpen, setCalOpen] = useState(false);
   const calAnchorRef = useRef<HTMLDivElement>(null);
@@ -657,6 +738,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
           {multiLegs.map((leg, idx) => (
             <MultiCityLeg key={idx} leg={leg} index={idx} total={multiLegs.length}
               today={today} airports={airports}
+              prices={calPrices}
               onUpdate={(u) => updateLeg(idx, u)} onRemove={() => removeLeg(idx)} />
           ))}
           <div className="flex items-center justify-between mt-2 mb-3">
@@ -682,7 +764,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
       ) : (
         <div className="space-y-2">
 
-          {/* ROW 1: From | To — no swap button */}
+          {/* ROW 1: From | To */}
           <div className={glassCls} style={boxBg}>
             <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
               <AirportInput label="From" value={form.from} airports={airports}
@@ -712,6 +794,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
               isRange={isRound}
               min={today}
               anchorRef={calAnchorRef}
+              prices={calPrices}
               onChange={(d1, d2) => {
                 setForm((f) => ({ ...f, departDate: d1, returnDate: d2 ?? "" }));
                 if (!isRound || d2) setCalOpen(false);
@@ -775,7 +858,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
             letterSpacing: "0.12em",
             boxShadow: "0 4px 24px rgba(208,101,73,0.45)",
           }}>
-          FIND FLIGHTS
+          {pricesLoading ? "Loading…" : "FIND FLIGHTS"}
         </button>
       </div>
     </div>

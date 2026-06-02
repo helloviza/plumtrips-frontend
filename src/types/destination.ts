@@ -31,6 +31,7 @@ export interface HeroSection extends BaseSection {
       title: string;
       buttonText: string;
       isCorporate: boolean;
+      fields?: any[];
     };
   };
 }
@@ -39,6 +40,7 @@ export interface ItineraryItem {
   day: string;
   title: string;
   desc: string;
+  img?: string;
 }
 
 export interface ItinerarySection extends BaseSection {
@@ -210,6 +212,7 @@ export interface FinalCTASection extends BaseSection {
     };
     description: string;
     buttonText: string;
+    backgroundImage?: string;
   };
 }
 

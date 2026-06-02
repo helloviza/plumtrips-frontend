@@ -85,6 +85,7 @@ import Offer from "./pages/marketing/Offers";
 import FrontpagePage from "./pages/marketing/Frontpage";
 
 import RequireMarketAuth from "./components/RequireMarketAuth";
+import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
 
 // New Flight Flow
 import FlightsFlow from "./pages/flights_new/FlightsFlow";
@@ -169,6 +170,7 @@ function SsoForward(): ReactElement {
 export const router = createBrowserRouter(
   [
     {
+      errorElement: <GlobalErrorBoundary />,
       element: (
         <AuthProvider>
           <UiProvider>

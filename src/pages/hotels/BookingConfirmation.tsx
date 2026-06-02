@@ -45,7 +45,7 @@ export default function BookingConfirmation() {
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
   // room.price and room.taxesAndFees are already TotalFare/TotalTax for full stay
   const totalPrice = selectedRooms.reduce(
-    (sum, r) => sum + (r.price + r.taxesAndFees) * r.quantity,
+    (sum, r) => sum + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity,
     0
   );
 
@@ -312,7 +312,7 @@ export default function BookingConfirmation() {
                 {selectedRooms.map(room => (
                   <div key={room.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{room.name} × {room.quantity}</span>
-                    <span className="font-medium">{formatCurrency((room.price + room.taxesAndFees) * room.quantity)}</span>
+                    <span className="font-medium">{formatCurrency((room.price + room.taxesAndFees + (room.additionalCharges || 0)) * room.quantity)}</span>
                   </div>
                 ))}
               </div>

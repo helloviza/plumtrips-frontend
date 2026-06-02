@@ -102,6 +102,9 @@ export default function HotelDetail() {
 
   const handleSelectRooms = () => {
     setSelectedHotel(hotel);
+    if (hotel._traceId) {
+      useHotelStore.getState().setTraceId(hotel._traceId);
+    }
     navigate(`/hotels/${id}/rooms`);
   };
 

@@ -25,7 +25,7 @@ export default function Header() {
   const location = useLocation();
 
   // Only merge with hero on the home page
-  const isHome = location.pathname === "/";
+ const isHome = location.pathname === "/" || location.pathname === "/home";
   const isTransparent = isHome && !scrolled;
 
   const toggleMobile = () => setMobileOpen((v) => !v);

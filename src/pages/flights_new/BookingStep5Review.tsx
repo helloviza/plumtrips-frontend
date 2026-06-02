@@ -2,11 +2,13 @@
 //  BookingStep5Review.tsx — Step 5: Full Booking Review
 // ============================================================
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import type { PassengerData, ExtraSelection } from "./BookingShared";
 import { SectionHeading, AIRLINE_COLORS, calcFares } from "./BookingShared";
 import { formatINR } from "../../lib/flights_api";
+import { useAuth } from "../../context/AuthContext";
+import { useUi } from "../../context/UiContext";
 
 interface Step5Props {
   flight: DisplayFlight; tier: FareTier;
@@ -30,6 +32,32 @@ export default function BookingStep5Review({
   onConfirm, onBack,
 }: Step5Props) {
   const [agreed, setAgreed] = useState(false);
+
+  // ── Auth ─────────────────────────────────────────────────
+  const { user } = useAuth();
+  const { openAuth } = useUi();           // ← use openAuth() or setAuthOpen(true) — match your UiContext export
+  const pendingConfirm = useRef(false);   // remembers the user's intent to pay while logged out
+
+  // Once the user logs in (modal closes, user becomes truthy),
+  // auto-proceed to payment if they had clicked the button.
+  useEffect(() => {
+    if (user && pendingConfirm.current) {
+      pendingConfirm.current = false;
+      onConfirm();
+    }
+  }, [user, onConfirm]);
+
+  function handleConfirmClick() {
+    if (!user) {
+      // Not signed in → remember intent, open auth modal
+      pendingConfirm.current = true;
+      openAuth();   // opens AuthModal; after login user state updates → useEffect above fires
+      return;
+    }
+    // Already signed in → go straight to payment
+    onConfirm();
+  }
+  // ─────────────────────────────────────────────────────────
 
   const { baseFares, subtotal, extrasTotal, taxes } = calcFares({
     tier, returnTier, multiCityLegs, adults, children, infants, extras,
@@ -67,7 +95,19 @@ export default function BookingStep5Review({
       <ReviewCard title="👤 Passengers">
         <div className="divide-y divide-slate-100">
           {passengers.map((p, i) => {
-            const extra = extras[i];
+            const passengerExtras = extras.filter((e) => e.passengerId === i);
+            const seatRows = p.selectedSeats
+              ? Object.entries(p.selectedSeats).map(([legIndex, seat]) => ({
+                  label: allLegs[Number(legIndex)]?.label ?? `Leg ${Number(legIndex) + 1}`,
+                  seat,
+                }))
+              : p.selectedSeat
+              ? [{ label: allLegs[0]?.label ?? "Leg 1", seat: p.selectedSeat }]
+              : [];
+            const seatLabel = seatRows.length
+              ? seatRows.map((entry) => `${entry.label}: ${entry.seat}`).join(" · ")
+              : null;
+
             return (
               <div key={i} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex items-start justify-between">
@@ -87,14 +127,19 @@ export default function BookingStep5Review({
                       {p.panNumber && (
                         <div className="text-xs text-slate-500 mt-0.5">PAN: <span className="font-mono">{p.panNumber}</span></div>
                       )}
-                      {p.selectedSeat && (
-                        <div className="text-xs text-blue-600 font-bold mt-0.5">💺 Seat: {p.selectedSeat}</div>
+                      {seatLabel && (
+                        <div className="text-xs text-blue-600 font-bold mt-0.5">💺 {seatLabel}</div>
                       )}
-                      {extra && (extra.mealCode !== "NONE" || extra.baggageKg > 0) && (
-                        <div className="text-xs text-violet-600 font-medium mt-0.5">
-                          {extra.mealCode !== "NONE" && `🍽️ ${extra.mealLabel}`}
-                          {extra.mealCode !== "NONE" && extra.baggageKg > 0 && " · "}
-                          {extra.baggageKg > 0 && `🧳 +${extra.baggageKg}kg`}
+                      {passengerExtras.length > 0 && (
+                        <div className="space-y-1 mt-0.5">
+                          {passengerExtras.map((extra) => (
+                            <div key={`${extra.legIndex}-${extra.passengerId}`} className="text-xs text-violet-600 font-medium">
+                              {allLegs[extra.legIndex]?.label ?? `Leg ${extra.legIndex + 1}`}: 
+                              {extra.mealCode !== "NONE" ? `🍽️ ${extra.mealLabel}` : "No meal"}
+                              {extra.mealCode !== "NONE" && extra.baggageKg > 0 && " · "}
+                              {extra.baggageKg > 0 ? `🧳 +${extra.baggageKg}kg` : ""}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -190,6 +235,19 @@ export default function BookingStep5Review({
         </div>
       </ReviewCard>
 
+      {/* ── SIGN-IN NUDGE (shown only when logged out) ────── */}
+      {!user && (
+        <div className="rounded-3xl border-2 border-amber-200 bg-amber-50 p-4 mb-4 flex items-center gap-3">
+          <span className="text-2xl">🔐</span>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-amber-900">Sign in to complete your booking</div>
+            <div className="text-xs text-amber-700 mt-0.5">
+              You'll be asked to sign in when you click "Proceed to Payment".
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── CONFIRMATION CHECKBOX ─────────────────────────── */}
       <div className={`rounded-3xl border-2 p-5 mb-6 transition-all ${agreed ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"}`}>
         <label className="flex items-start gap-4 cursor-pointer">
@@ -214,6 +272,7 @@ export default function BookingStep5Review({
         </label>
       </div>
 
+      {/* ── ACTIONS ───────────────────────────────────────── */}
       <div className="flex gap-3">
         <button
           onClick={onBack}
@@ -222,16 +281,20 @@ export default function BookingStep5Review({
           ← Edit Details
         </button>
         <button
-          onClick={onConfirm}
+          onClick={handleConfirmClick}          // ← auth-guarded handler
           disabled={!agreed}
           className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200 disabled:shadow-none"
         >
-          {agreed ? `Proceed to Payment — ${formatINR(total)} →` : "Please confirm details above to continue"}
+          {agreed
+            ? `${user ? "" : "🔐 Sign in & "}Proceed to Payment — ${formatINR(total)} →`
+            : "Please confirm details above to continue"}
         </button>
       </div>
     </div>
   );
 }
+
+// ── Sub-components (unchanged) ────────────────────────────
 
 function ReviewCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (

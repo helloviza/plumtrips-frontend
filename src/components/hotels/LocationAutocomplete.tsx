@@ -6,7 +6,7 @@ import { useHotelStore } from '../../stores/hotelStore';
 
 interface LocationAutocompleteProps {
   value: string;
-  onChange: (value: string, cityId?: string) => void;
+  onChange: (value: string, cityId?: string, countryCode?: string) => void;
   placeholder?: string;
   error?: string;
   variant?: 'default' | 'bar';
@@ -71,9 +71,12 @@ export default function LocationAutocomplete({
   };
 
   const handleSelect = (city: CityOption) => {
-    onChange(city.name, city.cityCode);
-    // Store the cityCode (TBO Code) in searchParams for the city-hotels + search calls
-    setSearchParams({ locationId: city.cityCode });
+    onChange(city.name, city.cityCode, city.countryCode);
+    // Store the cityCode (TBO Code) and countryCode in searchParams for the city-hotels + search calls
+    setSearchParams({ 
+      locationId: city.cityCode,
+      destinationCountryCode: city.countryCode
+    });
     setIsOpen(false);
     setResults([]);
   };

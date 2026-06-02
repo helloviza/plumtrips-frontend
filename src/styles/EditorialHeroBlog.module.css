@@ -6,10 +6,10 @@
   --color-primary:               #003059;
   --color-primary-container:     #00477f;
   --color-on-primary:            #ffffff;
-  --color-secondary:             #9f4028;
+  --color-secondary:             #d06549;
   --color-on-secondary:          #ffffff;
   --color-secondary-container:   #fd8869;
-  --color-on-secondary-container:#73210a;
+  --color-on-secondary-container:#f3572c;
   --color-tertiary:              #2d3031;
   --color-on-tertiary:           #ffffff;
   --color-background:            #fcf9f8;
@@ -91,11 +91,11 @@
 /* image side */
 .editorialPage :global(.hero__image-wrap){
   position: relative;
-  height: 400px;
+  height: 200px;
 }
 
 @media (min-width: 1024px) {
-  .editorialPage :global(.hero__image-wrap){ height: 720px; }
+  .editorialPage :global(.hero__image-wrap){ height: 600px; }
 }
 
 .editorialPage :global(.hero__image-wrap) img{

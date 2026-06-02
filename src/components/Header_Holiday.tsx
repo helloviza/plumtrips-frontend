@@ -8,12 +8,14 @@ export function Header_Holiday() {
       {/* Logo */}
       <div className="shrink-0 flex items-center mr-8">
         <Link to="/">
-          <img src={logoImg} alt="Plumtrips Logo" className="h-16 w-auto object-contain cursor-pointer" />
+          <img src={logoImg} alt="Plumtrips Logo" className="h-20 w-auto object-contain cursor-pointer" />
         </Link>
       </div>
 
       {/* Navigation */}
       <nav className="flex flex-wrap justify-end items-center gap-x-4 gap-y-2 text-[#e5e5e5] text-[13px] font-medium tracking-wide">
+        <Link to="/holidays"><span className="cursor-pointer hover:text-white transition-colors whitespace-nowrap">Holidays</span></Link>
+        
         <Link to="/vietnam-personal"><span className="cursor-pointer hover:text-white transition-colors whitespace-nowrap">Vietnam</span></Link>
         <Link to="/thailand-personal"><span className="cursor-pointer hover:text-white transition-colors whitespace-nowrap">Thailand</span></Link>
         <Link to="/japan-personal"><span className="cursor-pointer hover:text-white transition-colors whitespace-nowrap">Japan</span></Link>

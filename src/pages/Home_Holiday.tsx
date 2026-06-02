@@ -7,6 +7,7 @@ import { Switch, Route, useLocation } from "wouter";
 import { FaWhatsapp } from "react-icons/fa";
 import { MapPin, Calendar, Users, Wallet, Check, Star, ArrowRight,  Mail } from "lucide-react";
 import { SiInstagram } from "react-icons/si";
+import { createTripInquiry,  type TripInquiryForm } from "../lib/api";
 
 
 
@@ -58,13 +59,22 @@ const form = useForm<InquiryFormValues>({
   }
 })
 
-  const onSubmit = (data: InquiryFormValues) => {
+const onSubmit = async (data: InquiryFormValues) => {
+  try {
+    await createTripInquiry(data as TripInquiryForm);  // ← cast here
     toast({
       title: "Inquiry Received",
-      description: "Our travel experts will contact you shortly to start planning your dream journey.",
+      description: "Our travel experts will contact you shortly.",
     });
     form.reset();
-  };
+  } catch (err: any) {
+    toast({
+      title: "Something went wrong",
+      description: err?.message || "Please try again or WhatsApp us.",
+      variant: "destructive",
+    });
+  }
+};
 
   const scrollToForm = () => {
     document.getElementById("inquiry-form")?.scrollIntoView({ behavior: "smooth" });
@@ -191,7 +201,7 @@ const form = useForm<InquiryFormValues>({
                             </FormControl>
                             <SelectContent>
                               {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m) => (
-                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                                <SelectItem className="text-black hover:bg-gray-100 focus:bg-gray-100" key={m} value={m}>{m}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -230,10 +240,10 @@ const form = useForm<InquiryFormValues>({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="under-1L">Under ₹1L</SelectItem>
-                            <SelectItem value="1L-2L">₹1L – ₹2L</SelectItem>
-                            <SelectItem value="2L-5L">₹2L – ₹5L</SelectItem>
-                            <SelectItem value="5L-plus">₹5L+</SelectItem>
+                            <SelectItem className="text-black hover:bg-gray-100 focus:bg-gray-100" value="under-1L">Under ₹1L</SelectItem>
+                            <SelectItem className="text-black hover:bg-gray-100 focus:bg-gray-100" value="1L-2L">₹1L – ₹2L</SelectItem>
+                            <SelectItem className="text-black hover:bg-gray-100 focus:bg-gray-100" value="2L-5L">₹2L – ₹5L</SelectItem>
+                            <SelectItem className="text-black hover:bg-gray-100 focus:bg-gray-100" value="5L-plus">₹5L+</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage className="text-red-300 text-xs" />

@@ -175,13 +175,18 @@ function FareTierCard({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {[
-            { icon: "🧳", label: "Check-in",    val: tier.checkinBag      },
-            { icon: "💼", label: "Cabin",        val: tier.cabinBag        },
-            { icon: "↩️", label: "Cancel",       val: tier.cancellationFee },
-            { icon: "📅", label: "Reschedule",   val: tier.dateChangeFee   },
-            { icon: "💺", label: "Seat",         val: tier.seatSelection   },
-            { icon: "🍽️", label: "Meals",        val: tier.meals           },
-          ].map(({ icon, label, val }) => (
+  { icon: "🧳", label: "Check-in",    val: tier.checkinBag      },
+  { icon: "💼", label: "Cabin",        val: tier.cabinBag        },
+  { icon: "↩️", label: "Cancel",       val: tier.cancellationFee },
+  { icon: "📅", label: "Reschedule",   val: tier.dateChangeFee   },
+  { icon: "💺", label: "Seat",         val: tier.seatSelection   },
+  { icon: "🍽️", label: "Meals",        val: tier.meals           },
+  {
+    icon: tier.isRefundable ? "✅" : "❌",
+    label: "Refundable",
+    val: tier.isRefundable ? "Yes" : "No",
+  },
+].map(({ icon, label, val }) => (
             <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
               <span style={{ fontSize: 11, marginTop: 1, flexShrink: 0 }}>{icon}</span>
               <div style={{ minWidth: 0 }}>
@@ -237,17 +242,17 @@ function FareModal({
   }, [flight.resultIndex]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-end" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
       <div
         style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
         onClick={onClose}
       />
       <div style={{
-        position: "relative", width: "100%", maxWidth: 780, margin: "0 auto",
-        background: "#fff", borderRadius: "20px 20px 0 0", maxHeight: "95dvh",
-        display: "flex", flexDirection: "column", overflow: "hidden",
-        boxShadow: "0 -12px 60px rgba(0,48,95,0.25)",
-      }}>
+  position: "relative", width: "100%", maxWidth: 780,
+  background: "#fff", borderRadius: 20, maxHeight: "92dvh",
+  display: "flex", flexDirection: "column", overflow: "hidden",
+  boxShadow: "0 24px 80px rgba(0,48,95,0.30)",
+}}>
         {/* Modal header */}
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
@@ -591,10 +596,12 @@ function FilterPanel({
 
   return (
     <div style={mobile ? {} : {
-      background: "#fff", borderRadius: 16, border: `1px solid ${S.border}`,
-      overflow: "hidden", position: "sticky", top: 16,
-      maxHeight: "calc(100vh - 32px)", overflowY: "auto",
-    }}>
+  background: "#fff", borderRadius: 16, border: `1px solid ${S.border}`,
+  overflow: "hidden", position: "sticky", top: 16,
+  maxHeight: "calc(100vh - 32px)", overflowY: "auto",
+  scrollbarWidth: "none",          /* Firefox */
+  msOverflowStyle: "none",         /* IE/Edge */
+}}>
       {/* Header */}
       <div style={{
         padding: "14px 16px 0",
@@ -808,7 +815,10 @@ function MobileFilterDrawer({
             Done
           </button>
         </div>
-        <div style={{ overflowY: "auto", flex: 1, padding: "0 0 20px" }}>
+        <div
+  className="mobile-filter-scroll"
+  style={{ overflowY: "auto", flex: 1, padding: "0 0 20px", scrollbarWidth: "none", msOverflowStyle: "none" }}
+>
           <FilterPanel flights={flights} filters={filters} onChange={onChange} onReset={onReset} mobile />
         </div>
       </div>
@@ -929,7 +939,9 @@ export default function ResultsPage({
   if (!form) {
     return (
       <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');`}</style>
+        <style>{`@import aside::-webkit-scrollbar { display: none; }
+        @keyframes .mobile-filter-scroll::-webkit-scrollbar { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');`}</style>
         <div style={{ textAlign: "center", padding: 40 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>✈️</div>
           <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.navyDeep, marginBottom: 8 }}>

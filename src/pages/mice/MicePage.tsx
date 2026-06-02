@@ -103,11 +103,11 @@ const STATS = [
 
 const WHY = [
   { icon: "/assets/mice1/x1.png", title: "Proven Delivery", text: "Board meetings to 2,000-delegate conferences — flawlessly executed every time." },
-  { icon: "/assets/mice1/x2.png", title: "Negotiation Power", text: "Preferred rates through global hotel & airline partnerships for real savings." },
+  { icon: "/assets/mice1/x6.png", title: "Negotiation Power", text: "Preferred rates through global hotel & airline partnerships for real savings." },
   { icon: "/assets/mice1/x3.png", title: "Creative Production", text: "Stage design, AV storytelling, and brand experiences your audience remembers." },
-  { icon: "/assets/mice1/x4.png", title: "Global + Local", text: "Worldwide reach with local specialists to navigate culture, permits, and logistics." },
+  { icon: "/assets/mice1/x2.png", title: "Global + Local", text: "Worldwide reach with local specialists to navigate culture, permits, and logistics." },
   { icon: "/assets/mice1/x5.png", title: "Risk Management", text: "Compliance, traveler safety, and contingency planning built in from day one." },
-  { icon: "/assets/mice1/x6.png", title: "Concierge Support", text: "Dedicated PMO, VIP handling, and 24×7 traveler assistance throughout." },
+  { icon: "/assets/mice1/x4.png", title: "Concierge Support", text: "Dedicated PMO, VIP handling, and 24×7 traveler assistance throughout." },
 ];
 
 const TESTIMONIALS = [
@@ -195,7 +195,7 @@ export default function MicePage() {
           >
             Events that move
             <br />
-            <span style={{ color: "#ffb89a" }}>people forward.</span>
+            <span style={{ color: "#ffb89a" }}>people forward</span>
           </h1>
 
           <p className="mt-5 text-white max-w-xl text-lg leading-relaxed">

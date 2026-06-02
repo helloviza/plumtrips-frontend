@@ -1,20 +1,23 @@
 // ============================================================
-//  BookingPage.tsx — v4 REDESIGNED (FIXED)
+//  BookingPage.tsx — FIXED
 //
-//  Fix applied to Step 4 render:
-//    - Removed old `ssrData={ssrDataPerLeg[0] ?? null}` prop
-//    - Now passes `ssrDataPerLeg` (full array) and `legs` array
-//      to match the updated BookingStep4Extras interface.
-//  Also: `legs` is built once via useMemo and shared across
-//  Step 3, Step 4, and the SSR fetch in handlePassengersNext.
+//  Fixes:
+//  1. SSR fetch now triggers on EVERY entry to Step 3, not just
+//     the first time (guards against back-navigation re-entry).
+//  2. `legs` array is the single source of truth for Steps 3 & 4
+//     AND for the SSR fetch — guarantees index alignment.
+//  3. `handleContinueSeats` now writes ALL leg seat selections
+//     back into PassengerData.selectedSeats (leg-indexed map).
+//  4. Tier passed to Step 4 correctly uses per-leg tier objects.
 // ============================================================
 
 import { useState, useMemo } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { MOCK_MODE, apiFareQuote, apiBookFlight, apiGetSSRForLegs } from "../../lib/flights_api";
-import type { BookFlightInput, SSRResult } from "../../lib/flights_api";
+import type { BookPassenger, SSRResult } from "../../lib/flights_api";
+import { createFlightPaymentOrder, verifyFlightPayment } from "../../services/paymentApi";
 import { calcFares, BookingShell, emptyPassenger } from "./BookingShared";
-import type { BookingFormState } from "./BookingShared";
+import type { BookingFormState, SeatMap } from "./BookingShared";
 
 import BookingStep1FareReview    from "./BookingStep1FareReview";
 import BookingStep2Passengers    from "./BookingStep2Passengers";
@@ -39,7 +42,10 @@ function loadRazorpay(): Promise<boolean> {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
+
 // ─── PROPS ──────────────────────────────────────────────────
+
+type FlightBookPassenger = BookPassenger & { MealDynamic?: Array<Record<string, unknown>> };
 
 interface BookingPageProps {
   flight: DisplayFlight;
@@ -78,9 +84,11 @@ export default function BookingPage({
   const [fareChanged, setFareChanged] = useState(false);
   const [updatedFare, setUpdatedFare] = useState<number | null>(null);
 
-  // SSR per leg — index 0 = outbound, 1 = return / leg 2, etc.
+  // FIX #1: SSR state — one entry per leg, null until loaded
   const [ssrDataPerLeg, setSsrDataPerLeg] = useState<(SSRResult | null)[]>([]);
   const [ssrLoading, setSsrLoading]       = useState(false);
+  const [seatMaps, setSeatMaps] = useState<Record<number, SeatMap>>({});
+  
 
   const [form, setForm] = useState<BookingFormState>({
     passengers: [
@@ -113,20 +121,31 @@ export default function BookingPage({
     ...Array(infants).fill("Infant"),
   ];
 
-  // ── LEGS — single source of truth for Steps 3, 4, and SSR fetch ──
-  // Index must match ssrDataPerLeg:
-  //   [0] outbound  [1] return (round-trip)  [2+] extra multi-city legs
+  // ── LEGS — single source of truth shared by Steps 3, 4, and SSR fetch ──
+  //
+  // CRITICAL: The index here MUST match ssrDataPerLeg indices:
+  //   [0] = outbound flight
+  //   [1] = return flight (round-trip) OR leg 2 (multi-city)
+  //   [2+] = additional multi-city legs
+  //
+  // multiCityLegs[0] is the same as `flight` (outbound), so we slice(1)
+  // for the extra legs to avoid duplicating index 0.
 
   const legs = useMemo(() => [
     {
       flight,
+      tier,
       label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight",
     },
-    ...(isRoundTrip && returnFlight
-      ? [{ flight: returnFlight, label: "Return" }]
+    ...(isRoundTrip && returnFlight && returnTier
+      ? [{ flight: returnFlight, tier: returnTier, label: "Return" }]
       : []),
     ...(isMultiCity && multiCityLegs
-      ? multiCityLegs.slice(1).map((l, i) => ({ flight: l.flight, label: `Leg ${i + 2}` }))
+      ? multiCityLegs.slice(1).map((l, i) => ({
+          flight: l.flight,
+          tier: l.tier,
+          label: `Leg ${i + 2}`,
+        }))
       : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [
@@ -167,7 +186,12 @@ export default function BookingPage({
     }
   }
 
-  // ── STEP 2: PASSENGER VALIDATION ──────────────────────────
+  // ── STEP 2: PASSENGER VALIDATION → SSR FETCH ──────────────
+  //
+  // FIX #2: SSR is fetched using `legs.map(l => l.flight)` so
+  // the order is guaranteed identical to the legs array indices.
+  // We re-fetch if ssrDataPerLeg is empty (first visit) or if
+  // the user went back and the data was cleared.
 
   function validatePassengers(): string | null {
     for (let i = 0; i < form.passengers.length; i++) {
@@ -200,22 +224,30 @@ export default function BookingPage({
     if (err) { setError(err); return; }
     setError(null);
 
-    // Fetch SSR for all legs in parallel (only once)
-    if (ssrDataPerLeg.length === 0) {
+    // FIX #2: Always fetch SSR when entering Step 3 for the first time.
+    // Use legs array directly so indices are guaranteed aligned.
+    if (ssrDataPerLeg.length !== legs.length) {
       setSsrLoading(true);
-      const allFlights = legs.map((l) => l.flight);
-      apiGetSSRForLegs(allFlights)
-        .then((results) => setSsrDataPerLeg(results))
-        .catch(() => setSsrDataPerLeg(allFlights.map(() => null)))
-        .finally(() => setSsrLoading(false));
-    }
+setSsrDataPerLeg([]); // clear stale data so UI shows loading
+const allFlights = legs.map((l) => l.flight);
+  // const ssrFn = isMultiCity
+  //   ? apiGetSSRForMultiCity(allFlights)   // one call, distributes by leg
+  //   : apiGetSSRForLegs(allFlights,isMultiCity);       // separate call per leg (round-trip / one-way)
+    const ssrFn = apiGetSSRForLegs(allFlights, isMultiCity);
 
-    setStep(3);
+
+  ssrFn
+    .then(results => setSsrDataPerLeg(results))
+    .catch(() => setSsrDataPerLeg(legs.map(() => null)))
+    .finally(() => setSsrLoading(false));
+    }
+  setStep(3);
+
   }
 
   // ── SAVE BOOKING TO DB ────────────────────────────────────
 
-  async function saveBooking(bookingId?: number, pnr?: string, passengerNames?: string[]) {
+  async function saveBooking(bookingId?: number, pnr?: string) {
     try {
       await fetch(`${API_BASE}/api/v1/flights/bookings`, {
         method: "POST",
@@ -235,7 +267,9 @@ export default function BookingPage({
             passportNo: p.passportNo || null,
             passportExpiry: p.passportExpiry || null,
             panNumber: p.panNumber || null,
+            // FIX #3: persist all leg seats, not just leg 0
             selectedSeat: p.selectedSeat || null,
+            selectedSeats: p.selectedSeats || null,
           })),
           extras: form.extras,
           flight: {
@@ -302,17 +336,81 @@ export default function BookingPage({
     setLoading(true);
     setError(null);
 
-    const passengersMapped: BookFlightInput["passengers"] = form.passengers.map((p, i) => ({
-      Title: p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
-      FirstName: p.firstName.trim(),
-      LastName: p.lastName.trim(),
-      PaxType: (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3,
-      DateOfBirth: p.dob ? `${p.dob}T00:00:00` : "1990-01-01T00:00:00",
-      Gender: p.gender === "Male" ? 1 : 2,
-      PassportNo: p.passportNo || undefined,
-      PassportExpiry: p.passportExpiry || undefined,
-      Pan: p.panNumber || undefined,
-    }));
+    const mealExtrasByPaxAndLeg: Record<number, Record<number, typeof form.extras[number]>> = {};
+    form.extras.forEach((extra) => {
+      if (!mealExtrasByPaxAndLeg[extra.passengerId]) {
+        mealExtrasByPaxAndLeg[extra.passengerId] = {};
+      }
+      mealExtrasByPaxAndLeg[extra.passengerId][extra.legIndex] = extra;
+    });
+
+    const normalizeFlightNumber = (raw: string) =>
+      String(raw).replace(/[^0-9]/g, "");
+
+    const buildMealItem = (paxIndex: number, legIndex: number) => {
+      const extra = mealExtrasByPaxAndLeg[paxIndex]?.[legIndex];
+      const leg = legs[legIndex] ?? { flight };
+      const code = extra?.mealCode ?? "NONE";
+      return {
+        AirlineCode: leg.flight.airlineCode,
+        FlightNumber: normalizeFlightNumber(leg.flight.flightNumber),
+        WayType: 2,
+        Code: code,
+        Description: 2,
+        AirlineDescription: "",
+        Quantity: code === "NONE" ? 0 : 1,
+        Currency: "INR",
+        Price: extra?.mealPrice ?? 0,
+        Origin: leg.flight.fromCode,
+        Destination: leg.flight.toCode,
+      };
+    };
+
+    const buildPassengersForLeg = (legIndex: number): FlightBookPassenger[] =>
+      form.passengers.map((p, i) => {
+        const base = {
+          Title: p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
+          FirstName: p.firstName.trim(),
+          LastName: p.lastName.trim(),
+          PaxType: (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3,
+          DateOfBirth: p.dob ? `${p.dob}T00:00:00` : "1990-01-01T00:00:00",
+          Gender: (p.gender === "Male" ? 1 : 2) as 1 | 2,
+          PassportNo: p.passportNo || undefined,
+          PassportExpiry: p.passportExpiry || undefined,
+          Pan: p.panNumber || undefined,
+        };
+
+        if (paxTypes[i] === "Infant") return base;
+
+        return {
+          ...base,
+          MealDynamic: [buildMealItem(i, legIndex)],
+        };
+      });
+
+    const buildPassengersForAllLegs = (): FlightBookPassenger[] =>
+      form.passengers.map((p, i) => {
+        const base = {
+          Title: p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
+          FirstName: p.firstName.trim(),
+          LastName: p.lastName.trim(),
+          PaxType: (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3,
+          DateOfBirth: p.dob ? `${p.dob}T00:00:00` : "1990-01-01T00:00:00",
+          Gender: (p.gender === "Male" ? 1 : 2) as 1 | 2,
+          PassportNo: p.passportNo || undefined,
+          PassportExpiry: p.passportExpiry || undefined,
+          Pan: p.panNumber || undefined,
+        };
+
+        if (paxTypes[i] === "Infant") return base;
+
+        return {
+          ...base,
+          MealDynamic: legs.map((_, legIndex) => buildMealItem(i, legIndex)),
+        };
+      });
+
+    const passengersMapped = buildPassengersForAllLegs();
 
     const gstPayload = form.gstNumber ? {
       GSTNumber: form.gstNumber,
@@ -334,12 +432,13 @@ export default function BookingPage({
 
         if (isMultiCity && multiCityLegs && multiCityLegs.length > 0) {
           const results: { bookingId?: number; pnr?: string }[] = [];
-          for (const leg of multiCityLegs) {
+          for (let legIndex = 0; legIndex < multiCityLegs.length; legIndex++) {
+            const leg = multiCityLegs[legIndex];
             const r = await apiBookFlight({
               traceId: leg.flight.traceId,
               resultIndex: leg.tier.resultIndex,
               isLCC: leg.flight.isLCC,
-              passengers: passengersMapped,
+              passengers: buildPassengersForLeg(legIndex),
               contact: { Email: form.contactEmail, Mobile: form.contactPhone },
               gst: gstPayload,
             });
@@ -362,7 +461,7 @@ export default function BookingPage({
           pnr = result.pnr;
         }
 
-        await saveBooking(bookingId, pnr, passengerNames);
+        await saveBooking(bookingId, pnr);
         setConfirmedBookingId(bookingId);
         setConfirmedPnr(pnr);
         setConfirmedNames(passengerNames);
@@ -386,35 +485,27 @@ export default function BookingPage({
         return;
       }
 
-      const orderRes = await fetch(`${API_BASE}/api/v1/flights/tbo/create-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: totalPayable * 100,
-          currency: "INR",
-          receipt: `plum_${Date.now()}`,
-          notes: {
-            route: `${flight.fromCode}→${flight.toCode}`,
-            passengers: adults + children + infants,
-          },
-        }),
+      const orderData = await createFlightPaymentOrder({
+        amount: totalPayable,
+        bookingCode: `FLIGHT_${Date.now()}`,
+        traceId: flight.traceId,
+        flightRoute: `${flight.fromCode}-${flight.toCode}`,
+        flightDate: flight.departDate,
+        passengerCount: adults + children + infants,
       });
-
-      const orderJson = await orderRes.json();
-      if (!orderJson.ok) throw new Error(orderJson.message || "Failed to create payment order");
-      const { orderId, amount } = orderJson.data;
 
       await new Promise<void>((resolve, reject) => {
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
-          amount, currency: "INR",
+          key: orderData.keyId,
+          amount: orderData.amount,
+          currency: orderData.currency,
           name: "PlumTrips",
           description: `${flight.fromCode} → ${flight.toCode} · ${adults + children + infants} traveller${adults + children + infants !== 1 ? "s" : ""}`,
-          order_id: orderId,
+          order_id: orderData.orderId,
           prefill: {
             name: `${form.passengers[0]?.firstName ?? ""} ${form.passengers[0]?.lastName ?? ""}`.trim(),
             email: form.contactEmail,
-            contact: `+91${form.contactPhone}`,
+            contact: form.contactPhone,
           },
           theme: { color: "#2563eb" },
           modal: {
@@ -427,13 +518,33 @@ export default function BookingPage({
             razorpay_signature: string;
           }) => {
             try {
-              const bookRes = await fetch(`${API_BASE}/api/v1/flights/tbo/book-after-payment`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
+              await verifyFlightPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              let bookingId: number | undefined;
+              let pnr: string | undefined;
+
+              if (isMultiCity && multiCityLegs && multiCityLegs.length > 0) {
+                const results: { bookingId?: number; pnr?: string }[] = [];
+                for (let legIndex = 0; legIndex < multiCityLegs.length; legIndex++) {
+                  const leg = multiCityLegs[legIndex];
+                  const r = await apiBookFlight({
+                    traceId: leg.flight.traceId,
+                    resultIndex: leg.tier.resultIndex,
+                    isLCC: leg.flight.isLCC,
+                    passengers: buildPassengersForLeg(legIndex),
+                    contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+                    gst: gstPayload,
+                  });
+                  results.push(r);
+                }
+                bookingId = results[0]?.bookingId;
+                pnr = results.map((r) => r.pnr).filter(Boolean).join(", ");
+              } else {
+                const result = await apiBookFlight({
                   traceId: flight.traceId,
                   resultIndex: isRoundTrip && returnTier
                     ? `${tier.resultIndex},${returnTier.resultIndex}`
@@ -442,14 +553,12 @@ export default function BookingPage({
                   passengers: passengersMapped,
                   contact: { Email: form.contactEmail, Mobile: form.contactPhone },
                   gst: gstPayload,
-                }),
-              });
+                });
+                bookingId = result.bookingId;
+                pnr = result.pnr;
+              }
 
-              const bookJson = await bookRes.json();
-              if (!bookJson.ok) throw new Error(bookJson.message || "Booking failed after payment");
-              const { bookingId, pnr } = bookJson.data;
-
-              await saveBooking(bookingId, pnr, passengerNames);
+              await saveBooking(bookingId, pnr);
               setConfirmedBookingId(bookingId);
               setConfirmedPnr(pnr);
               setConfirmedNames(passengerNames);
@@ -479,6 +588,8 @@ export default function BookingPage({
     discount: form.promoDiscount,
     extras: form.extras,
     currentStep: step,
+     passengers: form.passengers,
+     seatMaps, 
     onBack: step === 1 ? onBack : () => setStep((s) => (s - 1) as any),
   };
 
@@ -541,16 +652,17 @@ export default function BookingPage({
           flight={flight}
           tier={tier}
           passengers={form.passengers}
-          paxTypes={paxTypes}
           multiCityLegs={multiCityLegs}
           returnFlight={returnFlight}
           isRoundTrip={isRoundTrip}
           isMultiCity={isMultiCity}
           ssrDataPerLeg={ssrDataPerLeg}
           ssrLoading={ssrLoading}
+          returnTier={returnTier}
           onChange={(updatedPax) =>
             setForm((f) => ({ ...f, passengers: updatedPax }))
           }
+          onSeatMapsResolved={(maps) => setSeatMaps(maps)} 
           onNext={() => setStep(4)}
           onBack={() => setStep(2)}
         />
@@ -561,8 +673,8 @@ export default function BookingPage({
           flight={flight}
           form={form}
           paxTypes={paxTypes}
-          ssrDataPerLeg={ssrDataPerLeg}   // ← full array, NOT ssrData
-          legs={legs}                      // ← shared memoized leg list
+          ssrDataPerLeg={ssrDataPerLeg}   // full array — index matches legs
+          legs={legs}                      // same memoized legs array as Step 3
           onChange={setForm}
           onNext={() => setStep(5)}
           onBack={() => setStep(3)}

@@ -931,3 +931,125 @@ export async function createCallbackRequest(
 export async function deleteCallbackRequest(id: string): Promise<void> {
   return del(`/requests/${id}`);
 }
+
+
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type TripBudgetRange = "under-1L" | "1L-2L" | "2L-5L" | "5L-plus";
+
+export type TripTravelMonth =
+  | "January" | "February" | "March" | "April"
+  | "May" | "June" | "July" | "August"
+  | "September" | "October" | "November" | "December";
+
+export interface TripInquiry {
+  id: string;
+  destination: string;
+  departureCity: string;
+  budget: TripBudgetRange;
+  month: TripTravelMonth;
+  travelers: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Raw shape returned by MongoDB (uses _id) ─────────────────────────────────
+
+type RawTripInquiry = Omit<TripInquiry, "id"> & { _id: string };
+
+function normalizeTripInquiry(r: RawTripInquiry): TripInquiry {
+  return { ...r, id: r._id };
+}
+
+// ─── Trip Inquiry Form (matches your Home_Holiday form fields) ────────────────
+
+export interface TripInquiryForm {
+  destination: string;
+  departureCity: string;
+  budget: TripBudgetRange;
+  month: TripTravelMonth;
+  travelers: number;
+}
+
+export interface TripInquiryResponse {
+  success: boolean;
+  message: string;
+  inquiryId?: string;
+}
+
+// ─── Trip Inquiry API ─────────────────────────────────────────────────────────
+
+export async function createTripInquiry(
+  form: TripInquiryForm
+): Promise<TripInquiryResponse> {
+  return postJson<TripInquiryResponse>("/api/abx/tripenquiry", {
+    ...form,
+    destination: form.destination.trim(),
+    departureCity: form.departureCity.trim(),
+  });
+}
+
+export async function getTripInquiries(): Promise<TripInquiry[]> {
+  const raw = await get<RawTripInquiry[]>("/tripenquiry");
+  return raw.map(normalizeTripInquiry);
+}
+
+export async function deleteTripInquiry(id: string): Promise<void> {
+  return del(`/tripenquiry/${id}`);
+}
+
+
+// ─── Country Enquiry Types ────────────────────────────────────────────────────
+
+export interface CountryEnquiry {
+    id: string;
+    name: string;
+    email: string;
+    teamSize: number;
+    date: string;
+    note?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+type RawCountryEnquiry = Omit<CountryEnquiry, "id"> & { _id: string };
+
+function normalizeCountryEnquiry(r: RawCountryEnquiry): CountryEnquiry {
+    return { ...r, id: r._id };
+}
+
+export interface CountryEnquiryForm {
+    name: string;
+    email: string;
+    teamSize: number;
+    date: string;
+    note?: string;
+}
+
+export interface CountryEnquiryResponse {
+    success: boolean;
+    message: string;
+    enquiryId?: string;
+}
+
+// ─── Country Enquiry API ──────────────────────────────────────────────────────
+
+export async function createCountryEnquiry(
+    form: CountryEnquiryForm
+): Promise<CountryEnquiryResponse> {
+    return postJson<CountryEnquiryResponse>("/api/abx/countryenquiry", {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+    });
+}
+
+export async function getCountryEnquiries(): Promise<CountryEnquiry[]> {
+    const raw = await get<RawCountryEnquiry[]>("/countryenuiry");
+    return raw.map(normalizeCountryEnquiry);
+}
+
+export async function deleteCountryEnquiry(id: string): Promise<void> {
+    return del(`/countryenquiry/${id}`);
+}

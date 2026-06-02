@@ -77,6 +77,17 @@ export interface CreateHotelPaymentOrderParams {
   currency?: string;
 }
 
+export interface CreateFlightPaymentOrderParams {
+  /** Total fare in INR (rupees, not paise). */
+  amount: number;
+  bookingCode: string;
+  traceId: string;
+  flightRoute: string;
+  flightDate?: string;
+  passengerCount?: number;
+  currency?: string;
+}
+
 export interface HotelPaymentOrderData {
   orderId: string;
   amount: number;
@@ -135,6 +146,24 @@ export async function createHotelPaymentOrder(
   return res.data;
 }
 
+export async function createFlightPaymentOrder(
+  params: CreateFlightPaymentOrderParams
+): Promise<HotelPaymentOrderData> {
+  const res = await post<CreateHotelPaymentOrderResponse>(
+    '/api/v1/payments/flight/order',
+    {
+      amount: params.amount,
+      bookingCode: params.bookingCode,
+      traceId: params.traceId,
+      flightRoute: params.flightRoute,
+      ...(params.flightDate ? { flightDate: params.flightDate } : {}),
+      ...(typeof params.passengerCount === 'number' ? { passengerCount: params.passengerCount } : {}),
+      ...(params.currency ? { currency: params.currency } : {}),
+    }
+  );
+  return res.data;
+}
+
 /**
  * POST /api/v1/payments/hotel/verify
  */
@@ -143,6 +172,16 @@ export async function verifyHotelPayment(
 ): Promise<VerifyHotelPaymentData> {
   const res = await post<VerifyHotelPaymentResponse>(
     '/api/v1/payments/hotel/verify',
+    params
+  );
+  return res.data;
+}
+
+export async function verifyFlightPayment(
+  params: VerifyHotelPaymentParams
+): Promise<VerifyHotelPaymentData> {
+  const res = await post<VerifyHotelPaymentResponse>(
+    '/api/v1/payments/flight/verify',
     params
   );
   return res.data;

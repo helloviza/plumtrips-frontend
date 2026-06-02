@@ -1,8 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Search, Clock } from 'lucide-react';
 import LocationAutocomplete from './LocationAutocomplete';
 import DatePicker from './DatePicker';
 import GuestsRoomsSelector from './GuestsRoomsSelector';
 import { useHotelStore } from '../../stores/hotelStore';
+import { getCountries, type TboCountry } from '../../services/hotelApi';
+// import NationalitySelector from './NationalitySelector';
 import { calculateNights, cn } from '../../lib/utils';
 import { HOTEL_NAVY, HOTEL_NAVY_HOVER, HOTEL_SEARCH_SHADOW } from './hotelTheme';
 
@@ -134,6 +137,8 @@ export default function HotelSearchBar({
             error={errors.guests}
           />
         </div>
+
+
 
         {/* Search CTA */}
         <div className="flex shrink-0 md:w-[140px] lg:w-[160px]">

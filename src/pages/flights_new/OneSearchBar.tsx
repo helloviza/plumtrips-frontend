@@ -1,44 +1,26 @@
 // ============================================================
-//  OneSearchBar.tsx  — v6  (multi-city fully fixed)
+//  OneSearchBar.tsx — with real calendar prices
 //
-//  FIXES vs v5:
-//  [Fix A] MultiCityLegRow airport dropdowns: the FROM/TO
-//          wrapper divs now have `position: "relative"` AND
-//          a minimum height so the portal anchor measures
-//          correctly. Previously the inner <button> filled the
-//          div but the div had no explicit height, causing
-//          getBoundingClientRect to return 0-height on some
-//          browsers, which made portals position at y=0.
-//
-//  [Fix B] MultiCityLegRow: fromRef / toRef / calRef are now
-//          attached to the outermost wrapper div of each field
-//          cell (not the inner button) so the anchor rect
-//          covers the full clickable area.
-//
-//  [Fix C] addLeg: when airports array is populated after
-//          the initial render, the "to" city for a new leg
-//          was defaulting to airports[0] (same as first leg's
-//          from), creating a DEL→DEL leg. Now it picks the
-//          first airport that differs from last.to.
-//
-//  [Fix D] MultiCityPanel: calOpen state now resets when a
-//          different leg is opened, preventing a stale
-//          calendar from showing on the wrong leg.
-//
-//  [Fix E] Route summary pill: already correct in v5 (Fix 5).
-//          Kept as-is.
-//
-//  [Fix F] onSearch for multi-city: the component now correctly
-//          passes multiLegs out via onSearch(form, multiLegs).
-//          ResultsPage was dropping multiLegs — this is fixed
-//          in ResultsPage.tsx instead (see that file), but the
-//          shape here is preserved correctly.
+//  Changes vs previous version:
+//  [Price A] CalendarPopup now accepts a `prices` prop
+//            (Record<string, number>) and renders the
+//            cheapest fare beneath each date number.
+//  [Price B] Prices are colour-coded per visible month:
+//            green = cheapest third, amber = mid, red = high.
+//  [Price C] A legend + "From ₹X" line appears at the bottom
+//            of the popup when prices are loaded.
+//  [Price D] OneSearchBar fetches prices via apiGetCalendarPrices
+//            whenever from/to/cabinClass changes. A tiny
+//            loading spinner is shown on the Search button while
+//            the first fetch is in flight.
+//  [Price E] MultiCityLegRow passes per-leg prices (keyed by
+//            leg index) down to its CalendarPopup.
 // ============================================================
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { SearchForm, Airport } from "../../lib/types_t";
-import { apiGetAirports } from "../../lib/flights_api";
+import { apiGetAirports, apiGetCalendarPrices } from "../../lib/flights_api";
 
 // ─── MOCK FALLBACK ────────────────────────────────────────────────────────────
 const MOCK_AIRPORTS: Airport[] = [
@@ -71,6 +53,13 @@ const MONTHS = ["January","February","March","April","May","June","July","August
 const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 let legIdCounter = 0;
 const newId = () => `leg-${++legIdCounter}`;
+
+// ─── FORMAT HELPER ────────────────────────────────────────────────────────────
+function formatPriceShort(price: number): string {
+  if (price >= 100000) return `₹${(price / 100000).toFixed(1)}L`;
+  if (price >= 1000)   return `₹${(price / 1000).toFixed(1)}k`;
+  return `₹${price}`;
+}
 
 // ─── PORTAL POSITION HOOK ─────────────────────────────────────────────────────
 function usePortalPos(anchorRef: React.RefObject<HTMLElement | null>, open: boolean) {
@@ -143,53 +132,35 @@ function AirportDropdownPortal({
   const spaceBelow = window.innerHeight - (pos.top - window.scrollY) - pos.height;
   const spaceAbove = pos.top - window.scrollY;
   const goAbove    = preferUp ? spaceAbove > spaceBelow : spaceBelow < POPUP_H + 16 && spaceAbove > spaceBelow;
-  const top        = goAbove
-    ? Math.max(8, pos.top - POPUP_H - 6)
-    : pos.top + pos.height + 6;
+  const top        = goAbove ? Math.max(8, pos.top - POPUP_H - 6) : pos.top + pos.height + 6;
   const left       = Math.min(pos.left, window.innerWidth - POPUP_W - 8);
 
   return createPortal(
-    <div
-      ref={popupRef}
-      style={{
-        position: "absolute", top, left: Math.max(8, left),
-        width: POPUP_W, height: POPUP_H,
-        zIndex: 99999,
-        background: S.navy,
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.15)",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
-        overflow: "hidden",
-        display: "flex", flexDirection: "column",
-      }}
-    >
+    <div ref={popupRef} style={{
+      position: "absolute", top, left: Math.max(8, left),
+      width: POPUP_W, height: POPUP_H, zIndex: 99999,
+      background: S.navy, borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.15)",
+      boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+      overflow: "hidden", display: "flex", flexDirection: "column",
+    }}>
       <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.10)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <svg style={{ width: 16, height: 16, color: "rgba(255,255,255,0.4)", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input
-          ref={inputRef}
+        <input ref={inputRef}
           style={{ flex: 1, fontSize: 14, color: "white", outline: "none", background: "transparent", border: "none" }}
           placeholder="Search city or airport…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
+          value={query} onChange={e => setQuery(e.target.value)} />
       </div>
       <div style={{ overflowY: "auto", flex: 1 }}>
         {filtered.length === 0 ? (
           <div style={{ padding: "24px 16px", fontSize: 13, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>No airports found</div>
         ) : filtered.map(a => (
-          <button
-            key={a.code}
-            type="button"
+          <button key={a.code} type="button"
             onMouseDown={e => e.preventDefault()}
             onClick={() => { onSelect(a); onClose(); }}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 12,
-              padding: "11px 16px", textAlign: "left", background: "transparent",
-              border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
-              cursor: "pointer", color: "white",
-            }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", textAlign: "left", background: "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", color: "white" }}
             onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           >
@@ -211,14 +182,19 @@ function AirportDropdownPortal({
 }
 
 // ─── CALENDAR POPUP ───────────────────────────────────────────────────────────
+// [Price A] Added `prices` prop. Dates with prices get a tiny fare label
+//           below the day number. Colours are computed per visible month
+//           range so green/amber/red are always relative (not absolute).
 function CalendarPopup({
   anchorRef, value, value2, isRange, min, onChange, onClose, preferUp = false,
+  prices = {},
 }: {
   anchorRef: React.RefObject<HTMLElement | null>;
   value: string; value2?: string; isRange?: boolean; min?: string;
   onChange: (d1: string, d2?: string) => void;
   onClose: () => void;
   preferUp?: boolean;
+  prices?: Record<string, number>;
 }) {
   const todayDate = new Date();
   const todayStr  = todayDate.toLocaleDateString("en-CA");
@@ -226,7 +202,7 @@ function CalendarPopup({
   const popupRef  = useRef<HTMLDivElement>(null);
   const pos       = usePortalPos(anchorRef, true);
 
-  const POPUP_H = isRange ? 460 : 400;
+  const POPUP_H = isRange ? 510 : 450;
   const POPUP_W = 560;
 
   const parse = (s: string) => (s ? new Date(s + "T00:00:00") : null);
@@ -275,7 +251,26 @@ function CalendarPopup({
     }
   }
 
-  function renderMonth(y: number, m: number) {
+  // [Price B] Compute per-visible-month price colour thresholds
+  function getVisiblePriceRange(): { min: number; max: number } {
+    const visibleDates: string[] = [];
+    for (let d = 1; d <= new Date(vy, vm + 1, 0).getDate(); d++) visibleDates.push(toStr(vy, vm, d));
+    for (let d = 1; d <= new Date(vy2, vm2 + 1, 0).getDate(); d++) visibleDates.push(toStr(vy2, vm2, d));
+    const vals = visibleDates.map(s => prices[s]).filter((p): p is number => p !== undefined && p > 0);
+    if (!vals.length) return { min: 0, max: 0 };
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  }
+
+  function priceColor(price: number, isSel: boolean, range: { min: number; max: number }): string {
+    if (isSel) return "rgba(255,255,255,0.9)";
+    if (!price || range.min === range.max) return "#059669";
+    const ratio = (price - range.min) / (range.max - range.min);
+    if (ratio < 0.33) return "#059669"; // cheapest — green
+    if (ratio < 0.66) return "#d97706"; // mid      — amber
+    return "#dc2626";                   // expensive — red
+  }
+
+  function renderMonth(y: number, m: number, priceRange: { min: number; max: number }) {
     const days  = new Date(y, m + 1, 0).getDate();
     const first = new Date(y, m, 1).getDay();
     const cells: React.ReactNode[] = [];
@@ -288,27 +283,47 @@ function CalendarPopup({
       const hov      = isRange && value && !value2 && hovering && selecting === "to" &&
         ((s > value && s < hovering) || (s > hovering && s < value));
       const isToday  = s === todayStr;
+      const price    = prices[s];
+      const pColor   = priceColor(price ?? 0, !!sel, priceRange);
+
       cells.push(
-        <button
-          key={d} type="button" disabled={disabled}
+        <button key={d} type="button" disabled={disabled}
           onMouseEnter={() => setHovering(s)}
           onMouseLeave={() => setHovering(null)}
           onMouseDown={e => e.preventDefault()}
           onClick={() => clickDay(s)}
           style={{
-            height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            height: 46,
+            display: "flex", alignItems: "center", justifyContent: "center",
             background: (inRange || hov) && !disabled ? "rgba(0,71,127,0.10)" : "transparent",
             border: "none", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.25 : 1,
           }}
         >
           <span style={{
-            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-            borderRadius: "50%", fontSize: 12, fontWeight: 700,
+            width: 36, height: 40,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            gap: 1,
+            borderRadius: 8, fontSize: 12, fontWeight: 700,
             background: sel ? S.accent : "transparent",
             color:      sel ? "white" : isToday && !disabled ? S.accent : disabled ? "#9ca3af" : S.navyDeep,
             outline:    isToday && !sel && !disabled ? `2px solid ${S.accent}` : "none",
             outlineOffset: -2,
-          }}>{d}</span>
+          }}>
+            <span style={{ lineHeight: 1 }}>{d}</span>
+            {price !== undefined && !disabled && (
+              <span style={{
+                fontSize: 7.5,
+                fontWeight: 800,
+                color: pColor,
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                letterSpacing: "-0.02em",
+              }}>
+                {formatPriceShort(price)}
+              </span>
+            )}
+          </span>
         </button>
       );
     }
@@ -317,24 +332,20 @@ function CalendarPopup({
 
   if (!pos) return null;
 
+  const priceRange = getVisiblePriceRange();
   const spaceBelow = window.innerHeight - (pos.top - window.scrollY) - pos.height;
   const spaceAbove = pos.top - window.scrollY;
   const goAbove    = preferUp ? spaceAbove > spaceBelow : spaceBelow < POPUP_H + 16 && spaceAbove > spaceBelow;
-  const top        = goAbove
-    ? Math.max(8, pos.top - POPUP_H - 6)
-    : pos.top + pos.height + 6;
+  const top        = goAbove ? Math.max(8, pos.top - POPUP_H - 6) : pos.top + pos.height + 6;
   const left       = Math.min(pos.left, window.innerWidth - POPUP_W - 8);
 
   return createPortal(
     <div ref={popupRef} style={{
       position: "absolute", top, left: Math.max(8, left),
-      zIndex: 99999,
-      background: "white",
-      borderRadius: 12,
-      border: "1px solid #d0dff0",
+      zIndex: 99999, background: "white",
+      borderRadius: 12, border: "1px solid #d0dff0",
       boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
-      minWidth: POPUP_W,
-      overflow: "hidden",
+      minWidth: POPUP_W, overflow: "hidden",
     }}>
       {isRange && (
         <div style={{ display: "flex", borderBottom: "1px solid #e8eef8", background: "#f4f7fc" }}>
@@ -344,12 +355,7 @@ function CalendarPopup({
           ] as const).map(({ key, label, v }) => (
             <button key={key} type="button"
               onClick={() => { if (key === "to" && !value) return; setSelecting(key); }}
-              style={{
-                flex: 1, padding: "12px 20px", textAlign: "left",
-                background: "transparent", border: "none",
-                borderBottom: selecting === key ? `2px solid ${S.accent}` : "2px solid transparent",
-                cursor: "pointer",
-              }}
+              style={{ flex: 1, padding: "12px 20px", textAlign: "left", background: "transparent", border: "none", borderBottom: selecting === key ? `2px solid ${S.accent}` : "2px solid transparent", cursor: "pointer" }}
             >
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: S.muted, marginBottom: 2 }}>{label}</div>
               <div style={{ fontSize: 14, fontWeight: 900, color: S.navyDeep }}>
@@ -390,11 +396,33 @@ function CalendarPopup({
               {DAYS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: S.muted, padding: "4px 0" }}>{d}</div>)}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", rowGap: 2 }}>
-              {renderMonth(cal.y, cal.m)}
+              {renderMonth(cal.y, cal.m, priceRange)}
             </div>
           </div>
         ))}
       </div>
+
+      {/* [Price C] Legend + cheapest fare in view */}
+      {Object.keys(prices).length > 0 && (
+        <div style={{ borderTop: "1px solid #e8eef8", padding: "8px 20px", display: "flex", alignItems: "center", gap: 14, background: "#fafcff" }}>
+          <span style={{ fontSize: 10, color: S.muted, fontWeight: 600 }}>Fares:</span>
+          {[
+            { color: "#059669", label: "Low" },
+            { color: "#d97706", label: "Mid" },
+            { color: "#dc2626", label: "High" },
+          ].map(({ color, label }) => (
+            <span key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6a8ab5", fontWeight: 600 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, display: "inline-block" }} />
+              {label}
+            </span>
+          ))}
+          {priceRange.min > 0 && (
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 800 }}>
+              From {formatPriceShort(priceRange.min)}
+            </span>
+          )}
+        </div>
+      )}
 
       <div style={{ borderTop: "1px solid #e8eef8", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f4f7fc" }}>
         <button type="button" onClick={() => onChange("", "")}
@@ -466,13 +494,9 @@ function PaxPicker({
 
   return createPortal(
     <div ref={popupRef} style={{
-      position: "absolute",
-      top:  Math.max(8, popupTop),
-      left: Math.max(8, popupLeft),
-      width: 288,
-      zIndex: 99999,
-      background: S.navy,
-      borderRadius: 12,
+      position: "absolute", top: Math.max(8, popupTop), left: Math.max(8, popupLeft),
+      width: 288, zIndex: 99999,
+      background: S.navy, borderRadius: 12,
       border: "1px solid rgba(255,255,255,0.15)",
       boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
       padding: 20,
@@ -534,13 +558,9 @@ function TripTypePicker({
 
   return createPortal(
     <div ref={popupRef} style={{
-      position: "absolute",
-      top:  Math.max(8, pos.top + pos.height + 6),
-      left: Math.max(8, pos.left),
-      width: 180,
-      zIndex: 99999,
-      background: S.navy,
-      borderRadius: 12,
+      position: "absolute", top: Math.max(8, pos.top + pos.height + 6), left: Math.max(8, pos.left),
+      width: 180, zIndex: 99999,
+      background: S.navy, borderRadius: 12,
       border: "1px solid rgba(255,255,255,0.15)",
       boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
       overflow: "hidden",
@@ -583,9 +603,7 @@ function PillField({
 }) {
   const [hov, setHov] = useState(false);
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <button type="button" onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
@@ -593,8 +611,7 @@ function PillField({
         padding: "8px 16px", height: "100%",
         background: active ? "#eef4ff" : hov ? "#f5f8fc" : "transparent",
         border: "none", cursor: "pointer", textAlign: "left",
-        transition: "background .15s",
-        ...extra,
+        transition: "background .15s", ...extra,
       }}
     >
       <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 1 }}>{label}</div>
@@ -609,21 +626,18 @@ function PillField({
 }
 
 // ─── MULTI-CITY LEG ROW ───────────────────────────────────────────────────────
-// [Fix A] Each field cell (From / To / Date) has explicit minHeight: 64 on the
-//         wrapper div AND the ref is attached to that wrapper div, not the inner
-//         button. This guarantees getBoundingClientRect() always returns a non-
-//         zero height for the portal-position calculation.
+// [Price E] prices prop added — forwarded to the date CalendarPopup.
 function MultiCityLegRow({
-  leg, index, total, today, airports, onUpdate, onRemove,
+  leg, index, total, today, airports, onUpdate, onRemove, prices,
 }: {
   leg: CityLeg; index: number; total: number; today: string;
   airports: Airport[]; onUpdate: (u: Partial<CityLeg>) => void; onRemove: () => void;
+  prices: Record<string, number>;
 }) {
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen,   setToOpen]   = useState(false);
   const [calOpen,  setCalOpen]  = useState(false);
 
-  // [Fix B] Refs on wrapper divs, typed as HTMLElement | null
   const fromRef = useRef<HTMLElement | null>(null);
   const toRef   = useRef<HTMLElement | null>(null);
   const calRef  = useRef<HTMLElement | null>(null);
@@ -655,114 +669,59 @@ function MultiCityLegRow({
         )}
       </div>
 
-      <div style={{
-        display: "flex",
-        background: "white",
-        borderRadius: 10,
-        border: `1px solid ${S.border}`,
-        overflow: "visible",
-      }}>
-        {/* ── FROM ── */}
-        {/* [Fix A+B] ref on the wrapper div; minHeight ensures non-zero rect */}
-        <div
-          ref={el => { fromRef.current = el; }}
-          style={{ flex: 1, borderRight: `1px solid ${S.border}`, minHeight: 64, position: "relative" }}
-        >
-          <button
-            type="button"
+      <div style={{ display: "flex", background: "white", borderRadius: 10, border: `1px solid ${S.border}`, overflow: "visible" }}>
+        {/* FROM */}
+        <div ref={el => { fromRef.current = el; }} style={{ flex: 1, borderRight: `1px solid ${S.border}`, minHeight: 64, position: "relative" }}>
+          <button type="button"
             onClick={() => { setFromOpen(o => !o); setToOpen(false); setCalOpen(false); }}
-            style={{
-              width: "100%", height: "100%", textAlign: "left",
-              padding: "10px 14px", background: fromOpen ? "#eef4ff" : "transparent",
-              border: "none", cursor: "pointer", transition: "background .15s",
-              borderRadius: "10px 0 0 10px", minHeight: 64,
-            }}
+            style={{ width: "100%", height: "100%", textAlign: "left", padding: "10px 14px", background: fromOpen ? "#eef4ff" : "transparent", border: "none", cursor: "pointer", transition: "background .15s", borderRadius: "10px 0 0 10px", minHeight: 64 }}
             onMouseEnter={e => { if (!fromOpen) e.currentTarget.style.background = "#f5f8fc"; }}
             onMouseLeave={e => { if (!fromOpen) e.currentTarget.style.background = "transparent"; }}
           >
             <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>From</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: S.navyDeep, lineHeight: 1.2 }}>
-              {leg.from?.code ?? "—"} — {leg.from?.city ?? "Select city"}
-            </div>
-            <div style={{ fontSize: 11, color: S.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {leg.from?.name ?? ""}
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: S.navyDeep, lineHeight: 1.2 }}>{leg.from?.code ?? "—"} — {leg.from?.city ?? "Select city"}</div>
+            <div style={{ fontSize: 11, color: S.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{leg.from?.name ?? ""}</div>
           </button>
-          <AirportDropdownPortal
-            anchorRef={fromRef}
-            open={fromOpen}
-            airports={airports}
+          <AirportDropdownPortal anchorRef={fromRef} open={fromOpen} airports={airports}
             onSelect={a => { onUpdate({ from: a }); setFromOpen(false); }}
-            onClose={() => setFromOpen(false)}
-            preferUp
-          />
+            onClose={() => setFromOpen(false)} preferUp />
         </div>
 
-        {/* ── TO ── */}
-        <div
-          ref={el => { toRef.current = el; }}
-          style={{ flex: 1, borderRight: `1px solid ${S.border}`, minHeight: 64, position: "relative" }}
-        >
-          <button
-            type="button"
+        {/* TO */}
+        <div ref={el => { toRef.current = el; }} style={{ flex: 1, borderRight: `1px solid ${S.border}`, minHeight: 64, position: "relative" }}>
+          <button type="button"
             onClick={() => { setToOpen(o => !o); setFromOpen(false); setCalOpen(false); }}
-            style={{
-              width: "100%", height: "100%", textAlign: "left",
-              padding: "10px 14px", background: toOpen ? "#eef4ff" : "transparent",
-              border: "none", cursor: "pointer", transition: "background .15s",
-              minHeight: 64,
-            }}
+            style={{ width: "100%", height: "100%", textAlign: "left", padding: "10px 14px", background: toOpen ? "#eef4ff" : "transparent", border: "none", cursor: "pointer", transition: "background .15s", minHeight: 64 }}
             onMouseEnter={e => { if (!toOpen) e.currentTarget.style.background = "#f5f8fc"; }}
             onMouseLeave={e => { if (!toOpen) e.currentTarget.style.background = "transparent"; }}
           >
             <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>To</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: S.navyDeep, lineHeight: 1.2 }}>
-              {leg.to?.code ?? "—"} — {leg.to?.city ?? "Select city"}
-            </div>
-            <div style={{ fontSize: 11, color: S.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {leg.to?.name ?? ""}
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: S.navyDeep, lineHeight: 1.2 }}>{leg.to?.code ?? "—"} — {leg.to?.city ?? "Select city"}</div>
+            <div style={{ fontSize: 11, color: S.muted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{leg.to?.name ?? ""}</div>
           </button>
-          <AirportDropdownPortal
-            anchorRef={toRef}
-            open={toOpen}
-            airports={airports}
+          <AirportDropdownPortal anchorRef={toRef} open={toOpen} airports={airports}
             onSelect={a => { onUpdate({ to: a }); setToOpen(false); }}
-            onClose={() => setToOpen(false)}
-            preferUp
-          />
+            onClose={() => setToOpen(false)} preferUp />
         </div>
 
-        {/* ── DATE ── */}
-        <div
-          ref={el => { calRef.current = el; }}
-          style={{ flex: "0 0 150px", minHeight: 64, position: "relative" }}
-        >
-          <button
-            type="button"
+        {/* DATE */}
+        <div ref={el => { calRef.current = el; }} style={{ flex: "0 0 150px", minHeight: 64, position: "relative" }}>
+          <button type="button"
             onClick={() => { setCalOpen(o => !o); setFromOpen(false); setToOpen(false); }}
-            style={{
-              width: "100%", height: "100%", textAlign: "left",
-              padding: "10px 14px", background: calOpen ? "#eef4ff" : "transparent",
-              border: "none", cursor: "pointer", transition: "background .15s",
-              borderRadius: "0 10px 10px 0", minHeight: 64,
-            }}
+            style={{ width: "100%", height: "100%", textAlign: "left", padding: "10px 14px", background: calOpen ? "#eef4ff" : "transparent", border: "none", cursor: "pointer", transition: "background .15s", borderRadius: "0 10px 10px 0", minHeight: 64 }}
             onMouseEnter={e => { if (!calOpen) e.currentTarget.style.background = "#f5f8fc"; }}
             onMouseLeave={e => { if (!calOpen) e.currentTarget.style.background = "transparent"; }}
           >
             <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Depart</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: dateFmt ? S.navyDeep : S.muted, lineHeight: 1.2 }}>
-              {dateFmt?.short ?? "Select date"}
-            </div>
-            {dateFmt?.sub && (
-              <div style={{ fontSize: 11, color: S.muted, marginTop: 2 }}>{dateFmt.sub}</div>
-            )}
+            <div style={{ fontWeight: 800, fontSize: 15, color: dateFmt ? S.navyDeep : S.muted, lineHeight: 1.2 }}>{dateFmt?.short ?? "Select date"}</div>
+            {dateFmt?.sub && <div style={{ fontSize: 11, color: S.muted, marginTop: 2 }}>{dateFmt.sub}</div>}
           </button>
           {calOpen && (
             <CalendarPopup
               anchorRef={calRef}
               value={leg.departDate}
               min={today}
+              prices={prices}
               onChange={d1 => { onUpdate({ departDate: d1 }); setCalOpen(false); }}
               onClose={() => setCalOpen(false)}
               preferUp
@@ -777,6 +736,7 @@ function MultiCityLegRow({
 // ─── MULTI-CITY PANEL ─────────────────────────────────────────────────────────
 function MultiCityPanel({
   legs, airports, today, totalPax, cabinClass, onUpdate, onAdd, onRemove,
+  legPrices,
 }: {
   legs: CityLeg[];
   airports: Airport[];
@@ -786,6 +746,7 @@ function MultiCityPanel({
   onUpdate: (idx: number, u: Partial<CityLeg>) => void;
   onAdd: () => void;
   onRemove: (idx: number) => void;
+  legPrices: Record<string, number>[];
 }) {
   return (
     <div style={{
@@ -803,6 +764,7 @@ function MultiCityPanel({
           total={legs.length}
           today={today}
           airports={airports}
+          prices={legPrices[idx] ?? {}}
           onUpdate={u => onUpdate(idx, u)}
           onRemove={() => onRemove(idx)}
         />
@@ -811,12 +773,7 @@ function MultiCityPanel({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
         {legs.length < 5 ? (
           <button type="button" onClick={onAdd}
-            style={{
-              display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
-              color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.2)",
-              background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 14px",
-              cursor: "pointer", transition: "all .15s",
-            }}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.color = "#f9c08a"; e.currentTarget.style.borderColor = "rgba(249,192,138,0.5)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.6)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
           >
@@ -879,7 +836,7 @@ export default function OneSearchBar({
     { id: newId(), from: MOCK_AIRPORTS[1] ?? MOCK_AIRPORTS[0], to: MOCK_AIRPORTS[2] ?? MOCK_AIRPORTS[0], departDate: "" },
   ]);
 
-  // Sync external prop changes into form
+  // Sync external prop changes
   useEffect(() => {
     if (tripTypeProp) setForm(f => ({ ...f, tripType: tripTypeProp }));
   }, [tripTypeProp]);
@@ -888,27 +845,60 @@ export default function OneSearchBar({
     if (formProp) setForm(f => ({ ...f, ...formProp }));
   }, [formProp]);
 
-  // [Fix F] When the parent passes down multiLegs (e.g. from URL state on
-  //         ResultsPage re-search), sync them in. We detect this by checking
-  //         if formProp contains a multiLegs-like structure.
-  // Note: multiLegs come as a separate prop in ResultsPage's onNewSearch handler.
-  // The sync is one-way only on mount so we don't overwrite user edits.
+  // ── [Price D] Calendar prices ─────────────────────────────
+  // One-way / round-trip: keyed by from→to route
+  // Multi-city: one price map per leg, stored as array
+  const [calPrices, setCalPrices] = useState<Record<string, number>>({});
+  const [legPrices, setLegPrices] = useState<Record<string, number>[]>([{}, {}]);
+  const [pricesLoading, setPricesLoading] = useState(false);
+
+  // Fetch prices for the main from→to route (one-way / round-trip)
+  useEffect(() => {
+    const fromCode = form.from?.code;
+    const toCode   = form.to?.code;
+    if (!fromCode || !toCode || fromCode === toCode) return;
+
+    let cancelled = false;
+    setPricesLoading(true);
+    apiGetCalendarPrices(fromCode, toCode, form.cabinClass)
+      .then(prices => { if (!cancelled) { setCalPrices(prices); setPricesLoading(false); } })
+      .catch(() => { if (!cancelled) setPricesLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [form.from?.code, form.to?.code, form.cabinClass]);
+
+  // Fetch prices for each multi-city leg independently
+  useEffect(() => {
+    if (form.tripType !== "multiCity") return;
+    let cancelled = false;
+
+    Promise.all(
+      multiLegs.map(leg =>
+        leg.from?.code && leg.to?.code && leg.from.code !== leg.to.code
+          ? apiGetCalendarPrices(leg.from.code, leg.to.code, form.cabinClass)
+          : Promise.resolve({} as Record<string, number>)
+      )
+    ).then(results => {
+      if (!cancelled) setLegPrices(results);
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [
+    form.tripType,
+    form.cabinClass,
+    // Depend on each leg's from/to so we re-fetch when they change
+    ...multiLegs.map(l => `${l.from?.code}-${l.to?.code}`),
+  ]);
 
   const [popup, setPopup] = useState<ActivePopup>(null);
   const toggle = useCallback((p: ActivePopup) => setPopup(prev => prev === p ? null : p), []);
 
-  // [Fix C] addLeg picks a "to" that differs from the last leg's "to" city
   function addLeg() {
     if (multiLegs.length >= 5) return;
     const last = multiLegs[multiLegs.length - 1];
-    // Pick a different destination than last.to
     const differentAirport = airports.find(a => a.code !== last.to.code) ?? MOCK_AIRPORTS[0];
-    setMultiLegs(legs => [...legs, {
-      id: newId(),
-      from: last.to,
-      to:   differentAirport,
-      departDate: "",
-    }]);
+    setMultiLegs(legs => [...legs, { id: newId(), from: last.to, to: differentAirport, departDate: "" }]);
+    setLegPrices(lp => [...lp, {}]);
   }
 
   function updateLeg(idx: number, update: Partial<CityLeg>) {
@@ -920,6 +910,7 @@ export default function OneSearchBar({
       if (legs.length <= 2) return legs;
       return legs.filter((_, i) => i !== idx);
     });
+    setLegPrices(lp => lp.filter((_, i) => i !== idx));
   }
 
   const fromRef   = useRef<HTMLDivElement>(null);
@@ -935,7 +926,6 @@ export default function OneSearchBar({
         alert("Please select a departure date for all flights.");
         return;
       }
-      // [Fix F] Always pass multiLegs for multi-city searches
       onSearch({ ...form, tripType: "multiCity" }, multiLegs);
     } else {
       if (!form.departDate) { alert("Please select a departure date."); return; }
@@ -961,7 +951,6 @@ export default function OneSearchBar({
   const tripLabel = isRound ? "⇄ Round trip" : isMulti ? "⊕ Multi-city" : "→ One-way";
   const tripColor = isRound ? "#059669" : isMulti ? "#7c3aed" : S.accent;
 
-  // Correct route string: [from0, from1, …, toN].join(" → ")
   const routeStr = isMulti
     ? [
         ...multiLegs.map(l => l.from?.code ?? "?"),
@@ -977,15 +966,12 @@ export default function OneSearchBar({
         background: "#fff",
         borderRadius: isMulti ? "14px 14px 0 0" : 14,
         boxShadow: "0 2px 20px rgba(0,0,0,0.22)",
-        overflow: "visible",
-        position: "relative",
+        overflow: "visible", position: "relative",
       }}>
 
         {/* TRIP TYPE */}
         <div ref={tripRef} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => toggle("tripType")}
+          <button type="button" onClick={() => toggle("tripType")}
             style={{
               height: "100%", display: "flex", alignItems: "center", gap: 4,
               padding: "0 14px",
@@ -1004,54 +990,34 @@ export default function OneSearchBar({
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <TripTypePicker
-            anchorRef={tripRef}
-            open={popup === "tripType"}
-            value={form.tripType}
+          <TripTypePicker anchorRef={tripRef} open={popup === "tripType"} value={form.tripType}
             onChange={t => {
               setForm(f => ({ ...f, tripType: t, returnDate: t !== "roundTrip" ? "" : f.returnDate }));
               onTripTypeChange?.(t);
               setPopup(null);
             }}
-            onClose={() => setPopup(null)}
-          />
+            onClose={() => setPopup(null)} />
         </div>
 
-        {/* FROM — hidden in multi-city mode */}
+        {/* FROM */}
         {!isMulti && (
           <div ref={fromRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 130, maxWidth: 170 }}>
-            <PillField
-              label="From"
-              line1={form.from?.code ?? "—"}
-              line2={form.from?.city}
-              active={popup === "from"}
-              onClick={() => toggle("from")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }}
-            />
-            <AirportDropdownPortal
-              anchorRef={fromRef}
-              open={popup === "from"}
-              airports={airports}
+            <PillField label="From" line1={form.from?.code ?? "—"} line2={form.from?.city}
+              active={popup === "from"} onClick={() => toggle("from")}
+              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
+            <AirportDropdownPortal anchorRef={fromRef} open={popup === "from"} airports={airports}
               onSelect={a => { setForm(f => ({ ...f, from: a })); setPopup(null); }}
-              onClose={() => setPopup(null)}
-            />
+              onClose={() => setPopup(null)} />
           </div>
         )}
 
-        {/* SWAP — hidden in multi-city mode */}
+        {/* SWAP */}
         {!isMulti && (
           <div style={{ display: "flex", alignItems: "center", padding: "0 4px", borderRight: `1px solid ${S.border}`, flexShrink: 0 }}>
-            <button
-              type="button"
+            <button type="button"
               onClick={() => setForm(f => ({ ...f, from: f.to, to: f.from }))}
               title="Swap airports"
-              style={{
-                width: 28, height: 28, borderRadius: "50%",
-                border: `1.5px solid ${S.borderMid}`,
-                background: "#fff", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "background .15s",
-              }}
+              style={{ width: 28, height: 28, borderRadius: "50%", border: `1.5px solid ${S.borderMid}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}
               onMouseEnter={e => (e.currentTarget.style.background = S.navyDeep)}
               onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
             >
@@ -1062,38 +1028,24 @@ export default function OneSearchBar({
           </div>
         )}
 
-        {/* TO — hidden in multi-city mode */}
+        {/* TO */}
         {!isMulti && (
           <div ref={toRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 130, maxWidth: 170 }}>
-            <PillField
-              label="To"
-              line1={form.to?.code ?? "—"}
-              line2={form.to?.city}
-              active={popup === "to"}
-              onClick={() => toggle("to")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }}
-            />
-            <AirportDropdownPortal
-              anchorRef={toRef}
-              open={popup === "to"}
-              airports={airports}
+            <PillField label="To" line1={form.to?.code ?? "—"} line2={form.to?.city}
+              active={popup === "to"} onClick={() => toggle("to")}
+              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
+            <AirportDropdownPortal anchorRef={toRef} open={popup === "to"} airports={airports}
               onSelect={a => { setForm(f => ({ ...f, to: a })); setPopup(null); }}
-              onClose={() => setPopup(null)}
-            />
+              onClose={() => setPopup(null)} />
           </div>
         )}
 
-        {/* DEPART DATE — hidden in multi-city mode */}
+        {/* DEPART */}
         {!isMulti && (
           <div ref={departRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 110 }}>
-            <PillField
-              label="Depart"
-              line1={departFmt?.short ?? "Select"}
-              line2={departFmt?.sub}
-              active={popup === "depart"}
-              onClick={() => toggle("depart")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }}
-            />
+            <PillField label="Depart" line1={departFmt?.short ?? "Select"} line2={departFmt?.sub}
+              active={popup === "depart"} onClick={() => toggle("depart")}
+              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
             {popup === "depart" && (
               <CalendarPopup
                 anchorRef={departRef}
@@ -1101,6 +1053,7 @@ export default function OneSearchBar({
                 value2={isRound ? form.returnDate : undefined}
                 isRange={isRound}
                 min={today}
+                prices={calPrices}
                 onChange={(d1, d2) => {
                   setForm(f => ({ ...f, departDate: d1, returnDate: d2 ?? f.returnDate }));
                   if (!isRound || d2) setPopup(null);
@@ -1111,19 +1064,14 @@ export default function OneSearchBar({
           </div>
         )}
 
-        {/* RETURN DATE — hidden in multi-city mode */}
+        {/* RETURN */}
         {!isMulti && (
           <div ref={returnRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 110 }}>
             {isRound ? (
               <>
-                <PillField
-                  label="Return"
-                  line1={returnFmt?.short ?? "Select"}
-                  line2={returnFmt?.sub}
-                  active={popup === "return"}
-                  onClick={() => toggle("return")}
-                  style={{ flex: 1, borderRight: `1px solid ${S.border}` }}
-                />
+                <PillField label="Return" line1={returnFmt?.short ?? "Select"} line2={returnFmt?.sub}
+                  active={popup === "return"} onClick={() => toggle("return")}
+                  style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
                 {popup === "return" && (
                   <CalendarPopup
                     anchorRef={returnRef}
@@ -1131,6 +1079,7 @@ export default function OneSearchBar({
                     value2={form.returnDate}
                     isRange
                     min={today}
+                    prices={calPrices}
                     onChange={(d1, d2) => {
                       setForm(f => ({ ...f, departDate: d1, returnDate: d2 ?? "" }));
                       if (d2) setPopup(null);
@@ -1140,18 +1089,9 @@ export default function OneSearchBar({
                 )}
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setForm(f => ({ ...f, tripType: "roundTrip" }));
-                  onTripTypeChange?.("roundTrip");
-                }}
-                style={{
-                  display: "flex", flexDirection: "column", justifyContent: "center",
-                  padding: "8px 16px", borderRight: `1px solid ${S.border}`,
-                  background: "transparent", border: "none", cursor: "pointer",
-                  textAlign: "left", transition: "all .15s", minWidth: 110, opacity: 0.55,
-                }}
+              <button type="button"
+                onClick={() => { setForm(f => ({ ...f, tripType: "roundTrip" })); onTripTypeChange?.("roundTrip"); }}
+                style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 16px", borderRight: `1px solid ${S.border}`, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "all .15s", minWidth: 110, opacity: 0.55 }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.background = "#f5f8fc"; }}
                 onMouseLeave={e => { e.currentTarget.style.opacity = "0.55"; e.currentTarget.style.background = "transparent"; }}
               >
@@ -1168,68 +1108,58 @@ export default function OneSearchBar({
           <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "10px 16px", borderRight: `1px solid ${S.border}` }}>
             <div>
               <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Route</div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: S.navyDeep }}>
-                {routeStr}
-              </div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: S.navyDeep }}>{routeStr}</div>
               <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>{multiLegs.length} flights · edit below ↓</div>
             </div>
           </div>
         )}
 
-        {/* TRAVELLERS & CLASS */}
+        {/* TRAVELLERS */}
         <div ref={paxRef} style={{ display: "flex", alignItems: "stretch", flex: isMulti ? "0 0 auto" : 1, minWidth: 0 }}>
-          <PillField
-            label="Travellers & Class"
+          <PillField label="Travellers & Class"
             line1={`${totalPax} Traveller${totalPax !== 1 ? "s" : ""}`}
             line2={form.cabinClass}
-            active={popup === "pax"}
-            onClick={() => toggle("pax")}
-            style={{ flex: 1, overflow: "hidden" }}
-          />
-          <PaxPicker
-            anchorRef={paxRef}
-            open={popup === "pax"}
-            adults={form.adults}
-            children={form.children}
-            infants={form.infants}
-            cabinClass={form.cabinClass}
+            active={popup === "pax"} onClick={() => toggle("pax")}
+            style={{ flex: 1, overflow: "hidden" }} />
+          <PaxPicker anchorRef={paxRef} open={popup === "pax"}
+            adults={form.adults} children={form.children} infants={form.infants} cabinClass={form.cabinClass}
             onChange={(a, c, i, cls) => setForm(f => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))}
-            onClose={() => setPopup(null)}
-          />
+            onClose={() => setPopup(null)} />
         </div>
 
         {/* NON-STOP */}
         <div style={{ display: "flex", alignItems: "center", padding: "0 12px", borderRight: `1px solid ${S.border}`, flexShrink: 0 }}>
           <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Non-stop</span>
-            <input
-              type="checkbox"
-              checked={form.nonStopOnly}
+            <input type="checkbox" checked={form.nonStopOnly}
               onChange={e => setForm(f => ({ ...f, nonStopOnly: e.target.checked }))}
-              style={{ accentColor: S.accent, width: 15, height: 15 }}
-            />
+              style={{ accentColor: S.accent, width: 15, height: 15 }} />
           </label>
         </div>
 
         {/* SEARCH BUTTON */}
-        <button
-          type="button"
-          onClick={handleSearch}
+        <button type="button" onClick={handleSearch}
           style={{
             background: S.accent, color: "#fff", border: "none",
             padding: "0 26px", cursor: "pointer",
             fontWeight: 800, fontSize: 13, letterSpacing: "0.04em",
-            transition: "background .2s",
-            flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
+            transition: "background .2s", flexShrink: 0,
+            display: "flex", alignItems: "center", gap: 8,
             borderRadius: isMulti ? "0 14px 0 0" : "0 14px 14px 0",
           }}
           onMouseEnter={e => (e.currentTarget.style.background = S.accentDk)}
           onMouseLeave={e => (e.currentTarget.style.background = S.accent)}
         >
-          <svg width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <circle cx={11} cy={11} r={8} />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
-          </svg>
+          {pricesLoading ? (
+            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ animation: "spin 1s linear infinite" }}>
+              <path strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
+            </svg>
+          ) : (
+            <svg width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <circle cx={11} cy={11} r={8} />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+            </svg>
+          )}
           Search
         </button>
       </div>
@@ -1242,11 +1172,14 @@ export default function OneSearchBar({
           today={today}
           totalPax={totalPax}
           cabinClass={form.cabinClass}
+          legPrices={legPrices}
           onUpdate={updateLeg}
           onAdd={addLeg}
           onRemove={removeLeg}
         />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

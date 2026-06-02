@@ -26,9 +26,9 @@ import {
   type PreBookResult,
   type BookParams,
   type BookResult,
-} from '../services/hotelApi';
-import type { Hotel, Room, PreBookResponse } from '../stores/hotelStore';
-import { useHotelStore } from '../stores/hotelStore';
+} from '../../services/hotelApi';
+import type { Hotel, Room, PreBookResponse } from '../../stores/hotelStore';
+import { useHotelStore } from '../../stores/hotelStore';
 
 /** Surfaces backend 400s about missing traceId in a booking-friendly way. */
 export function formatHotelTraceApiError(err: unknown, fallback: string): string {
