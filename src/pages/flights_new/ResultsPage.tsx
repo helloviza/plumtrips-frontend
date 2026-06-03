@@ -1086,19 +1086,20 @@ export default function ResultsPage({
       <header style={{
         background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
       }}>
-        <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 24px" }}>
+       <div style={{ width: "100%", padding: "0" }}>
 
-          <OneSearchBar
-            form={form}
-            onSearch={(f, legs) => onNewSearch?.(f, legs)}
-          />
+  <OneSearchBar
+    form={form}
+    onSearch={(f, legs) => onNewSearch?.(f, legs)}
+  />
+
 
           {/* Multi-city leg tabs */}
           {isMultiCity && legs.length > 0 && (
-            <div style={{
-              display: "flex", gap: 4, paddingTop: 8, paddingBottom: 0,
-              overflowX: "auto",
-            }}>
+  <div style={{
+    display: "flex", gap: 4, paddingTop: 8, paddingBottom: 0,
+    overflowX: "auto", paddingLeft: 24,
+  }}>
               {legs.map((leg, i) => {
                 const isSelected = !!(selectedLegs?.[i]);
                 const isCurrent = activeTab === i;

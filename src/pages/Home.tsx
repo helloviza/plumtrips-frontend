@@ -1,8 +1,8 @@
 ﻿// // src/pages/Home.tsx
 // import type { ReactNode } from "react";
-import HeroCarousel from "../components/HeroCarousel";
-// import HomeExplore from "../components/home/HomeExplore";
-import SearchTabs from "../components/SearchTabs";
+// import HeroCarousel from "../components/HeroCarousel";
+// // import HomeExplore from "../components/home/HomeExplore";
+// import SearchTabs from "../components/SearchTabs";
 
 // export default function Home() {
 //   return (
@@ -306,10 +306,13 @@ import SearchTabs from "../components/SearchTabs";
 // }
 
 
-
 import { useEffect, useRef, useState } from "react";
 
-
+import { getHomeCarousels } from "../lib/api";
+import HeroCarousel from "../components/HeroCarousel";
+// import HomeExplore from "../components/home/HomeExplore";
+import SearchTabs , { type TopTab } from "../components/SearchTabs";
+import { Link } from "react-router-dom";
 
 // ---------------------------------------------------------------------------
 // Reveal hook — mirrors the IntersectionObserver from the original JS
@@ -339,12 +342,18 @@ const useReveal = () => {
 export default function Home() {
   useReveal();
 
+  const [carouselImages, setCarouselImages] = useState<string[]>([]);
+  const [tab, setTab] = useState<TopTab>("flights");
+
+  useEffect(() => {
+    getHomeCarousels().then((items) =>
+      setCarouselImages(items.map((i) => i.image))
+    );
+  }, []);
+
   const heroImgRef = useRef<HTMLImageElement>(null);
 
-  // ── Scroll-aware state so parent layout can pick this up if needed ──
-  // (Keep this here in case you want to pass it down via context later)
   const [_scrolled, setScrolled] = useState(false);
-
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -407,16 +416,13 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ================================================================
-          HERO SECTION
-          KEY CHANGE: -mt-[72px] moved here to the outermost wrapper container. 
-          This pulls the entire Home component up behind the sticky
-          transparent header so the margin doesn't collapse improperly.
-      ================================================================ */}
       <div
         className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[72px]"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
+        {/* ================================================================
+            HERO SECTION
+        ================================================================ */}
         <div
           className="relative flex flex-col overflow-hidden"
           style={{ minHeight: 800 }}
@@ -433,8 +439,6 @@ export default function Home() {
               style={{ transform: "scale(1.1) translate(0px,0px)" }}
             />
             <div className="absolute inset-0 hero-gradient" />
-
-            {/* Soft bottom fade so hero blends into the section below */}
             <div
               className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28"
               style={{
@@ -445,25 +449,42 @@ export default function Home() {
             />
           </div>
 
-          {/* Hero content
-              pt-[88px] gives breathing room above the widget and accounts for header offset */}
+          {/* Hero content */}
           <div className="relative z-10 flex-grow flex items-center w-full">
             <div className="relative z-[3] mx-auto max-w-6xl w-full px-6 pt-[88px] pb-16">
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-10 items-start">
 
-                {/* LEFT — SearchTabs */}
-                <div className="lg:col-span-7">
-                  <div className="reveal" style={{ transitionDelay: "0.08s" }}>
-                    <SearchTabs />
-                  </div>
+              {/* ── Two-column grid ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                {/* LEFT col — SearchTabs (7/12 wide) */}
+                <div
+                  className="lg:col-span-7 reveal"
+                  style={{ transitionDelay: "0.08s" }}
+                >
+                  {/*
+                    onTabChange keeps `tab` in sync so HeroCarousel
+                    can match its height to whichever form is active.
+                  */}
+                  <SearchTabs onTabChange={setTab} />
                 </div>
 
-                {/* RIGHT — HeroCarousel */}
+                {/* RIGHT col — HeroCarousel (5/12 wide) */}
                 <div
-                  className="lg:col-span-3 lg:mt-14 reveal"
-                  style={{ transitionDelay: "0.12s" }}
+                  className="hidden lg:block lg:col-span-5 reveal"
+                  style={{ transitionDelay: "0.14s" }}
                 >
-                  <HeroCarousel />
+                  {/*
+                    mt-14 aligns the top of the carousel with the first
+                    input row inside SearchTabs (below its tab header).
+                    w-full + no max-w cap lets it fill the column.
+                  */}
+                  <div className="mt-14 w-full">
+                    <HeroCarousel
+                      images={carouselImages}
+                      activeTab={tab}
+                      className="w-full max-w-none mx-0"
+                    />
+                  </div>
                 </div>
 
               </div>
@@ -490,12 +511,14 @@ export default function Home() {
                 >
                   Explore more with Plumtrips
                 </h2>
+                <Link to="/offers">
                 <button className="flex items-center gap-2 text-[#003059] font-bold hover:underline group transition-all duration-300 hover:scale-105">
                   View offers{" "}
                   <span className="material-symbols-outlined group-hover:translate-x-2 transition-transform duration-300">
                     arrow_right_alt
                   </span>
                 </button>
+                </Link>
               </div>
 
               {/* ── Bento Grid Destinations ── */}
@@ -511,15 +534,15 @@ export default function Home() {
                       delay: "0.05s",
                     },
                     {
-                      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCMWznJ9cY4YSdKBd2Q_2wexZ-NOk_EcA1CmHDwJSOLdW5mU73A2ZGEWdH9QO_-bhhpPszsLkaZlrDpp_S8jghD6llS76vOJJ7u-pIYnnRNCyFokmUzAi92II7AJoMt9rIxVVVC7rurHAGiAYFlke4KXb8uSzbFJ_ckZn_0vHIsosvmek9_JxxfKxDHDDVpqnyaJzrSG1bVl97RAV62yavwbjt9xG4j93WkKLo8R2Bg_6K_nzBXRki0ltAua4hkSlwNXmHIxcmd5bC9",
-                      alt: "Hong Kong",
-                      tags: ["Holidays", "Hong Kong Packages"],
-                      title: "Discover Hong Kong",
-                      sub: "Visit Hong Kong",
+                      img: "/assets/home_m/italy2.png",
+                      alt: "Italy",
+                      tags: ["Holidays", "Europe Packages"],
+                      title: "Discover Italy",
+                      sub: "Visit Rome",
                       delay: "0.1s",
                     },
                     {
-                      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDtzDJdP9pfLtVZDvFOJOEHeNMZPLyipGk2cn0BjwDIAZGhyz9A_sGno5r8O_J7OxCJGPvUloUGeNTsD6Z4Vprss-xYeNH-4bskyEAOogVc8EaxYwGw4xe8aM5wHLyVfaLEk7B-iqB_e9QxSgy7aEELSDqpPLbY6nbZjKleCE_-2Xfg-vLhBMRVLqOrU1U_kL7iKkwrR8viQ3A3XVvad8KFLGGH2L6A6xpO8P0_02qY-scd_rfenALOkcj-yiv_2RHvnVCqvjiaLkqf",
+                      img: "/assets/home_m/peru1.png",
                       alt: "Group Departures",
                       tags: ["Holidays", "Group Departures"],
                       title: "Group Departures",
@@ -572,19 +595,12 @@ export default function Home() {
                   className="lg:col-span-3 space-y-4 flex flex-col reveal"
                   style={{ transitionDelay: "0.2s" }}
                 >
-                  {/* Subscribe card */}
                   <div
                     className="bg-[#d06549] p-6 rounded-3xl shadow-lg cursor-pointer flex-grow flex flex-col justify-between group"
-                    style={{
-                      transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)",
-                    }}
+                    style={{ transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)" }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.transform =
-                        "scale(1.05)";
-                      (
-                        e.currentTarget as HTMLElement
-                      ).style.boxShadow =
-                        "0 15px 35px -5px rgba(208,101,73,0.4)";
+                      (e.currentTarget as HTMLElement).style.transform = "scale(1.05)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = "0 15px 35px -5px rgba(208,101,73,0.4)";
                     }}
                     onMouseLeave={cardLeave}
                   >
@@ -601,7 +617,6 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {/* Quick links */}
                   {[
                     { icon: "airplane_ticket", label: "Reprint ticket" },
                     { icon: "luggage", label: "Baggage info" },
@@ -611,10 +626,8 @@ export default function Home() {
                       key={item.label}
                       className="p-4 rounded-3xl border border-[#c2c7d1]/30 flex items-center justify-between group cursor-pointer"
                       style={{
-                        background:
-                          "linear-gradient(145deg, #004e8b, #004072)",
-                        transition:
-                          "all 0.5s cubic-bezier(0.165,0.84,0.44,1)",
+                        background: "linear-gradient(145deg, #004e8b, #004072)",
+                        transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)",
                       }}
                       onMouseEnter={(e) => cardEnter(e, "blue")}
                       onMouseLeave={cardLeave}
@@ -625,9 +638,7 @@ export default function Home() {
                             {item.icon}
                           </span>
                         </div>
-                        <h4 className="font-bold text-xs text-white">
-                          {item.label}
-                        </h4>
+                        <h4 className="font-bold text-xs text-white">{item.label}</h4>
                       </div>
                       <span className="material-symbols-outlined group-hover:translate-x-2 transition-transform text-white/90 text-lg">
                         chevron_right
@@ -650,21 +661,21 @@ export default function Home() {
                     delay: "0.1s",
                   },
                   {
-                    img: "https://img.magnific.com/premium-photo/riyadh-city-skyline-drone-shoot-drone-shot-king-fahd-road-riyadh-capital-city-saudi-arabia_430468-1471.jpg",
-                    tag: "Saudi Packages",
-                    alt: "Saudi Arabia",
-                    title: "Spectacular Saudi Arabia",
-                    sub: "Riyadh, AlUla & Jeddah",
+                    img: "/assets/home_m/norway1.png",
+                    tag: "Norway Packages",
+                    alt: "Norway",
+                    title: "Spectacular Norway",
+                    sub: "Oslo, Bergen & Trondheim",
                     cta: "Explore",
                     delay: "0.2s",
                   },
                   {
-                    img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDF2wIBP4s5V-SA--OLqFYi_x4kzSdIF60R9GKMsdNe3pt2tNYqDXsoMvYMUUgoyBO0JxmvBO6TEIKvOIcL8cylCq4QrlqnHzJRrSrqir0Z194TDQSyVONvP-xFPJkOM6OwF5v8-2o8DkCYTHEB2JhKxf4fNZB_u6ePCHa-RucVWkBx2jpb4w9o5WBuADxlIVqXdn5aFfhzAYn-ICHXiuXyV4odBJ2kyddHEEY6lX7gT-5iJdmFscNJzrtO9gTTGrj_kyczyvBxngpY",
-                    tag: "Qatar Stopover",
-                    alt: "Qatar Stopover",
-                    title: "Qatar Stopover Package",
-                    sub: "Luxury meets tradition in Doha.",
-                    cta: "Visit Qatar",
+                    img: "/assets/home_m/turkey.png",
+                    tag: "Turkey Stopover",
+                    alt: "Turkey Stopover",
+                    title: "Turkey Stopover Package",
+                    sub: "Experience the rich culture of Turkey.",
+                    cta: "Visit Turkey",
                     delay: "0.3s",
                   },
                 ].map((pkg) => (
@@ -691,10 +702,7 @@ export default function Home() {
                     <div className="p-6">
                       <h3
                         className="font-bold text-[#1a1c1e] mb-1"
-                        style={{
-                          fontFamily: "Montserrat, sans-serif",
-                          fontSize: 20,
-                        }}
+                        style={{ fontFamily: "Montserrat, sans-serif", fontSize: 20 }}
                       >
                         {pkg.title}
                       </h3>
@@ -712,12 +720,9 @@ export default function Home() {
 
               {/* ── Portal Cards ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
-                {/* Explorer Journals */}
                 <div
                   className="relative group overflow-hidden rounded-[2rem] shadow-lg h-[320px] reveal cursor-pointer"
-                  style={{
-                    transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)",
-                  }}
+                  style={{ transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)" }}
                   onMouseEnter={cardEnter}
                   onMouseLeave={cardLeave}
                 >
@@ -731,62 +736,53 @@ export default function Home() {
                   </div>
                   <div className="relative h-full p-10 flex flex-col justify-center items-start">
                     <span className="bg-[#d06549] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase mb-4 tracking-widest">
-                      Explorer Journals
+                      Explorer Blogs
                     </span>
                     <h3
                       className="text-white font-bold mb-8 leading-tight group-hover:translate-x-4 transition-transform duration-700"
-                      style={{
-                        fontFamily: "Montserrat, sans-serif",
-                        fontSize: 48,
-                        lineHeight: 1.2,
-                      }}
+                      style={{ fontFamily: "Montserrat, sans-serif", fontSize: 48, lineHeight: 1.2 }}
                     >
                       Inspiring Travel Stories
                     </h3>
+                    <Link to="/blogs" className="group/btn">
                     <button className="bg-white text-[#003059] px-8 py-3 rounded-xl font-bold hover:bg-gray-100 transition-all flex items-center gap-2 group/btn">
                       Read Stories{" "}
                       <span className="material-symbols-outlined text-lg group-hover/btn:rotate-12 transition-transform">
                         auto_stories
                       </span>
                     </button>
+                    </Link>
                   </div>
                 </div>
 
-                {/* Concierge Support */}
                 <div
                   className="relative group overflow-hidden rounded-[2rem] bg-slate-50 border border-[#c2c7d1]/30 h-[320px] reveal cursor-pointer"
-                  style={{
-                    transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)",
-                    transitionDelay: "0.1s",
-                  }}
+                  style={{ transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)", transitionDelay: "0.1s" }}
                   onMouseEnter={cardEnter}
                   onMouseLeave={cardLeave}
                 >
                   <div className="relative h-full p-10 flex items-center justify-between">
                     <div className="max-w-[60%]">
                       <span className="bg-[#003059] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase mb-4 tracking-widest inline-block">
-                        Concierge Support
+                        Concierge Support  
                       </span>
                       <h3
                         className="text-[#003059] font-bold mb-4 group-hover:translate-x-2 transition-transform duration-500"
-                        style={{
-                          fontFamily: "Montserrat, sans-serif",
-                          fontSize: 32,
-                          lineHeight: 1.3,
-                        }}
+                        style={{ fontFamily: "Montserrat, sans-serif", fontSize: 32, lineHeight: 1.3 }}
                       >
                         Expert Assistance Anytime
                       </h3>
                       <p className="text-[#424750] mb-8 text-sm">
-                        Your personal travel specialists are just a click away
-                        for seamless luxury.
+                        Your personal travel specialists are just a click away for seamless luxury.
                       </p>
+                      <Link to="/contact" className="group/btn">
                       <button className="bg-[#d06549] text-white px-8 py-3 rounded-xl font-bold hover:brightness-110 transition-all flex items-center gap-2">
                         Contact Us{" "}
                         <span className="material-symbols-outlined text-lg group-hover:rotate-12 transition-transform">
                           support_agent
                         </span>
                       </button>
+                      </Link>
                     </div>
                     <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-white shadow-xl group-hover:scale-110 transition-transform duration-700">
                       <img

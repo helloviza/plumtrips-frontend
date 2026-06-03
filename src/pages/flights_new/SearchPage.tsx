@@ -1,103 +1,57 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { SearchForm, Airport } from "../../lib/types_t";
-import { apiGetAirports, apiGetCalendarPrices } from "../../lib/flights_api";
+import { apiGetAirports } from "../../lib/flights_api";
 
 const MOCK_AIRPORTS: Airport[] = [
-  { code: "DEL", city: "New Delhi",  name: "Indira Gandhi International",              cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-  { code: "BOM", city: "Mumbai",     name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-  { code: "BLR", city: "Bengaluru", name: "Kempegowda International",                  cityCode: "BLR", country: "India", countryCode: "IN", label: "Bengaluru (BLR)" },
+  { code: "DEL", city: "New Delhi",  name: "Indira Gandhi International",               cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+  { code: "BOM", city: "Mumbai",     name: "Chhatrapati Shivaji Maharaj International",  cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+  { code: "BLR", city: "Bengaluru",  name: "Kempegowda International",                   cityCode: "BLR", country: "India", countryCode: "IN", label: "Bengaluru (BLR)" },
 ];
 
-// ─── TYPES ─────────────────────────────────────────────────
-
+// ── TYPES ─────────────────────────────────────────────────
 interface CityLeg {
   from: Airport;
   to: Airport;
   departDate: string;
 }
 
-// ─── SHARED STYLE TOKENS ───────────────────────────────────
-
-const fieldBtn =
-  "w-full h-full text-left px-4 py-3 transition-colors hover:bg-white/10 group cursor-pointer";
-const lbl = "text-[10px] font-bold text-[#8fafd4] uppercase tracking-widest mb-0.5";
-const val = "text-[15px] font-black text-[#0d2d5e] leading-tight truncate";
-const sub = "text-[11px] text-[#8fafd4] truncate mt-0.5";
-
-const glassCls = "overflow-visible";
-
-const boxBg: React.CSSProperties = {
-  background: "white",
-};
-
-// ─── FORMAT HELPERS ────────────────────────────────────────
-
-function formatPriceShort(price: number): string {
-  if (price >= 100000) return `₹${(price / 100000).toFixed(1)}L`;
-  if (price >= 1000)   return `₹${(price / 1000).toFixed(1)}k`;
-  return `₹${price}`;
-}
-
-// ─── PORTAL POSITION HOOK ──────────────────────────────────
-
-function usePortalPos(
-  anchorRef: React.RefObject<HTMLElement | null>,
-  open: boolean
-) {
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0, anchorHeight: 0 });
-
+// ── PORTAL POSITION HOOK ──────────────────────────────────
+function usePortalPos(anchorRef: React.RefObject<HTMLElement | null>, open: boolean) {
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0, height: 0 });
   useEffect(() => {
     if (!open || !anchorRef.current) return;
     function measure() {
       if (!anchorRef.current) return;
       const r = anchorRef.current.getBoundingClientRect();
-      setPos({
-        top: r.top + window.scrollY,
-        left: r.left + window.scrollX,
-        width: r.width,
-        anchorHeight: r.height,
-      });
+      setPos({ top: r.bottom + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height });
     }
     measure();
     window.addEventListener("scroll", measure, true);
     window.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("scroll", measure, true);
-      window.removeEventListener("resize", measure);
-    };
+    return () => { window.removeEventListener("scroll", measure, true); window.removeEventListener("resize", measure); };
   }, [open, anchorRef]);
-
   return pos;
 }
 
-// ─── AIRPORT AUTOCOMPLETE ──────────────────────────────────
-
+// ── AIRPORT AUTOCOMPLETE ──────────────────────────────────
 function AirportInput({ label, value, onChange, airports }: {
   label: string; value: Airport; onChange: (a: Airport) => void; airports: Airport[];
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const anchorRef = useRef<HTMLDivElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const popupRef  = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
   const pos = usePortalPos(anchorRef, open);
-
-  const POPUP_H = 340;
 
   const filtered = query.trim()
     ? airports.filter((a) => {
         const q = query.toLowerCase();
-        const city = a.city?.toLowerCase() || "";
-        const code = a.code?.toLowerCase() || "";
-        const name = a.name?.toLowerCase() || "";
-        const country = a.country?.toLowerCase() || "";
-        return (
-          city.includes(q) ||
-          code.includes(q) ||
-          name.includes(q) ||
-          country.includes(q)
-        );
+        return (a.city?.toLowerCase() || "").includes(q)
+          || (a.code?.toLowerCase() || "").includes(q)
+          || (a.name?.toLowerCase() || "").includes(q)
+          || (a.country?.toLowerCase() || "").includes(q);
       })
     : airports.slice(0, 80);
 
@@ -112,20 +66,18 @@ function AirportInput({ label, value, onChange, airports }: {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  const popupTop = pos.top - POPUP_H - 6;
-
-  const hasValue = !!value?.code;
-
   return (
     <div ref={anchorRef} className="relative w-full h-full">
       <button
         type="button"
         onClick={() => { setOpen(true); setQuery(""); setTimeout(() => inputRef.current?.focus(), 10); }}
-        className={fieldBtn}
+        className="w-full h-full text-left px-5 py-4 hover:bg-gray-50 transition-colors"
       >
-        {!hasValue && <div className={lbl}>{label}</div>}
-        <div className={val}>{value.code} — {value.city}</div>
-        <div className={sub}>{value.name}</div>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</div>
+        <div className="text-xl font-black text-[#1a3558] leading-tight">
+          {value.code} — {value.city}
+        </div>
+        <div className="text-sm text-gray-400 mt-0.5 truncate">{value.name}</div>
       </button>
 
       {open && createPortal(
@@ -133,27 +85,27 @@ function AirportInput({ label, value, onChange, airports }: {
           ref={popupRef}
           style={{
             position: "absolute",
-            top: Math.max(8, popupTop),
+            top: pos.top + 4,
             left: pos.left,
-            width: 320,
-            height: POPUP_H,
+            width: 340,
+            maxHeight: 360,
             zIndex: 99999,
-            background: "#00305f",
+            background: "white",
             borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.15)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
           }}
         >
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.10)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <svg style={{ width: 16, height: 16, color: "rgba(255,255,255,0.4)", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <svg style={{ width: 16, height: 16, color: "#94a3b8", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               ref={inputRef}
-              style={{ flex: 1, fontSize: 14, color: "white", outline: "none", background: "transparent", border: "none" }}
+              style={{ flex: 1, fontSize: 14, color: "#1a3558", outline: "none", background: "transparent", border: "none" }}
               placeholder="Search city or airport…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -161,7 +113,7 @@ function AirportInput({ label, value, onChange, airports }: {
           </div>
           <div style={{ overflowY: "auto", flex: 1 }}>
             {filtered.length === 0 ? (
-              <div style={{ padding: "24px 16px", fontSize: 14, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>No airports found</div>
+              <div style={{ padding: "24px 16px", fontSize: 13, color: "#94a3b8", textAlign: "center" }}>No airports found</div>
             ) : filtered.map((a) => (
               <button
                 key={a.code}
@@ -170,19 +122,21 @@ function AirportInput({ label, value, onChange, airports }: {
                 onClick={() => { onChange(a); setOpen(false); }}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 16px", textAlign: "left", background: "transparent",
-                  border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  cursor: "pointer", color: "white",
+                  padding: "11px 16px", textAlign: "left", background: "transparent",
+                  border: "none", borderBottom: "1px solid #f8fafc",
+                  cursor: "pointer", color: "#1a3558",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.10)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 11, flexShrink: 0 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 11, color: "#1a3558", flexShrink: 0 }}>
                   {a.code}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{a.city}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}{a.country ? ` · ${a.country}` : ""}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#1a3558" }}>{a.city}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {a.name}{a.country ? ` · ${a.country}` : ""}
+                  </div>
                 </div>
               </button>
             ))}
@@ -194,16 +148,14 @@ function AirportInput({ label, value, onChange, airports }: {
   );
 }
 
-// ─── CALENDAR POPUP ────────────────────────────────────────
-
+// ── CALENDAR ──────────────────────────────────────────────
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
-function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorRef, prices = {} }: {
+function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorRef }: {
   value: string; value2?: string; isRange?: boolean; min?: string;
   onChange: (d1: string, d2?: string) => void; onClose: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
-  prices?: Record<string, number>;
 }) {
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-CA");
@@ -211,15 +163,11 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
   const popupRef = useRef<HTMLDivElement>(null);
   const pos = usePortalPos(anchorRef, true);
 
-  const POPUP_H = isRange ? 500 : 440;
-
   const parse = (s: string) => s ? new Date(s + "T00:00:00") : null;
   const [hovering, setHovering] = useState<string | null>(null);
-  const [selecting, setSelecting] = useState<"from" | "to">(
-    value ? (isRange && !value2 ? "to" : "from") : "from"
-  );
-  const [vy, setVy] = useState(() => { const d = parse(value); return d ? d.getFullYear() : today.getFullYear(); });
-  const [vm, setVm] = useState(() => { const d = parse(value); return d ? d.getMonth() : today.getMonth(); });
+  const [selecting, setSelecting] = useState<"from" | "to">(value ? (isRange && !value2 ? "to" : "from") : "from");
+  const [vy,  setVy]  = useState(() => { const d = parse(value); return d ? d.getFullYear() : today.getFullYear(); });
+  const [vm,  setVm]  = useState(() => { const d = parse(value); return d ? d.getMonth() : today.getMonth(); });
   const [vy2, setVy2] = useState(() => vm === 11 ? vy + 1 : vy);
   const [vm2, setVm2] = useState(() => vm === 11 ? 0 : vm + 1);
 
@@ -252,23 +200,6 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
     else { if (s < value) onChange(s, value); else onChange(value, s); onClose(); }
   }
 
-  // Find min/max prices in visible months for colour-coding
-  const visibleDates: string[] = [];
-  for (let d = 1; d <= new Date(vy, vm + 1, 0).getDate(); d++) visibleDates.push(toStr(vy, vm, d));
-  for (let d = 1; d <= new Date(vy2, vm2 + 1, 0).getDate(); d++) visibleDates.push(toStr(vy2, vm2, d));
-  const visiblePrices = visibleDates.map(s => prices[s]).filter((p): p is number => p !== undefined && p > 0);
-  const minPrice = visiblePrices.length ? Math.min(...visiblePrices) : 0;
-  const maxPrice = visiblePrices.length ? Math.max(...visiblePrices) : 0;
-
-  function priceColor(price: number, isSel: boolean): string {
-    if (isSel) return "rgba(255,255,255,0.9)";
-    if (!price || minPrice === maxPrice) return "#059669";
-    const ratio = (price - minPrice) / (maxPrice - minPrice);
-    if (ratio < 0.33) return "#059669"; // green = cheapest
-    if (ratio < 0.66) return "#d97706"; // amber = mid
-    return "#dc2626";                   // red = expensive
-  }
-
   function renderMonth(y: number, m: number) {
     const days = new Date(y, m + 1, 0).getDate();
     const first = new Date(y, m, 1).getDay();
@@ -277,80 +208,53 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
     for (let d = 1; d <= days; d++) {
       const s = toStr(y, m, d);
       const disabled = s < minStr;
-      const sel = Boolean(s === value || (isRange && s === value2));
+      const sel = s === value || (isRange && s === value2);
       const inRange = isRange && value && value2 && s > value && s < value2;
       const hov = isRange && value && !value2 && hovering && selecting === "to" &&
         ((s > value && s < hovering) || (s > hovering && s < value));
       const isToday = s === todayStr;
-      const price = prices[s];
-      const pColor = priceColor(price ?? 0, sel);
-
       cells.push(
-        <button
-          key={d} type="button" disabled={disabled}
+        <button key={d} type="button" disabled={disabled}
           onMouseEnter={() => setHovering(s)} onMouseLeave={() => setHovering(null)}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => clickDay(s)}
           style={{
-            height: 46,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: (inRange || hov) && !disabled ? "rgba(0,71,127,0.10)" : "transparent",
-            border: "none", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.25 : 1,
+            height: 34, display: "flex", alignItems: "center", justifyContent: "center",
+            background: (inRange || hov) && !disabled ? "#fff0ed" : "transparent",
+            border: "none", cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.3 : 1,
           }}
         >
           <span style={{
-            width: 36, height: 40,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            gap: 1,
-            borderRadius: 8, fontSize: 12, fontWeight: 700,
+            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "50%", fontSize: 13, fontWeight: sel ? 900 : 600,
             background: sel ? "#d06549" : "transparent",
-            color: sel ? "white" : isToday && !disabled ? "#d06549" : disabled ? "#9ca3af" : "#0d2d5e",
+            color: sel ? "white" : isToday && !disabled ? "#d06549" : "#1a3558",
             outline: isToday && !sel && !disabled ? "2px solid #d06549" : "none",
             outlineOffset: -2,
-          }}>
-            <span style={{ lineHeight: 1 }}>{d}</span>
-            {price !== undefined && !disabled && (
-              <span style={{
-                fontSize: 7.5,
-                fontWeight: 800,
-                color: pColor,
-                lineHeight: 1,
-                whiteSpace: "nowrap",
-                letterSpacing: "-0.02em",
-              }}>
-                {formatPriceShort(price)}
-              </span>
-            )}
-          </span>
+          }}>{d}</span>
         </button>
       );
     }
     return cells;
   }
 
-  const popupTop = Math.max(8, pos.top - POPUP_H - 6);
-  const popupLeft = Math.min(pos.left, window.innerWidth - 576 - 8);
+  const popupLeft = Math.min(pos.left, window.innerWidth - 580 - 8);
 
   return createPortal(
-    <div
-      ref={popupRef}
-      style={{
-        position: "absolute",
-        top: popupTop,
-        left: Math.max(8, popupLeft),
-        zIndex: 99999,
-        background: "white",
-        borderRadius: 12,
-        border: "1px solid #d0dff0",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
-        minWidth: 560,
-        overflow: "hidden",
-      }}
-    >
-      {/* Range header */}
+    <div ref={popupRef} style={{
+      position: "absolute",
+      top: pos.top + 4,
+      left: Math.max(8, popupLeft),
+      zIndex: 99999,
+      background: "white",
+      borderRadius: 12,
+      border: "1px solid #e2e8f0",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+      minWidth: 560,
+      overflow: "hidden",
+    }}>
       {isRange && (
-        <div style={{ display: "flex", borderBottom: "1px solid #e8eef8", background: "#f4f7fc" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
           {[
             { key: "from" as const, label: "Departure", v: value },
             { key: "to" as const, label: "Return", v: value2 ?? "" },
@@ -363,46 +267,44 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
                 cursor: "pointer",
               }}
             >
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8fafd4", marginBottom: 2 }}>{label}</div>
-              <div style={{ fontSize: 14, fontWeight: 900, color: "#0d2d5e" }}>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "#94a3b8", marginBottom: 2 }}>{label}</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#1a3558" }}>
                 {v ? new Date(v + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Select date"}
               </div>
             </button>
           ))}
         </div>
       )}
-
-      {/* Two-month grid */}
       <div style={{ display: "flex" }}>
         {[{ y: vy, m: vm }, { y: vy2, m: vm2 }].map((cal, idx) => (
-          <div key={idx} style={{ flex: 1, padding: 16, borderRight: idx === 0 ? "1px solid #e8eef8" : "none" }}>
+          <div key={idx} style={{ flex: 1, padding: 16, borderRight: idx === 0 ? "1px solid #f1f5f9" : "none" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               {idx === 0 ? (
                 <button type="button" onClick={() => advance(-1)}
                   style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#f0f4fa")}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#f1f5f9")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <svg style={{ width: 16, height: 16, color: "#6a8ab5" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg style={{ width: 14, height: 14, color: "#64748b" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               ) : <div style={{ width: 28 }} />}
-              <span style={{ fontSize: 14, fontWeight: 900, color: "#0d2d5e" }}>{MONTHS[cal.m]} {cal.y}</span>
+              <span style={{ fontSize: 13, fontWeight: 900, color: "#1a3558" }}>{MONTHS[cal.m]} {cal.y}</span>
               {idx === 1 ? (
                 <button type="button" onClick={() => advance(1)}
                   style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#f0f4fa")}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#f1f5f9")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <svg style={{ width: 16, height: 16, color: "#6a8ab5" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg style={{ width: 14, height: 14, color: "#64748b" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               ) : <div style={{ width: 28 }} />}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
-              {DAYS.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: "#8fafd4", padding: "4px 0" }}>{d}</div>)}
+              {DAYS.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: "#94a3b8", padding: "4px 0" }}>{d}</div>)}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", rowGap: 2 }}>
               {renderMonth(cal.y, cal.m)}
@@ -410,37 +312,12 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
           </div>
         ))}
       </div>
-
-      {/* Price legend */}
-      {Object.keys(prices).length > 0 && (
-        <div style={{ borderTop: "1px solid #e8eef8", padding: "8px 20px", display: "flex", alignItems: "center", gap: 16, background: "#fafcff" }}>
-          <span style={{ fontSize: 10, color: "#8fafd4", fontWeight: 600 }}>Fares:</span>
-          {[
-            { color: "#059669", label: "Low" },
-            { color: "#d97706", label: "Mid" },
-            { color: "#dc2626", label: "High" },
-          ].map(({ color, label }) => (
-            <span key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6a8ab5", fontWeight: 600 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block" }} />
-              {label}
-            </span>
-          ))}
-          {minPrice > 0 && (
-            <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 700 }}>
-              From {formatPriceShort(minPrice)}
-            </span>
-          )}
-        </div>
-      )}
-
-      <div style={{ borderTop: "1px solid #e8eef8", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f4f7fc" }}>
+      <div style={{ borderTop: "1px solid #f1f5f9", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8fafc" }}>
         <button type="button" onClick={() => onChange("", "")}
-          style={{ fontSize: 12, color: "#8fafd4", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
+          style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#d06549")}
-          onMouseLeave={e => (e.currentTarget.style.color = "#8fafd4")}
-        >
-          Clear dates
-        </button>
+          onMouseLeave={e => (e.currentTarget.style.color = "#94a3b8")}
+        >Clear dates</button>
         <button type="button" onClick={onClose}
           style={{ padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 900, color: "white", background: "#d06549", border: "none", cursor: "pointer" }}>
           Done
@@ -451,74 +328,43 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
   );
 }
 
-// ─── DATE FIELD ────────────────────────────────────────────
-
-function DateField({ label, value, isRange, disabled, onClick }: {
-  label: string; value: string; value2?: string; isRange?: boolean;
-  min?: string; disabled?: boolean; onClick?: () => void;
-}) {
-  const hasValue = !!value;
-  const f = hasValue ? (() => {
-    const d = new Date(value + "T00:00:00");
-    return {
-      date: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-      year: d.getFullYear().toString(),
-      day: d.toLocaleDateString("en-IN", { weekday: "short" }),
-    };
-  })() : null;
-
-  return (
-    <button type="button" onClick={onClick} disabled={disabled}
-      className={`${fieldBtn} ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}>
-      {!hasValue && <div className={lbl}>{label}</div>}
-      {f ? (
-        <>
-          <div className={val}>{f.date} <span className="text-white/50 text-xs font-semibold">{f.year}</span></div>
-          <div className={sub}>{f.day}</div>
-        </>
-      ) : (
-        <div className="text-sm text-[#b0bfd4] font-medium mt-1">{disabled ? "—" : "Select date"}</div>
-      )}
-    </button>
-  );
-}
-
-// ─── PASSENGER ROW ─────────────────────────────────────────
-
-function PassengerRow({ label, sub: subtitle, value, min, max, onChange }: {
-  label: string; sub: string; value: number; min: number; max: number; onChange: (v: number) => void;
+// ── COUNTER BUTTON ─────────────────────────────────────────
+function Counter({ label, value, min, max, onChange }: {
+  label: string; value: number; min: number; max: number; onChange: (v: number) => void;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{label}</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>{subtitle}</div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="button" onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min}
-          style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.25)", background: "transparent", color: "rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center", cursor: value <= min ? "not-allowed" : "pointer", opacity: value <= min ? 0.3 : 1, fontSize: 18, fontWeight: 700 }}>−</button>
-        <span style={{ width: 18, textAlign: "center", fontWeight: 900, color: "white", fontSize: 14 }}>{value}</span>
-        <button type="button" onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max}
-          style={{ width: 30, height: 30, borderRadius: "50%", background: "#d06549", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: value >= max ? "not-allowed" : "pointer", opacity: value >= max ? 0.3 : 1, fontSize: 18, fontWeight: 700 }}>+</button>
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-500 font-bold text-lg leading-none hover:border-[#d06549] hover:text-[#d06549] disabled:opacity-30 transition-colors"
+        >−</button>
+        <span className="w-5 text-center font-black text-[#1a3558] text-base">{value}</span>
+        <button
+          type="button"
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-lg leading-none disabled:opacity-30 transition-opacity"
+          style={{ background: "#d06549" }}
+        >+</button>
       </div>
     </div>
   );
 }
 
-// ─── PASSENGER PICKER ──────────────────────────────────────
-
-function PassengerPicker({ adults, children, infants, cabinClass, onChange }: {
-  adults: number; children: number; infants: number; cabinClass: SearchForm["cabinClass"];
-  onChange: (a: number, c: number, i: number, cls: SearchForm["cabinClass"]) => void;
+// ── CABIN CLASS PICKER POPUP ──────────────────────────────
+function CabinClassPicker({ cabinClass, onChange }: {
+  cabinClass: SearchForm["cabinClass"];
+  onChange: (cls: SearchForm["cabinClass"]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const classes: SearchForm["cabinClass"][] = ["Economy", "Premium Economy", "Business", "First"];
-  const total = adults + children + infants;
+  const popupRef  = useRef<HTMLDivElement>(null);
   const pos = usePortalPos(anchorRef, open);
-
-  const POPUP_H = 290;
+  const classes: SearchForm["cabinClass"][] = ["Economy", "Premium Economy", "Business", "First"];
 
   useEffect(() => {
     if (!open) return;
@@ -532,58 +378,48 @@ function PassengerPicker({ adults, children, infants, cabinClass, onChange }: {
   }, [open]);
 
   return (
-    <div ref={anchorRef} className="relative w-full h-full">
-      <button type="button" onClick={() => setOpen(!open)} className={`${fieldBtn} group`}>
-        <div className={lbl}>Passengers &amp; Class</div>
-        <div className={val}>{total} {total === 1 ? "Traveller" : "Travellers"}</div>
-        <div className={sub}>{cabinClass}</div>
+    <div ref={anchorRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex flex-col gap-1 cursor-pointer"
+      >
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-left">Cabin Class</span>
+        <span className="text-sm font-black text-[#1a3558] flex items-center gap-1">
+          {cabinClass}
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
       </button>
-
       {open && createPortal(
-        <div
-          ref={popupRef}
-          style={{
-            position: "absolute",
-            top: Math.max(8, pos.top - POPUP_H - 6),
-            left: Math.max(8, pos.left + pos.width - 288),
-            width: 288,
-            zIndex: 99999,
-            background: "#00305f",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.15)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
-            padding: 20,
-          }}
-        >
-          <PassengerRow label="Adults" sub="12+ years" value={adults} min={1} max={9}
-            onChange={(v) => onChange(v, children, infants, cabinClass)} />
-          <PassengerRow label="Children" sub="2–12 years" value={children} min={0} max={9}
-            onChange={(v) => onChange(adults, v, infants, cabinClass)} />
-          <PassengerRow label="Infants" sub="Under 2 years" value={infants} min={0} max={4}
-            onChange={(v) => onChange(adults, children, v, cabinClass)} />
-
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Cabin Class</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-              {classes.map((cls) => (
-                <button key={cls} type="button"
-                  onClick={() => onChange(adults, children, infants, cls)}
-                  style={{
-                    padding: "8px 4px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                    background: cabinClass === cls ? "#d06549" : "transparent",
-                    color: cabinClass === cls ? "white" : "rgba(255,255,255,0.65)",
-                    border: cabinClass === cls ? "2px solid #d06549" : "2px solid rgba(255,255,255,0.15)",
-                  }}>
-                  {cls}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button type="button" onClick={() => setOpen(false)}
-            style={{ marginTop: 14, width: "100%", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, color: "white", background: "#00477f", border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}>
-            Confirm
-          </button>
+        <div ref={popupRef} style={{
+          position: "absolute",
+          top: pos.top + 4,
+          left: pos.left,
+          width: 200,
+          zIndex: 99999,
+          background: "white",
+          borderRadius: 10,
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 16px 40px rgba(0,0,0,0.12)",
+          overflow: "hidden",
+        }}>
+          {classes.map((cls) => (
+            <button key={cls} type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { onChange(cls); setOpen(false); }}
+              style={{
+                width: "100%", padding: "11px 16px", textAlign: "left",
+                background: cabinClass === cls ? "#fff0ed" : "transparent",
+                border: "none", borderBottom: "1px solid #f8fafc",
+                cursor: "pointer", fontSize: 13, fontWeight: cabinClass === cls ? 800 : 600,
+                color: cabinClass === cls ? "#d06549" : "#1a3558",
+              }}
+              onMouseEnter={e => { if (cabinClass !== cls) e.currentTarget.style.background = "#f8fafc"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = cabinClass === cls ? "#fff0ed" : "transparent"; }}
+            >{cls}</button>
+          ))}
         </div>,
         document.body
       )}
@@ -591,12 +427,10 @@ function PassengerPicker({ adults, children, infants, cabinClass, onChange }: {
   );
 }
 
-// ─── MULTI-CITY LEG ────────────────────────────────────────
-
-function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, prices }: {
+// ── MULTI-CITY LEG ────────────────────────────────────────
+function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove }: {
   leg: CityLeg; index: number; total: number; today: string;
   airports: Airport[]; onUpdate: (l: Partial<CityLeg>) => void; onRemove: () => void;
-  prices: Record<string, number>;
 }) {
   const [calOpen, setCalOpen] = useState(false);
   const calAnchorRef = useRef<HTMLDivElement>(null);
@@ -604,10 +438,10 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, 
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-[10px] font-black text-[#f9c08a] uppercase tracking-widest">Flight {index + 1}</span>
+        <span className="text-[11px] font-black text-[#d06549] uppercase tracking-widest">Flight {index + 1}</span>
         {total > 2 && (
           <button type="button" onClick={onRemove}
-            className="ml-auto text-[10px] text-white/40 hover:text-red-400 font-semibold transition-colors flex items-center gap-1">
+            className="ml-auto text-xs text-gray-400 hover:text-red-400 font-semibold transition-colors flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -615,7 +449,7 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, 
           </button>
         )}
       </div>
-      <div className={`flex ${glassCls} divide-x divide-white/10`} style={boxBg}>
+      <div className="flex divide-x divide-gray-200 bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         <div className="flex-1">
           <AirportInput label="From" value={leg.from} airports={airports} onChange={(a) => onUpdate({ from: a })} />
         </div>
@@ -623,12 +457,28 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, 
           <AirportInput label="To" value={leg.to} airports={airports} onChange={(a) => onUpdate({ to: a })} />
         </div>
         <div className="flex-[0.7]" ref={calAnchorRef}>
-          <DateField label="Depart" value={leg.departDate} min={today} onClick={() => setCalOpen(!calOpen)} />
+          <button
+            type="button"
+            onClick={() => setCalOpen(!calOpen)}
+            className="w-full h-full text-left px-5 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Depart</div>
+            {leg.departDate ? (() => {
+              const d = new Date(leg.departDate + "T00:00:00");
+              return (
+                <>
+                  <div className="text-xl font-black text-[#1a3558]">
+                    {d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </div>
+                  <div className="text-sm text-gray-400 mt-0.5">{d.toLocaleDateString("en-IN", { weekday: "short" })}</div>
+                </>
+              );
+            })() : <div className="text-sm text-gray-400 mt-1">Select date</div>}
+          </button>
           {calOpen && (
             <CalendarPopup
               value={leg.departDate} min={today}
               anchorRef={calAnchorRef}
-              prices={prices}
               onChange={(d1) => { onUpdate({ departDate: d1 }); setCalOpen(false); }}
               onClose={() => setCalOpen(false)}
             />
@@ -639,8 +489,7 @@ function MultiCityLeg({ leg, index, total, today, airports, onUpdate, onRemove, 
   );
 }
 
-// ─── MAIN SEARCH PAGE ──────────────────────────────────────
-
+// ── MAIN SEARCH PAGE ──────────────────────────────────────
 interface SearchPageProps {
   onSearch: (form: SearchForm, multiLegs?: CityLeg[]) => void;
   tripType?: "oneWay" | "roundTrip" | "multiCity";
@@ -678,26 +527,16 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
     { from: MOCK_AIRPORTS[1] ?? MOCK_AIRPORTS[0], to: MOCK_AIRPORTS[2] ?? MOCK_AIRPORTS[0], departDate: "" },
   ]);
 
-  // ── Calendar price state ────────────────────────────────
-  const [calPrices, setCalPrices] = useState<Record<string, number>>({});
-  const [pricesLoading, setPricesLoading] = useState(false);
-
-  useEffect(() => {
-    const fromCode = form.tripType === "multiCity" ? multiLegs[0]?.from?.code : form.from?.code;
-    const toCode   = form.tripType === "multiCity" ? multiLegs[0]?.to?.code   : form.to?.code;
-    if (!fromCode || !toCode || fromCode === toCode) return;
-
-    let cancelled = false;
-    setPricesLoading(true);
-    apiGetCalendarPrices(fromCode, toCode, form.cabinClass)
-      .then((prices) => { if (!cancelled) { setCalPrices(prices); setPricesLoading(false); } })
-      .catch(() => { if (!cancelled) setPricesLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [form.from?.code, form.to?.code, form.cabinClass, form.tripType, multiLegs]);
-
   const [calOpen, setCalOpen] = useState(false);
   const calAnchorRef = useRef<HTMLDivElement>(null);
+
+  const isRound = form.tripType === "roundTrip";
+  const isMulti = form.tripType === "multiCity";
+
+  function setTripType(t: "oneWay" | "roundTrip" | "multiCity") {
+    setForm((f) => ({ ...f, tripType: t }));
+    onTripTypeChange?.(t);
+  }
 
   function addLeg() {
     if (multiLegs.length >= 5) return;
@@ -713,9 +552,6 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
     setMultiLegs((legs) => legs.filter((_, i) => i !== idx));
   }
 
-  const isRound = form.tripType === "roundTrip";
-  const isMulti = form.tripType === "multiCity";
-
   function handleSearch() {
     if (isMulti) {
       if (multiLegs.some((leg) => !leg.departDate)) {
@@ -729,8 +565,46 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
     }
   }
 
+  // Format date for display
+  function formatDate(dateStr: string) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + "T00:00:00");
+    return {
+      dayMonth: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      weekday: d.toLocaleDateString("en-IN", { weekday: "short" }),
+    };
+  }
+
+  const departFmt = formatDate(form.departDate);
+  const returnFmt = formatDate(form.returnDate);
+
   return (
     <div className="w-full">
+
+      {/* ── Trip type tabs ── */}
+      <div className="mb-5">
+        <div className="inline-flex bg-gray-200 rounded-full p-1 gap-0.5">
+          {(["oneWay", "roundTrip", "multiCity"] as const).map((type) => {
+            const labels = { oneWay: "One way", roundTrip: "Round trip", multiCity: "Multi-city" };
+            const active = form.tripType === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setTripType(type)}
+                className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
+                  active
+                    ? "text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                style={active ? { background: "#d06549" } : {}}
+              >
+                {labels[type]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ── MULTI-CITY ── */}
       {isMulti ? (
@@ -738,55 +612,99 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
           {multiLegs.map((leg, idx) => (
             <MultiCityLeg key={idx} leg={leg} index={idx} total={multiLegs.length}
               today={today} airports={airports}
-              prices={calPrices}
               onUpdate={(u) => updateLeg(idx, u)} onRemove={() => removeLeg(idx)} />
           ))}
-          <div className="flex items-center justify-between mt-2 mb-3">
+
+          {/* Passengers row for multi-city */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 mb-3">
+            <div className="flex items-center gap-8 flex-wrap">
+              <Counter label="Adults" value={form.adults} min={1} max={9} onChange={(v) => setForm(f => ({ ...f, adults: v }))} />
+              <Counter label="Children" value={form.children} min={0} max={9} onChange={(v) => setForm(f => ({ ...f, children: v }))} />
+              <Counter label="Infants" value={form.infants} min={0} max={4} onChange={(v) => setForm(f => ({ ...f, infants: v }))} />
+              <div className="h-8 w-px bg-gray-200 hidden sm:block" />
+              <CabinClassPicker cabinClass={form.cabinClass} onChange={(cls) => setForm(f => ({ ...f, cabinClass: cls }))} />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-2">
             {multiLegs.length < 5 ? (
               <button type="button" onClick={addLeg}
-                className="flex items-center gap-2 text-xs font-bold text-white/55 hover:text-[#f9c08a] transition-colors border border-white/20 hover:border-[#f9c08a]/50 px-4 py-2 rounded-lg"
-                style={{ background: "rgba(255,255,255,0.06)" }}>
+                className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#d06549] transition-colors border border-gray-200 hover:border-[#d06549] px-4 py-2 rounded-xl bg-white shadow-sm">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
                 Add another city
               </button>
             ) : (
-              <div className="text-xs text-[#b0bfd4]">Maximum 5 flights</div>
+              <div className="text-xs text-gray-400">Maximum 5 flights</div>
             )}
-            <div className={`${glassCls} w-52`} style={boxBg}>
-              <PassengerPicker adults={form.adults} children={form.children} infants={form.infants}
-                cabinClass={form.cabinClass}
-                onChange={(a, c, i, cls) => setForm((f) => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))} />
-            </div>
+
+            <button onClick={handleSearch}
+              className="font-black text-sm tracking-widest text-white px-10 py-3.5 rounded-xl transition-all hover:brightness-110 active:scale-95 shadow-lg"
+              style={{ background: "#d06549", letterSpacing: "0.12em" }}>
+              FIND FLIGHTS
+            </button>
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
+        /* ── ONE-WAY / ROUND-TRIP ── */
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-visible">
 
-          {/* ROW 1: From | To */}
-          <div className={glassCls} style={boxBg}>
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
-              <AirportInput label="From" value={form.from} airports={airports}
-                onChange={(a) => setForm((f) => ({ ...f, from: a }))} />
-              <AirportInput label="To" value={form.to} airports={airports}
-                onChange={(a) => setForm((f) => ({ ...f, to: a }))} />
+          {/* ROW 1: FROM | TO */}
+          <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200">
+            <AirportInput label="From" value={form.from} airports={airports}
+              onChange={(a) => setForm((f) => ({ ...f, from: a }))} />
+            <AirportInput label="To" value={form.to} airports={airports}
+              onChange={(a) => setForm((f) => ({ ...f, to: a }))} />
+          </div>
+
+          {/* ROW 2: DEPARTURE | RETURN */}
+          <div ref={calAnchorRef} className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200">
+            {/* Departure */}
+            <button
+              type="button"
+              className="text-left px-5 py-4 hover:bg-gray-50 transition-colors"
+              onClick={() => setCalOpen(true)}
+            >
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Departure</div>
+              {departFmt ? (
+                <>
+                  <div className="text-2xl font-black text-[#1a3558]">{departFmt.dayMonth}</div>
+                  <div className="text-sm text-gray-400 mt-0.5">{departFmt.weekday}</div>
+                </>
+              ) : (
+                <div className="text-sm text-gray-400 mt-1">Select date</div>
+              )}
+            </button>
+
+            {/* Return */}
+            <div
+              onClick={!isRound ? () => { setTripType("roundTrip"); } : undefined}
+              className={!isRound ? "cursor-pointer" : ""}
+            >
+              <button
+                type="button"
+                className={`w-full h-full text-left px-5 py-4 transition-colors ${isRound ? "hover:bg-gray-50" : "hover:bg-orange-50/30"}`}
+                onClick={isRound ? () => setCalOpen(!calOpen) : undefined}
+              >
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Return on</div>
+                {isRound && returnFmt ? (
+                  <>
+                    <div className="text-2xl font-black text-[#1a3558]">{returnFmt.dayMonth}</div>
+                    <div className="text-sm text-gray-400 mt-0.5">{returnFmt.weekday}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-lg font-black text-gray-300 mt-1">—</div>
+                    <div className="text-sm text-gray-400 mt-0.5">
+                      {isRound ? "Select date" : "One way flight"}
+                    </div>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* ROW 2: Depart | Return */}
-          <div ref={calAnchorRef} className={glassCls} style={boxBg}>
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
-              <DateField label="Leave on" value={form.departDate} min={today}
-                onClick={() => !isRound && setCalOpen(true)} />
-              <div onClick={!isRound ? () => { setForm((f) => ({ ...f, tripType: "roundTrip" })); onTripTypeChange?.("roundTrip"); } : undefined}>
-                <DateField label="Return on" value={form.returnDate} value2={form.returnDate}
-                  isRange={isRound} min={form.departDate || today}
-                  disabled={!isRound}
-                  onClick={isRound ? () => setCalOpen(!calOpen) : undefined} />
-              </div>
-            </div>
-          </div>
           {calOpen && (
             <CalendarPopup
               value={form.departDate}
@@ -794,7 +712,6 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
               isRange={isRound}
               min={today}
               anchorRef={calAnchorRef}
-              prices={calPrices}
               onChange={(d1, d2) => {
                 setForm((f) => ({ ...f, departDate: d1, returnDate: d2 ?? "" }));
                 if (!isRound || d2) setCalOpen(false);
@@ -803,64 +720,43 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
             />
           )}
 
-          {/* ROW 3: Passengers + cabin */}
-          <div className={glassCls} style={boxBg}>
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/10">
-              <div className="flex items-center gap-5 px-4 py-3 flex-wrap">
-                {[
-                  { label: "Adults", value: form.adults, min: 1, max: 9, key: "adults" as const },
-                  { label: "Children", value: form.children, min: 0, max: 9, key: "children" as const },
-                  { label: "Infants", value: form.infants, min: 0, max: 4, key: "infants" as const },
-                ].map(({ label, value, min, max, key }) => (
-                  <label key={key} className="flex flex-col items-center gap-1 cursor-pointer select-none">
-                    <span className={lbl}>{label}</span>
-                    <div className="flex items-center gap-2">
-                      <button type="button"
-                        onClick={() => setForm((f) => ({ ...f, [key]: Math.max(min, f[key] - 1) }))}
-                        disabled={value <= min}
-                        className="w-6 h-6 rounded-full border border-[#c9d5e8] text-[#6a8ab5] flex items-center justify-center hover:border-[#d06549] hover:text-[#d06549] disabled:opacity-30 transition-colors text-sm font-bold">
-                        −
-                      </button>
-                      <span className="w-4 text-center font-black text-[#0d2d5e] text-sm">{value}</span>
-                      <button type="button"
-                        onClick={() => setForm((f) => ({ ...f, [key]: Math.min(max, f[key] + 1) }))}
-                        disabled={value >= max}
-                        className="w-6 h-6 rounded-full flex items-center justify-center disabled:opacity-30 transition-colors text-sm font-bold text-white"
-                        style={{ background: "#d06549" }}>
-                        +
-                      </button>
-                    </div>
-                  </label>
-                ))}
-              </div>
+          {/* ROW 3: Passengers + FIND FLIGHTS */}
+          <div className="flex items-center px-5 py-4 gap-6 flex-wrap">
+            <Counter label="Adults" value={form.adults} min={1} max={9}
+              onChange={(v) => setForm(f => ({ ...f, adults: v }))} />
+            <Counter label="Children" value={form.children} min={0} max={9}
+              onChange={(v) => setForm(f => ({ ...f, children: v }))} />
+            <Counter label="Infants" value={form.infants} min={0} max={4}
+              onChange={(v) => setForm(f => ({ ...f, infants: v }))} />
 
-              <PassengerPicker adults={form.adults} children={form.children} infants={form.infants}
-                cabinClass={form.cabinClass}
-                onChange={(a, c, i, cls) => setForm((f) => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))} />
+            <div className="h-10 w-px bg-gray-200 hidden sm:block" />
+            <CabinClassPicker cabinClass={form.cabinClass}
+              onChange={(cls) => setForm(f => ({ ...f, cabinClass: cls }))} />
+
+            <div className="flex-1" />
+
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.nonStopOnly}
+                  onChange={(e) => setForm((f) => ({ ...f, nonStopOnly: e.target.checked }))}
+                  className="w-4 h-4 rounded accent-[#d06549]"
+                />
+                <span className="text-sm text-gray-500 font-semibold whitespace-nowrap">Non-stop only</span>
+              </label>
+
+              <button
+                onClick={handleSearch}
+                className="font-black text-sm tracking-widest text-white px-10 py-3.5 rounded-xl transition-all hover:brightness-110 active:scale-95 shadow-md whitespace-nowrap"
+                style={{ background: "#d06549", letterSpacing: "0.12em" }}
+              >
+                FIND FLIGHTS
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── Bottom: non-stop + FIND FLIGHTS ── */}
-      <div className="flex items-center justify-between mt-3">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.nonStopOnly}
-            onChange={(e) => setForm((f) => ({ ...f, nonStopOnly: e.target.checked }))}
-            className="accent-[#d06549] rounded w-4 h-4" />
-          <span className="text-sm text-white/65 font-semibold">Non-stop only</span>
-        </label>
-
-        <button onClick={handleSearch}
-          className="font-black text-sm tracking-widest text-white px-10 py-3 rounded-xl transition-all hover:brightness-110 active:scale-95"
-          style={{
-            background: "linear-gradient(135deg, #d06549 0%, #b8543a 100%)",
-            letterSpacing: "0.12em",
-            boxShadow: "0 4px 24px rgba(208,101,73,0.45)",
-          }}>
-          {pricesLoading ? "Loading…" : "FIND FLIGHTS"}
-        </button>
-      </div>
     </div>
   );
 }

@@ -798,6 +798,7 @@ function MultiCityPanel({
 export interface OneSearchBarProps {
   onSearch: (form: SearchForm, multiLegs?: CityLeg[]) => void;
   form?: Partial<SearchForm>;
+  multiLegs?: CityLeg[];
   tripType?: SearchForm["tripType"];
   onTripTypeChange?: (t: SearchForm["tripType"]) => void;
 }
@@ -807,6 +808,7 @@ type ActivePopup = "from" | "to" | "depart" | "return" | "pax" | "tripType" | nu
 export default function OneSearchBar({
   onSearch,
   form: formProp,
+  multiLegs: multiLegsProp,
   tripType: tripTypeProp,
   onTripTypeChange,
 }: OneSearchBarProps) {
@@ -962,12 +964,13 @@ export default function OneSearchBar({
     <div style={{ width: "100%" }}>
       {/* ════════════════════════ MAIN BAR ════════════════════════ */}
       <div style={{
-        display: "flex", alignItems: "stretch",
-        background: "#fff",
-        borderRadius: isMulti ? "14px 14px 0 0" : 14,
-        boxShadow: "0 2px 20px rgba(0,0,0,0.22)",
-        overflow: "visible", position: "relative",
-      }}>
+  display: "flex", alignItems: "stretch",
+  background: "#fff",
+  borderRadius: 0,
+  boxShadow: "none",
+  overflow: "visible", position: "relative",
+  minHeight: 64,
+   }}>
 
         {/* TRIP TYPE */}
         <div ref={tripRef} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
