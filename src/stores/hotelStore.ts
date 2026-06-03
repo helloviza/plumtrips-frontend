@@ -219,6 +219,10 @@ interface HotelBookingState {
   sessionExpired: boolean;
   setSessionExpired: (v: boolean) => void;
 
+  // Room Guest Names (Pre-filled from search modal)
+  roomGuestNames: string[];
+  setRoomGuestNames: (names: string[]) => void;
+
   // Special Requests
   specialRequests: string;
   setSpecialRequests: (requests: string) => void;
@@ -303,6 +307,7 @@ export const useHotelStore = create<HotelBookingState>()(
       bookingDetail: null,
       paymentSubmitted: false,
       sessionExpired: false,
+      roomGuestNames: [],
       specialRequests: '',
       promoCode: '',
       promoDiscount: 0,
@@ -373,9 +378,10 @@ export const useHotelStore = create<HotelBookingState>()(
       setSearchResultsMap: (map) => set({ searchResultsMap: map }),
       setConfirmationNo: (no) => set({ confirmationNo: no }),
       setBookingDetail: (detail) => set({ bookingDetail: detail }),
-      setPaymentSubmitted: (v) => set({ paymentSubmitted: v }),
-      setSessionExpired: (v) => set({ sessionExpired: v }),
-      setSpecialRequests: (requests) => set({ specialRequests: requests }),
+      setPaymentSubmitted: (paymentSubmitted) => set({ paymentSubmitted }),
+      setSessionExpired: (sessionExpired) => set({ sessionExpired }),
+      setRoomGuestNames: (roomGuestNames) => set({ roomGuestNames }),
+      setSpecialRequests: (specialRequests) => set({ specialRequests }),
 
       applyPromoCode: (code) => {
         const discounts: Record<string, number> = {

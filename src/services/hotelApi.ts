@@ -326,6 +326,8 @@ export async function searchHotels(
   if (params.childrenAges !== undefined) body.childrenAges = params.childrenAges;
   if (params.traceId?.trim()) body.traceId = params.traceId.trim();
 
+  console.log("FRONTEND SENDING SEARCH BODY:", body);
+
   const res = await post<HotelSearchResponse>('/api/v1/hotels/search', body);
   const raw = res?.data;
   const traceId = pickTraceIdFromSearchData(raw);

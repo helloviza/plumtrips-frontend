@@ -359,16 +359,24 @@ export function useHotelSearch() {
     try {
       setStatusMessage('Finding hotels in this city…');
       let actualCityCode = params.cityCode;
-      if (actualCityCode && !actualCityCode.includes(':')) {
-        const cities = await searchCities(actualCityCode);
-        if (cities.length > 0) {
-          actualCityCode = cities[0].id;
-          // Store the resolved country code so checkout knows if it's an international booking
-          if (cities[0].countryCode) {
-            useHotelStore.getState().setSearchParams({ destinationCountryCode: cities[0].countryCode });
+      
+      // If it's a CC:ID format (e.g. from an old store state), extract just the ID
+      if (actualCityCode && actualCityCode.includes(':')) {
+        actualCityCode = actualCityCode.split(':')[1];
+      } else if (actualCityCode) {
+        // Resolve plain strings if it's not a numeric ID
+        if (!/^\d+$/.test(actualCityCode)) {
+          const cities = await searchCities(actualCityCode);
+          if (cities.length > 0) {
+            actualCityCode = cities[0].cityCode; // Use exact TBO Code, not CC:Code
+            // Store the resolved country code so checkout knows if it's an international booking
+            if (cities[0].countryCode) {
+              useHotelStore.getState().setSearchParams({ destinationCountryCode: cities[0].countryCode });
+            }
           }
         }
       }
+      
       const cityHotels: any[] = await getCityHotels(actualCityCode);
 
       if (cityHotels.length === 0) {
@@ -633,3 +641,4 @@ export async function searchCities(
     return [];
   }
 }
+

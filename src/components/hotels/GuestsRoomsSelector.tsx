@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Users, Plus, Minus, Info } from 'lucide-react';
+import { Users, Plus, Minus, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Button from '../ui/Button';
 
-const MAX_ADULTS_PER_ROOM = 2;
+const MAX_ADULTS_PER_ROOM = 4;
+const MAX_CHILDREN_PER_ROOM = 4;
 const MAX_ROOMS = 8;
-const MAX_ADULTS = 16;
-const MAX_CHILDREN = 6;
 
 interface GuestsRoomsSelectorProps {
   rooms: number;
@@ -19,6 +18,54 @@ interface GuestsRoomsSelectorProps {
   onChildrenAgesChange: (ages: number[]) => void;
   error?: string;
   variant?: 'default' | 'bar';
+}
+
+interface RoomConfig {
+  adults: number;
+  children: number;
+  childrenAges: number[];
+}
+
+// Distribute totals into initial per-room config on mount
+function distributeGuests(
+  totalRooms: number,
+  totalAdults: number,
+  totalChildren: number,
+  totalChildrenAges: number[]
+): RoomConfig[] {
+  const configs = Array.from({ length: Math.max(1, totalRooms) }).map(() => ({
+    adults: 1,
+    children: 0,
+    childrenAges: [] as number[],
+  }));
+
+  let remainingAdults = Math.max(0, totalAdults - totalRooms);
+  let remainingChildren = totalChildren;
+  let ageIdx = 0;
+
+  // distribute adults evenly up to max
+  let i = 0;
+  while (remainingAdults > 0) {
+    if (configs[i].adults < MAX_ADULTS_PER_ROOM) {
+      configs[i].adults++;
+      remainingAdults--;
+    }
+    i = (i + 1) % totalRooms;
+  }
+
+  // distribute children evenly up to max
+  i = 0;
+  while (remainingChildren > 0) {
+    if (configs[i].children < MAX_CHILDREN_PER_ROOM) {
+      configs[i].children++;
+      configs[i].childrenAges.push(totalChildrenAges[ageIdx] ?? 5);
+      ageIdx++;
+      remainingChildren--;
+    }
+    i = (i + 1) % totalRooms;
+  }
+
+  return configs;
 }
 
 export default function GuestsRoomsSelector({
@@ -37,8 +84,9 @@ export default function GuestsRoomsSelector({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Minimum rooms needed to fit current adults (2 adults per room)
-  const minRoomsForAdults = Math.ceil(adults / MAX_ADULTS_PER_ROOM);
+  const [roomConfigs, setRoomConfigs] = useState<RoomConfig[]>(() =>
+    distributeGuests(rooms, adults, children, childrenAges)
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,212 +94,226 @@ export default function GuestsRoomsSelector({
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
-  // When adults increase, auto-bump rooms if needed
-  const handleAdultsChange = (newAdults: number) => {
-    onAdultsChange(newAdults);
-    const requiredRooms = Math.ceil(newAdults / MAX_ADULTS_PER_ROOM);
-    if (requiredRooms > rooms) {
-      onRoomsChange(requiredRooms);
-    }
+  // Sync back to parent when roomConfigs change
+  useEffect(() => {
+    let newRooms = roomConfigs.length;
+    let newAdults = 0;
+    let newChildren = 0;
+    let newAges: number[] = [];
+
+    roomConfigs.forEach(r => {
+      newAdults += r.adults;
+      newChildren += r.children;
+      newAges.push(...r.childrenAges);
+    });
+
+    if (newRooms !== rooms) onRoomsChange(newRooms);
+    if (newAdults !== adults) onAdultsChange(newAdults);
+    if (newChildren !== children) onChildrenChange(newChildren);
+    if (JSON.stringify(newAges) !== JSON.stringify(childrenAges)) onChildrenAgesChange(newAges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomConfigs]);
+
+  const addRoom = () => {
+    if (roomConfigs.length >= MAX_ROOMS) return;
+    setRoomConfigs([...roomConfigs, { adults: 1, children: 0, childrenAges: [] }]);
   };
 
-  // When rooms decrease, cap adults to rooms × MAX_ADULTS_PER_ROOM
-  const handleRoomsChange = (newRooms: number) => {
-    onRoomsChange(newRooms);
-    const maxAdults = newRooms * MAX_ADULTS_PER_ROOM;
-    if (adults > maxAdults) {
-      onAdultsChange(maxAdults);
-    }
+  const removeRoom = (index: number) => {
+    if (roomConfigs.length <= 1) return;
+    setRoomConfigs(roomConfigs.filter((_, i) => i !== index));
   };
 
-  const handleChildrenChange = (newChildren: number) => {
-    onChildrenChange(newChildren);
-    if (newChildren > children) {
-      const newAges = [...childrenAges];
-      for (let i = childrenAges.length; i < newChildren; i++) {
+  const updateAdults = (index: number, delta: number) => {
+    setRoomConfigs(prev => {
+      const next = [...prev];
+      const curr = next[index].adults;
+      const minAdults = index === 0 ? 1 : 0;
+      const newVal = Math.max(minAdults, Math.min(MAX_ADULTS_PER_ROOM, curr + delta));
+      
+      let newChildren = next[index].children;
+      let newAges = [...next[index].childrenAges];
+      if (newVal === 0 && newChildren === 0) {
+        newChildren = 1;
         newAges.push(5);
       }
-      onChildrenAgesChange(newAges);
-    } else {
-      onChildrenAgesChange(childrenAges.slice(0, newChildren));
-    }
+      
+      next[index] = { ...next[index], adults: newVal, children: newChildren, childrenAges: newAges };
+      return next;
+    });
   };
 
-  const handleChildAgeChange = (index: number, age: number) => {
-    const newAges = [...childrenAges];
-    newAges[index] = age;
-    onChildrenAgesChange(newAges);
+  const updateChildren = (index: number, delta: number) => {
+    setRoomConfigs(prev => {
+      const next = [...prev];
+      const curr = next[index].children;
+      const minChildren = next[index].adults === 0 ? 1 : 0;
+      const newVal = Math.max(minChildren, Math.min(MAX_CHILDREN_PER_ROOM, curr + delta));
+      
+      const newAges = [...next[index].childrenAges];
+      if (newVal > curr) {
+        newAges.push(5);
+      } else if (newVal < curr) {
+        newAges.pop();
+      }
+
+      next[index] = { ...next[index], children: newVal, childrenAges: newAges };
+      return next;
+    });
   };
 
-  const totalGuests = adults + children;
-  const maxAdultsAllowed = rooms * MAX_ADULTS_PER_ROOM;
+  const updateAge = (roomIndex: number, childIndex: number, age: number) => {
+    setRoomConfigs(prev => {
+      const next = [...prev];
+      const newAges = [...next[roomIndex].childrenAges];
+      newAges[childIndex] = age;
+      next[roomIndex] = { ...next[roomIndex], childrenAges: newAges };
+      return next;
+    });
+  };
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Trigger button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex w-full items-center justify-between text-left transition-colors',
-          isBar ? 'border-0 bg-transparent py-0 px-0' : 'rounded-lg border border-gray-300 bg-white px-4 py-3',
-          isBar ? '' : 'focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/15',
-          { 'border-red-500': error && !isBar }
+          'flex w-full items-center justify-between transition-all',
+          isBar
+            ? 'h-full bg-transparent px-2 text-left'
+            : 'rounded-xl border bg-white px-4 py-3 text-left shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20',
+          error ? 'border-red-500' : 'border-gray-300'
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {!isBar && <Users className="h-5 w-5 shrink-0 text-gray-400" />}
-          <div className="min-w-0">
-            {isBar ? (
-              <div className="truncate text-base font-semibold text-[#003580]">
-                {rooms} Room{rooms !== 1 ? 's' : ''}, {totalGuests} Guest{totalGuests !== 1 ? 's' : ''}
+        <div className="flex items-center gap-3">
+          {!isBar && <Users className="h-5 w-5 text-gray-400" />}
+          <div>
+            <div className={cn(isBar ? 'text-[16px] font-bold text-[#00477f]' : 'text-base font-medium text-gray-900')}>
+              {rooms} Room{rooms !== 1 ? 's' : ''} · {adults} Adult{adults !== 1 ? 's' : ''}
+            </div>
+            {children > 0 && (
+              <div className={cn(isBar ? 'text-[13px] font-medium text-[#00477f]/70' : 'text-sm text-gray-500')}>
+                {children} Child{children !== 1 ? 'ren' : ''}
               </div>
-            ) : (
-              <>
-                <div className="text-sm font-medium text-gray-900">
-                  {totalGuests} Guest{totalGuests !== 1 ? 's' : ''}, {rooms} Room{rooms !== 1 ? 's' : ''}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {adults} Adult{adults !== 1 ? 's' : ''}
-                  {children > 0 && `, ${children} Child${children !== 1 ? 'ren' : ''}`}
-                </div>
-              </>
             )}
           </div>
         </div>
       </button>
 
-      {error && (
-        <p className={cn('text-red-500', isBar ? 'mt-1 text-xs' : 'mt-1.5 text-sm')}>{error}</p>
-      )}
-
       {isOpen && (
-        <div className="absolute left-0 z-[100] mt-2 w-full max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white p-4 shadow-xl sm:max-w-none sm:w-96">
+        <div className={cn(
+          'absolute z-50 w-[340px] rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl',
+          isBar ? 'left-0 top-full mt-2' : 'left-0 top-full mt-2'
+        )}>
+          <div className="max-h-[350px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+            {roomConfigs.map((room, idx) => (
+              <div key={idx} className="border-b border-gray-100 py-4 last:border-0 first:pt-0">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-gray-900">Room {idx + 1}</h4>
+                  {roomConfigs.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRoom(idx)}
+                      className="text-sm font-medium text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
 
-          {/* Occupancy rule hint */}
-          <div className="mb-4 flex items-start gap-2 rounded-lg bg-orange-50 px-3 py-2 text-xs text-orange-700">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>Max {MAX_ADULTS_PER_ROOM} adults per room. Extra adults automatically add a room.</span>
-          </div>
+                {/* Adults */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Adults</div>
+                    <div className="text-xs text-gray-500">12+ yrs</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => updateAdults(idx, -1)}
+                      disabled={room.adults <= (idx === 0 ? 1 : 0)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-8 text-center text-sm font-semibold">{room.adults}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateAdults(idx, 1)}
+                      disabled={room.adults >= MAX_ADULTS_PER_ROOM}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
 
-          {/* Rooms */}
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div>
-              <div className="text-sm font-medium text-gray-900">Rooms</div>
-              <div className="text-xs text-gray-500">Up to {MAX_ADULTS_PER_ROOM} adults each</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleRoomsChange(Math.max(minRoomsForAdults, rooms - 1))}
-                disabled={rooms <= minRoomsForAdults}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-8 text-center text-sm font-semibold">{rooms}</span>
-              <button
-                type="button"
-                onClick={() => handleRoomsChange(Math.min(MAX_ROOMS, rooms + 1))}
-                disabled={rooms >= MAX_ROOMS}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+                {/* Children */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Children</div>
+                    <div className="text-xs text-gray-500">2–12 yrs</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => updateChildren(idx, -1)}
+                      disabled={room.children <= (room.adults === 0 ? 1 : 0)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-8 text-center text-sm font-semibold">{room.children}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateChildren(idx, 1)}
+                      disabled={room.children >= MAX_CHILDREN_PER_ROOM}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
 
-          {/* Adults */}
-          <div className="flex items-center justify-between border-b border-gray-100 py-4">
-            <div>
-              <div className="text-sm font-medium text-gray-900">Adults</div>
-              <div className="text-xs text-gray-500">12+ years</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleAdultsChange(Math.max(1, adults - 1))}
-                disabled={adults <= 1}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-8 text-center text-sm font-semibold">{adults}</span>
-              <button
-                type="button"
-                onClick={() => handleAdultsChange(Math.min(MAX_ADULTS, adults + 1))}
-                disabled={adults >= MAX_ADULTS}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Auto-room indicator */}
-          {adults > 2 && (
-            <div className="border-b border-gray-100 py-2 text-xs text-gray-500">
-              {rooms} room{rooms !== 1 ? 's' : ''} needed for {adults} adults
-              &nbsp;({MAX_ADULTS_PER_ROOM} adults × {rooms} room{rooms !== 1 ? 's' : ''} = {maxAdultsAllowed} max)
-            </div>
-          )}
-
-          {/* Children */}
-          <div className="flex items-center justify-between py-4">
-            <div>
-              <div className="text-sm font-medium text-gray-900">Children</div>
-              <div className="text-xs text-gray-500">0–12 years</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleChildrenChange(Math.max(0, children - 1))}
-                disabled={children <= 0}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-8 text-center text-sm font-semibold">{children}</span>
-              <button
-                type="button"
-                onClick={() => handleChildrenChange(Math.min(MAX_CHILDREN, children + 1))}
-                disabled={children >= MAX_CHILDREN}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Children Ages */}
-          {children > 0 && (
-            <div className="border-t border-gray-100 pt-4">
-              <div className="mb-3 text-sm font-medium text-gray-900">Age of Children</div>
-              <div className="grid grid-cols-3 gap-2">
-                {Array.from({ length: children }).map((_, index) => (
-                  <select
-                    key={index}
-                    value={childrenAges[index] ?? 5}
-                    onChange={(e) => handleChildAgeChange(index, parseInt(e.target.value))}
-                    className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  >
-                    {Array.from({ length: 13 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {i} {i === 1 ? 'year' : 'years'}
-                      </option>
+                {/* Children Ages */}
+                {room.children > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {room.childrenAges.map((age, cIdx) => (
+                      <div key={cIdx}>
+                        <div className="text-xs text-gray-500 mb-1">Child {cIdx + 1} Age</div>
+                        <select
+                          value={age}
+                          onChange={(e) => updateAge(idx, cIdx, parseInt(e.target.value))}
+                          className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                        >
+                          {Array.from({ length: 11 }, (_, i) => i + 2).map(i => (
+                            <option key={i} value={i}>
+                              {i} years
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     ))}
-                  </select>
-                ))}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* Done */}
-          <div className="mt-4 border-t border-gray-100 pt-4">
+          <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+            {roomConfigs.length < MAX_ROOMS && (
+              <button
+                type="button"
+                onClick={addRoom}
+                className="w-full text-center text-sm font-bold text-[#003580] hover:underline"
+              >
+                + Add Another Room
+              </button>
+            )}
             <Button type="button" onClick={() => setIsOpen(false)} fullWidth size="sm">
               Done
             </Button>

@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useHotelStore } from "../../stores/hotelStore";
 import LocationAutocomplete from "../../components/hotels/LocationAutocomplete";
+import GuestsRoomsSelector from "../../components/hotels/GuestsRoomsSelector";
 
 // ─── SHARED STYLE TOKENS ───────────────────────────────────
 
@@ -508,34 +509,21 @@ export default function HotelsSearchForm() {
           />
         )}
 
-        {/* ROW 3 — Guests & Rooms (inline counters) */}
+        {/* ROW 3 — Guests & Rooms (popup selector) */}
         <div className={glassCls} style={{ ...boxBg, borderRadius: 8 }}>
-          <div className="flex items-center gap-5 px-4 py-3 flex-wrap">
-            {[
-              { label: "Adults",   value: adults,   min: 1, max: 9, key: "adults"   as const },
-              { label: "Children", value: children, min: 0, max: 9, key: "children" as const },
-              { label: "Rooms",    value: rooms,    min: 1, max: 8, key: "rooms"    as const },
-            ].map(({ label, value, min, max, key }) => (
-              <label key={key} className="flex flex-col items-center gap-1 cursor-pointer select-none">
-                <span className={lbl}>{label}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ [key]: Math.max(min, value - 1) })}
-                    disabled={value <= min}
-                    className="w-6 h-6 rounded-full border border-[#c9d5e8] text-[#6a8ab5] flex items-center justify-center hover:border-[#d06549] hover:text-[#d06549] disabled:opacity-30 transition-colors text-sm font-bold"
-                  >−</button>
-                  <span className="w-4 text-center font-black text-[#0d2d5e] text-sm">{value}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSearchParams({ [key]: Math.min(max, value + 1) })}
-                    disabled={value >= max}
-                    className="w-6 h-6 rounded-full flex items-center justify-center disabled:opacity-30 transition-colors text-sm font-bold text-white"
-                    style={{ background: "#d06549" }}
-                  >+</button>
-                </div>
-              </label>
-            ))}
+          <div className="w-full h-full px-4 py-2">
+            <div className={lbl}>Guests & Rooms</div>
+            <GuestsRoomsSelector
+              variant="bar"
+              rooms={rooms}
+              adults={adults}
+              children={children}
+              childrenAges={searchParams.childrenAges ?? []}
+              onRoomsChange={(r) => setSearchParams({ rooms: r })}
+              onAdultsChange={(a) => setSearchParams({ adults: a })}
+              onChildrenChange={(c) => setSearchParams({ children: c })}
+              onChildrenAgesChange={(ages) => setSearchParams({ childrenAges: ages })}
+            />
           </div>
         </div>
       </div>

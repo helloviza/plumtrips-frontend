@@ -10,7 +10,7 @@ const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
 
 const allNav = [
   { to: "/flights-new/results", label: "Flights" },
-  { to: "/hotels", label: "Hotels" },
+  { to: "/hotels/results?default=true", label: "Hotels" },
   { to: "/holidays", label: "Holidays" },
   { to: "/mice", label: "Group Booking" },
   { to: "/blogs", label: "Blogs" },

@@ -141,7 +141,7 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
 
             <Button
               onClick={() => navigate(`/hotels/${hotel.id}`)}
-              className="w-full md:w-auto"
+              className="w-full md:w-auto !bg-[#003580] hover:!bg-[#002255]"
             >
               View Details
             </Button>

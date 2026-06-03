@@ -14,6 +14,7 @@ export interface HotelSearchBarProps {
   onSearch: () => void;
   showOptions?: boolean;
   className?: string;
+  darkTheme?: boolean;
 }
 
 function FieldDivider() {
@@ -33,6 +34,7 @@ export default function HotelSearchBar({
   onSearch,
   showOptions = true,
   className = '',
+  darkTheme = false,
 }: HotelSearchBarProps) {
   const { searchParams, setSearchParams } = useHotelStore();
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut);
@@ -162,7 +164,7 @@ export default function HotelSearchBar({
 
       {showOptions && (
         <div className="mt-3 flex flex-wrap items-center gap-4 px-1">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+          <label className={`flex cursor-pointer items-center gap-2 text-sm ${darkTheme ? 'text-white' : 'text-gray-600'}`}>
             <input
               type="checkbox"
               checked={searchParams.freeCancellation}
@@ -171,7 +173,7 @@ export default function HotelSearchBar({
             />
             Free cancellation only
           </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+          <label className={`flex cursor-pointer items-center gap-2 text-sm ${darkTheme ? 'text-white' : 'text-gray-600'}`}>
             <input
               type="checkbox"
               checked={searchParams.hourlyStay}

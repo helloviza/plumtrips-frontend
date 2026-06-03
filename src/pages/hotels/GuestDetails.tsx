@@ -61,7 +61,7 @@ export default function GuestDetails() {
     user, setUser, setGuests, setSpecialRequests,
     selectedRooms, searchParams, selectedHotel,
     setPreBookResponse, setBookingCode, traceId,
-    setCurrentStep, sessionExpired,
+    setCurrentStep, sessionExpired, roomGuestNames,
   } = useHotelStore();
 
   const { user: globalUser } = useAuth();
@@ -88,28 +88,48 @@ export default function GuestDetails() {
 
   const generateInitialGuests = () => {
     const arr = [];
-    for (let r = 0; r < searchParams.rooms; r++) {
-      for (let a = 0; a < searchParams.adults; a++) {
-        const isLead = r === 0 && a === 0;
-        arr.push({
-          title: (isLead ? 'Mr' : 'Mr') as 'Mr' | 'Mrs' | 'Ms' | 'Miss' | 'Mstr',
-          firstName: '',
-          lastName: '',
-          paxType: 1 as const,
-          leadGuest: isLead,
-        });
+    
+    // Create exactly searchParams.adults adults
+    for (let a = 0; a < searchParams.adults; a++) {
+      const isLead = a < searchParams.rooms; // The first `rooms` adults are the lead guests for each room
+      
+      let firstName = '';
+      let lastName = '';
+      
+      if (isLead && roomGuestNames[a]) {
+        const parts = roomGuestNames[a].trim().split(' ');
+        if (parts.length > 1) {
+          lastName = parts.pop() || '';
+          firstName = parts.join(' ');
+        } else {
+          firstName = parts[0] || '';
+        }
+      } else if (isLead && a === 0) {
+        firstName = user.firstName || '';
+        lastName = user.lastName || '';
       }
-      for (let c = 0; c < (searchParams.children || 0); c++) {
-        arr.push({
-          title: 'Mstr' as const,
-          firstName: '',
-          lastName: '',
-          paxType: 2 as const,
-          age: searchParams.childrenAges?.[c] || 1,
-          leadGuest: false,
-        });
-      }
+
+      arr.push({
+        title: 'Mr' as 'Mr' | 'Mrs' | 'Ms' | 'Miss' | 'Mstr',
+        firstName,
+        lastName,
+        paxType: 1 as const,
+        leadGuest: isLead,
+      });
     }
+
+    // Create exactly searchParams.children children
+    for (let c = 0; c < (searchParams.children || 0); c++) {
+      arr.push({
+        title: 'Mstr' as const,
+        firstName: '',
+        lastName: '',
+        paxType: 2 as const,
+        age: searchParams.childrenAges?.[c] || 1,
+        leadGuest: false,
+      });
+    }
+
     return arr.length > 0 ? arr : [{ title: 'Mr' as const, firstName: user.firstName || '', lastName: user.lastName || '', paxType: 1 as const, leadGuest: true }];
   };
 

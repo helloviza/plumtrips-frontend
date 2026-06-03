@@ -14,9 +14,11 @@ import { calculateNights, formatDateShort, formatCurrency } from '../../lib/util
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
+import HotelSearchBar from '../../components/hotels/HotelSearchBar';
+import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 
 // ── Musafir colour tokens ─────────────────────────────────────────────────
-const BLUE = '#003580';
+const BLUE = '#00477f';
 const YELLOW = '#FFC107';        // "See rooms" button
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ function HotelCard({
 
   return (
     <div className={`flex flex-col overflow-hidden rounded-xl border bg-white transition-all duration-300 hover:shadow-md ${
-      isSelected ? 'border-[#003580] ring-2 ring-[#003580]/20 shadow-md' : 'border-gray-200'
+      isSelected ? 'border-[#00477f] ring-2 ring-[#00477f]/20 shadow-md' : 'border-gray-200'
     }`}>
       <div className="flex flex-col md:flex-row">
         {/* Image Gallery area */}
@@ -88,7 +90,7 @@ function HotelCard({
             <h3 className="text-xl font-bold text-gray-900 leading-tight">
               {hotel.name}
             </h3>
-            <p className="mt-1 text-sm text-[#003580] flex items-center gap-1 font-medium">
+            <p className="mt-1 text-sm text-[#00477f] flex items-center gap-1 font-medium">
               <MapPin className="h-3.5 w-3.5" />
               <span className="underline decoration-dotted cursor-pointer">{hotel.location}</span>
             </p>
@@ -112,7 +114,7 @@ function HotelCard({
           <div className="flex justify-between items-start mb-4">
             {/* Ratings strictly from API */}
             <div className="flex items-center gap-2">
-              <div className="bg-[#003580] text-white font-bold text-sm px-2 py-1 rounded-md rounded-tr-none flex items-center gap-1">
+              <div className="bg-[#00477f] text-white font-bold text-sm px-2 py-1 rounded-md rounded-tr-none flex items-center gap-1">
                 {displayRating.toFixed(1)}
               </div>
               {hasRealReviews && (
@@ -138,7 +140,7 @@ function HotelCard({
               className={`mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
                 isSelected 
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-                  : 'bg-[#FFC107] text-slate-900 hover:bg-[#ffb300]'
+                  : 'bg-[#00477f] text-white hover:bg-[#002255]'
               }`}
             >
               {isSelected ? (
@@ -168,13 +170,13 @@ function HotelCard({
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="text-right hidden sm:block">
                 <div className="text-sm text-gray-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
-                <div className="font-extrabold text-xl text-[#003580] leading-none">
+                <div className="font-extrabold text-xl text-[#00477f] leading-none">
                   {formatCurrency(showTotalPrice ? hotel.price : Math.round(hotel.price / nights))}
                 </div>
               </div>
               <button
                 onClick={() => navigate(`/hotels/${hotel.id}/rooms`)}
-                className="flex-1 sm:flex-none bg-[#003580] hover:bg-[#002766] text-white px-8 py-3 rounded-xl font-bold text-base transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                className="flex-1 sm:flex-none bg-[#00477f] hover:bg-[#002766] text-white px-8 py-3 rounded-xl font-bold text-base transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 View Rooms
               </button>
@@ -188,7 +190,10 @@ function HotelCard({
 
 export default function HotelResults() {
   const navigate = useNavigate();
-  const { searchParams, filters, setFilters, resetFilters, sortBy, setSortBy, sortDirection, setSortDirection, setSearchResultsMap, selectedHotel, setSelectedHotel, selectedRooms } = useHotelStore();
+  const [urlParams] = useRouterSearchParams();
+  const isDefault = urlParams.get('default') === 'true';
+
+  const { searchParams, filters, setFilters, resetFilters, sortBy, setSortBy, sortDirection, setSortDirection, setSearchResultsMap, selectedHotel, setSelectedHotel, selectedRooms, setSearchParams } = useHotelStore();
   const { hotels: apiHotels, rawResults, loading, error, statusMessage, search, loadMore, hasMore, loadingMore } = useHotelSearch();
 
   // Local state
@@ -206,26 +211,42 @@ export default function HotelResults() {
 
   // ── Trigger API search on mount ─────────────────────────────────────
   useEffect(() => {
-    if (!searchParams.locationId && !searchParams.location) {
-      navigate('/hotels');
-      return;
+    let finalLocation = searchParams.locationId || searchParams.location;
+    let finalCheckIn = ci;
+    let finalCheckOut = co;
+
+    // Default to Delhi if empty OR if navigated from header
+    if (!finalLocation || isDefault) {
+      finalLocation = 'New Delhi';
+      setSearchParams({ 
+        location: finalLocation,
+        locationId: '130443',
+        destinationCountryCode: 'IN'
+      });
     }
-    const checkIn = ci ? ci.toISOString().split('T')[0] : '';
-    const checkOut = co ? co.toISOString().split('T')[0] : '';
-    if (!checkIn || !checkOut) { navigate('/hotels'); return; }
+
+    // Default dates if empty OR if navigated from header
+    if (!finalCheckIn || !finalCheckOut || isDefault) {
+      finalCheckIn = new Date();
+      finalCheckIn.setDate(finalCheckIn.getDate() + 1);
+      finalCheckOut = new Date();
+      finalCheckOut.setDate(finalCheckOut.getDate() + 2);
+      setSearchParams({ checkIn: finalCheckIn, checkOut: finalCheckOut });
+    }
 
     if (searchParams.children > 0 && searchParams.childrenAges.length !== searchParams.children) {
-      navigate('/hotels');
-      return;
+      // Just set default ages if mismatched
+      setSearchParams({ childrenAges: Array(searchParams.children).fill(5) });
     }
 
     search({
-      cityCode: searchParams.locationId ?? searchParams.location,
-      checkIn,
-      checkOut,
+      cityCode: finalLocation,
+      checkIn: finalCheckIn.toISOString().split('T')[0],
+      checkOut: finalCheckOut.toISOString().split('T')[0],
       rooms: searchParams.rooms,
       adults: searchParams.adults,
       children: searchParams.children || undefined,
+      childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
       nationality: 'IN',
     });
   }, []);
@@ -337,39 +358,44 @@ export default function HotelResults() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
-      {/* ── Top nav bar ── */}
-      <div className="sticky top-0 z-40 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate('/hotels')} className="shrink-0 text-gray-500 hover:text-[#003580] transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <span className="text-base font-bold text-gray-900 block leading-tight">
-              {searchParams.location || 'Mumbai'}
-            </span>
-            <span className="hidden text-xs text-gray-500 sm:block mt-0.5 font-medium">
-              {ci && co ? `${formatDateShort(ci)} – ${formatDateShort(co)}` : ''}
-              {' · '} {nights} night{nights !== 1 ? 's' : ''}
-              {' · '} {searchParams.rooms} room{searchParams.rooms !== 1 ? 's' : ''}
-              {' · '} {searchParams.adults} guest{searchParams.adults !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          <div className="flex-1" />
-
-          <div className="relative hidden sm:block">
-            <SortDropdown />
-          </div>
-
-          <button
-            onClick={() => setShowMobileFilters(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 sm:hidden"
-          >
-            <SlidersHorizontal className="h-4 w-4" /> Filters
-          </button>
+      {/* ── Top Search Bar ── */}
+      <div className="sticky top-[72px] z-40 shadow-md bg-[#00477f] py-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <HotelSearchBar 
+            darkTheme={true}
+            onSearch={() => {
+               const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
+               const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
+               
+               search({
+                 cityCode: searchParams.locationId ?? searchParams.location,
+                 checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
+                 checkOut: checkOut ? checkOut.toISOString().split('T')[0] : '',
+                 rooms: searchParams.rooms,
+                 adults: searchParams.adults,
+                 children: searchParams.children || undefined,
+                 childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
+                 nationality: 'IN',
+               });
+            }} 
+          />
         </div>
       </div>
 
+      <div className="bg-white border-b border-gray-200 py-2 lg:hidden">
+        <div className="mx-auto flex items-center justify-between px-4 max-w-7xl">
+           <button
+             onClick={() => setShowMobileFilters(true)}
+             className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700"
+           >
+             <SlidersHorizontal className="h-4 w-4" /> Filters
+           </button>
+           <div className="relative">
+             <SortDropdown />
+           </div>
+        </div>
+      </div>
+      
       {/* ── Body ── */}
       <div className="mx-auto flex max-w-7xl gap-8 px-4 sm:px-6 mt-6">
         {/* ── Left sidebar ── */}
@@ -385,7 +411,7 @@ export default function HotelResults() {
           {loading && (
             <div className="space-y-6">
               {statusMessage && (
-                <div className="mb-4 flex items-center justify-center gap-2 text-sm font-bold text-[#003580] bg-blue-50 py-3 rounded-xl border border-blue-100">
+                <div className="mb-4 flex items-center justify-center gap-2 text-sm font-bold text-[#00477f] bg-blue-50 py-3 rounded-xl border border-blue-100">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   {statusMessage}
                 </div>
@@ -417,7 +443,6 @@ export default function HotelResults() {
               <AlertTriangle className="h-12 w-12 text-red-400 mb-4" />
               <h3 className="text-xl font-bold text-gray-900 mb-2">Search Failed</h3>
               <p className="text-gray-500 mb-6 text-center">{error}</p>
-              <Button onClick={() => navigate('/hotels')} variant="outline">Modify search</Button>
             </div>
           )}
 
@@ -427,6 +452,9 @@ export default function HotelResults() {
               <>
                 <div className="mb-4 flex items-center justify-between text-sm font-semibold text-gray-700">
                   <span>{filteredHotels.length} properties found</span>
+                  <div className="hidden lg:block relative z-20">
+                    <SortDropdown />
+                  </div>
                 </div>
                 {/* Hotel List */}
                 <div className="flex flex-col gap-6">
@@ -518,3 +546,4 @@ export default function HotelResults() {
     </div>
   );
 }
+
