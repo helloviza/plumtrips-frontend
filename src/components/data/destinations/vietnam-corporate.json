@@ -3,9 +3,9 @@
   "name": "Vietnam",
   "type": "corporate",
   "pageTheme": {
-    "bg": "#fdf8f5",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -13,14 +13,14 @@
       "id": "hero",
       "type": "Hero",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "CORPORATE OFF-SITES",
         "title": {
           "regular": "The kind of trip teams\n",
           "italic": "bring up all year."
         },
         "description": "A corporate retreat that feels less like a boardroom and more like a cultural immersion. Curated for the modern team.",
-        "backgroundImage": "../../../public/assets/attached_assets/hero-bg.png",
+        "backgroundImage": "/assets/attached_assets/vietnam_lanterns_1780482438085.png",
         "form": {
           "title": "Tell us about the offsite",
           "buttonText": "Get a proposal",
@@ -70,33 +70,33 @@
         "description": "The best ideas don’t happen in a conference room. They happen over street food in a hidden alleyway.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_9.jpg",
+            "title": "Private Yacht Charter",
+            "loc": "Ha Long Bay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_10.jpg",
+            "title": "Executive Wellness Retreat",
+            "loc": "Da Nang",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_11.jpg",
+            "title": "Cultural Immersion",
+            "loc": "Hoi An",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/vietnam_replacement_temple.jpg",
+            "title": "Temple Meditation",
+            "loc": "Hue",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/culinary_vietnam.jpg",
+            "title": "Culinary Journey",
+            "loc": "Ho Chi Minh City",
             "span": "lg:col-span-3"
           }
         ]
@@ -145,7 +145,7 @@
       "id": "expertise",
       "type": "FeatureList",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "LOCAL EXPERTISE",
         "title": {
           "regular": "Coordination ",
@@ -263,7 +263,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "The teams people remember ",

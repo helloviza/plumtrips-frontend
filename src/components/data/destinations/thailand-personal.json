@@ -3,9 +3,9 @@
   "name": "Thailand",
   "type": "personal",
   "pageTheme": {
-    "bg": "#f5f0e6",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -20,7 +20,7 @@
           "italic": "wandering minds"
         },
         "description": "The kind of trip you didn't know you needed.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-thailand.png",
+        "backgroundImage": "/assets/attached_assets/thai_pers_temple_1780483761928.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,32 +40,32 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
-            "title": "Local Immersion",
-            "loc": "Culture & Heritage",
+            "img": "/assets/attached_assets/thai_pers_replacement_1.jpg",
+            "title": "Private Beach Villa",
+            "loc": "Luxury Stay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "img": "/assets/attached_assets/thai_pers_replacement_2.jpg",
             "title": "Hidden Spots",
             "loc": "Nature & Scenery",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "img": "/assets/attached_assets/culinary_thai.jpg",
             "title": "Culinary Journey",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
-            "title": "Curated Moment",
+            "img": "/assets/attached_assets/thai_pers_replacement_4.jpg",
+            "title": "Tropical Escape",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-dubai.png",
-            "title": "Curated Moment",
+            "img": "/assets/attached_assets/thai_pers_replacement_5.jpg",
+            "title": "Island Hopping",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
           }

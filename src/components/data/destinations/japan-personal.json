@@ -3,9 +3,9 @@
   "name": "Japan",
   "type": "personal",
   "pageTheme": {
-    "bg": "#fdf8f5",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -20,7 +20,7 @@
           "italic": "Japan is a feeling."
         },
         "description": "The kind of trip you didn't know you needed.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-japan.png",
+        "backgroundImage": "/assets/attached_assets/japan_serene_1780482413728.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,33 +40,33 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-japan.png",
+            "img": "/assets/attached_assets/japan_pers_onsen_1780482964435.png",
             "title": "Local Immersion",
             "loc": "Culture & Heritage",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
-            "title": "Neon Horizons",
-            "loc": "City & Nightlife",
+            "img": "/assets/attached_assets/japan_pers_tea_1780482988284.png",
+            "title": "Matcha Ceremony",
+            "loc": "Culture & Heritage",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "img": "/assets/attached_assets/japan-personal-1.png",
             "title": "Tranquil Escapes",
             "loc": "Nature & Scenery",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "img": "/assets/attached_assets/japan-personal-2.jpg",
             "title": "Culinary Journey",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-iceland.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/japan_pers_bamboo_1780483015998.png",
+            "title": "Bamboo Forest Walk",
+            "loc": "Nature",
             "span": "lg:col-span-3"
           }
         ]
@@ -142,7 +142,7 @@
       "id": "testimonials",
       "type": "Testimonials",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "Traveler Stories",
         "title": {
           "regular": "The world's most subtle ",
@@ -205,7 +205,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "Your journey into Japan ",

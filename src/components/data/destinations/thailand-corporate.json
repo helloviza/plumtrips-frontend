@@ -3,9 +3,9 @@
   "name": "Thailand",
   "type": "corporate",
   "pageTheme": {
-    "bg": "#f5f0e6",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -20,7 +20,7 @@
           "italic": "bring up later."
         },
         "description": "Life-changing offsites designed around your team's unique dynamic.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-thailand.png",
+        "backgroundImage": "/assets/attached_assets/thai_corp_hero_1780483774463.png",
         "form": {
           "title": "Plan a team trip you'll actually like",
           "buttonText": "Plan",
@@ -70,31 +70,31 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "img": "/assets/attached_assets/thai_corp_boardroom_1780483791769.png",
             "title": "Local Immersion",
             "loc": "Culture & Heritage",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "img": "/assets/attached_assets/dest-thailand.png",
             "title": "Hidden Spots",
             "loc": "Nature & Scenery",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "img": "/assets/attached_assets/culinary_thai.jpg",
             "title": "Culinary Journey",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "img": "/assets/attached_assets/thailand-personal-1.png",
             "title": "Curated Moment",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-dubai.png",
+            "img": "/assets/attached_assets/thailand-personal-2.png",
             "title": "Curated Moment",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
@@ -135,7 +135,7 @@
       "id": "text-grid-dark",
       "type": "TextGrid",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "Seamless",
         "title": {
           "regular": "Everything else ",

@@ -67,18 +67,21 @@ export default function DynamicDestination({ params }: { params: { slug: string 
 
   return (
     <div 
-      className={`min-h-screen font-sans overflow-x-hidden`}
+      className={`min-h-screen font-sans overflow-x-hidden -mt-[72px]`}
       style={{ 
         backgroundColor: pageTheme.bg, 
         color: pageTheme.text 
       }}
     >
-      <Header_Holiday />
       
       {sections.map((section, index) => {
         switch (section.type) {
           case 'Hero':
-            return <HeroSection key={section.id || index} data={section.data} />;
+            return (
+              <HeroSection key={section.id || index} data={section.data}>
+                <Header_Holiday />
+              </HeroSection>
+            );
           case 'Itinerary':
             return <ItinerarySection key={section.id || index} data={section.data} theme={pageTheme} />;
           case 'PricingTiers':
@@ -103,10 +106,6 @@ export default function DynamicDestination({ params }: { params: { slug: string 
             return null;
         }
       })}
-
-      <footer className="py-12 border-t text-center text-sm font-medium tracking-wide uppercase" style={{ borderColor: 'rgba(10,28,43,0.1)' }}>
-        © {new Date().getFullYear()} Plumtrips. All rights reserved.
-      </footer>
     </div>
   );
 }

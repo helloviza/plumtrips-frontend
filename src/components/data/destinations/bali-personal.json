@@ -3,9 +3,9 @@
   "name": "Bali",
   "type": "personal",
   "pageTheme": {
-    "bg": "#fdf8f5",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -20,7 +20,7 @@
           "italic": "Bali for you."
         },
         "description": "The kind of trip you didn't know you needed. Curated for the modern traveler.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-bali.png",
+        "backgroundImage": "/assets/attached_assets/bali_rice_terrace_1780482458839.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,33 +40,33 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/bali_replacement_4.jpg",
+            "title": "Ubud Jungle Retreat",
+            "loc": "Ubud",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/bali_replacement_5.jpg",
+            "title": "Nusa Penida Boat Tour",
+            "loc": "Nusa Penida",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/bali_replacement_2.jpg",
+            "title": "Uluwatu Cliff Sundowners",
+            "loc": "Uluwatu",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/bali_replacement_10.jpg",
+            "title": "Private Beach Club Access",
+            "loc": "Seminyak",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/culinary_bali.jpg",
+            "title": "Culinary Journey",
+            "loc": "Canggu",
             "span": "lg:col-span-3"
           }
         ]
@@ -123,19 +123,19 @@
           {
             "title": "A long walk on the sand",
             "desc": "Start your days with tranquil walks on pristine private beaches.",
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "img": "/assets/attached_assets/bali_replacement_7.jpg",
             "align": "left"
           },
           {
             "title": "The water check",
-            "desc": "Explore breathtaking waterfalls with our expert guides.",
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "desc": "Explore breathtaking lagoons and crystal clear waters with our expert guides.",
+            "img": "/assets/attached_assets/bali_replacement_8.jpg",
             "align": "right"
           },
           {
             "title": "Views that outlive summer",
-            "desc": "Savor sunsets from cliffside infinity pools overlooking the ocean.",
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "desc": "Savor tranquil moments on secluded, world-renowned beaches with pristine sands and iconic boulders.",
+            "img": "/assets/attached_assets/bali_replacement_9.jpg",
             "align": "left"
           }
         ]
@@ -145,7 +145,7 @@
       "id": "testimonials",
       "type": "Testimonials",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "Traveler Stories",
         "title": {
           "regular": "They came back already ",
@@ -243,7 +243,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "A few days. ",

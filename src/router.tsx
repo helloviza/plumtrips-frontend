@@ -687,14 +687,6 @@ export const router = createBrowserRouter(
 
       children: [
 
-                    {
-  path: ":slug",
-  element: <DynamicDestinationWrapper />,
-},
-            {
-              path: "holidays",
-              element: <Home_Holiday />,
-            },
         // AUTH
         {
           path: "/marketing-login",
@@ -743,6 +735,8 @@ export const router = createBrowserRouter(
 
           children: [
             { index: true, element: <Home /> },
+            { path: "holidays", element: <Home_Holiday /> },
+            { path: ":slug", element: <DynamicDestinationWrapper /> },
 
             // Flights
             {

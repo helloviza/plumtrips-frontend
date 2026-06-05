@@ -3,9 +3,9 @@
   "name": "Japan",
   "type": "corporate",
   "pageTheme": {
-    "bg": "#f5f0e6",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -13,14 +13,14 @@
       "id": "hero",
       "type": "Hero",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "CORPORATE OFF-SITES",
         "title": {
           "regular": "Tokyo nights.\nKyoto mornings.\n",
           "italic": "The team somewhere in between."
         },
         "description": "A corporate retreat that feels less like a boardroom and more like a cultural immersion. Curated for the modern team.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-japan.png",
+        "backgroundImage": "/assets/attached_assets/japan_corp_boardroom_1780482934478.png",
         "form": {
           "title": "Tell us about the offsite",
           "buttonText": "Get a proposal",
@@ -70,31 +70,31 @@
         "description": "The best ideas don’t happen in a conference room. They happen over sake in a hidden izakaya.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-japan.png",
+            "img": "/assets/attached_assets/japan_corp_boardroom_1780482934478.png",
             "title": "Curated Moment",
             "loc": "Experience",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
+            "img": "/assets/attached_assets/japan_corp_retreat_1780482949480.png",
             "title": "Curated Moment",
             "loc": "Experience",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "img": "/assets/attached_assets/japan_corp_lounge_1780483002990.png",
             "title": "Curated Moment",
             "loc": "Experience",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "img": "/assets/attached_assets/japan_corp_train_1780483050431.png",
             "title": "Curated Moment",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-iceland.png",
+            "img": "/assets/attached_assets/japan_corp_dinner_1780483062665.png",
             "title": "Curated Moment",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
@@ -147,7 +147,7 @@
       "id": "expertise",
       "type": "FeatureList",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "LOCAL EXPERTISE",
         "title": {
           "regular": "The Japan that ",
@@ -265,7 +265,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "Some places quietly ",

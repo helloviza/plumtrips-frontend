@@ -3,9 +3,9 @@
   "name": "Vietnam",
   "type": "personal",
   "pageTheme": {
-    "bg": "#fdf8f5",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -13,14 +13,14 @@
       "id": "hero",
       "type": "Hero",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "A country that never sleeps",
         "title": {
           "regular": "Long dinners.\nWarm nights.\n",
           "italic": "Vietnam for groups."
         },
         "description": "The kind of trip you didn't know you needed. Curated for the modern traveler.",
-        "backgroundImage": "../../../public/assets/attached_assets/hero-bg.png",
+        "backgroundImage": "/assets/attached_assets/vietnam_halong_1780482394962.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,33 +40,33 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_1.jpg",
+            "title": "Ha Long Bay Cruise",
+            "loc": "Ha Long Bay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_2.jpg",
+            "title": "Jungle Lodge Stay",
+            "loc": "Phong Nha",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/vietnam_replacement_3.jpg",
+            "title": "Quiet Nature Trail",
+            "loc": "Sapa",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/vietnam_replacement_4.jpg",
+            "title": "Private Forest Picnic",
+            "loc": "Da Lat",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tokyo.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/culinary_vietnam.jpg",
+            "title": "Culinary Journey",
+            "loc": "Hanoi",
             "span": "lg:col-span-3"
           }
         ]
@@ -121,21 +121,21 @@
         },
         "items": [
           {
-            "title": "A long walk on the sand",
-            "desc": "Start your days with tranquil walks on pristine private beaches.",
-            "img": "../../../public/assets/attached_assets/dest-thailand.png",
+            "title": "A journey on the water",
+            "desc": "Start your days waking up on a premium cruise sailing through majestic limestone karsts.",
+            "img": "/assets/attached_assets/vietnam_replacement_6.jpg",
             "align": "left"
           },
           {
-            "title": "The water check",
-            "desc": "Explore breathtaking waterways and floating markets with our expert guides.",
-            "img": "../../../public/assets/attached_assets/exp-thailand.png",
+            "title": "The nature check",
+            "desc": "Explore breathtaking wildlife sanctuaries and untouched coastlines with our expert guides.",
+            "img": "/assets/attached_assets/vietnam_replacement_7.jpg",
             "align": "right"
           },
           {
-            "title": "Views that outlive summer",
-            "desc": "Savor sunsets from cliffside infinity pools overlooking the ocean.",
-            "img": "../../../public/assets/attached_assets/dest-bali.png",
+            "title": "Deep jungle immersion",
+            "desc": "Savor the sights and sounds of the ancient rainforest from your exclusive luxury lodge.",
+            "img": "/assets/attached_assets/vietnam_replacement_8.jpg",
             "align": "left"
           }
         ]
@@ -145,7 +145,7 @@
       "id": "testimonials",
       "type": "Testimonials",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "Traveler Stories",
         "title": {
           "regular": "They came back already ",
@@ -247,7 +247,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "A few days. ",

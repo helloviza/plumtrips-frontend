@@ -3,9 +3,9 @@
   "name": "Italy",
   "type": "personal",
   "pageTheme": {
-    "bg": "#fdf8f5",
-    "text": "#0a1c2b",
-    "selectionBg": "#e35d29",
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d06549",
     "selectionText": "white"
   },
   "sections": [
@@ -20,7 +20,7 @@
           "italic": "Italy for groups."
         },
         "description": "The kind of trip you didn't know you needed. Curated for the modern traveler.",
-        "backgroundImage": "../../../public/assets/attached_assets/dest-italy.png",
+        "backgroundImage": "/assets/home_m/italy1.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,33 +40,33 @@
         "description": "Discover the stunning aesthetics through our exclusive access.",
         "items": [
           {
-            "img": "../../../public/assets/attached_assets/dest-italy.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/italy_replacement_1.jpg",
+            "title": "Amalfi Coast Drive",
+            "loc": "Amalfi Coast",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-tuscany.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/italy_replacement_2.jpg",
+            "title": "Private Tuscany Villa",
+            "loc": "Tuscany",
             "span": "lg:col-span-1"
           },
           {
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
-            "title": "Curated Moment",
-            "loc": "Experience",
+            "img": "/assets/attached_assets/italy_replacement_3.jpg",
+            "title": "Vatican VIP Access",
+            "loc": "Rome",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/exp-iceland.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/italy_replacement_4.jpg",
+            "title": "Lake Como Boat Charter",
+            "loc": "Lake Como",
             "span": "lg:col-span-2"
           },
           {
-            "img": "../../../public/assets/attached_assets/dest-japan.png",
-            "title": "Curated Moment",
-            "loc": "Exclusive",
+            "img": "/assets/attached_assets/culinary_italy.jpg",
+            "title": "Culinary Journey",
+            "loc": "Florence",
             "span": "lg:col-span-3"
           }
         ]
@@ -123,19 +123,19 @@
           {
             "title": "A long walk through history",
             "desc": "Start your days wandering ancient cobblestone streets.",
-            "img": "../../../public/assets/attached_assets/exp-tuscany.png",
+            "img": "/assets/attached_assets/italy_replacement_5.jpg",
             "align": "left"
           },
           {
-            "title": "The wine check",
-            "desc": "Explore breathtaking vineyards with our expert guides.",
-            "img": "../../../public/assets/attached_assets/hero-bg.png",
+            "title": "Lakeside Serenity",
+            "desc": "Explore breathtaking alpine lakes and historic waterfront villages with our expert guides.",
+            "img": "/assets/attached_assets/italy_replacement_6.jpg",
             "align": "right"
           },
           {
             "title": "Views that outlive summer",
             "desc": "Savor sunsets from cliffside villas overlooking the Mediterranean.",
-            "img": "../../../public/assets/attached_assets/exp-iceland.png",
+            "img": "/assets/attached_assets/italy_replacement_7.jpg",
             "align": "left"
           }
         ]
@@ -145,7 +145,7 @@
       "id": "testimonials",
       "type": "Testimonials",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "Traveler Stories",
         "title": {
           "regular": "They came back already ",
@@ -243,7 +243,7 @@
       "id": "final-cta",
       "type": "FinalCTA",
       "data": {
-        "theme": "dark",
+        "theme": "light",
         "badge": "THE NEXT STEP",
         "title": {
           "regular": "A few days. ",
