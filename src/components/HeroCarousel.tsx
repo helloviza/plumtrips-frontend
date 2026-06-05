@@ -87,7 +87,7 @@ export default function HeroCarousel({
 
   const heightClass =
     activeTab === "flights"
-      ? "h-[380px] sm:h-[440px] lg:h-[480px]"
+      ? "h-[340px] sm:h-[360px] lg:h-[480px]"
       : "h-[240px] sm:h-[280px] lg:h-[310px]";
 
   const isLoaded = (src: string) => !!loaded[src];

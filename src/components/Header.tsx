@@ -24,9 +24,13 @@ export default function Header() {
   const { openAuth } = useUi();
   const location = useLocation();
 
-  // Only merge with hero on the home page
- const isHome = location.pathname === "/" || location.pathname === "/home";
-  const isTransparent = isHome && !scrolled;
+  // Only merge with hero on home, holidays, and specific country destination pages
+  const isTransparentPage = location.pathname === "/" || 
+                            location.pathname === "/home" || 
+                            location.pathname === "/holidays" || 
+                            location.pathname.includes("-personal") || 
+                            location.pathname.includes("-corporate");
+  const isTransparent = isTransparentPage && !scrolled;
 
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
