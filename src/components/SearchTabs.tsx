@@ -5,7 +5,6 @@ import SearchPage from "../pages/flights_new/SearchPage";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 import type { SearchForm } from "../lib/types_t";
 
-// CityLeg type matches what SearchPage/FlightsFlow expect
 export type CityLeg = {
   from: import("../lib/types_t").Airport;
   to: import("../lib/types_t").Airport;
@@ -13,19 +12,16 @@ export type CityLeg = {
 };
 
 const topTabs = [
-  { id: "flights", label: "Flights" },
-  { id: "hotels", label: "Hotels" },
+  { id: "flights", label: "Flights", icon: "✈" },
+  { id: "hotels",  label: "Hotels",  icon: "🏨" },
 ] as const;
 
 type TopTab = (typeof topTabs)[number]["id"];
-
 type TripType = "oneWay" | "roundTrip" | "multiCity";
 
-// ─── NEW: export so parent (e.g. HomePage) can read it ────────────────────────
 export type { TopTab };
 
 type Props = {
-  /** Callback so the parent can mirror the active tab into HeroCarousel */
   onTabChange?: (tab: TopTab) => void;
 };
 
@@ -48,33 +44,59 @@ export default function SearchTabs({ onTabChange }: Props) {
   }
 
   return (
-    <div className="w-full mt-10 sm:mt-14">
+    <div style={{ width: "100%" }}>
 
-      {/* ── Header row: Flights / Hotels only ── */}
-      <div className="flex items-end mb-4">
-        <div className="flex shrink-0 gap-8 text-base sm:text-lg font-semibold text-white">
-          {topTabs.map((t) => {
-            const isActive = t.id === active;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => switchTab(t.id)}
-                className={`relative pb-1.5 transition-colors ${
-                  isActive ? "text-white" : "text-white/70 hover:text-white"
-                }`}
-              >
-                {t.label}
-                {isActive && (
-                  <span className="absolute -bottom-1 left-0 h-[3px] w-full bg-[#d06549] rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* ── Tab row ── */}
+      <div style={{ display: "flex", alignItems: "flex-end", marginBottom: 12, gap: 4 }}>
+        {topTabs.map((t) => {
+          const isActive = t.id === active;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => switchTab(t.id)}
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "8px 20px 10px",
+                borderRadius: "10px 10px 0 0",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Poppins, sans-serif",
+                fontWeight: isActive ? 700 : 500,
+                fontSize: 14,
+                letterSpacing: "0.01em",
+                transition: "all 0.2s",
+                // Active: opaque glass matching the card; Inactive: lighter ghost
+                background: isActive
+                  ? "linear-gradient(180deg, rgba(31,50,86,0.72), rgba(10,22,44,0.82))"
+                  : "rgba(255,255,255,0.08)",
+                color: isActive ? "#fff" : "rgba(255,255,255,0.55)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderTop: isActive ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.08)",
+                borderLeft: isActive ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.06)",
+                borderRight: isActive ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.06)",
+                // Bottom accent bar for active
+                boxShadow: isActive ? "inset 0 -2.5px 0 #FF682C" : "none",
+              }}
+              onMouseEnter={e => {
+                if (!isActive) (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.85)";
+              }}
+              onMouseLeave={e => {
+                if (!isActive) (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)";
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{t.icon}</span>
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── Form area ── */}
+      {/* ── Form area — no extra wrapper, forms have their own glass card ── */}
       <div>
         {active === "flights" ? (
           <SearchPage
