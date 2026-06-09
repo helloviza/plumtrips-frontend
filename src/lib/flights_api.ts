@@ -5,7 +5,7 @@
 // ============================================================
 
 import type {
-  DisplayFlight, FareTier, Airport, SearchForm,
+  DisplayFlight, FareTier, Airport, SearchForm, TBOFlightResult
 } from "./types_t";
 
 // ─── CONFIG ────────────────────────────────────────────────
@@ -259,6 +259,35 @@ export function tboResultToDisplay(result: import("./types_t").TBOFlightResult, 
     isPassportRequired: result.IsPassportRequiredAtBook,
     airlineRemark: result.AirlineRemark || undefined,
     segments,
+  };
+}
+
+function tboResultToMultiCityItinerary(
+  result: import("./types_t").TBOFlightResult,
+  traceId: string,
+): DisplayFlight {
+  const itineraryLegs = result.Segments.map((_, legIndex) =>
+    tboResultToDisplay(result, traceId, legIndex)
+  );
+  const firstLeg = itineraryLegs[0];
+  const lastLeg = itineraryLegs[itineraryLegs.length - 1] ?? firstLeg;
+  const totalDuration = itineraryLegs.reduce((sum, leg) => sum + leg.duration, 0);
+
+  return {
+    ...firstLeg,
+    toCode: lastLeg.toCode,
+    toCity: lastLeg.toCity,
+    toAirport: lastLeg.toAirport,
+    arriveTime: lastLeg.arriveTime,
+    arriveDate: lastLeg.arriveDate,
+    arriveISO: lastLeg.arriveISO,
+    arrivalTerminal: lastLeg.arrivalTerminal,
+    duration: totalDuration,
+    durationLabel: minToLabel(totalDuration),
+    stops: itineraryLegs.reduce((sum, leg) => sum + leg.stops, 0),
+    stopInfo: itineraryLegs.map((leg) => `${leg.fromCode}-${leg.toCode}`).join(" | "),
+    segments: itineraryLegs.flatMap((leg) => leg.segments),
+    itineraryLegs,
   };
 }
 
@@ -595,6 +624,13 @@ export type FlightSearchResult = {
   noResultReason?: string;
 };
 
+function normalizeTboResults(rawResults: unknown): TBOFlightResult[] {
+  if (!Array.isArray(rawResults)) return [];
+  return Array.isArray(rawResults[0])
+    ? (rawResults as TBOFlightResult[][]).flat()
+    : rawResults as TBOFlightResult[];
+}
+
 export async function apiSearchFlights(
   form: SearchForm,
   multiLegs?: { from: Airport; to: Airport; departDate: string }[]
@@ -613,10 +649,7 @@ export async function apiSearchFlights(
           ...f, _legIndex: legIdx,
         }))
       );
-      return {
-        outbound: multiLegFlights[0] ?? [],
-        multiLegFlights,
-      };
+      return { outbound: multiLegFlights[0] ?? [], multiLegFlights };
     }
     return { outbound: getMockFlights(form.from.code, form.to.code, form.departDate) };
   }
@@ -664,6 +697,39 @@ export async function apiSearchFlights(
 
   const json = await res.json();
 
+  // ── MULTI-CITY: backend returns { ok, data: { legs: [...] } } ──────────────
+  // This shape has NO Response.Results — handle it FIRST before anything else.
+  if (form.tripType === "multiCity") {
+    const responseData = json?.ok === false
+      ? (() => { throw new Error(json.message ?? "Search failed"); })()
+      : json?.data ?? json;
+
+    const legs: Array<{
+      legIndex: number;
+      origin: string;
+      destination: string;
+      departDate: string;
+      traceId: string;
+      results: TBOFlightResult[];
+    }> = responseData?.legs ?? [];
+
+    if (!legs.length) {
+      return { outbound: [], noResultReason: "No flights found for one or more legs" };
+    }
+
+    const multiLegFlights: DisplayFlight[][] = legs.map((leg) =>
+      groupByFlight(
+        normalizeTboResults(leg.results).map((r) => tboResultToDisplay(r, leg.traceId))
+      )
+    );
+
+    return {
+      outbound: multiLegFlights[0] ?? [],
+      multiLegFlights,
+    };
+  }
+
+  // ── ONE-WAY / ROUND-TRIP: backend returns { ok, data: { Response: { Results } } } ──
   const responseData = json?.ok === false
     ? (() => { throw new Error(json.message ?? "Search failed"); })()
     : json?.data ?? json;
@@ -671,7 +737,7 @@ export async function apiSearchFlights(
   const traceId: string = responseData?.Response?.TraceId ?? "";
   const rawResults = responseData?.Response?.Results ?? [];
 
-  const results: import("./types_t").TBOFlightResult[][] = Array.isArray(rawResults[0])
+  const results: TBOFlightResult[][] = Array.isArray(rawResults[0])
     ? rawResults
     : rawResults.length > 0 ? [rawResults] : [];
 
@@ -698,31 +764,6 @@ export async function apiSearchFlights(
       return { outbound: filteredOutbound, returnFlights };
     }
     return { outbound };
-  }
-
-  if (form.tripType === "multiCity") {
-    const legCount = multiLegs?.length ?? 2;
-    const allResults = results[0] ?? [];
-
-    const multiLegFlights: DisplayFlight[][] = Array.from({ length: legCount }, (_, legIdx) =>
-      groupByFlight(
-        allResults
-          .filter(r => r.Segments?.[legIdx] && r.Segments[legIdx].length > 0)
-          .map(r => ({
-            ...tboResultToDisplay(r, traceId, legIdx),
-            _legIndex: legIdx,
-          } as DisplayFlight & { _legIndex: number }))
-      )
-    );
-
-    return {
-      outbound: multiLegFlights[0] ?? [],
-      multiLegFlights,
-      noResultReason:
-        multiLegFlights.some(leg => leg.length === 0)
-          ? "Some legs returned no flights — try different dates"
-          : undefined,
-    };
   }
 
   return { outbound: groupByFlight(outbound) };
@@ -1116,6 +1157,14 @@ export type SSRResult = {
   seatMap: ApiSeatMap;
   meals: SSRMeal[];
   baggage: SSRBaggage[];
+  availability?: {
+    seatMap: boolean;
+    meals: boolean;
+    baggage: boolean;
+    seatMapMessage?: string;
+    mealsMessage?: string;
+    baggageMessage?: string;
+  };
 };
 
 const MEAL_META: Record<string, { label: string; desc: string; emoji: string }> = {
@@ -1130,43 +1179,32 @@ const MEAL_META: Record<string, { label: string; desc: string; emoji: string }> 
   CHML: { label: "Child Meal",    desc: "Kid-friendly",          emoji: "🧒" },
 };
 
-const FALLBACK_MEALS: SSRMeal[] = [
-  { code: "NoMeal",  label: "No meal",        description: "Skip meal selection",    price: 0,   emoji: "🚫" },
-  { code: "VGML",  label: "Vegetarian",     description: "Fresh veg meal",         price: 299, emoji: "🥗" },
-  { code: "NVML",  label: "Non-Vegetarian", description: "Chicken / mutton",       price: 349, emoji: "🍗" },
-  { code: "VLML",  label: "Vegan",          description: "100% plant-based",       price: 349, emoji: "🌱" },
-  { code: "VJML",  label: "Jain Meal",      description: "No root vegetables",     price: 299, emoji: "🙏" },
-  { code: "DBML",  label: "Diabetic",       description: "Low-sugar, high-fiber",  price: 349, emoji: "💊" },
-];
-
-const FALLBACK_BAGGAGE: SSRBaggage[] = [
-  { kg: 0,  label: "Included only", description: "Use fare allowance", price: 0    },
-  { kg: 5,  label: "+ 5 kg",        description: "Extra check-in",     price: 599  },
-  { kg: 10, label: "+ 10 kg",       description: "Extra check-in",     price: 999  },
-  { kg: 15, label: "+ 15 kg",       description: "Extra check-in",     price: 1399 },
-  { kg: 20, label: "+ 20 kg",       description: "Extra check-in",     price: 1799 },
-];
-
-function buildMockSeatMap(): ApiSeatMap {
-  const cols = ["A", "B", "C", "D", "E", "F"];
-  const rows: ApiSeatRow[] = Array.from({ length: 32 }, (_, ri) => {
-    const rowNumber = ri + 1;
-    const isPremiumRow = rowNumber <= 3 || rowNumber === 12 || rowNumber === 13;
-    return {
-      rowNumber,
-      seats: cols.map((col, ci) => ({
-        code: `${rowNumber}${col}`,
-        isOccupied: Math.random() < 0.3,
-        isPremium: isPremiumRow,
-        price: isPremiumRow ? 499 : 0,
-        type: ci === 0 || ci === 5 ? "Window" : ci === 2 || ci === 3 ? "Aisle" : "Middle",
-      })),
-    };
-  });
-  return { rows, cols, totalRows: 32 };
+function emptySeatMap(): ApiSeatMap {
+  return { rows: [], cols: [], totalRows: 0 };
 }
 
-function parseTBOSSR(raw: any): SSRResult {
+function airlineUnavailableMessage(kind: string, airlineName?: string): string {
+  const airline = airlineName?.trim() || "this airline";
+  return `${kind} is not available for this ${airline} flight.`;
+}
+
+function unavailableSSR(airlineName?: string): SSRResult {
+  return {
+    seatMap: emptySeatMap(),
+    meals: [],
+    baggage: [],
+    availability: {
+      seatMap: false,
+      meals: false,
+      baggage: false,
+      seatMapMessage: airlineUnavailableMessage("Seat map", airlineName),
+      mealsMessage: airlineUnavailableMessage("Meals", airlineName),
+      baggageMessage: airlineUnavailableMessage("Extra baggage", airlineName),
+    },
+  };
+}
+
+function parseTBOSSR(raw: any, airlineName?: string): SSRResult {
   const response = raw?.Response;
 
   const allSegmentSeats: any[] = [];
@@ -1191,6 +1229,7 @@ function parseTBOSSR(raw: any): SSRResult {
   });
 
   let seatMap: ApiSeatMap;
+  let hasSeatMap = false;
   if (validRows.length > 0) {
     const colSet = new Set<string>();
     validRows.forEach((rowObj: any) => {
@@ -1218,8 +1257,9 @@ function parseTBOSSR(raw: any): SSRResult {
       };
     });
     seatMap = { rows, cols, totalRows: rows.length };
+    hasSeatMap = true;
   } else {
-    seatMap = buildMockSeatMap();
+    seatMap = emptySeatMap();
   }
 // MealDynamic is array-of-arrays: [segment][mealItem]
 // Some carriers flatten it; handle both shapes
@@ -1248,7 +1288,7 @@ const realMeals = rawMeals.filter(
             };
           }),
         ]
-      : FALLBACK_MEALS;
+      : [];
 
   // Baggage is also array-of-arrays per segment
 const bagOuter: any = response?.Baggage?.[0] ?? [];
@@ -1283,9 +1323,21 @@ const rawBaggage: any[] = Array.isArray(bagOuter?.[0])
               price: Number(b.Price),
             })),
         ]
-      : FALLBACK_BAGGAGE;
+      : [];
 
-  return { seatMap, meals, baggage };
+  return {
+    seatMap,
+    meals,
+    baggage,
+    availability: {
+      seatMap: hasSeatMap,
+      meals: meals.length > 0,
+      baggage: baggage.length > 0,
+      seatMapMessage: hasSeatMap ? undefined : airlineUnavailableMessage("Seat map", airlineName),
+      mealsMessage: meals.length > 0 ? undefined : airlineUnavailableMessage("Meals", airlineName),
+      baggageMessage: baggage.length > 0 ? undefined : airlineUnavailableMessage("Extra baggage", airlineName),
+    },
+  };
 }
 
 function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
@@ -1299,13 +1351,11 @@ function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
   // Each array index corresponds to a leg (0 = leg1, 1 = leg2, etc.)
   const legSeatDynamic = seatDynamic[legIndex];
   const legMealDynamic = mealDynamic[legIndex];
-  const legBaggage     = Array.isArray(baggage[legIndex])
-    ? baggage[legIndex]
-    : (Array.isArray(baggage[legIndex]?.[0]) ? baggage[legIndex][0] : []);
+  const legBaggage = baggage[legIndex];
 
   // If nothing for this leg — return truly empty (not FALLBACK mock data)
-  if (!legSeatDynamic && !legMealDynamic && legBaggage.length === 0) {
-    return { seatMap: buildMockSeatMap(), meals: [], baggage: [] };
+  if (!legSeatDynamic && !legMealDynamic && !legBaggage) {
+    return unavailableSSR();
   }
 
   // Build a mini-SSR object shaped like what parseTBOSSR expects, then call it
@@ -1313,132 +1363,15 @@ function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
     Response: {
       SeatDynamic: legSeatDynamic ? [legSeatDynamic] : [],
       MealDynamic: legMealDynamic ? [legMealDynamic] : [],
-      Baggage:     legBaggage.length ? [legBaggage]  : [],
+      Baggage:     legBaggage ? [legBaggage]  : [],
     }
   };
   return parseTBOSSR(miniRaw);
 }
 
 
-// Parses SSR data for a specific leg index from the combined SSR response
-// function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
-//   const response = raw?.Response;
-
-//   // SeatDynamic[legIndex] contains that leg's seat data
-//   const seatDynForLeg = response?.SeatDynamic?.[legIndex] ?? null;
-// const segSeatArr: any[] = seatDynForLeg?.SegmentSeat ?? [];
-// const segSeat = segSeatArr.find((ss: any) => (ss?.RowSeats?.length ?? 0) > 0) ?? segSeatArr[0] ?? null;
-// const rowSeats: any[] = segSeat?.RowSeats ?? [];
-
-//   const validRows = rowSeats.filter((rowObj: any) => {
-//     const first = rowObj?.Seats?.[0];
-//     return first && String(first.RowNo).trim() !== "0" && first.Code !== "NoSeat";
-//   });
-
-//   let seatMap: ApiSeatMap;
-//   if (validRows.length > 0) {
-//     const colSet = new Set<string>();
-//     validRows.forEach((rowObj: any) => {
-//       (rowObj.Seats ?? []).forEach((s: any) => {
-//         if (s.SeatNo) colSet.add(String(s.SeatNo));
-//       });
-//     });
-//     const cols = [...colSet].sort();
-
-//     const rows: ApiSeatRow[] = validRows.map((rowObj: any) => {
-//       const seats: any[] = rowObj.Seats ?? [];
-//       const rowNo = String(seats[0]?.RowNo ?? "0").trim();
-//       return {
-//         rowNumber: Number(rowNo),
-//         seats: seats.map((s: any) => ({
-//           code: s.Code,
-//           isOccupied: s.AvailablityType === 3 || s.AvailablityType === 2,
-//           isPremium: s.SeatType === 1 || Number(rowNo) <= 3,
-//           price: Number(s.Price ?? 0),
-//           type:
-//             s.SeatNo === "A" || s.SeatNo === "F" ? "Window"
-//             : s.SeatNo === "C" || s.SeatNo === "D" ? "Aisle"
-//             : "Middle",
-//         })),
-//       };
-//     });
-//     seatMap = { rows, cols, totalRows: rows.length };
-//   } else {
-//     seatMap = buildMockSeatMap();
-//   }
-
-
-//   // ... same seat parsing as parseTBOSSR but using seatDynForLeg ...
-//   // (copy the existing valid rows / cols / seats logic from parseTBOSSR)
-
-//   // MealDynamic[legIndex] for that leg's meals
-//   const mealDynForLeg = response?.MealDynamic?.[legIndex] ?? response?.MealDynamic?.[0] ?? [];
-//   const rawMeals: any[] = Array.isArray(mealDynForLeg?.[0])
-//     ? mealDynForLeg[0]
-//     : Array.isArray(mealDynForLeg) ? mealDynForLeg : [];
-
-//   const realMeals = rawMeals.filter(
-//   (m: any) => m && m.Code && m.Code !== "NoMeal" && m.Code !== "NOML"
-// );
-
-//   const meals: SSRMeal[] =
-//     realMeals.length > 0
-//       ? [
-//           { code: "NONE", label: "No meal", description: "Skip meal selection", price: 0, emoji: "🚫" },
-//           ...realMeals.map((m: any) => {
-//             const meta = MEAL_META[m.Code];
-//             return {
-//               code: m.Code,
-//               label: meta?.label ?? m.AirlineDescription ?? m.Code,
-//               description: meta?.desc ?? m.AirlineDescription ?? "",
-//               price: Number(m.Price ?? 0),
-//               emoji: meta?.emoji ?? "🍽️",
-//             };
-//           }),
-//         ]
-//       : FALLBACK_MEALS;
-
-//   // Baggage[legIndex] for that leg
-//   const bagDynForLeg = response?.Baggage?.[legIndex] ?? response?.Baggage?.[0] ?? [];
-//   const rawBaggage: any[] = Array.isArray(bagDynForLeg?.[0])
-//     ? bagDynForLeg[0]
-//     : Array.isArray(bagDynForLeg) ? bagDynForLeg : [];
-//   const realBaggage = rawBaggage.filter(
-//     (b: any) => b.Code !== "NoBaggage" && Number(b.Weight ?? 0) > 0
-//   );
-
-//   const bagByWeight = new Map<number, any>();
-//   realBaggage.forEach((b: any) => {
-//     const kg = Number(b.Weight);
-//     const existing = bagByWeight.get(kg);
-//     if (!existing || Number(b.Price) < Number(existing.Price)) {
-//       bagByWeight.set(kg, b);
-//     }
-//   });
-
-//   const baggage: SSRBaggage[] =
-//     bagByWeight.size > 0
-//       ? [
-//           { kg: 0, label: "Included only", description: "Use fare allowance", price: 0 },
-//           ...[...bagByWeight.values()]
-//             .sort((a, b) => Number(a.Weight) - Number(b.Weight))
-//             .map((b: any) => ({
-//               kg: Number(b.Weight),
-//               label: `+ ${b.Weight} kg`,
-//               description: b.Text ?? `Extra ${b.Weight}kg check-in`,
-//               price: Number(b.Price),
-//             })),
-//         ]
-//       : FALLBACK_BAGGAGE;
-
-//   return { seatMap, meals, baggage };
-//   // ... rest same as parseTBOSSR ...
-// }
-
-
 async function fetchSSRForFlight(
-  flight: DisplayFlight,
-  skipFareQuote = false
+  flight: DisplayFlight
 ): Promise<SSRResult> {
   const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
     method: "POST",
@@ -1446,40 +1379,44 @@ async function fetchSSRForFlight(
     body: JSON.stringify({
       traceId:       flight.traceId,
       resultIndex:   flight.resultIndex,
-      skipFareQuote,            // true for multi-city legs
-    }),
+        }),
   });
   if (!res.ok) {
-    console.warn(`[fetchSSRForFlight] HTTP ${res.status} for ${flight.resultIndex}`);
-    return { seatMap: buildMockSeatMap(), meals: FALLBACK_MEALS, baggage: FALLBACK_BAGGAGE };
+    let errMsg = `SSR failed (HTTP ${res.status})`;
+    try {
+      const errJson = await res.json();
+      errMsg = errJson?.message || errJson?.error || errMsg;
+    } catch { /* ignore */ }
+    throw new Error(errMsg);
   }
   const json = await res.json();
-  return parseTBOSSR(json?.data ?? json);
+  if (json?.ok === false) {
+    throw new Error(json?.message || "SSR failed");
+  }
+  return parseTBOSSR(json?.data ?? json, flight.airline);
 }
 
 export async function apiGetSSR(flight: DisplayFlight): Promise<SSRResult> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 700));
-    return { seatMap: buildMockSeatMap(), meals: FALLBACK_MEALS, baggage: FALLBACK_BAGGAGE };
+    return unavailableSSR(flight.airline);
   }
   return fetchSSRForFlight(flight);
 }
 
+
+
 export async function apiGetSSRForLegs(
   legs: DisplayFlight[],
-  isMultiCity = false
+  _isMultiCity = false   // kept for signature compat but no longer changes behaviour
 ): Promise<SSRResult[]> {
   if (MOCK_MODE) {
     await new Promise((r) => setTimeout(r, 700));
-    return legs.map(() => ({
-      seatMap: buildMockSeatMap(),
-      meals: FALLBACK_MEALS,
-      baggage: FALLBACK_BAGGAGE,
-    }));
+    return legs.map((leg) => unavailableSSR(leg.airline));
   }
-  // For multi-city: skip FareQuote pre-call on each leg
-  // because TBO SSR for multi-city uses the original search ResultIndex directly
-  return Promise.all(legs.map((f) => fetchSSRForFlight(f, isMultiCity)));
+
+  // Always call per leg — TBO requires individual FareQuote+SSR per leg
+  return Promise.all(legs.map((f) => fetchSSRForFlight(f)));
 }
 
 // ── Book ────────────────────────────────────────────────────
@@ -1494,12 +1431,21 @@ export type BookPassenger = {
   PassportNo?: string;
   PassportExpiry?: string;
   Pan?: string;
+  ContactNo?: string;
+  Email?: string;
+  IsLeadPax?: boolean;
+  AddressLine1?: string;
+  City?: string;
+  CountryCode?: string;
+  CountryName?: string;
+  Nationality?: string;
 };
 
 export type BookFlightInput = {
   traceId: string;
   resultIndex: string;
   isLCC?: boolean;
+  isInternational?: boolean;
   passengers: BookPassenger[];
   contact: { Email: string; Mobile: string };
   gst?: {
@@ -1540,12 +1486,24 @@ export async function apiBookFlight(
     } catch { /* ignore */ }
     throw new Error(errMsg);
   }
-  const json = await res.json();
-  const responseData = json?.data ?? json;
-  const response = responseData?.Response;
-  if (!response?.PNR) throw new Error("Booking succeeded but PNR is missing from response");
-  return { pnr : response?.FlightItinerary?.PNR ||response?.PNR 
-  , bookingId:  response?.FlightItinerary?.BookingId || response.BookingId };
+const json = await res.json();
+const responseData = json?.data ?? json;
+// TBO wraps in double Response: { data: { Response: { Response: { PNR, BookingId, ... } } } }
+const outerResponse = responseData?.Response;
+const response = outerResponse?.Response ?? outerResponse; // handle both single and double-nested
+const tboError = response?.Error ?? outerResponse?.Error;
+if (tboError?.ErrorCode && tboError.ErrorCode !== 0) {
+  throw new Error(tboError.ErrorMessage || "Booking failed");
+}
+const pnr = response?.FlightItinerary?.PNR || response?.PNR;
+const bookingId = response?.FlightItinerary?.BookingId || response?.BookingId;
+if (!pnr) {
+  throw new Error("Booking succeeded but PNR is missing from response");
+}
+return {
+  pnr,
+  bookingId,
+};
 }
 
 // ── Airports ────────────────────────────────────────────────
@@ -1559,46 +1517,17 @@ export async function apiGetAirports(): Promise<Airport[]> {
 
 
 // NEW FUNCTION — call SSR once for multi-city, return per-leg results
-export async function apiGetSSRForMultiCity(
-  legs: DisplayFlight[]
-): Promise<SSRResult[]> {
+export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRResult[]> {
   if (MOCK_MODE) {
     await new Promise(r => setTimeout(r, 700));
-    return legs.map(() => ({
-      seatMap: buildMockSeatMap(),
-      meals: FALLBACK_MEALS,
-      baggage: FALLBACK_BAGGAGE,
-    }));
-  }
-
-  // For multi-city, all legs share the same traceId and the first leg's resultIndex
-  // TBO returns SeatDynamic[i] per leg index
-  const primaryFlight = legs[0];
-  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      traceId: primaryFlight.traceId,
-      resultIndex: primaryFlight.resultIndex,
-    }),
-  });
-
-  if (!res.ok) {
-    return legs.map(() => ({
-      seatMap: buildMockSeatMap(),
-      meals: FALLBACK_MEALS,
-      baggage: FALLBACK_BAGGAGE,
-    }));
-  }
-
-  const json = await res.json();
-  const raw = json?.data ?? json;
-  const response = raw?.Response;
-
-  // Parse each leg's SSR from the corresponding SeatDynamic index
-  return legs.map((_, legIndex) => {
-    return parseTBOSSRForLeg(raw, legIndex);
-  });
+    return legs.map((leg) => unavailableSSR(leg.airline));
+  }    
+  // Each leg has its own traceId from the new parallel-search backend
+  return Promise.all(
+    legs.map((legFlight) => fetchSSRForFlight(legFlight))
+    // fetchSSRForFlight already calls /tbo/ssr with { traceId: flight.traceId, resultIndex: flight.resultIndex }
+    // Since each leg's traceId is independent, this just works
+  );
 }
 
 

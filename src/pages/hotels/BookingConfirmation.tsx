@@ -18,6 +18,7 @@ export default function BookingConfirmation() {
   const {
     bookingId: storeBookingId,
     confirmationNo: storeConfirmationNo,
+    pnr: storePnr,
     selectedHotel, selectedRooms,
     guests, searchParams, user, resetBooking, setBookingDetail,
   } = useHotelStore();
@@ -37,10 +38,17 @@ export default function BookingConfirmation() {
       return stored?.state?.confirmationNo || null;
     } catch { return null; }
   });
+  const [localPnr] = useState<string | null>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('hotel-booking-storage') || '{}');
+      return stored?.state?.pnr || null;
+    } catch { return null; }
+  });
 
   // Prefer live store value; fall back to what we read from localStorage
   const bookingId = storeBookingId || localBookingId;
   const confirmationNo = storeConfirmationNo || localConfirmationNo;
+  const pnr = storePnr || localPnr;
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
   // room.price and room.taxesAndFees are already TotalFare/TotalTax for full stay
@@ -228,11 +236,14 @@ export default function BookingConfirmation() {
 
         {/* ── Booking ID ── */}
         <div className="mb-6 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-5 text-center">
-          <div className="text-sm text-gray-500">Booking Confirmation Number</div>
+          <div className="text-sm text-gray-500">PNR (Booking Reference)</div>
           <div className="mt-1 text-3xl font-bold tracking-widest text-orange-600">
-            {confirmationNo || bookingId}
+            {pnr || confirmationNo || bookingId}
           </div>
-          {confirmationNo && confirmationNo !== bookingId && (
+          {confirmationNo && (
+            <div className="mt-1 text-xs text-gray-400">Confirmation No: {confirmationNo}</div>
+          )}
+          {bookingId && (
             <div className="mt-1 text-xs text-gray-400">Booking ID: {bookingId}</div>
           )}
           <div className="mt-2 text-xs text-gray-400">Save this for your records</div>

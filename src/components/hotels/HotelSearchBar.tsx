@@ -15,6 +15,7 @@ export interface HotelSearchBarProps {
   showOptions?: boolean;
   className?: string;
   darkTheme?: boolean;
+  variant?: 'default' | 'results';
 }
 
 function FieldDivider() {
@@ -23,7 +24,7 @@ function FieldDivider() {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-gray-500">
+    <span className="mb-1 block text-[10px] font-bold text-[#8fafd4] uppercase tracking-widest">
       {children}
     </span>
   );
@@ -35,6 +36,7 @@ export default function HotelSearchBar({
   showOptions = true,
   className = '',
   darkTheme = false,
+  variant = 'default',
 }: HotelSearchBarProps) {
   const { searchParams, setSearchParams } = useHotelStore();
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut);
@@ -55,11 +57,19 @@ export default function HotelSearchBar({
   return (
     <div className={cn('relative z-30', className)}>
       <div
-        className="overflow-visible rounded-xl border border-gray-100 bg-white md:flex md:items-stretch"
-        style={{ boxShadow: HOTEL_SEARCH_SHADOW }}
+        className="md:flex md:items-stretch"
+        style={{
+          display: "flex",
+          background: "#fff",
+          borderRadius: variant === 'results' ? 0 : 14,
+          boxShadow: variant === 'results' ? "none" : "0 8px 30px rgba(0,0,0,0.12)",
+          position: "relative",
+          zIndex: 2,
+          minHeight: 64
+        }}
       >
         {/* Destination */}
-        <div className="min-w-0 flex-[1.4] border-b border-gray-100 px-4 py-3.5 md:border-b-0 md:border-r md:px-5 md:py-4">
+        <div style={{ flexShrink: 0, minWidth: 240, maxWidth: 320, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Destination</FieldLabel>
           <LocationAutocomplete
             variant="bar"
@@ -72,10 +82,8 @@ export default function HotelSearchBar({
           />
         </div>
 
-        <FieldDivider />
-
         {/* Check-in */}
-        <div className="min-w-0 flex-1 border-b border-gray-100 px-4 py-3.5 md:border-b-0 md:border-r md:px-4 md:py-4">
+        <div style={{ flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Check In</FieldLabel>
           <DatePicker
             variant="bar"
@@ -94,10 +102,8 @@ export default function HotelSearchBar({
           />
         </div>
 
-        <FieldDivider />
-
         {/* Check-out */}
-        <div className="min-w-0 flex-1 border-b border-gray-100 px-4 py-3.5 md:border-b-0 md:border-r md:px-4 md:py-4">
+        <div style={{ flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>
             Check Out
             {nights > 0 && (
@@ -121,10 +127,8 @@ export default function HotelSearchBar({
           />
         </div>
 
-        <FieldDivider />
-
         {/* Guests */}
-        <div className="min-w-0 flex-1 border-b border-gray-100 px-4 py-3.5 md:border-b-0 md:border-r md:px-4 md:py-4">
+        <div style={{ flexShrink: 0, minWidth: 200, maxWidth: 280, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Guest</FieldLabel>
           <GuestsRoomsSelector
             variant="bar"
@@ -132,71 +136,38 @@ export default function HotelSearchBar({
             adults={searchParams.adults}
             children={searchParams.children}
             childrenAges={searchParams.childrenAges}
+            roomGuests={searchParams.roomGuests}
             onRoomsChange={(rooms) => setSearchParams({ rooms })}
             onAdultsChange={(adults) => setSearchParams({ adults })}
             onChildrenChange={(children) => setSearchParams({ children })}
             onChildrenAgesChange={(childrenAges) => setSearchParams({ childrenAges })}
+            onRoomGuestsChange={(roomGuests) => setSearchParams({ roomGuests })}
             error={errors.guests}
           />
         </div>
 
+        <div style={{ flex: 1 }} className="hidden md:block" />
 
-
-        {/* Search CTA */}
-        <div className="flex shrink-0 md:w-[140px] lg:w-[160px]">
-          <button
-            type="button"
-            onClick={onSearch}
-            className="flex h-full min-h-[52px] w-full items-center justify-center gap-2 px-6 text-base font-bold text-white transition-colors hover:opacity-95 active:scale-[0.99] md:min-h-0 md:rounded-none"
-            style={{ backgroundColor: HOTEL_NAVY }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = HOTEL_NAVY_HOVER;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = HOTEL_NAVY;
-            }}
-          >
-            <Search className="h-5 w-5 md:hidden" />
-            Search
-          </button>
-        </div>
+        {/* Search Button */}
+        <button
+          type="button"
+          onClick={onSearch}
+          style={{
+            background: '#d06549', color: '#fff', border: 'none',
+            padding: '0 26px', cursor: 'pointer',
+            fontWeight: 800, fontSize: 13, letterSpacing: '0.04em',
+            transition: 'background .2s', flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+            borderRadius: variant === 'results' ? 0 : '0 14px 14px 0',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#b8543a'}
+          onMouseLeave={e => e.currentTarget.style.background = '#d06549'}
+        >
+          <Search className="h-4 w-4 md:hidden" />
+          Search
+        </button>
       </div>
 
-      {showOptions && (
-        <div className="mt-3 flex flex-wrap items-center gap-4 px-1">
-          <label className={`flex cursor-pointer items-center gap-2 text-sm ${darkTheme ? 'text-white' : 'text-gray-600'}`}>
-            <input
-              type="checkbox"
-              checked={searchParams.freeCancellation}
-              onChange={(e) => setSearchParams({ freeCancellation: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-[#003580] focus:ring-[#003580]"
-            />
-            Free cancellation only
-          </label>
-          <label className={`flex cursor-pointer items-center gap-2 text-sm ${darkTheme ? 'text-white' : 'text-gray-600'}`}>
-            <input
-              type="checkbox"
-              checked={searchParams.hourlyStay}
-              onChange={(e) => setSearchParams({ hourlyStay: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-[#003580] focus:ring-[#003580]"
-            />
-            <Clock className="h-3.5 w-3.5" /> Hourly stay
-          </label>
-          {searchParams.hourlyStay && (
-            <select
-              value={searchParams.hourlyDuration || 3}
-              onChange={(e) =>
-                setSearchParams({ hourlyDuration: parseInt(e.target.value, 10) as 3 | 6 | 12 })
-              }
-              className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm shadow-sm"
-            >
-              <option value={3}>3 hrs</option>
-              <option value={6}>6 hrs</option>
-              <option value={12}>12 hrs</option>
-            </select>
-          )}
-        </div>
-      )}
     </div>
   );
 }

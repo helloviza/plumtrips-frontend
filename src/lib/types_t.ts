@@ -114,6 +114,7 @@ fareBreakdown?: Array<{
   segments: FlightSegmentDetail[];
   fareVariants?: DisplayFlight[]; // all fare options for same physical flight
   cancellationPolicies?: TBOCancellationPolicy[]; // TBO policies for cancellation & reschedule
+  itineraryLegs?: DisplayFlight[]; // multi-city display legs from one combined TBO ResultIndex
 }
 
 export interface FareTier {

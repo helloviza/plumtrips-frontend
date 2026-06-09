@@ -405,8 +405,10 @@ export default function HotelDetail() {
                     {formatCurrency(hotel.originalPrice)}
                   </div>
                 )}
-                <div className="text-3xl font-bold text-gray-900">
-                  {formatCurrency(hotel.price)}
+                <div className="flex flex-col text-right">
+                  <span className="text-3xl font-black text-[#00477f] tabular-nums leading-none">
+                    {formatCurrency(hotel.price)}
+                  </span>
                 </div>
                 <div className="text-sm text-gray-500">
                   Total for {nights} night{nights !== 1 ? 's' : ''}
@@ -416,7 +418,6 @@ export default function HotelDetail() {
                     </span>
                   )}
                 </div>
-                <div className="mt-1 text-xs text-gray-400">+ taxes & fees</div>
               </div>
 
               <div className="mb-4 space-y-2">
@@ -455,9 +456,9 @@ export default function HotelDetail() {
       {/* Mobile Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-200 bg-white p-4 lg:hidden">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xl font-bold text-gray-900">{formatCurrency(hotel.price)}</div>
-            <div className="text-xs text-gray-500">{nights} night{nights !== 1 ? 's' : ''} + taxes</div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-[#003580]">{formatCurrency(hotel.price)}</div>
+            <div className="text-xs text-gray-500">{nights} night{nights !== 1 ? 's' : ''}</div>
           </div>
           <Button onClick={handleSelectRooms} size="lg">
             Select Rooms

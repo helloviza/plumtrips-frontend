@@ -15,7 +15,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SearchPage from "./SearchPage";
 import ResultsPage from "./ResultsPage";
 import BookingPage from "./BookingPage";
-// import ConfirmationPage from "./ConfirmationPage";
+import ConfirmationPage from "./ConfirmationPage";
 import type { SearchForm, DisplayFlight, FareTier, Airport } from "../../lib/types_t";
 
 export type CityLeg = { from: Airport; to: Airport; departDate: string };
@@ -56,6 +56,7 @@ interface FlightState {
   pnr?: string;
   passengerNames?: string[];
   contactEmail?: string;
+  totalPaid?: number;
 }
 
 const DEFAULT_STATE: FlightState = {
@@ -218,8 +219,9 @@ export default function FlightsFlow() {
     pnr?: string,
     passengerNames?: string[],
     contactEmail?: string,
+    totalPaid?: number,
   ) {
-    setState((s) => ({ ...s, bookingId, pnr, passengerNames, contactEmail }));
+    setState((s) => ({ ...s, bookingId, pnr, passengerNames, contactEmail, totalPaid }));
     goTo("confirmation");
   }
 
@@ -279,24 +281,33 @@ case "results":
         />
       );
 
-    // case "confirmation":
-    //   if (!state.selectedFlight || !state.selectedTier) {
-    //     navigate("/", { replace: true });
-    //     return null;
-    //   }
-    //   return (
-    //     <ConfirmationPage
-    //       flight={state.selectedFlight}
-    //       tier={state.selectedTier}
-    //       returnFlight={state.selectedReturnFlight ?? undefined}
-    //       returnTier={state.selectedReturnTier ?? undefined}
-    //       bookingId={state.bookingId}
-    //       pnr={state.pnr}
-    //       passengerNames={state.passengerNames}
-    //       contactEmail={state.contactEmail}
-    //       onSearchAgain={handleReset}
-    //     />
-    //   );
+    case "confirmation":
+      if (!state.selectedFlight || !state.selectedTier) {
+        navigate("/", { replace: true });
+        return null;
+      }
+      return (
+        <div className="min-h-screen" style={{ background: "#f8f7f4" }}>
+          <ConfirmationPage
+            flight={state.selectedFlight}
+            tier={state.selectedTier}
+            returnFlight={state.selectedReturnFlight ?? undefined}
+            returnTier={state.selectedReturnTier ?? undefined}
+            multiCityLegs={
+              state.searchForm?.tripType === "multiCity"
+                ? (state.selectedLegs.filter(Boolean) as { flight: DisplayFlight; tier: FareTier }[])
+                : undefined
+            }
+            bookingId={state.bookingId}
+            pnr={state.pnr}
+            passengerNames={state.passengerNames}
+            contactEmail={state.contactEmail}
+            totalPaid={state.totalPaid ?? 0}
+            isInternational={isIntl}
+            onDone={handleReset}
+          />
+        </div>
+      );
 
     default:
       return null;

@@ -26,6 +26,7 @@ import {
   type PreBookResult,
   type BookParams,
   type BookResult,
+  getHotelBookingByPnr as getBookingByPnrApi,
 } from '../../services/hotelApi';
 import type { Hotel, Room, PreBookResponse } from '../../stores/hotelStore';
 import { useHotelStore } from '../../stores/hotelStore';
@@ -428,7 +429,7 @@ export function useHotelDetail() {
             if (sd) {
               const imgs = buildImages(sd);
               const amenities = buildAmenities(sd);
-              setHotel(prev => prev ? {
+              setHotel((prev: Hotel | null) => prev ? {
                 ...prev,
                 images: imgs.length > 1 ? imgs : prev.images,
                 amenities: amenities.length > 0 ? amenities : prev.amenities,

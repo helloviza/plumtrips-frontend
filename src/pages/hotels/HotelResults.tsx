@@ -1,25 +1,36 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HotelFilters from '../../components/hotels/HotelFilters';
 import SortDropdown from '../../components/hotels/SortDropdown';
 import {
-  ArrowLeft, MapPin, X, Star, Search,
+  MapPin, X, Star, Search,
   Wifi, Dumbbell, UtensilsCrossed, Car, Waves,
-  Coffee, Heart, ChevronDown, SlidersHorizontal, Loader2, AlertTriangle, Shield, CheckCircle, Plus, Minus, Users, BedDouble
+  Coffee, Loader2, AlertTriangle, Shield, CheckCircle, Building2
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
-import type { Room } from '../../stores/hotelStore';
-import { useHotelSearch, useHotelRooms } from '../../hooks/useHotelApi';
-import { calculateNights, formatDateShort, formatCurrency } from '../../lib/utils';
+import { useHotelSearch } from '../../hooks/useHotelApi';
+import { calculateNights, formatCurrency } from '../../lib/utils';
 import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import toast from 'react-hot-toast';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 
 // ── Musafir colour tokens ─────────────────────────────────────────────────
-const BLUE = '#00477f';
-const YELLOW = '#FFC107';        // "See rooms" button
+const S = {
+  navy:      "#00305f",
+  navyDeep:  "#0d2d5e",
+  navyMid:   "#00477f",
+  accent:    "#d06549",
+  accentDk:  "#b8543a",
+  accentLt:  "#f9c08a",
+  muted:     "#8fafd4",
+  mutedLt:   "#b0bfd4",
+  border:    "#e2ecf7",
+  borderMid: "#c9d5e8",
+  surface:   "#f5f8fc",
+  ink:       "#0d1f3c",
+  green:     "#0d7a52",
+  greenBg:   "#e8f8f1",
+};
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -40,6 +51,7 @@ function StarRow({ count }: { count: number }) {
     </span>
   );
 }
+
 function HotelCard({ 
   hotel, 
   nights, 
@@ -54,100 +66,120 @@ function HotelCard({
   const navigate = useNavigate();
   const { setSelectedHotel } = useHotelStore();
   const price = showTotalPrice ? hotel.price : Math.round(hotel.price / nights);
-  const taxes = showTotalPrice ? hotel._taxes : Math.round((hotel._taxes || 0) / nights);
 
   // Strict API mapping for ratings.
   // If no text reviews from API, just show star rating as the metric
   const hasRealReviews = hotel.reviewCount > 0;
   const displayRating = hasRealReviews ? hotel.rating : hotel.starRating;
 
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <div className={`flex flex-col overflow-hidden rounded-xl border bg-white transition-all duration-300 hover:shadow-md ${
-      isSelected ? 'border-[#00477f] ring-2 ring-[#00477f]/20 shadow-md' : 'border-gray-200'
-    }`}>
-      <div className="flex flex-col md:flex-row">
+    <div 
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: "#fff",
+        borderRadius: 16,
+        border: `1px solid ${hovered || isSelected ? "rgba(0,71,127,0.28)" : S.border}`,
+        overflow: "hidden",
+        transition: "all .2s",
+        boxShadow: isSelected ? "0 4px 12px rgba(0,71,127,0.15)" : "none",
+      }}
+      className="flex flex-col md:flex-row"
+    >
+      <div className="flex flex-col md:flex-row flex-1 min-w-0">
         {/* Image Gallery area */}
-        <div className="relative w-full md:w-72 shrink-0 bg-slate-100 overflow-hidden">
-          <img
-            src={hotel.images[0] || '/assets/hotel-bg.jpg'}
-            alt={hotel.name}
-            loading="lazy"
-            className="h-48 md:h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-          />
+        <div style={{ position: "relative" }} className="w-full md:w-64 h-48 shrink-0 bg-slate-100 overflow-hidden flex items-center justify-center">
+          {hotel.images && hotel.images[0] ? (
+            <img
+              src={hotel.images[0]}
+              alt={hotel.name}
+              loading="lazy"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center opacity-40 text-[#00305f]">
+              <Building2 className="w-12 h-12 mb-2" />
+              <span className="text-xs font-bold font-['Sora',sans-serif]">No Image Available</span>
+            </div>
+          )}
           {hotel.freeCancellation && (
-            <span className="absolute top-3 left-3 bg-emerald-500/95 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
+            <span style={{ position: "absolute", top: 12, left: 12, background: "rgba(16,185,129,0.95)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
               <Shield className="w-3 h-3" /> Free cancellation
             </span>
           )}
         </div>
 
         {/* Middle: Info */}
-        <div className="flex flex-1 flex-col justify-between p-5">
+        <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div>
-            <div className="mb-2">
+            <div style={{ marginBottom: 8 }}>
               <StarRow count={hotel.starRating} />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 leading-tight">
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 18, color: S.navyDeep, lineHeight: 1.2, marginBottom: 4 }}>
               {hotel.name}
-            </h3>
-            <p className="mt-1 text-sm text-[#00477f] flex items-center gap-1 font-medium">
+            </div>
+            <p style={{ fontSize: 12, color: S.navyMid, display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
               <MapPin className="h-3.5 w-3.5" />
-              <span className="underline decoration-dotted cursor-pointer">{hotel.location}</span>
+              <span style={{ textDecoration: "underline", textDecorationStyle: "dotted", cursor: "pointer" }}>{hotel.location}</span>
             </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             {hotel.amenities.slice(0, 5).map((a: string, i: number) => (
-              <span key={i} className="flex items-center gap-1.5 text-xs text-gray-600 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md">
-                {AMENITY_ICONS[a] ?? <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />}
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: S.navyDeep, background: S.surface, border: `1px solid ${S.border}`, padding: "4px 8px", borderRadius: 6, fontWeight: 500 }}>
+                {AMENITY_ICONS[a] ?? <div style={{ width: 6, height: 6, background: S.muted, borderRadius: "50%" }} />}
                 {a}
               </span>
             ))}
             {hotel.amenities.length > 5 && (
-              <span className="text-xs text-gray-400 font-medium">+{hotel.amenities.length - 5} more</span>
+              <span style={{ fontSize: 11, color: S.muted, fontWeight: 600 }}>+{hotel.amenities.length - 5} more</span>
             )}
           </div>
         </div>
 
         {/* Right: Price & CTA */}
-        <div className="w-full md:w-56 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 p-5 flex flex-col justify-between bg-slate-50/30">
-          <div className="flex justify-between items-start mb-4">
+        <div style={{ flexShrink: 0, borderTop: `1px solid ${S.border}`, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "space-between", background: S.surface }} className="w-full md:w-56 md:border-t-0 md:border-l">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             {/* Ratings strictly from API */}
-            <div className="flex items-center gap-2">
-              <div className="bg-[#00477f] text-white font-bold text-sm px-2 py-1 rounded-md rounded-tr-none flex items-center gap-1">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ background: S.navyDeep, color: "#fff", fontWeight: 800, fontSize: 14, padding: "4px 8px", borderRadius: "8px 8px 8px 0", display: "flex", alignItems: "center", fontFamily: "'Sora',sans-serif" }}>
                 {displayRating.toFixed(1)}
               </div>
               {hasRealReviews && (
-                <div className="text-xs">
-                  <div className="font-bold text-gray-900">Good</div>
-                  <div className="text-gray-500">{hotel.reviewCount} reviews</div>
+                <div style={{ fontSize: 11 }}>
+                  <div style={{ fontWeight: 800, color: S.navyDeep }}>Good</div>
+                  <div style={{ color: S.muted, fontWeight: 500 }}>{hotel.reviewCount} reviews</div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="text-right mt-auto">
-            <div className="text-xs text-gray-500 mb-1">{nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}</div>
-            <div className="text-2xl font-extrabold text-gray-900 tabular-nums leading-none">
+          <div style={{ textAlign: "right", marginTop: "auto" }}>
+            <div style={{ fontSize: 11, color: S.muted, marginBottom: 4, fontWeight: 500 }}>{nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1 }}>
               {formatCurrency(price)}
-            </div>
-            <div className="mt-1.5 text-[11px] text-gray-500 font-medium">
-              + {formatCurrency(taxes ?? 0)} taxes & fees
             </div>
             
             <button
               onClick={() => setSelectedHotel(hotel)}
-              className={`mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
-                isSelected 
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-                  : 'bg-[#00477f] text-white hover:bg-[#002255]'
-              }`}
+              style={{
+                marginTop: 16, width: "100%", borderRadius: 12, padding: "12px 16px", fontSize: 13, fontWeight: 800, fontFamily: "'Sora',sans-serif",
+                transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                background: isSelected ? S.green : S.accent,
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+              }}
+              onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = S.accentDk; }}
+              onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background = S.accent; }}
             >
               {isSelected ? (
                 <>
                   <CheckCircle className="w-4 h-4" /> Selected
                 </>
-              ) : 'Select'}
+              ) : 'Select →'}
             </button>
           </div>
         </div>
@@ -158,8 +190,12 @@ function HotelCard({
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center animate-in slide-in-from-bottom-full duration-300">
           <div className="max-w-6xl w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 hidden sm:block">
-                <img src={hotel.images[0] || '/assets/hotel-bg.jpg'} alt="" className="w-full h-full object-cover" />
+              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
+                {hotel.images && hotel.images[0] ? (
+                  <img src={hotel.images[0]} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 className="w-6 h-6 text-gray-400 opacity-50" />
+                )}
               </div>
               <div>
                 <div className="text-sm text-gray-500 font-medium">Selected Hotel</div>
@@ -193,17 +229,14 @@ export default function HotelResults() {
   const [urlParams] = useRouterSearchParams();
   const isDefault = urlParams.get('default') === 'true';
 
-  const { searchParams, filters, setFilters, resetFilters, sortBy, setSortBy, sortDirection, setSortDirection, setSearchResultsMap, selectedHotel, setSelectedHotel, selectedRooms, setSearchParams } = useHotelStore();
-  const { hotels: apiHotels, rawResults, loading, error, statusMessage, search, loadMore, hasMore, loadingMore } = useHotelSearch();
+  const { searchParams, filters, resetFilters, sortBy, sortDirection, setSearchResultsMap, selectedHotel, selectedRooms, setSearchParams, resetBooking } = useHotelStore();
+  const { hotels: apiHotels, rawResults, loading, error, statusMessage, search } = useHotelSearch();
 
   // Local state
   const [propertySearch, setPropertySearch] = useState('');
-  const [showAllNeighbourhoods, setShowAllNeighbourhoods] = useState(false);
-  const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [wishlisted, setWishlisted] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(10);
-  const [showTotalPrice, setShowTotalPrice] = useState(true);
+  const showTotalPrice = true;
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
   const ci = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
@@ -211,19 +244,13 @@ export default function HotelResults() {
 
   // ── Trigger API search on mount ─────────────────────────────────────
   useEffect(() => {
+    if (isDefault) {
+      resetBooking();
+    }
+
     let finalLocation = searchParams.locationId || searchParams.location;
     let finalCheckIn = ci;
     let finalCheckOut = co;
-
-    // Default to Delhi if empty OR if navigated from header
-    if (!finalLocation || isDefault) {
-      finalLocation = 'New Delhi';
-      setSearchParams({ 
-        location: finalLocation,
-        locationId: '130443',
-        destinationCountryCode: 'IN'
-      });
-    }
 
     // Default dates if empty OR if navigated from header
     if (!finalCheckIn || !finalCheckOut || isDefault) {
@@ -239,6 +266,8 @@ export default function HotelResults() {
       setSearchParams({ childrenAges: Array(searchParams.children).fill(5) });
     }
 
+    if (!finalLocation) return;
+
     search({
       cityCode: finalLocation,
       checkIn: finalCheckIn.toISOString().split('T')[0],
@@ -249,6 +278,7 @@ export default function HotelResults() {
       childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
       nationality: 'IN',
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -260,6 +290,7 @@ export default function HotelResults() {
       }
       setSearchResultsMap(map);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawResults]);
 
   // ── Dynamic derived data from actual API results ─────────────────────────
@@ -332,8 +363,8 @@ export default function HotelResults() {
     const dir = sortDirection === 'asc' ? 1 : -1;
     switch (sortBy) {
       case 'cheapest': r.sort((a, b) => (a.price - b.price) * dir); break;
-      case 'rating': r.sort((a, b) => (b.starRating - a.starRating) * dir); break;
-      case 'reviews': r.sort((a, b) => (b.starRating - a.starRating) * dir); break;
+      case 'rating': r.sort((a, b) => (a.starRating - b.starRating) * dir); break;
+      case 'reviews': r.sort((a, b) => (a.starRating - b.starRating) * dir); break;
       case 'distance': r.sort((a, b) => (parseFloat(a.distance) - parseFloat(b.distance)) * dir); break;
       // case 'relevance': break;
     }
@@ -344,25 +375,20 @@ export default function HotelResults() {
     resetFilters();
     setPropertySearch('');
   };
-
-  const toggleArrayFilter = (field: keyof typeof filters, value: any) => {
-    const cur = filters[field] as any[];
-    setFilters({ [field]: cur.includes(value) ? cur.filter(x => x !== value) : [...cur, value] });
-  };
 // ── Hotel Card ─────────────────────────────────────────────
 
 
   // Sticky bottom summary bar for multiple room selections
   const totalRoomsSelected = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + r.quantity, 0) : 0;
-  const totalPrice = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0) : 0;
+  const totalPrice = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + (r.price + (r.additionalCharges || 0)) * r.quantity, 0) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* ── Top Search Bar ── */}
-      <div className="sticky top-[72px] z-40 shadow-md bg-[#00477f] py-4">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="sticky top-[72px] z-40" style={{ background: "#fff" }}>
+        <div style={{ width: "100%", padding: 0 }}>
           <HotelSearchBar 
-            darkTheme={true}
+            variant="results"
             onSearch={() => {
                const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
                const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
@@ -381,61 +407,47 @@ export default function HotelResults() {
           />
         </div>
       </div>
-
-      <div className="bg-white border-b border-gray-200 py-2 lg:hidden">
-        <div className="mx-auto flex items-center justify-between px-4 max-w-7xl">
-           <button
-             onClick={() => setShowMobileFilters(true)}
-             className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700"
-           >
-             <SlidersHorizontal className="h-4 w-4" /> Filters
-           </button>
-           <div className="relative">
-             <SortDropdown />
-           </div>
-        </div>
-      </div>
       
       {/* ── Body ── */}
-      <div className="mx-auto flex max-w-7xl gap-8 px-4 sm:px-6 mt-6">
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 24px", display: "flex", gap: 20 }}>
         {/* ── Left sidebar ── */}
-        <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="sticky top-24 bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-[calc(100vh-8rem)] overflow-y-auto overflow-x-hidden">
+        <aside style={{ width: 260, flexShrink: 0 }} className="hidden lg:block">
+          <div className="sticky top-24">
              <HotelFilters maxPrice={MAX_PRICE} neighborhoods={NEIGHBOURHOODS} amenitiesList={AMENITIES_LIST} propertyTypes={PROPERTY_TYPES} propertySearch={propertySearch} setPropertySearch={setPropertySearch} />
           </div>
         </aside>
 
         {/* ── Results list ── */}
-        <main className="flex-1">
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Skeletons */}
           {loading && (
-            <div className="space-y-6">
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {statusMessage && (
                 <div className="mb-4 flex items-center justify-center gap-2 text-sm font-bold text-[#00477f] bg-blue-50 py-3 rounded-xl border border-blue-100">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   {statusMessage}
                 </div>
               )}
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex flex-col md:flex-row h-auto md:h-56 animate-pulse overflow-hidden rounded-xl border border-gray-200 bg-white">
-                  <div className="w-full md:w-72 shrink-0 bg-gray-200" />
-                  <div className="flex-1 p-5 space-y-4">
-                    <div className="h-5 w-48 rounded bg-gray-200" />
-                    <div className="h-4 w-24 rounded bg-gray-200" />
-                    <div className="flex gap-2 pt-4">
-                      <div className="h-8 w-20 rounded-md bg-gray-100" />
-                      <div className="h-8 w-20 rounded-md bg-gray-100" />
-                    </div>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} style={{
+                  background: "#fff", borderRadius: 16, border: `1px solid ${S.border}`,
+                  height: 140, display: "flex", overflow: "hidden"
+                }}>
+                  <div style={{ width: 140, height: "100%", background: S.surface, animation: "pulse 1.5s infinite" }} />
+                  <div style={{ flex: 1, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ width: "40%", height: 16, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
+                    <div style={{ width: "20%", height: 12, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
                   </div>
-                  <div className="w-full md:w-56 shrink-0 border-l border-gray-100 p-5 flex flex-col items-end space-y-3">
-                    <div className="h-8 w-12 rounded bg-gray-200" />
-                    <div className="h-10 w-32 rounded bg-gray-200 mt-auto" />
-                    <div className="h-10 w-full rounded bg-gray-300" />
+                  <div style={{ width: 180, borderLeft: `1px solid ${S.border}`, padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                     <div style={{ width: 60, height: 14, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
+                     <div style={{ width: "100%", height: 24, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite", marginTop: "auto" }} />
                   </div>
                 </div>
               ))}
             </div>
           )}
+
+          <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
 
           {/* Error */}
           {!loading && error && (
@@ -452,9 +464,7 @@ export default function HotelResults() {
               <>
                 <div className="mb-4 flex items-center justify-between text-sm font-semibold text-gray-700">
                   <span>{filteredHotels.length} properties found</span>
-                  <div className="hidden lg:block relative z-20">
-                    <SortDropdown />
-                  </div>
+                  <SortDropdown />
                 </div>
                 {/* Hotel List */}
                 <div className="flex flex-col gap-6">
@@ -492,7 +502,7 @@ export default function HotelResults() {
               </div>
             )
           )}
-        </main>
+        </div>
       </div>
 
       {/* ── Sticky Room Selection Summary Bar ── */}
@@ -504,7 +514,7 @@ export default function HotelResults() {
                 <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatCurrency(totalPrice)}</div>
               </div>
               <div className="text-xs text-slate-500 font-medium">
-                {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''} · incl. taxes
+                {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''}
               </div>
             </div>
             <Button
@@ -546,4 +556,5 @@ export default function HotelResults() {
     </div>
   );
 }
+
 

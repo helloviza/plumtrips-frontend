@@ -59,7 +59,7 @@ interface BookingPageProps {
   forcePassport?: boolean;
   isInternational?: boolean;
   onBack: () => void;
-  onConfirm: (bookingId?: number, pnr?: string, passengerNames?: string[], contactEmail?: string) => void;
+  onConfirm: (bookingId?: number, pnr?: string, passengerNames?: string[], contactEmail?: string, totalPaid?: number) => void;
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────
@@ -229,16 +229,19 @@ export default function BookingPage({
     if (ssrDataPerLeg.length !== legs.length) {
       setSsrLoading(true);
 setSsrDataPerLeg([]); // clear stale data so UI shows loading
-const allFlights = legs.map((l) => l.flight);
-  // const ssrFn = isMultiCity
-  //   ? apiGetSSRForMultiCity(allFlights)   // one call, distributes by leg
-  //   : apiGetSSRForLegs(allFlights,isMultiCity);       // separate call per leg (round-trip / one-way)
-    const ssrFn = apiGetSSRForLegs(allFlights, isMultiCity);
+const allFlights = legs.map((l) => ({
+  ...l.flight,
+  resultIndex: l.tier.resultIndex || l.flight.resultIndex,
+}));
+const ssrFn = apiGetSSRForLegs(allFlights);
 
 
   ssrFn
     .then(results => setSsrDataPerLeg(results))
-    .catch(() => setSsrDataPerLeg(legs.map(() => null)))
+    .catch((e: any) => {
+      setError(e?.message ?? "Could not load seat, meal, and baggage options for this flight.");
+      setSsrDataPerLeg(legs.map(() => null));
+    })
     .finally(() => setSsrLoading(false));
     }
   setStep(3);
@@ -347,26 +350,39 @@ const allFlights = legs.map((l) => l.flight);
     const normalizeFlightNumber = (raw: string) =>
       String(raw).replace(/[^0-9]/g, "");
 
+    const isNoMealCode = (code?: string) => {
+      const normalized = String(code || "").trim().toLowerCase();
+      return !normalized || ["none", "no_meal", "nomeal", "no meal", "no meal preference"].includes(normalized);
+    };
+
+    const ssrAvailablePerLeg = ssrDataPerLeg.map(
+  (ssr) => ssr !== null && (ssr.meals?.length ?? 0) > 0
+);
+
     const buildMealItem = (paxIndex: number, legIndex: number) => {
       const extra = mealExtrasByPaxAndLeg[paxIndex]?.[legIndex];
+      if (!extra || isNoMealCode(extra.mealCode)) return null;
+      const code = String(extra.mealCode).trim();
+      if (!code || code.length < 2) return null;
+      if (!ssrAvailablePerLeg[legIndex]) return null;
+
       const leg = legs[legIndex] ?? { flight };
-      const code = extra?.mealCode ?? "NONE";
       return {
         AirlineCode: leg.flight.airlineCode,
         FlightNumber: normalizeFlightNumber(leg.flight.flightNumber),
         WayType: 2,
-        Code: code,
+        Code: extra.mealCode,
         Description: 2,
         AirlineDescription: "",
-        Quantity: code === "NONE" ? 0 : 1,
+        Quantity: 1,
         Currency: "INR",
-        Price: extra?.mealPrice ?? 0,
+        Price: extra.mealPrice ?? 0,
         Origin: leg.flight.fromCode,
         Destination: leg.flight.toCode,
       };
     };
 
-    const buildPassengersForLeg = (legIndex: number): FlightBookPassenger[] =>
+    const buildPassengersForLegs = (legIndexes: number[]): FlightBookPassenger[] =>
       form.passengers.map((p, i) => {
         const base = {
           Title: p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
@@ -378,39 +394,29 @@ const allFlights = legs.map((l) => l.flight);
           PassportNo: p.passportNo || undefined,
           PassportExpiry: p.passportExpiry || undefined,
           Pan: p.panNumber || undefined,
+          ContactNo: form.contactPhone,
+          Email: form.contactEmail,
+          IsLeadPax: i === 0,
+          AddressLine1: "India",
+          City: "Delhi",
+          CountryCode: "IN",
+          CountryName: "India",
+          Nationality: p.nationality || "IN",
         };
 
         if (paxTypes[i] === "Infant") return base;
 
-        return {
-          ...base,
-          MealDynamic: [buildMealItem(i, legIndex)],
-        };
-      });
-
-    const buildPassengersForAllLegs = (): FlightBookPassenger[] =>
-      form.passengers.map((p, i) => {
-        const base = {
-          Title: p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
-          FirstName: p.firstName.trim(),
-          LastName: p.lastName.trim(),
-          PaxType: (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3,
-          DateOfBirth: p.dob ? `${p.dob}T00:00:00` : "1990-01-01T00:00:00",
-          Gender: (p.gender === "Male" ? 1 : 2) as 1 | 2,
-          PassportNo: p.passportNo || undefined,
-          PassportExpiry: p.passportExpiry || undefined,
-          Pan: p.panNumber || undefined,
-        };
-
-        if (paxTypes[i] === "Infant") return base;
+        const selectedMeals = legIndexes
+          .map((legIndex) => buildMealItem(i, legIndex))
+          .filter((meal): meal is Record<string, unknown> => meal !== null);
 
         return {
           ...base,
-          MealDynamic: legs.map((_, legIndex) => buildMealItem(i, legIndex)),
+          ...(selectedMeals.length > 0 ? { MealDynamic: selectedMeals } : {}),
         };
       });
 
-    const passengersMapped = buildPassengersForAllLegs();
+    const passengersMapped = buildPassengersForLegs(legs.map((_, index) => index));
 
     const gstPayload = form.gstNumber ? {
       GSTNumber: form.gstNumber,
@@ -423,6 +429,62 @@ const allFlights = legs.map((l) => l.flight);
       (p) => `${p.title} ${p.firstName} ${p.lastName}`.trim()
     );
 
+    const isSupplierCombinationError = (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err || "");
+      const lower = message.toLowerCase();
+      return lower.includes("combination") && lower.includes("supplier");
+    };
+
+    const bookRoundTripCombined = () =>
+      apiBookFlight({
+        traceId: flight.traceId,
+        resultIndex: `${tier.resultIndex},${returnTier!.resultIndex}`,
+        isLCC: flight.isLCC,
+        isInternational,
+        passengers: buildPassengersForLegs([0, 1]),
+    contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+    gst: gstPayload,
+      });
+
+    const bookRoundTripSeparately = async () => {
+      const outbound = await apiBookFlight({
+        traceId: flight.traceId,
+        resultIndex: tier.resultIndex,
+        isLCC: flight.isLCC,
+        isInternational,
+        passengers: buildPassengersForLegs([0]),
+        contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+        gst: gstPayload,
+      });
+
+      const inbound = await apiBookFlight({
+        traceId: returnFlight!.traceId || flight.traceId,
+        resultIndex: returnTier!.resultIndex,
+        isLCC: returnFlight!.isLCC,
+        isInternational,
+        passengers: buildPassengersForLegs([1]),
+        contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+        gst: gstPayload,
+      });
+
+      return {
+        bookingId: outbound.bookingId,
+        pnr: [outbound.pnr, inbound.pnr].filter(Boolean).join(" / "),
+      };
+    };
+
+    const bookRoundTrip = async () => {
+      if (flight.isLCC || returnFlight?.isLCC) {
+        return bookRoundTripSeparately();
+      }
+      try {
+        return await bookRoundTripCombined();
+      } catch (err) {
+        if (!isSupplierCombinationError(err) || !returnFlight || !returnTier) throw err;
+        return bookRoundTripSeparately();
+      }
+    };
+
     // ── MOCK MODE ─────────────────────────────────────────
 
     if (MOCK_MODE) {
@@ -434,29 +496,31 @@ const allFlights = legs.map((l) => l.flight);
           const results: { bookingId?: number; pnr?: string }[] = [];
           for (let legIndex = 0; legIndex < multiCityLegs.length; legIndex++) {
             const leg = multiCityLegs[legIndex];
-            const r = await apiBookFlight({
+            const result = await apiBookFlight({
               traceId: leg.flight.traceId,
               resultIndex: leg.tier.resultIndex,
               isLCC: leg.flight.isLCC,
-              passengers: buildPassengersForLeg(legIndex),
+              isInternational,
+              passengers: buildPassengersForLegs([legIndex]),
               contact: { Email: form.contactEmail, Mobile: form.contactPhone },
               gst: gstPayload,
             });
-            results.push(r);
+            results.push(result);
           }
-          bookingId = results[0].bookingId;
-          pnr = results.map((r) => r.pnr).filter(Boolean).join(", ");
+          bookingId = results[0]?.bookingId;
+          pnr = results.map((result) => result.pnr).filter(Boolean).join(", ");
         } else {
-          const result = await apiBookFlight({
-            traceId: flight.traceId,
-            resultIndex: isRoundTrip && returnTier
-              ? `${tier.resultIndex},${returnTier.resultIndex}`
-              : tier.resultIndex,
-            isLCC: flight.isLCC,
-            passengers: passengersMapped,
-            contact: { Email: form.contactEmail, Mobile: form.contactPhone },
-            gst: gstPayload,
-          });
+          const result = isRoundTrip && returnFlight && returnTier
+            ? await bookRoundTrip()
+            : await apiBookFlight({
+                traceId: flight.traceId,
+                resultIndex: tier.resultIndex,
+                isLCC: flight.isLCC,
+                isInternational,
+                passengers: passengersMapped,
+                contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+                gst: gstPayload,
+              });
           bookingId = result.bookingId;
           pnr = result.pnr;
         }
@@ -466,7 +530,7 @@ const allFlights = legs.map((l) => l.flight);
         setConfirmedPnr(pnr);
         setConfirmedNames(passengerNames);
         setStep(7);
-        onConfirm(bookingId, pnr, passengerNames, form.contactEmail);
+        onConfirm(bookingId, pnr, passengerNames, form.contactEmail, totalPayable);
       } catch (e: any) {
         setError(e.message ?? "Booking failed. Please try again.");
       } finally {
@@ -531,39 +595,43 @@ const allFlights = legs.map((l) => l.flight);
                 const results: { bookingId?: number; pnr?: string }[] = [];
                 for (let legIndex = 0; legIndex < multiCityLegs.length; legIndex++) {
                   const leg = multiCityLegs[legIndex];
-                  const r = await apiBookFlight({
+                  const result = await apiBookFlight({
                     traceId: leg.flight.traceId,
                     resultIndex: leg.tier.resultIndex,
                     isLCC: leg.flight.isLCC,
-                    passengers: buildPassengersForLeg(legIndex),
+                    isInternational,
+                    passengers: buildPassengersForLegs([legIndex]),
                     contact: { Email: form.contactEmail, Mobile: form.contactPhone },
                     gst: gstPayload,
                   });
-                  results.push(r);
+                  results.push(result);
                 }
                 bookingId = results[0]?.bookingId;
-                pnr = results.map((r) => r.pnr).filter(Boolean).join(", ");
+                pnr = results.map((result) => result.pnr).filter(Boolean).join(", ");
               } else {
-                const result = await apiBookFlight({
-                  traceId: flight.traceId,
-                  resultIndex: isRoundTrip && returnTier
-                    ? `${tier.resultIndex},${returnTier.resultIndex}`
-                    : tier.resultIndex,
-                  isLCC: flight.isLCC,
-                  passengers: passengersMapped,
-                  contact: { Email: form.contactEmail, Mobile: form.contactPhone },
-                  gst: gstPayload,
-                });
+                const result = isRoundTrip && returnFlight && returnTier
+                  ? await bookRoundTrip()
+                  : await apiBookFlight({
+                      traceId: flight.traceId,
+                      resultIndex: tier.resultIndex,
+                      isLCC: flight.isLCC,
+                      isInternational,
+                      passengers: passengersMapped,
+                      contact: { Email: form.contactEmail, Mobile: form.contactPhone },
+                      gst: gstPayload,
+                    });
                 bookingId = result.bookingId;
                 pnr = result.pnr;
               }
 
               await saveBooking(bookingId, pnr);
-              setConfirmedBookingId(bookingId);
-              setConfirmedPnr(pnr);
-              setConfirmedNames(passengerNames);
-              setStep(7);
-              onConfirm(bookingId, pnr, passengerNames, form.contactEmail);
+Promise.resolve().then(() => {
+  setConfirmedBookingId(bookingId);
+  setConfirmedPnr(pnr);
+  setConfirmedNames(passengerNames);
+  setStep(7);
+  onConfirm(bookingId, pnr, passengerNames, form.contactEmail, totalPayable);
+});
               resolve();
             } catch (err: any) {
               reject(err);

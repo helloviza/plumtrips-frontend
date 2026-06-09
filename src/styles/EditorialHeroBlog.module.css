@@ -734,3 +734,22 @@
   text-transform: uppercase;
   opacity: .8;
 }
+
+.editorialPage :global(.stories-all-grid) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  padding: 8px 0;
+}
+
+@media (max-width: 900px) {
+  .editorialPage :global(.stories-all-grid) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .editorialPage :global(.stories-all-grid) {
+    grid-template-columns: 1fr;
+  }
+}

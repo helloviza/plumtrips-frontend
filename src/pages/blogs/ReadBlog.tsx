@@ -2,47 +2,203 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { Post } from '../../lib/api';
 import type { PostBlock } from '../../pages/marketing/blogs.model';
 
+// ─── Google Fonts injection (Playfair Display + Manrope) ──────────────────────
+const FontLoader: React.FC = () => {
+  useEffect(() => {
+    const id = 'aureate-fonts';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@400;600;800&display=swap';
+    document.head.appendChild(link);
+  }, []);
+  return null;
+};
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const tokens = {
+  bg: '#fbf9f8',
+  bgDim: '#f5f3f3',
+  bgContainer: '#efeded',
+  ink: '#1b1c1c',
+  inkMuted: '#444748',
+  outline: '#747878',
+  outlineVariant: '#c4c7c7',
+  gold: '#e9c176',
+  goldSoft: 'rgba(233,193,118,0.15)',
+  fontDisplay: "'Playfair Display', Georgia, serif",
+  fontBody: "'Manrope', system-ui, sans-serif",
+};
+
+const label: React.CSSProperties = {
+  fontFamily: tokens.fontBody,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.15em',
+  textTransform: 'uppercase' as const,
+  color: tokens.outlineVariant,
+};
+
 // ─── Published Block Renderer ─────────────────────────────────────────────────
-const PubBlock: React.FC<{ block: PostBlock }> = ({ block }) => {
+const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, isFirst }) => {
   switch (block.type) {
     case 'h1':
       return (
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 500, margin: '40px 0 16px' }}>
+        <h1
+          style={{
+            fontFamily: tokens.fontDisplay,
+            fontSize: 'clamp(32px, 4vw, 52px)',
+            fontWeight: 400,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: tokens.ink,
+            margin: '56px 0 20px',
+          }}
+        >
           {block.text}
         </h1>
       );
+
     case 'h2':
-      return <h2 id={`s-${block.id}`}>{block.text}</h2>;
+      return (
+        <h2
+          id={`s-${block.id}`}
+          style={{
+            fontFamily: tokens.fontDisplay,
+            fontSize: 'clamp(24px, 3vw, 36px)',
+            fontWeight: 400,
+            lineHeight: 1.25,
+            color: tokens.ink,
+            margin: '48px 0 16px',
+          }}
+        >
+          {block.text}
+        </h2>
+      );
+
     case 'h3':
-      return <h3 id={`s-${block.id}`}>{block.text}</h3>;
-    case 'p':
-      return <p>{block.text}</p>;
+      return (
+        <h3
+          id={`s-${block.id}`}
+          style={{
+            fontFamily: tokens.fontDisplay,
+            fontSize: 24,
+            fontWeight: 400,
+            lineHeight: 1.3,
+            color: tokens.ink,
+            margin: '36px 0 12px',
+          }}
+        >
+          {block.text}
+        </h3>
+      );
+
+    case 'p': {
+      const isDropCap = isFirst;
+      return (
+        <p
+          style={{
+            fontFamily: tokens.fontBody,
+            fontSize: 16,
+            lineHeight: 1.75,
+            color: tokens.inkMuted,
+            margin: '0 0 24px',
+          }}
+        >
+          {isDropCap ? (
+            <>
+              <span
+                style={{
+                  float: 'left',
+                  fontFamily: tokens.fontDisplay,
+                  fontSize: 80,
+                  lineHeight: 0.78,
+                  paddingRight: 12,
+                  paddingTop: 8,
+                  color: tokens.ink,
+                  fontWeight: 400,
+                }}
+              >
+                {block.text?.charAt(0)}
+              </span>
+              {block.text?.slice(1)}
+            </>
+          ) : (
+            block.text
+          )}
+        </p>
+      );
+    }
+
     case 'quote':
       return (
-        <blockquote>
-          {block.text}
-          {block.cite && <cite>{block.cite}</cite>}
+        <blockquote
+          style={{
+            margin: '40px 0',
+            paddingLeft: 24,
+            borderLeft: `2px solid ${tokens.gold}`,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: tokens.fontDisplay,
+              fontSize: 'clamp(18px, 2.5vw, 24px)',
+              fontStyle: 'italic',
+              lineHeight: 1.5,
+              color: tokens.ink,
+              margin: 0,
+            }}
+          >
+            {block.text}
+          </p>
+          {block.cite && (
+            <cite
+              style={{
+                display: 'block',
+                marginTop: 12,
+                fontFamily: tokens.fontBody,
+                fontSize: 11,
+                fontStyle: 'normal',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: tokens.outline,
+              }}
+            >
+              — {block.cite}
+            </cite>
+          )}
         </blockquote>
       );
+
     case 'image':
     case 'cover':
       return (
-        <figure>
+        <figure style={{ margin: '40px 0' }}>
           {block.src ? (
-            <img src={block.src} alt={block.caption || ''} />
+            <img
+              src={block.src}
+              alt={block.caption || ''}
+              style={{ width: '100%', display: 'block' }}
+            />
           ) : (
             <div
               style={{
                 aspectRatio: '16/9',
-                background: 'var(--paper-2)',
-                borderRadius: 12,
-                border: '1px dashed var(--line-2)',
+                background: tokens.bgContainer,
+                border: `1px dashed ${tokens.outlineVariant}`,
               }}
             />
           )}
-          {block.caption && <figcaption>{block.caption}</figcaption>}
+          {block.caption && (
+            <figcaption style={{ ...label, marginTop: 12, color: tokens.outline }}>
+              {block.caption}
+            </figcaption>
+          )}
         </figure>
       );
+
     case 'gallery':
       return (
         <div
@@ -50,83 +206,192 @@ const PubBlock: React.FC<{ block: PostBlock }> = ({ block }) => {
             display: 'grid',
             gridTemplateColumns: 'repeat(3,1fr)',
             gap: 8,
-            margin: '32px 0',
+            margin: '40px 0',
           }}
         >
           {(block.images || []).map((src, i) => (
-            <div
-              key={i}
-              style={{
-                aspectRatio: '1',
-                borderRadius: 10,
-                overflow: 'hidden',
-                background: 'var(--paper-2)',
-              }}
-            >
+            <div key={i} style={{ aspectRatio: '1', overflow: 'hidden', background: tokens.bgContainer }}>
               {src && (
-                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img
+                  src={src}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               )}
             </div>
           ))}
         </div>
       );
+
     case 'numlist':
       return (
-        <div className="pub-numlist">
+        <div style={{ margin: '40px 0' }}>
           {(block.items || []).map((it, i) => (
-            <div className="nentry" key={i} id={`n-${i + 1}`}>
-              <div className="num">{String(it.n).padStart(2, '0')}</div>
+            <div
+              key={i}
+              id={`n-${i + 1}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '48px 1fr',
+                gap: 24,
+                padding: '32px 0',
+                borderTop: `1px solid ${tokens.outlineVariant}30`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: tokens.fontBody,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  color: tokens.outlineVariant,
+                  paddingTop: 4,
+                }}
+              >
+                {String(it.n || i + 1).padStart(2, '0')}
+              </div>
               <div>
-                <h3>{it.title}</h3>
-                <div className="loc">{it.loc}</div>
-                {it.img && <img src={it.img} alt={it.title} loading="lazy" />}
-                <p>{it.body}</p>
+                <h3
+                  style={{
+                    fontFamily: tokens.fontDisplay,
+                    fontSize: 22,
+                    fontWeight: 400,
+                    margin: '0 0 6px',
+                    color: tokens.ink,
+                  }}
+                >
+                  {it.title}
+                </h3>
+                {it.loc && (
+                  <div style={{ ...label, marginBottom: 16, color: tokens.outline }}>{it.loc}</div>
+                )}
+                {it.img && (
+                  <img
+                    src={it.img}
+                    alt={it.title}
+                    loading="lazy"
+                    style={{ width: '100%', marginBottom: 16 }}
+                  />
+                )}
+                <p style={{ fontFamily: tokens.fontBody, fontSize: 15, lineHeight: 1.75, color: tokens.inkMuted, margin: 0 }}>
+                  {it.body}
+                </p>
               </div>
             </div>
           ))}
         </div>
       );
+
     case 'hotel':
       return (
-        <div className="pub-hotel">
-          <div className="h-img">
-            {block.img && <img src={block.img} alt={block.name} loading="lazy" />}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 0,
+            margin: '40px 0',
+            border: `1px solid ${tokens.outlineVariant}30`,
+          }}
+        >
+          <div style={{ overflow: 'hidden' }}>
+            {block.img ? (
+              <img
+                src={block.img}
+                alt={block.name}
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            ) : (
+              <div style={{ height: '100%', minHeight: 200, background: tokens.bgContainer }} />
+            )}
           </div>
-          <div className="h-body">
-            <div className="h-kicker">{block.kicker}</div>
-            <h4>{block.name}</h4>
-            <div className="h-loc">{block.loc}</div>
-            <p>{block.desc}</p>
-            <div className="h-foot">
-              <span className="price">{block.price}</span>
-              <button className="btn btn-primary btn-sm">View hotel →</button>
+          <div style={{ padding: '32px 28px', background: tokens.bgDim }}>
+            {block.kicker && (
+              <div style={{ ...label, marginBottom: 10 }}>{block.kicker}</div>
+            )}
+            <h4
+              style={{
+                fontFamily: tokens.fontDisplay,
+                fontSize: 22,
+                fontWeight: 400,
+                margin: '0 0 6px',
+                color: tokens.ink,
+              }}
+            >
+              {block.name}
+            </h4>
+            {block.loc && (
+              <div style={{ ...label, marginBottom: 14, color: tokens.outline }}>{block.loc}</div>
+            )}
+            <p style={{ fontFamily: tokens.fontBody, fontSize: 14, lineHeight: 1.7, color: tokens.inkMuted, margin: '0 0 24px' }}>
+              {block.desc}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {block.price && (
+                <span style={{ fontFamily: tokens.fontBody, fontSize: 14, fontWeight: 600, color: tokens.ink }}>
+                  {block.price}
+                </span>
+              )}
+              <button
+                style={{
+                  fontFamily: tokens.fontBody,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  padding: '8px 20px',
+                  border: `1px solid ${tokens.ink}`,
+                  background: 'transparent',
+                  color: tokens.ink,
+                  cursor: 'pointer',
+                }}
+              >
+                View hotel →
+              </button>
             </div>
           </div>
         </div>
       );
+
     case 'map':
       return (
-        <div className="pub-map">
+        <div
+          style={{
+            position: 'relative',
+            aspectRatio: '16/9',
+            background: tokens.bgContainer,
+            margin: '40px 0',
+            border: `1px solid ${tokens.outlineVariant}30`,
+          }}
+        >
           {(block.pins || []).map((p, i) => (
             <div
               key={i}
-              className="pin"
-              style={{ left: `${p.x}%`, top: `${p.y}%` }}
               title={p.label}
+              style={{
+                position: 'absolute',
+                left: `${p.x}%`,
+                top: `${p.y}%`,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: tokens.ink,
+                transform: 'translate(-50%,-50%)',
+              }}
             />
           ))}
         </div>
       );
+
     case 'video':
       return (
         <div
           style={{
             aspectRatio: '16/9',
             background: '#0a0a0a',
-            borderRadius: 12,
+            margin: '40px 0',
             display: 'grid',
             placeItems: 'center',
-            margin: '32px 0',
             color: '#fff',
           }}
         >
@@ -135,28 +400,80 @@ const PubBlock: React.FC<{ block: PostBlock }> = ({ block }) => {
               width: 64,
               height: 64,
               borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
+              background: 'rgba(255,255,255,0.15)',
               display: 'grid',
               placeItems: 'center',
+              fontSize: 20,
             }}
           >
             ▶
           </div>
         </div>
       );
+
     case 'newsletter':
       return (
-        <div className="pub-newsletter">
-          <h3>{block.title}</h3>
-          <p>{block.body}</p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="email" placeholder="your@email.com" />
-            <button className="btn btn-primary" type="button">
+        <div
+          style={{
+            margin: '48px 0',
+            padding: '40px',
+            background: tokens.ink,
+            color: '#fff',
+          }}
+        >
+          <div style={{ ...label, color: tokens.gold, marginBottom: 12 }}>Newsletter</div>
+          <h3
+            style={{
+              fontFamily: tokens.fontDisplay,
+              fontSize: 28,
+              fontWeight: 400,
+              fontStyle: 'italic',
+              margin: '0 0 12px',
+              color: '#fff',
+            }}
+          >
+            {block.title}
+          </h3>
+          <p style={{ fontFamily: tokens.fontBody, fontSize: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.7)', margin: '0 0 24px' }}>
+            {block.body}
+          </p>
+          <div style={{ display: 'flex', gap: 0 }}>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              style={{
+                flex: 1,
+                padding: '10px 16px',
+                border: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.4)',
+                background: 'transparent',
+                color: '#fff',
+                fontFamily: tokens.fontBody,
+                fontSize: 14,
+                outline: 'none',
+              }}
+            />
+            <button
+              type="button"
+              style={{
+                padding: '10px 24px',
+                background: tokens.gold,
+                color: tokens.ink,
+                border: 'none',
+                fontFamily: tokens.fontBody,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
               Subscribe
             </button>
           </div>
         </div>
       );
+
     default:
       return null;
   }
@@ -185,7 +502,7 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
     const onScroll = () => {
       const max = el.scrollHeight - el.clientHeight;
       setProgress(max > 0 ? (el.scrollTop / max) * 100 : 0);
-      const entries = el.querySelectorAll('.pub-numlist .nentry');
+      const entries = el.querySelectorAll('[id^="n-"]');
       let best = 0;
       entries.forEach((entry, i) => {
         if ((entry as HTMLElement).getBoundingClientRect().top < 200) best = i;
@@ -209,52 +526,64 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
 
   const formattedDate = new Date(post.publishDate).toLocaleDateString('en-GB', {
     day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    month: 'short',
+    year: '2-digit',
+  });
+
+  // Track which p block is first for drop cap
+  let firstPIndex = -1;
+  post.blocks.forEach((b, i) => {
+    if (b.type === 'p' && firstPIndex === -1) firstPIndex = i;
   });
 
   return (
     <div
-      className="pub"
+      ref={ref}
       data-layout={layout}
       data-display-font={displayFont}
-      ref={ref}
-      style={{ height: '100%', overflow: 'auto', background: 'var(--paper, #fff)' }}
+      style={{
+        height: '100%',
+        overflow: 'auto',
+        background: tokens.bg,
+        fontFamily: tokens.fontBody,
+        color: tokens.ink,
+      }}
     >
-      {/* Reading progress bar */}
+      <FontLoader />
+
+      {/* ── Reading progress bar ── */}
       <div
-        className="pub-progress"
         style={{
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          height: 3,
-          background: 'var(--line-2, #eee)',
+          height: 2,
+          background: tokens.outlineVariant,
         }}
       >
         <div
-          className="bar"
           style={{
             width: `${progress}%`,
             height: '100%',
-            background: 'var(--accent, #c8943a)',
+            background: tokens.gold,
             transition: 'width .1s linear',
           }}
         />
       </div>
 
-      {/* ── Hero Section ── */}
-      <div
+      {/* ── Cinematic Hero ── */}
+      <section
         style={{
           position: 'relative',
-          minHeight: 520,
+          height: '85vh',
+          minHeight: 480,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-end',
           overflow: 'hidden',
         }}
       >
-        {/* Hero background image */}
+        {/* Hero bg */}
         {post.cover?.src && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <img
@@ -262,154 +591,170 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
               alt=""
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
-            {/* Gradient overlay */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.72) 80%, rgba(0,0,0,0.85) 100%)',
-              }}
-            />
           </div>
         )}
+        {/* Gradient */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            background:
+              'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+          }}
+        />
 
-        {/* Hero text content */}
+        {/* Hero content */}
         <div
           style={{
             position: 'relative',
-            zIndex: 1,
-            padding: '60px 32px 40px',
-            maxWidth: 820,
+            zIndex: 2,
+            padding: '0 clamp(24px, 5vw, 80px) 48px',
+            maxWidth: 1600,
             margin: '0 auto',
             width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          {/* Categories */}
+          {/* Top: 12-col grid */}
           <div
             style={{
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-              marginBottom: 20,
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(12,1fr)',
+              gap: 24,
+              alignItems: 'flex-end',
             }}
           >
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '.18em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.7)',
-                background: 'rgba(255,255,255,0.12)',
-                padding: '4px 12px',
-                borderRadius: 999,
-                border: '1px solid rgba(255,255,255,0.2)',
-              }}
-            >
-              {post.categories[0] || 'Travel'}
-            </span>
-            {post.categories.slice(1).map((c) => (
-              <span
-                key={c}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.5)',
-                }}
-              >
-                · {c}
-              </span>
-            ))}
-          </div>
-
-          {/* Title */}
-          <h1
-            style={{
-              fontFamily: 'var(--font-display, Georgia, serif)',
-              fontSize: 'clamp(28px, 5vw, 52px)',
-              fontWeight: 600,
-              lineHeight: 1.12,
-              color: '#fff',
-              margin: '0 0 16px',
-              textShadow: '0 2px 16px rgba(0,0,0,0.3)',
-            }}
-          >
-            {post.title}
-          </h1>
-
-          {/* Subtitle */}
-          {post.subtitle && (
-            <p
-              style={{
-                fontSize: 'clamp(14px, 2vw, 18px)',
-                color: 'rgba(255,255,255,0.82)',
-                margin: '0 0 28px',
-                fontStyle: 'italic',
-                maxWidth: 600,
-                lineHeight: 1.5,
-              }}
-            >
-              {post.subtitle}
-            </p>
-          )}
-
-          {/* Author + meta row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                border: '2px solid rgba(255,255,255,0.4)',
-                display: 'grid',
-                placeItems: 'center',
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {!post.author.avatar && post.author.initials}
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{post.author.name}</div>
+            {/* Left: category + title */}
+            <div style={{ gridColumn: 'span 8' }}>
               <div
                 style={{
-                  fontSize: 11,
+                  ...label,
                   color: 'rgba(255,255,255,0.6)',
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
+                  marginBottom: 16,
                 }}
               >
-                {post.author.role}
+                {post.categories[0] || 'Travel'}
+              </div>
+              <h1
+                style={{
+                  fontFamily: tokens.fontDisplay,
+                  fontSize: 'clamp(28px, 5vw, 68px)',
+                  fontWeight: 400,
+                  lineHeight: 1.08,
+                  letterSpacing: '-0.02em',
+                  color: '#fff',
+                  margin: '0 0 0',
+                }}
+              >
+                {post.title}
+              </h1>
+            </div>
+
+            {/* Right: author chip + engagement */}
+            <div
+              style={{
+                gridColumn: 'span 4',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20,
+                alignItems: 'flex-end',
+              }}
+            >
+              {/* Author chip */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  background: 'rgba(0,0,0,0.45)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '12px 16px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    flexShrink: 0,
+                    background: 'rgba(255,255,255,0.1)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'grayscale(1)',
+                  }}
+                >
+                  {!post.author.avatar && post.author.initials}
+                </div>
+                <div style={{ color: '#fff', flex: 1 }}>
+                  <div style={{ ...label, fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>
+                    Curated by
+                  </div>
+                  <div style={{ fontFamily: tokens.fontBody, fontSize: 13, fontWeight: 600 }}>
+                    {post.author.name}
+                  </div>
+                </div>
+                <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.2)' }} />
+                <div style={{ color: '#fff', textAlign: 'right' }}>
+                  <div style={{ ...label, fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>
+                    Date
+                  </div>
+                  <div style={{ fontFamily: tokens.fontBody, fontSize: 13, fontWeight: 600 }}>
+                    {formattedDate}
+                  </div>
+                </div>
+              </div>
+
+              {/* Engagement row */}
+              <div style={{ display: 'flex', gap: 24, color: '#fff' }}>
+                {[
+                  { icon: '♥', label: 'LIKE' },
+                  { icon: '🔖', label: 'SAVE' },
+                  { icon: '↑', label: 'SHARE' },
+                ].map((btn) => (
+                  <button
+                    key={btn.label}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      ...label,
+                      fontSize: 10,
+                    }}
+                  >
+                    <span>{btn.icon}</span>
+                    <span>{btn.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{formattedDate}</div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{post.readingTime} min read</div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Optional cover caption */}
       {post.cover?.caption && (
         <div
           style={{
+            ...label,
             textAlign: 'center',
-            fontSize: 12,
-            color: 'var(--muted, #999)',
-            padding: '8px 24px',
-            fontStyle: 'italic',
-            borderBottom: '1px solid var(--line-2, #eee)',
+            padding: '10px 24px',
+            color: tokens.outline,
+            borderBottom: `1px solid ${tokens.outlineVariant}20`,
           }}
         >
           {post.cover.caption}
@@ -418,71 +763,51 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
 
       {/* ── Body ── */}
       <div
-        className="pub-body"
         style={{
           display: 'grid',
           gridTemplateColumns: hasToc ? '220px 1fr' : '1fr',
           gap: 48,
           maxWidth: 1060,
           margin: '0 auto',
-          padding: '48px 24px',
+          padding: '64px 24px 80px',
           alignItems: 'start',
+          boxSizing: 'border-box',
         }}
       >
         {/* Sidebar TOC */}
         {hasToc && (
           <aside
-            className="pub-toc"
             style={{
               position: 'sticky',
               top: 24,
-              background: 'var(--paper-2, #f9f6f1)',
-              border: '1px solid var(--line-2, #ece9e2)',
-              borderRadius: 14,
+              background: tokens.bgDim,
+              border: `1px solid ${tokens.outlineVariant}30`,
               padding: '20px 18px',
             }}
           >
-            <h6
-              style={{
-                fontSize: 10,
-                letterSpacing: '.16em',
-                textTransform: 'uppercase',
-                color: 'var(--muted, #999)',
-                margin: '0 0 14px',
-                fontWeight: 700,
-              }}
-            >
-              In this article
-            </h6>
-            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
+            <div style={{ ...label, marginBottom: 16 }}>In this article</div>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 2 }}>
               {numlistBlock?.items?.map((it: any, i: number) => (
                 <li
                   key={i}
                   onClick={() => scrollTo(i)}
                   style={{
+                    fontFamily: tokens.fontBody,
                     fontSize: 13,
-                    padding: '7px 10px',
-                    borderRadius: 8,
+                    padding: '8px 10px',
                     cursor: 'pointer',
                     fontWeight: i === activeToc ? 600 : 400,
-                    color:
-                      i === activeToc ? 'var(--accent, #c8943a)' : 'var(--ink-2, #555)',
-                    background:
-                      i === activeToc
-                        ? 'var(--accent-soft, rgba(200,148,58,0.08))'
-                        : 'transparent',
-                    borderLeft:
-                      i === activeToc
-                        ? '2px solid var(--accent, #c8943a)'
-                        : '2px solid transparent',
+                    color: i === activeToc ? tokens.ink : tokens.inkMuted,
+                    background: i === activeToc ? tokens.goldSoft : 'transparent',
+                    borderLeft: i === activeToc ? `2px solid ${tokens.gold}` : '2px solid transparent',
                     transition: 'all .15s',
                   }}
                 >
                   <span
                     style={{
-                      opacity: 0.5,
-                      fontSize: 11,
-                      marginRight: 6,
+                      opacity: 0.45,
+                      fontSize: 10,
+                      marginRight: 8,
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
@@ -496,18 +821,18 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
         )}
 
         {/* Main article */}
-        <article className="pub-content" style={{ minWidth: 0 }}>
-          {post.blocks.map((block) => (
-            <PubBlock key={block.id} block={block} />
+        <article style={{ minWidth: 0 }}>
+          {post.blocks.map((block, idx) => (
+            <PubBlock key={block.id} block={block} isFirst={idx === firstPIndex} />
           ))}
 
           {/* Tags */}
           {post.tags.length > 0 && (
             <div
               style={{
-                marginTop: 48,
+                marginTop: 56,
                 paddingTop: 24,
-                borderTop: '1px solid var(--line-2, #eee)',
+                borderTop: `1px solid ${tokens.outlineVariant}20`,
                 display: 'flex',
                 gap: 8,
                 flexWrap: 'wrap',
@@ -517,13 +842,13 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
                 <span
                   key={tag}
                   style={{
-                    fontSize: 12,
-                    padding: '5px 14px',
-                    borderRadius: 999,
-                    background: 'var(--paper-2, #f5f2ec)',
-                    color: 'var(--ink-2, #666)',
-                    border: '1px solid var(--line-2, #ece9e2)',
-                    letterSpacing: '.04em',
+                    ...label,
+                    fontSize: 10,
+                    padding: '6px 16px',
+                    border: `1px solid ${tokens.outlineVariant}`,
+                    color: tokens.outline,
+                    cursor: 'pointer',
+                    transition: 'all .15s',
                   }}
                 >
                   #{tag}
@@ -532,14 +857,70 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
             </div>
           )}
 
+          {/* Engagement strip */}
+          <div
+            style={{
+              marginTop: 32,
+              padding: '20px 0',
+              borderTop: `1px solid ${tokens.outlineVariant}20`,
+              borderBottom: `1px solid ${tokens.outlineVariant}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 16,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 24 }}>
+              {[
+                { icon: '♥', text: 'Like' },
+                { icon: '🔖', text: 'Save' },
+                { icon: '↑', text: 'Share' },
+              ].map((btn) => (
+                <button
+                  key={btn.text}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    ...label,
+                    fontSize: 10,
+                    color: tokens.outline,
+                  }}
+                >
+                  <span>{btn.icon}</span>
+                  <span>{btn.text}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 24 }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ ...label, fontSize: 9, color: tokens.outlineVariant, marginBottom: 2 }}>
+                  Series
+                </div>
+                <div style={{ fontFamily: tokens.fontBody, fontSize: 13, fontStyle: 'italic' }}>
+                  {post.categories[1] || post.categories[0] || '—'}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ ...label, fontSize: 9, color: tokens.outlineVariant, marginBottom: 2 }}>
+                  Reading time
+                </div>
+                <div style={{ fontFamily: tokens.fontBody, fontSize: 13 }}>{post.readingTime} min</div>
+              </div>
+            </div>
+          </div>
+
           {/* Author bio card */}
           <div
             style={{
               marginTop: 40,
-              padding: '24px 28px',
-              borderRadius: 16,
-              background: 'var(--paper-2, #f9f6f1)',
-              border: '1px solid var(--line-2, #ece9e2)',
+              padding: '28px 32px',
+              background: tokens.bgDim,
+              borderTop: `3px solid ${tokens.gold}`,
               display: 'flex',
               gap: 20,
               alignItems: 'flex-start',
@@ -547,41 +928,44 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
           >
             <div
               style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
+                width: 52,
+                height: 52,
                 flexShrink: 0,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                border: `1px solid ${tokens.outlineVariant}`,
+                background: tokens.bgContainer,
                 backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                backgroundColor: 'var(--line-2, #ddd)',
                 display: 'grid',
                 placeItems: 'center',
-                color: 'var(--ink, #333)',
-                fontSize: 16,
+                color: tokens.ink,
+                fontSize: 14,
                 fontWeight: 700,
-                border: '2px solid var(--line-2, #ddd)',
+                filter: 'grayscale(1)',
               }}
             >
               {!post.author.avatar && post.author.initials}
             </div>
             <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
-                  color: 'var(--muted, #999)',
-                  marginBottom: 4,
-                  fontWeight: 600,
-                }}
-              >
+              <div style={{ ...label, fontSize: 9, color: tokens.outlineVariant, marginBottom: 6 }}>
                 Written by
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink, #1a1a1a)', marginBottom: 2 }}>
+              <div
+                style={{
+                  fontFamily: tokens.fontDisplay,
+                  fontSize: 18,
+                  fontWeight: 400,
+                  color: tokens.ink,
+                  marginBottom: 2,
+                }}
+              >
                 {post.author.name}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--ink-2, #666)' }}>{post.author.role}</div>
+              <div style={{ fontFamily: tokens.fontBody, fontSize: 13, color: tokens.inkMuted }}>
+                {post.author.role}
+              </div>
             </div>
           </div>
         </article>

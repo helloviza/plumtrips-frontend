@@ -54,6 +54,13 @@ export default function BookingStep4Extras({
   const ssrData = ssrDataPerLeg?.[activeLeg] ?? null;
   const meals   = ssrData?.meals   ?? [];
   const baggage = ssrData?.baggage ?? [];
+  const activeAirline = legs[activeLeg]?.flight.airline ?? flight.airline ?? "this airline";
+  const mealsUnavailableMessage =
+    ssrData?.availability?.mealsMessage ??
+    `Meals are not available for this ${activeAirline} flight.`;
+  const baggageUnavailableMessage =
+    ssrData?.availability?.baggageMessage ??
+    `Extra baggage is not available for this ${activeAirline} flight.`;
 
   // ── Extras helpers ─────────────────────────────────────────
 
@@ -141,10 +148,10 @@ export default function BookingStep4Extras({
           <span className="text-lg shrink-0">ℹ️</span>
           <div>
             <p className="text-sm font-semibold text-amber-800 mb-0.5">
-              Meal & baggage options unavailable for this leg
+              Meals and extra baggage are not available for this {activeAirline} flight.
             </p>
             <p className="text-xs text-amber-600">
-              Extras for this leg can be added via the airline after booking.
+              The airline did not provide add-on options for this flight.
             </p>
           </div>
         </div>
@@ -231,8 +238,8 @@ export default function BookingStep4Extras({
                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <span className="text-slate-300 text-xl">🍽️</span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">No meal options available</p>
-                    <p className="text-xs text-slate-400">Meals can be pre-ordered via the airline after booking.</p>
+                    <p className="text-sm font-semibold text-slate-500">{mealsUnavailableMessage}</p>
+                    <p className="text-xs text-slate-400">The airline did not provide meal options for this flight.</p>
                   </div>
                 </div>
               )}
@@ -279,8 +286,8 @@ export default function BookingStep4Extras({
                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <span className="text-slate-300 text-xl">🧳</span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">No extra baggage options available</p>
-                    <p className="text-xs text-slate-400">Additional baggage can be added via the airline after booking.</p>
+                    <p className="text-sm font-semibold text-slate-500">{baggageUnavailableMessage}</p>
+                    <p className="text-xs text-slate-400">The airline did not provide extra baggage options for this flight.</p>
                   </div>
                 </div>
               )}

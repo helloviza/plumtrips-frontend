@@ -176,7 +176,7 @@ export default function DatePicker({
           {!isBar && <Calendar className="h-5 w-5 shrink-0 text-gray-400" />}
           {selected ? (
             isBar ? (
-              <span className="truncate text-base font-semibold text-[#003580]">
+              <span className="truncate text-[15px] font-black text-[#0d2d5e]">
                 {formatDateSearchBar(selected)}
               </span>
             ) : (

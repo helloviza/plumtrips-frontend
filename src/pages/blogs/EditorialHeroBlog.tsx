@@ -88,6 +88,7 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
     const [dbBlogs, setDbBlogs] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
 
     useEffect(() => {
@@ -111,7 +112,7 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
   const [activeCategory, setActiveCategory] = React.useState('ALL STORIES');
 
   const featuredBlog = dbBlogs[2] ?? null;
-  const remainingBlogs = dbBlogs.slice(1);
+  const remainingBlogs = dbBlogs;
 
   // Use passed-in stories if provided, otherwise fall back to hardcoded STORIES
   // const displayStories: StoryItem[] = stories?.length ? stories : STORIES;
@@ -169,63 +170,59 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
 
       {/* ── Latest Stories ──────────────────────────────────── */}
       <section className="latest-stories">
-        <div className="section-header">
-          <h2 className="section-header__title">LATEST STORIES</h2>
-          <a href="#" className="section-header__link">VIEW ALL</a>
-        </div>
+<div className="section-header">
+  <h2 className="section-header__title">LATEST STORIES</h2>
+  <button
+    className="section-header__link"
+    onClick={() => setShowAll((prev) => !prev)}
+    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+  >
+    {showAll ? 'SHOW LESS' : 'VIEW ALL'}
+  </button>
+</div>
 
-        <div className="stories-carousel-wrap">
-          <div ref={scrollRef} className="stories-carousel scrollbar-hide">
-            {remainingBlogs.map((story) => (
-              <article key={story.id} className="story-card">
-                <div className="story-card__image">
-                  <img src={resolveCover(story.cover)} alt={story.title} />
-                </div>
-                {/* <div className="story-card__category">{story.category}</div> */}
-                <h3 className="story-card__title">{story.title}</h3>
-                {/* <p className="story-card__excerpt">{story.excerpt}</p>
-                <div className="story-card__meta">
-                  <span>{story.createdAt}</span>
-                  <span className="story-card__meta-dot" />
-                  <span>{story.readingTime} MIN READ</span>
-                </div> */}
-                <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
-                  Read More
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </a>
-              </article>
-            ))}
-          </div>
-
-          <button className="carousel-arrow carousel-arrow--prev" onClick={() => scroll('prev')} aria-label="Previous">
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          <button className="carousel-arrow carousel-arrow--next" onClick={() => scroll('next')} aria-label="Next">
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
+{showAll ? (
+  /* ── Expanded grid: all blogs ── */
+  <div className="stories-all-grid">
+    {remainingBlogs.map((story) => (
+      <article key={story.id} className="story-card">
+        <div className="story-card__image">
+          <img src={resolveCover(story.cover)} alt={story.title} />
         </div>
-      </section>
-
-      {/* ── Trending + Browse by Destination ────────────────── */}
-      <section className="trending-grid">
-        {/* Trending sidebar */}
-        <div>
-          <div className="trending__label">
-            <div className="trending__label-line" />
-            <span>TRENDING NOW</span>
+        <h3 className="story-card__title">{story.title}</h3>
+        <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
+          Read More
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </a>
+      </article>
+    ))}
+  </div>
+) : (
+  /* ── Carousel: original ── */
+  <div className="stories-carousel-wrap">
+    <div ref={scrollRef} className="stories-carousel scrollbar-hide">
+      {remainingBlogs.map((story) => (
+        <article key={story.id} className="story-card">
+          <div className="story-card__image">
+            <img src={resolveCover(story.cover)} alt={story.title} />
           </div>
-          <div className="trending__list">
-            {TRENDING.map((item) => (
-              <div key={item.num} className="trending-item">
-                <span className="trending-item__number">{item.num}</span>
-                <div>
-                  <div className="trending-item__title">{item.title}</div>
-                  <div className="trending-item__sub">{item.sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+          <h3 className="story-card__title">{story.title}</h3>
+          <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
+            Read More
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </a>
+        </article>
+      ))}
+    </div>
+    <button className="carousel-arrow carousel-arrow--prev" onClick={() => scroll('prev')} aria-label="Previous">
+      <span className="material-symbols-outlined">chevron_left</span>
+    </button>
+    <button className="carousel-arrow carousel-arrow--next" onClick={() => scroll('next')} aria-label="Next">
+      <span className="material-symbols-outlined">chevron_right</span>
+    </button>
+  </div>
+)}
+        
 
         {/* Browse box */}
         <div className="browse-box">

@@ -325,9 +325,9 @@ export default function HotelsSearchForm() {
   };
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", position: "relative", zIndex: 50 }}>
       {/* Main glass card */}
-      <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", ...glassBg }}>
+      <div style={{ position: "relative", borderRadius: 18, ...glassBg }}>
         {/* Top glass sheen */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1.5, zIndex: 3, background: "linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.55) 50%, rgba(255,255,255,0.04))", pointerEvents: "none" }} />
 
@@ -343,6 +343,7 @@ export default function HotelsSearchForm() {
             <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 9, fontWeight: 600, color: C.slate, textTransform: "uppercase", letterSpacing: "0.10em", marginBottom: 5 }}>DESTINATION</div>
             <LocationAutocomplete
               variant="bar"
+              theme="dark"
               value={location}
               error={errors.location}
               placeholder="City, area or property"
@@ -384,16 +385,15 @@ export default function HotelsSearchForm() {
           <FieldCol label="GUESTS & ROOMS" bordered>
             <GuestsRoomsSelector
               variant="bar"
+              theme="dark"
               rooms={rooms}
               adults={adults}
               children={children}
               childrenAges={searchParams.childrenAges ?? []}
-              roomGuests={searchParams.roomGuests}
               onRoomsChange={(r) => setSearchParams({ rooms: r })}
               onAdultsChange={(a) => setSearchParams({ adults: a })}
               onChildrenChange={(c) => setSearchParams({ children: c })}
               onChildrenAgesChange={(ages) => setSearchParams({ childrenAges: ages })}
-              onRoomGuestsChange={(configs) => setSearchParams({ roomGuests: configs })}
             />
           </FieldCol>
         </div>

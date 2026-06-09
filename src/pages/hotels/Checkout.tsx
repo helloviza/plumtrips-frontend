@@ -27,7 +27,7 @@ export default function Checkout() {
     setBookingId, user, preBookResponse, sessionExpired,
     paymentSubmitted, setPaymentSubmitted, traceId,
     setCurrentStep, setPreBookResponse, setBookingCode,
-    setConfirmationNo,
+    setConfirmationNo, setPnr,
   } = useHotelStore();
 
   const [promoInput, setPromoInput] = useState('');
@@ -224,6 +224,16 @@ export default function Checkout() {
           email: user.email || 'guest@plumtrips.com',
           mobile: user.mobile || '9999999999',
         },
+        hotelId: selectedHotel?.id,
+        hotelName: selectedHotel?.name,
+        location: selectedHotel?.location,
+        checkIn: searchParams.checkIn,
+        checkOut: searchParams.checkOut,
+        priceDetails: {
+          total: totalPrice,
+          taxes: confirmedTaxes,
+          additionalCharges: addOnsTotal
+        },
         isPackageFare: (preBookResponse as { isPackageFare?: boolean }).isPackageFare,
         isPackageDetailsMandatory: (preBookResponse as { isPackageDetailsMandatory?: boolean })
           .isPackageDetailsMandatory,
@@ -233,6 +243,7 @@ export default function Checkout() {
         (result as { BookResult?: Record<string, unknown> }).BookResult ??
         (result as unknown as Record<string, unknown>);
       const bookingId = String(inner?.BookingId ?? inner?.bookingId ?? '');
+      const pnr = String(inner?.pnr ?? '');
       const confirmationNo = String(
         inner?.ConfirmationNo ?? inner?.confirmationNo ??
         inner?.BookingRefNo ?? inner?.bookingRefNo ?? bookingId
@@ -247,6 +258,7 @@ export default function Checkout() {
         if (fallbackConfNo) {
           setBookingId(String(fallbackConfNo));
           setConfirmationNo(String(fallbackConfNo));
+          if (pnr) setPnr(pnr);
           setCurrentStep('confirmed');
           toast.dismiss(confirmToast);
           navigate('/hotels/confirmation');
@@ -261,6 +273,7 @@ export default function Checkout() {
 
       setBookingId(bookingId);
       setConfirmationNo(confirmationNo);
+      if (pnr) setPnr(pnr);
       setCurrentStep('confirmed');
 
       try {

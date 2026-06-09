@@ -120,6 +120,7 @@ function normHotel(
     distance: '',
     images: buildImages(staticDetail),
     amenities: buildAmenities(staticDetail),
+    description: staticDetail?.Description || staticDetail?.HotelDescription || cityHotel?.Description || `Experience a wonderful stay at ${cityHotel?.HotelName || 'our property'}, offering exceptional service and comfort in the heart of the city.`,
     rating: 0,
     reviewCount: 0,
     price,
@@ -224,12 +225,43 @@ function normRoom(raw: any, index: number): Room {
   const originalPrice =
     published > 0 && published > price + taxes ? Math.round(published) : undefined;
 
+  if (amenities.length === 0 && mealPlanLabel) {
+    amenities.push(mealPlanLabel);
+  }
+  if (amenities.length === 0 && isRefundable) {
+    amenities.push('Free Cancellation');
+  }
+
+  let additionalCharges = parseInt(String(raw.additionalCharges || raw.AdditionalCharges || 0));
+  if (isNaN(additionalCharges)) additionalCharges = 0;
+  
+  if (!additionalCharges && Array.isArray(raw.Supplements)) {
+    const flatSupplements = raw.Supplements.flat(Infinity);
+    additionalCharges = flatSupplements.reduce((sum: number, supp: any) => {
+      if (
+        supp &&
+        (supp.Type === 'Mandatory' ||
+        supp.Type === 'AtProperty' ||
+        supp.ChargeType === 'AtProperty' ||
+        (supp.Description && supp.Description.toLowerCase().includes('mandatory')))
+      ) {
+        return sum + (parseInt(String(supp.Price || supp.Amount || 0)) || 0);
+      }
+      return sum;
+    }, 0);
+  }
+  if (!additionalCharges && Array.isArray(raw.MandatoryTaxes)) {
+    additionalCharges = raw.MandatoryTaxes.reduce((sum: number, tax: any) => sum + parseInt(String(tax.Amount || tax.Price || 0)), 0);
+  }
+
+  const roomImages = Array.isArray(raw.Images) ? raw.Images : Array.isArray(raw.images) ? raw.images : raw.RoomPicture ? [raw.RoomPicture] : raw.Picture ? [raw.Picture] : [];
+
   return {
     id: String(raw.BookingCode ?? index),
     name: roomName,
     type: roomName,
     bedType: extractBedType(roomName),
-    occupancy,
+    occupancy: '',
     size,
     view,
     breakfast: hasBreakfast,
@@ -240,17 +272,20 @@ function normRoom(raw: any, index: number): Room {
     price,
     originalPrice,
     taxesAndFees: taxes,
-    additionalCharges: Number(raw.additionalCharges || raw.AdditionalCharges || 0),
+    additionalCharges,
     quantity: 1,
+    images: roomImages,
     roomSubtitle: roomSubtitle || undefined,
     mealPlanLabel: mealPlanLabel || undefined,
     _bookingCode: String(raw.BookingCode ?? ''),
     _mealType: mealType,
     _isRefundable: isRefundable,
+    _raw: raw,
   } as Room & {
     _bookingCode: string;
     _mealType: string;
     _isRefundable: boolean;
+    _raw: any;
   };
 }
 

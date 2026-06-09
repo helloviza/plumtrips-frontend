@@ -404,20 +404,20 @@ export default function GuestDetails() {
                     )}
                   </div>
                 )}
-                {/* PAN field — only shown for lead guest on international bookings for Indian nationals */}
-                {isInternational && watch(`guests.${idx}.leadGuest`) && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">PAN Number *</label>
-                    <input
-                      {...register(`guests.${idx}.pan`)}
-                      type="text" maxLength={10} placeholder="ABCDE1234F"
-                      className="w-full uppercase rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#003580] focus:outline-none"
-                    />
-                    {errors.guests?.[idx]?.pan && (
-                      <p className="mt-1 text-xs text-red-500">{errors.guests[idx]?.pan?.message}</p>
-                    )}
-                  </div>
-                )}
+                  {/* PAN field - only shown for lead guest on international bookings for Indian nationals */}
+                  {isInternational && idx === 0 && (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-600">PAN Number *</label>
+                      <input
+                        {...register(`guests.${idx}.pan` as const)}
+                        type="text" maxLength={10} placeholder="ABCDE1234F"
+                        className="w-full uppercase rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-[#003580] focus:outline-none"
+                      />
+                      {errors.guests?.[idx]?.pan && (
+                        <p className="mt-1 text-xs text-red-500">{errors.guests[idx]?.pan?.message}</p>
+                      )}
+                    </div>
+                  )}
               </div>
             </div>
           ))}

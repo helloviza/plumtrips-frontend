@@ -336,7 +336,12 @@ export default function BookingStep3Seats({
           premiumPrice={premiumPrice}
         />
       ) : (
-        <UnavailableState />
+        <UnavailableState
+          message={
+            activeLegSSR?.availability?.seatMapMessage ??
+            `Seat map is not available for this ${legs[activeLeg]?.flight.airline ?? "airline"} flight.`
+          }
+        />
       )}
 
       {/* ── Selection summary ───────────────────────────────── */}
@@ -665,12 +670,12 @@ function LoadingState() {
   );
 }
 
-function UnavailableState() {
+function UnavailableState({ message }: { message: string }) {
   return (
     <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-8 text-center mb-4">
       <div className="text-3xl mb-3">✈️</div>
       <p className="text-sm font-medium text-slate-600 mb-1">
-        Seat map not available for this flight
+        {message}
       </p>
       <p className="text-xs text-slate-400">
         You can choose your seat at check-in, usually 24–48 hours before departure.

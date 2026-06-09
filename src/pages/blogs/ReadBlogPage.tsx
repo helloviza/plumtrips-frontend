@@ -7,7 +7,7 @@ import { getBlog } from "../../lib/api";
 import type { Post } from "../../lib/api";
 
 export default function ReadBlogPage() {
-  const { id } = useParams(); 
+  const { id } = useParams();
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,11 +36,45 @@ export default function ReadBlogPage() {
   }, [id]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "grid",
+          placeItems: "center",
+          fontFamily: "'Manrope', system-ui, sans-serif",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          color: "#747878",
+          background: "#fbf9f8",
+        }}
+      >
+        Loading…
+      </div>
+    );
   }
 
   if (error || !post) {
-    return <div>{error || "Blog not found"}</div>;
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "grid",
+          placeItems: "center",
+          fontFamily: "'Manrope', system-ui, sans-serif",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          color: "#747878",
+          background: "#fbf9f8",
+        }}
+      >
+        {error || "Blog not found"}
+      </div>
+    );
   }
 
   return <ReadBlog post={post} />;

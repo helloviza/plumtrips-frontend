@@ -35,7 +35,12 @@ export default function BookingStep7Confirmation({
     ...(isMultiCity ? (multiCityLegs ?? []).slice(1).map((l, i) => ({ flight: l.flight, label: `Leg ${i + 2}` })) : []),
   ];
 
-  const pnrList = pnr ? pnr.split(", ") : [];
+  const pnrList = pnr
+    ? pnr
+        .split(/\s*(?:,|\/)\s*/g)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">

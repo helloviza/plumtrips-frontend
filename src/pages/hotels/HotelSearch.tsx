@@ -20,6 +20,7 @@ export default function HotelSearch() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!searchParams.location.trim()) e.location = 'Please enter a destination';
+    else if (!searchParams.locationId) e.location = 'Please select a valid city or hotel from the dropdown list';
     if (!searchParams.checkIn) e.checkIn = 'Select check-in date';
     if (!searchParams.checkOut) e.checkOut = 'Select check-out date';
     if (searchParams.checkIn && searchParams.checkOut) {

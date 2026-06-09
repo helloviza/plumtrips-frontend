@@ -30,6 +30,7 @@ export interface Room {
   cancellationPolicy: string;
   cancellationDate?: string;
   amenities: string[];
+  images?: string[];
   price: number;
   originalPrice?: number;
   taxesAndFees: number;
@@ -55,6 +56,7 @@ export interface Hotel {
   distance: string;
   images: string[];
   amenities: string[];
+  description?: string;
   rating: number;
   reviewCount: number;
   price: number;
@@ -63,8 +65,9 @@ export interface Hotel {
   ixigoAssured: boolean;
   payAtHotel: boolean;
   propertyType: string;
-  checkInTime: string;
-  checkOutTime: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  isInternational?: boolean;
   policies: {
     ageRestriction?: string;
     idProof: string[];
@@ -199,7 +202,9 @@ interface HotelBookingState {
   setPreBookResponse: (res: PreBookResponse | null) => void;
 
   bookingId: string | null;
+  pnr: string | null;
   setBookingId: (id: string) => void;
+  setPnr: (pnr: string) => void;
 
   // Raw search results map (HotelCode → raw result) for prebook/book
   searchResultsMap: Record<string, any>;
@@ -302,6 +307,7 @@ export const useHotelStore = create<HotelBookingState>()(
       bookingCode: null,
       preBookResponse: null,
       bookingId: null,
+      pnr: null,
       searchResultsMap: {},
       confirmationNo: null,
       bookingDetail: null,
@@ -312,8 +318,8 @@ export const useHotelStore = create<HotelBookingState>()(
       promoCode: '',
       promoDiscount: 0,
       viewMode: 'list',
-      sortBy: 'cheapest',
-      sortDirection: 'asc',
+      sortBy: 'rating',
+      sortDirection: 'desc',
 
       setSearchParams: (params) =>
         set((s) => ({ searchParams: { ...s.searchParams, ...params } })),
@@ -375,6 +381,7 @@ export const useHotelStore = create<HotelBookingState>()(
       setBookingCode: (code) => set({ bookingCode: code }),
       setPreBookResponse: (res) => set({ preBookResponse: res }),
       setBookingId: (id) => set({ bookingId: id }),
+      setPnr: (pnr) => set({ pnr }),
       setSearchResultsMap: (map) => set({ searchResultsMap: map }),
       setConfirmationNo: (no) => set({ confirmationNo: no }),
       setBookingDetail: (detail) => set({ bookingDetail: detail }),
@@ -401,6 +408,7 @@ export const useHotelStore = create<HotelBookingState>()(
           guests: [],
           addOns: defaultAddOns,
           bookingId: null,
+          pnr: null,
           traceId: null,
           traceIdIssuedAt: null,
           bookingCode: null,
@@ -461,3 +469,4 @@ export const useHotelStore = create<HotelBookingState>()(
     }
   )
 );
+

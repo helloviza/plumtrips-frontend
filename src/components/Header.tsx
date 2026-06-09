@@ -149,7 +149,8 @@ export default function Header() {
           pb-4 creates the transparent gap between this bar and the nav pill below.
           The outer wrapper is transparent so this padding shows the page through.
         */}
-        <div className="hidden md:flex items-center justify-between px-8 py-2 pb-4 bg-[#060c18] text-[11px] font-medium text-white/70">
+        {/* ── TOP UTILITY BAR ── */}
+        <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[11px] font-medium text-white/70">
           <div className="flex gap-8">
             <button className="flex items-center gap-2 hover:text-white transition-colors">
               <span className="opacity-70">📞</span> 24/7 Support
@@ -167,19 +168,19 @@ export default function Header() {
     <span>India (INR)</span>
     <span className="text-[9px] opacity-60">▼</span>
   </button>
-
+{/* 
   <button className="flex items-center gap-2 hover:text-white transition-colors">
     <Smartphone size={16} />
     <span>70659 32396</span>
-  </button>
+  </button> */}
 </div>
         </div>
 
-        {/* ── MAIN NAV WRAPPER ── */}
+{/* ── MAIN NAV WRAPPER ── */}
         <div
           className={`w-full transition-all duration-300 ease-in-out ${
             isFloating
-              ? "bg-transparent px-4 md:px-6"
+              ? "bg-transparent px-4 md:px-6 pt-4" // <-- Added pt-4 here for the transparent gap
               : "bg-[#0b1528] shadow-[0_4px_20px_rgba(0,0,0,0.15)] border-b border-white/5"
           }`}
         >

@@ -213,9 +213,21 @@ export interface BookParams {
   contact: { email: string; mobile: string };
   isPackageFare?: boolean;
   isPackageDetailsMandatory?: boolean;
+  hotelId?: string;
+  hotelName?: string;
+  location?: string;
+  checkIn?: string;
+  checkOut?: string;
+  priceDetails?: {
+    total: number;
+    taxes: number;
+    additionalCharges?: number;
+  };
+  roomDetails?: any[];
 }
 
 export interface BookResult {
+  pnr?: string;
   BookingId: string;
   ConfirmationNo: string;
   HotelBookingStatus: string;
@@ -379,6 +391,13 @@ export async function bookHotel(params: BookParams): Promise<BookResult> {
     children: params.children ?? 0,
     guests: params.guests,
     contact: params.contact,
+    hotelId: params.hotelId,
+    hotelName: params.hotelName,
+    location: params.location,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    priceDetails: params.priceDetails,
+    roomDetails: params.roomDetails,
   };
   if (params.isPackageFare !== undefined) body.isPackageFare = params.isPackageFare;
   if (params.isPackageDetailsMandatory !== undefined) {
@@ -413,5 +432,11 @@ export async function cancelHotelBooking(
     bookingId,
     requestType,
   });
+  return res?.data;
+}
+
+
+export async function getHotelBookingByPnr(pnr: string): Promise<any> {
+  const res = await get<any>(`/api/v1/hotels/booking/${pnr}`);
   return res?.data;
 }

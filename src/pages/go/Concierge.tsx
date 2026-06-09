@@ -3,14 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
+import { Phone, MessageCircle, Mail, MapPin, Calendar, Users, DollarSign, PenTool, CheckCircle2 } from "lucide-react";
 
 /** Brand palette */
-const PRIMARY = "#0b2235";
-const ACCENT = "#c7a56b";
-const ACCENT_SOFT = "rgba(199,165,107,0.15)";
+const PRIMARY = "#00477f";
+const ACCENT = "#d06549";
+const ACCENT_SOFT = "rgba(208, 101, 73, 0.1)";
 
-/** Hero image (place next to this file as concierge-hero.jpg) */
-const hero = new URL("./concierge-hero.jpg", import.meta.url).href;
+/** Hero image (matches the offers section) */
+const hero = "/assets/offers/offers123.jpeg";
 
 /** Contact details */
 const DESK_EMAIL = "concierge@Plumtrips.com";
@@ -125,92 +126,76 @@ export default function Concierge() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-black">
+    <div className="min-h-screen bg-slate-50 font-sans">
       {/* HERO */}
-      <header className="relative">
-        <div className="relative h-[360px] md:h-[520px] w-full overflow-hidden">
+      <header className="relative text-white py-24 md:py-32 px-6 overflow-hidden">
+        <div className="absolute inset-0">
           <img
             src={hero}
             alt="Concierge hero"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover transform scale-105 transition-transform duration-1000"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,0,0,0.35),rgba(0,0,0,0.65))]" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.5) 60%, rgba(11,34,53,0.95))",
-            }}
-          />
-          <div className="absolute inset-x-0 bottom-0">
-            <div className="mx-auto max-w-5xl px-4 pb-8 md:pb-10">
-              <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 md:p-8 shadow-2xl">
-                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
-                  Plumtrips Concierge
-                </h1>
-                <p className="mt-3 max-w-2xl text-white/90">
-                  Seamless, bespoke journeys - villa keys, overwater mornings, private
-                  transfers, and hidden-gem experiences curated to your taste.
-                </p>
+          {/* Heavy gradient mask to guarantee text readability against bright photos */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-slate-900/60" />
+        </div>
+        
+        <div className="relative z-10 mx-auto max-w-7xl text-center animate-fade-in-up">
+          <div className="max-w-3xl mx-auto">
+             <div className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold tracking-wider text-orange-200 bg-orange-500/20 rounded-full border border-orange-400/30 backdrop-blur-md uppercase">
+              Bespoke Journeys
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight drop-shadow-2xl">
+              Plumtrips <span className="text-orange-400 drop-shadow-xl">Concierge</span>
+            </h1>
+            <p className="mt-6 text-lg md:text-xl text-white leading-relaxed font-medium drop-shadow-xl max-w-2xl mx-auto">
+              Seamless, bespoke journeys - villa keys, overwater mornings, private transfers, and hidden-gem experiences curated to your taste.
+            </p>
 
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[13px]">
-                  <a
-                    href={`tel:${PHONE_DISPLAY.replace(/\s+/g, "")}`}
-                    className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
-                    title="Call us"
-                  >
-                    {PHONE_DISPLAY}
-                  </a>
-                  <a
-                    href={`https://wa.me/${WHATSAPP_E164}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/15"
-                    title="Chat on WhatsApp"
-                  >
-                     WhatsApp
-                  </a>
+            <div className="mt-8 flex flex-wrap justify-center items-center gap-4 text-sm font-medium">
+              <a
+                href={`tel:${PHONE_DISPLAY.replace(/\s+/g, "")}`}
+                className="inline-flex items-center gap-2 rounded-full bg-white text-slate-800 px-6 py-2.5 hover:bg-slate-100 transition-all shadow-lg hover:shadow-xl"
+                title="Call us"
+              >
+                <Phone size={16} className="text-[#00477f]" />
+                {PHONE_DISPLAY}
+              </a>
+              <a
+                href={`https://wa.me/${WHATSAPP_E164}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-[#25D366] text-white px-6 py-2.5 hover:bg-[#20bd5a] transition-all shadow-lg hover:shadow-xl"
+                title="Chat on WhatsApp"
+              >
+                <MessageCircle size={16} />
+                 WhatsApp
+              </a>
 
-                  {fromSlug ? (
-                    <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                      style={{ backgroundColor: ACCENT_SOFT, color: ACCENT }}
-                      title="Source page"
-                    >
-                      From: {fromSlug}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
+              {fromSlug ? (
+                <span
+                  className="inline-flex items-center rounded-full px-4 py-2.5 text-sm font-semibold border border-orange-200"
+                  style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "#fff" }}
+                  title="Source page"
+                >
+                  From: {fromSlug}
+                </span>
+              ) : null}
             </div>
           </div>
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[1px]"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(199,165,107,0.75), transparent)",
-            }}
-          />
         </div>
       </header>
 
       {/* FORM + SIDECARD */}
-      <main
-        className="mx-auto max-w-5xl px-4 py-10 md:py-14"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(11,34,53,1) 0%, rgba(12,26,39,1) 40%, rgba(8,17,26,1) 100%)",
-        }}
-      >
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <main className="mx-auto max-w-7xl px-6 py-12 md:py-16 -mt-8 relative z-20">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <form
             onSubmit={onSubmit}
-            className="md:col-span-2 rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 md:p-8 shadow-2xl"
+            className="lg:col-span-2 rounded-3xl bg-white p-8 md:p-10 shadow-xl border border-slate-100"
           >
             <SectionTitle title="Tell us about your trip" subtitle="We'll take it from here." />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <Field label="Your name *">
                 <input
                   className="lux-input"
@@ -240,43 +225,55 @@ export default function Concierge() {
                 />
               </Field>
               <Field label="Destination(s)">
-                <input
-                  className="lux-input"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  placeholder="Maldives, Bali, Greece"
-                />
+                <div className="relative">
+                  <input
+                    className="lux-input !pl-10"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    placeholder="Maldives, Bali, Greece"
+                  />
+                  <MapPin size={18} className="absolute left-3 top-3 text-slate-400" />
+                </div>
               </Field>
 
               <Field label="Dates / Flex">
-                <input
-                  className="lux-input"
-                  value={dates}
-                  onChange={(e) => setDates(e.target.value)}
-                  placeholder="Oct 10-18 (flex±2)"
-                />
+                <div className="relative">
+                  <input
+                    className="lux-input !pl-10"
+                    value={dates}
+                    onChange={(e) => setDates(e.target.value)}
+                    placeholder="Oct 10-18 (flex±2)"
+                  />
+                  <Calendar size={18} className="absolute left-3 top-3 text-slate-400" />
+                </div>
               </Field>
               <Field label="Budget (total or per night)">
-                <input
-                  className="lux-input"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="3000 INR per night or 20,000 INR total"
-                />
+                <div className="relative">
+                  <input
+                    className="lux-input !pl-10"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder="3000 INR / night or 20,000 INR total"
+                  />
+                  <DollarSign size={18} className="absolute left-3 top-3 text-slate-400" />
+                </div>
               </Field>
 
               <Field label="Travellers">
-                <input
-                  className="lux-input"
-                  value={travellers}
-                  onChange={(e) => setTravellers(e.target.value)}
-                  placeholder="2 adults, 1 child"
-                />
+                <div className="relative">
+                  <input
+                    className="lux-input !pl-10"
+                    value={travellers}
+                    onChange={(e) => setTravellers(e.target.value)}
+                    placeholder="2 adults, 1 child"
+                  />
+                  <Users size={18} className="absolute left-3 top-3 text-slate-400" />
+                </div>
               </Field>
             </div>
 
-            <div className="mt-6">
-              <label className="block text-sm font-semibold text-white/90">Travel style</label>
+            <div className="mt-8">
+              <label className="block text-sm font-semibold text-slate-700">Travel style</label>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Chip label="Luxury" active={styles.luxury} onClick={() => toggleStyle("luxury")} />
                 <Chip label="Beach" active={styles.beach} onClick={() => toggleStyle("beach")} />
@@ -287,23 +284,25 @@ export default function Concierge() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <label className="block text-sm font-semibold text-white/90">Notes</label>
-              <textarea
-                className="lux-input h-32 resize-y"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Tell us about the trip you have in mindâ€¦"
-              />
+            <div className="mt-8">
+              <label className="block text-sm font-semibold text-slate-700">Notes</label>
+              <div className="relative mt-2">
+                <textarea
+                  className="lux-input h-32 resize-y !pl-10 pt-3"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tell us about the trip you have in mind..."
+                />
+                <PenTool size={18} className="absolute left-3 top-3.5 text-slate-400" />
+              </div>
             </div>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <button
                 type="submit"
-                className="lux-btn"
-                style={{ background: "linear-gradient(90deg, #b89054, #d8b97d, #b89054)" }}
+                className="lux-btn bg-[#00477f] text-white hover:bg-[#003865]"
               >
-               Send via Email
+               <Mail size={18} /> Send via Email
               </button>
 
               <a
@@ -312,94 +311,75 @@ export default function Concierge() {
                 rel="noreferrer"
                 className="lux-btn-outline"
               >
-                WhatsApp Us
-              </a>
-
-              <a href="/support" className="lux-btn-plain">
-                Need help? Support
+                <MessageCircle size={18} /> WhatsApp Us
               </a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3 text-[12px] text-white/70">
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">Private transfers</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">Handpicked stays</span>
-              <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1">24/7 assistance</span>
+            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500"/> Private transfers</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500"/> Handpicked stays</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500"/> 24/7 assistance</span>
             </div>
           </form>
 
-          <aside className="md:col-span-1">
-            <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
+          <aside className="lg:col-span-1 h-fit sticky top-24">
+            <div className="rounded-3xl bg-white p-8 shadow-xl border border-slate-100">
               <SectionTitle title="What you get" subtitle="Beyond bookings." />
-              <ul className="mt-4 space-y-3 text-white/85">
+              <ul className="mt-6 space-y-4 text-slate-600 text-sm">
                 <li className="flex gap-3"><Dot />Ultra-curated stays (suites, overwater, cliff-edge).</li>
                 <li className="flex gap-3"><Dot />Seamless routing & private transfers.</li>
                 <li className="flex gap-3"><Dot />Tables, spa slots, yachts & guides secured.</li>
                 <li className="flex gap-3"><Dot />Ethical, small-scale experiences that feel special.</li>
               </ul>
 
-              <div className="mt-8 rounded-xl border border-white/15 bg-linear-to-br from-white/10 to-white/5 p-4">
-                <h4 className="text-white font-semibold">Timing tip</h4>
-                <p className="mt-1 text-sm text-white/80">
-                  For peak dates & wow suites, 6-10 weeks ahead is the real sweet spot.
+              <div className="mt-8 rounded-2xl bg-orange-50 border border-orange-100 p-5">
+                <h4 className="text-[#00477f] font-bold text-sm">Timing tip</h4>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  For peak dates & wow suites, <span className="font-semibold text-slate-800">6-10 weeks ahead</span> is the real sweet spot.
                 </p>
               </div>
 
-              <div
-                className="mt-8 h-px w-full"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(199,165,107,.7), transparent)" }}
-              />
+              <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-              <p className="mt-8 text-xs text-white/60">
+              <p className="mt-6 text-xs text-slate-400 text-center leading-relaxed">
                 By submitting, you agree that we may contact you about this request. No spam - ever.
               </p>
             </div>
           </aside>
         </div>
-
-        <div
-          className="mt-10 h-24 w-full rounded-b-4xl blur-2xl"
-          style={{ background: "radial-gradient(60% 60% at 50% 0%, rgba(199,165,107,0.25), transparent 70%)" }}
-        />
       </main>
 
       <style>{`
         .lux-input {
           width: 100%;
-          color: #eef3f8;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 14px;
-          padding: 0.8rem 0.95rem;
+          color: #1e293b;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 0.75rem 1rem;
           outline: none;
-          transition: box-shadow 160ms, border-color 160ms, background 160ms;
+          transition: all 200ms ease;
+          font-size: 0.95rem;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .lux-input::placeholder { color: rgba(255,255,255,0.5); }
+        .lux-input::placeholder { color: #94a3b8; }
         .lux-input:focus {
           border-color: ${ACCENT};
-          box-shadow: 0 0 0 4px ${ACCENT_SOFT};
-          background: rgba(255,255,255,0.08);
+          box-shadow: 0 0 0 3px ${ACCENT_SOFT};
         }
         .lux-btn {
-          display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-          color: ${PRIMARY}; font-weight: 700; padding: .9rem 1.2rem; border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.15);
-          box-shadow: 0 12px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3);
-          transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+          display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+          font-weight: 600; padding: 0.8rem 1.5rem; border-radius: 999px;
+          transition: all 200ms ease;
+          box-shadow: 0 4px 12px rgba(0, 71, 127, 0.2);
         }
-        .lux-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .lux-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 71, 127, 0.3); }
         .lux-btn-outline {
-          display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-          padding: .9rem 1.2rem; border-radius: 999px; color: ${ACCENT}; border: 1px solid ${ACCENT};
-          background: transparent; transition: background 120ms, color 120ms, transform 120ms;
+          display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+          padding: 0.8rem 1.5rem; border-radius: 999px; color: ${PRIMARY}; border: 2px solid ${PRIMARY};
+          background: transparent; transition: all 200ms ease; font-weight: 600;
         }
-        .lux-btn-outline:hover { background: ${ACCENT_SOFT}; transform: translateY(-1px); }
-        .lux-btn-plain {
-          display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-          padding: .9rem 1.2rem; border-radius: 999px; color: #e7edf2;
-          border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
-          transition: background 120ms, transform 120ms;
-        }
-        .lux-btn-plain:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+        .lux-btn-outline:hover { background: rgba(0, 71, 127, 0.05); transform: translateY(-2px); }
       `}</style>
     </div>
   );
@@ -409,12 +389,12 @@ export default function Concierge() {
 function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div>
-      <div className="inline-flex items-center gap-2">
+      <div className="inline-flex items-center gap-2 mb-2">
         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: ACCENT }} />
-        <span className="uppercase tracking-[.16em] text-[.68rem] font-semibold text-white/70">Concierge</span>
+        <span className="uppercase tracking-[.15em] text-[.7rem] font-bold text-[#00477f]">Concierge</span>
       </div>
-      <h2 className="mt-1 text-xl md:text-2xl font-extrabold text-white">{title}</h2>
-      {subtitle ? <p className="text-white/70 text-sm">{subtitle}</p> : null}
+      <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800">{title}</h2>
+      {subtitle ? <p className="text-slate-500 mt-2 text-sm">{subtitle}</p> : null}
     </div>
   );
 }
@@ -422,8 +402,8 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-sm font-semibold text-white/90">{label}</span>
-      <div className="mt-2">{children}</div>
+      <span className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</span>
+      {children}
     </label>
   );
 }
@@ -433,11 +413,11 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-semibold transition border ${active ? "" : "text-white/90"}`}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all border ${active ? "shadow-md" : "hover:bg-slate-50"}`}
       style={{
-        background: active ? ACCENT : "rgba(255,255,255,0.05)",
-        borderColor: active ? ACCENT : "rgba(255,255,255,0.18)",
-        color: active ? PRIMARY : "rgba(255,255,255,0.9)",
+        background: active ? ACCENT : "#ffffff",
+        borderColor: active ? ACCENT : "#cbd5e1",
+        color: active ? "#ffffff" : "#64748b",
       }}
     >
       {label}
@@ -448,4 +428,3 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
 function Dot() {
   return <span className="mt-1.5 inline-block h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: ACCENT }} />;
 }
- 

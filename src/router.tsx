@@ -501,7 +501,6 @@
 
 
 
-
 // src/router.tsx
 
 import { type ReactElement, lazy, Suspense, useEffect } from "react";
@@ -795,7 +794,7 @@ export const router = createBrowserRouter(
             },
 
                     // Hotels + engines
-        { path: "hotels", element: <Navigate to="/hotels/results" replace /> },
+        { path: "hotels", element: <Hotels /> },
         { path: "hotels/results", element: <HotelResults /> },
         { path: "hotels/:id", element: <HotelDetail /> },
         { path: "hotels/:id/rooms", element: <RoomSelection /> },

@@ -798,7 +798,6 @@ function MultiCityPanel({
 export interface OneSearchBarProps {
   onSearch: (form: SearchForm, multiLegs?: CityLeg[]) => void;
   form?: Partial<SearchForm>;
-  multiLegs?: CityLeg[];
   tripType?: SearchForm["tripType"];
   onTripTypeChange?: (t: SearchForm["tripType"]) => void;
 }
@@ -808,7 +807,6 @@ type ActivePopup = "from" | "to" | "depart" | "return" | "pax" | "tripType" | nu
 export default function OneSearchBar({
   onSearch,
   form: formProp,
-  multiLegs: multiLegsProp,
   tripType: tripTypeProp,
   onTripTypeChange,
 }: OneSearchBarProps) {
@@ -980,7 +978,7 @@ export default function OneSearchBar({
               padding: "0 14px",
               background: popup === "tripType" ? "rgba(0,48,95,0.10)" : "rgba(0,48,95,0.06)",
               border: "none", borderRight: `1px solid ${S.border}`, cursor: "pointer",
-              borderRadius: isMulti ? "14px 0 0 0" : "14px 0 0 14px",
+              borderRadius: "0",
               transition: "background .15s",
             }}
             onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,48,95,0.10)")}
@@ -1148,7 +1146,7 @@ export default function OneSearchBar({
             fontWeight: 800, fontSize: 13, letterSpacing: "0.04em",
             transition: "background .2s", flexShrink: 0,
             display: "flex", alignItems: "center", gap: 8,
-            borderRadius: isMulti ? "0 14px 0 0" : "0 14px 14px 0",
+            borderRadius: "0",
           }}
           onMouseEnter={e => (e.currentTarget.style.background = S.accentDk)}
           onMouseLeave={e => (e.currentTarget.style.background = S.accent)}

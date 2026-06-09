@@ -3,7 +3,19 @@ import { Search, ChevronDown, ChevronUp, Star, Check, X } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { formatCurrency } from '../../lib/utils';
 
-const BLUE = '#003580';
+const S = {
+  navy:      "#00305f",
+  navyDeep:  "#0d2d5e",
+  navyMid:   "#00477f",
+  accent:    "#d06549",
+  accentDk:  "#b8543a",
+  muted:     "#8fafd4",
+  border:    "#e2ecf7",
+  borderMid: "#c9d5e8",
+  surface:   "#f5f8fc",
+};
+
+const BLUE = S.navyDeep;
 
 function DualRangeSlider({
   min, max, low, high,
@@ -86,14 +98,14 @@ export default function HotelFilters({
     (filters.reviewScore > 0 ? 1 : 0);
 
   return (
-    <div className="w-full bg-white md:bg-transparent rounded-xl md:rounded-none">
+    <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", overflow: "hidden" }} className="w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5 px-1">
-        <h2 className="font-bold text-gray-900 text-lg">Filter by:</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+        <span style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 15, color: S.navyDeep }}>Filters</span>
         {(activeFilterCount > 0 || propertySearch) && (
           <button 
             onClick={() => { resetFilters(); setPropertySearch(''); }} 
-            className="text-sm text-[#003580] hover:underline font-semibold flex items-center gap-1 transition-all"
+            style={{ fontSize: 13, color: S.accent, fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}
           >
             Clear all
           </button>
@@ -117,38 +129,39 @@ export default function HotelFilters({
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
-        
+      <div style={{ display: "flex", flexDirection: "column" }}>
         {/* Popular Filters */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 mb-4">Popular Filters</h3>
+        {/* Popular Filters */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Popular Filters</h3>
           <div className="space-y-3.5">
-            <label className="flex cursor-pointer items-start gap-3 group">
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 0" }}>
               <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.cancellationPolicy === 'free' ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.cancellationPolicy === 'free' && <Check className="h-3.5 w-3.5 text-white" />}
+                {filters.cancellationPolicy === 'free' && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
               </div>
               <input type="checkbox" className="hidden"
                 checked={filters.cancellationPolicy === 'free'}
                 onChange={() => setFilters({ cancellationPolicy: filters.cancellationPolicy === 'free' ? 'all' : 'free' })}
               />
-              <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">Free cancellation</span>
+              <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Free cancellation</span>
             </label>
-            <label className="flex cursor-pointer items-start gap-3 group">
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 0" }}>
               <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes('Breakfast') ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.amenities.includes('Breakfast') && <Check className="h-3.5 w-3.5 text-white" />}
+                {filters.amenities.includes('Breakfast') && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
               </div>
               <input type="checkbox" className="hidden"
                 checked={filters.amenities.includes('Breakfast')}
                 onChange={() => toggleArrayFilter('amenities', 'Breakfast')}
               />
-              <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">Breakfast included</span>
+              <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Breakfast included</span>
             </label>
           </div>
         </div>
 
         {/* Price Slider */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 mb-4">Price Range</h3>
+        {/* Price Slider */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Price Range</h3>
           <DualRangeSlider
             min={0} max={maxPrice}
             low={filters.priceRange[0]}
@@ -168,8 +181,9 @@ export default function HotelFilters({
         </div>
 
         {/* Star Rating Pills */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 mb-3">Star Rating</h3>
+        {/* Star Rating Pills */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Star Rating</h3>
           <div className="flex flex-wrap gap-2">
             {[5, 4, 3, 2, 1].map(star => {
               const isSelected = filters.starRatings.includes(star);
@@ -190,8 +204,9 @@ export default function HotelFilters({
         </div>
 
         {/* Guest Rating */}
-        <div className="p-5">
-          <h3 className="font-bold text-gray-900 mb-3">Guest Rating</h3>
+        {/* Guest Rating */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Guest Rating</h3>
           <div className="space-y-2">
             {[
               { label: 'Excellent: 9+', value: 9 },
@@ -203,13 +218,13 @@ export default function HotelFilters({
               return (
                 <label key={r.value} className="flex cursor-pointer items-start gap-3 group">
                   <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? 'border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#003580]" />}
+                    {isSelected && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
                   </div>
                   <input type="radio" className="hidden"
                     checked={isSelected}
                     onChange={() => setFilters({ reviewScore: isSelected ? 0 : r.value })}
                   />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">{r.label}</span>
+                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</span>
                 </label>
               );
             })}
@@ -218,19 +233,19 @@ export default function HotelFilters({
 
         {/* Property Type */}
         {propertyTypes.length > 0 && (
-          <div className="p-5">
-            <h3 className="font-bold text-gray-900 mb-4">Property Type</h3>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Property Type</h3>
             <div className="space-y-3.5">
               {(showAllPropertyTypes ? propertyTypes : propertyTypes.slice(0, 5)).map(pt => (
                 <label key={pt} className="flex cursor-pointer items-start gap-3 group">
                   <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.propertyTypes.includes(pt) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.propertyTypes.includes(pt) && <Check className="h-3.5 w-3.5 text-white" />}
+                    {filters.propertyTypes.includes(pt) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
                   </div>
                   <input type="checkbox" className="hidden"
                     checked={filters.propertyTypes.includes(pt)}
                     onChange={() => toggleArrayFilter('propertyTypes', pt)}
                   />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">{pt}</span>
+                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pt}</span>
                 </label>
               ))}
             </div>
@@ -248,19 +263,19 @@ export default function HotelFilters({
 
         {/* Amenities */}
         {amenitiesList.length > 0 && (
-          <div className="p-5">
-            <h3 className="font-bold text-gray-900 mb-4">Amenities</h3>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Amenities</h3>
             <div className="space-y-3.5">
               {(showAllAmenities ? amenitiesList : amenitiesList.slice(0, 5)).map(am => (
                 <label key={am} className="flex cursor-pointer items-start gap-3 group">
                   <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes(am) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.amenities.includes(am) && <Check className="h-3.5 w-3.5 text-white" />}
+                    {filters.amenities.includes(am) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
                   </div>
                   <input type="checkbox" className="hidden"
                     checked={filters.amenities.includes(am)}
                     onChange={() => toggleArrayFilter('amenities', am)}
                   />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors line-clamp-1">{am}</span>
+                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{am}</span>
                 </label>
               ))}
             </div>
@@ -278,19 +293,19 @@ export default function HotelFilters({
 
         {/* Neighborhoods */}
         {neighborhoods.length > 0 && (
-          <div className="p-5">
-            <h3 className="font-bold text-gray-900 mb-4">Neighborhood</h3>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
+            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Neighborhood</h3>
             <div className="space-y-3.5">
               {(showAllNeighborhoods ? neighborhoods : neighborhoods.slice(0, 5)).map(nb => (
                 <label key={nb} className="flex cursor-pointer items-start gap-3 group">
                   <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.neighborhoods.includes(nb) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.neighborhoods.includes(nb) && <Check className="h-3.5 w-3.5 text-white" />}
+                    {filters.neighborhoods.includes(nb) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
                   </div>
                   <input type="checkbox" className="hidden"
                     checked={filters.neighborhoods.includes(nb)}
                     onChange={() => toggleArrayFilter('neighborhoods', nb)}
                   />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors line-clamp-1">{nb}</span>
+                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nb}</span>
                 </label>
               ))}
             </div>

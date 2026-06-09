@@ -29,7 +29,7 @@ export default function SortDropdown() {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(value);
-      setSortDirection('asc');
+      setSortDirection((value === 'rating' || value === 'reviews') ? 'desc' : 'asc');
     }
     setIsOpen(false);
   };

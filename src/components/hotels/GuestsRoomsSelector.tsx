@@ -18,6 +18,7 @@ interface GuestsRoomsSelectorProps {
   onChildrenAgesChange: (ages: number[]) => void;
   error?: string;
   variant?: 'default' | 'bar';
+  theme?: 'light' | 'dark';
 }
 
 interface RoomConfig {
@@ -79,6 +80,7 @@ export default function GuestsRoomsSelector({
   onChildrenAgesChange,
   error,
   variant = 'default',
+  theme = 'light',
 }: GuestsRoomsSelectorProps) {
   const isBar = variant === 'bar';
   const [isOpen, setIsOpen] = useState(false);
@@ -100,10 +102,10 @@ export default function GuestsRoomsSelector({
 
   // Sync back to parent when roomConfigs change
   useEffect(() => {
-    let newRooms = roomConfigs.length;
+    const newRooms = roomConfigs.length;
     let newAdults = 0;
     let newChildren = 0;
-    let newAges: number[] = [];
+    const newAges: number[] = [];
 
     roomConfigs.forEach(r => {
       newAdults += r.adults;
@@ -136,7 +138,7 @@ export default function GuestsRoomsSelector({
       const newVal = Math.max(minAdults, Math.min(MAX_ADULTS_PER_ROOM, curr + delta));
       
       let newChildren = next[index].children;
-      let newAges = [...next[index].childrenAges];
+      const newAges = [...next[index].childrenAges];
       if (newVal === 0 && newChildren === 0) {
         newChildren = 1;
         newAges.push(5);
@@ -192,11 +194,11 @@ export default function GuestsRoomsSelector({
         <div className="flex items-center gap-3">
           {!isBar && <Users className="h-5 w-5 text-gray-400" />}
           <div>
-            <div className={cn(isBar ? 'text-[16px] font-bold text-[#00477f]' : 'text-base font-medium text-gray-900')}>
+            <div className={cn(isBar ? `text-[16px] font-bold ${theme === 'dark' ? 'text-white' : 'text-[#00477f]'}` : 'text-base font-medium text-gray-900')}>
               {rooms} Room{rooms !== 1 ? 's' : ''} · {adults} Adult{adults !== 1 ? 's' : ''}
             </div>
             {children > 0 && (
-              <div className={cn(isBar ? 'text-[13px] font-medium text-[#00477f]/70' : 'text-sm text-gray-500')}>
+              <div className={cn(isBar ? `text-[13px] font-medium ${theme === 'dark' ? 'text-white/70' : 'text-[#00477f]/70'}` : 'text-sm text-gray-500')}>
                 {children} Child{children !== 1 ? 'ren' : ''}
               </div>
             )}
@@ -206,13 +208,13 @@ export default function GuestsRoomsSelector({
 
       {isOpen && (
         <div className={cn(
-          'absolute z-50 w-[340px] rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl',
+          'absolute z-50 w-[280px] rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl',
           isBar ? 'left-0 top-full mt-2' : 'left-0 top-full mt-2'
         )}>
-          <div className="max-h-[350px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+          <div className="h-[140px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
             {roomConfigs.map((room, idx) => (
-              <div key={idx} className="border-b border-gray-100 py-4 last:border-0 first:pt-0">
-                <div className="flex items-center justify-between mb-4">
+              <div key={idx} className="border-b border-gray-100 py-3 last:border-0 first:pt-0">
+                <div className="flex items-center justify-between mb-3">
                   <h4 className="font-bold text-gray-900">Room {idx + 1}</h4>
                   {roomConfigs.length > 1 && (
                     <button
@@ -226,26 +228,26 @@ export default function GuestsRoomsSelector({
                 </div>
 
                 {/* Adults */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Adults</div>
                     <div className="text-xs text-gray-500">12+ yrs</div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => updateAdults(idx, -1)}
                       disabled={room.adults <= (idx === 0 ? 1 : 0)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-8 text-center text-sm font-semibold">{room.adults}</span>
+                    <span className="w-6 text-center text-sm font-semibold">{room.adults}</span>
                     <button
                       type="button"
                       onClick={() => updateAdults(idx, 1)}
                       disabled={room.adults >= MAX_ADULTS_PER_ROOM}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -253,26 +255,26 @@ export default function GuestsRoomsSelector({
                 </div>
 
                 {/* Children */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="text-sm font-medium text-gray-900">Children</div>
                     <div className="text-xs text-gray-500">2–12 yrs</div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => updateChildren(idx, -1)}
                       disabled={room.children <= (room.adults === 0 ? 1 : 0)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-8 text-center text-sm font-semibold">{room.children}</span>
+                    <span className="w-6 text-center text-sm font-semibold">{room.children}</span>
                     <button
                       type="button"
                       onClick={() => updateChildren(idx, 1)}
                       disabled={room.children >= MAX_CHILDREN_PER_ROOM}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -323,3 +325,6 @@ export default function GuestsRoomsSelector({
     </div>
   );
 }
+
+
+

@@ -1011,7 +1011,7 @@ export default function ResultsPage({
         setReturnFlightsList(result.returnFlights ?? []);
         if (result.multiLegFlights && result.multiLegFlights.length > 0) {
           setMultiLegFlightsList(result.multiLegFlights);
-        } else if (isMultiCity && result.outbound && result.outbound.length > 0) {
+        } else if (isMultiCity) {
           const legCount = legs.length;
           const byLeg: DisplayFlight[][] = Array.from({ length: legCount }, () => []);
           for (const f of result.outbound) {
@@ -1033,11 +1033,13 @@ export default function ResultsPage({
   }, [derivedSearchKey]); // eslint-disable-line
 
   const resetFilters = () => setFilters(defaultFilters());
-
-  const sourceFlights = useMemo(() => {
-    if (isMultiCity) return multiLegFlightsList[activeTab] ?? [];
-    return allFlights;
-  }, [isMultiCity, allFlights, multiLegFlightsList, activeTab]);
+  
+const sourceFlights = useMemo(() => {
+  if (isMultiCity && multiLegFlightsList.length > activeTab) {
+    return multiLegFlightsList[activeTab] ?? [];
+  }
+  return allFlights;
+}, [isMultiCity, allFlights, multiLegFlightsList, activeTab]);
 
   const applyFiltersAndSort = (list: DisplayFlight[]) => {
     return list.filter(f => {
@@ -1253,11 +1255,11 @@ export default function ResultsPage({
           {/* Multi-city status */}
           {isMultiCity && legs.length > 0 && !loading && (
             <div>
-              {multiLegFlightsList[activeTab]?.length === 0 ? (
+              {(multiLegFlightsList[activeTab] ?? []) ? (
                 <div style={{
                   background: "#fffbeb", border: `1px solid #fef3c7`,
                   borderRadius: 12, padding: "10px 14px",
-                  fontSize: 12, color: "#92400e", fontWeight: 600,
+                  fontSize: 12, color: "#92400e", fontWeight: 600, 
                 }}>
                   No flights found for Leg {activeTab + 1}: {legs[activeTab]?.from.code} → {legs[activeTab]?.to.code}. Try different dates or nearby airports.
                 </div>
@@ -1385,7 +1387,9 @@ export default function ResultsPage({
           onClose={() => setSelectedFlight(null)}
           onBook={tier => {
             setSelectedFlight(null);
-            onBook(selectedFlight, tier, isMultiCity ? activeTab : undefined);
+            onBook(selectedFlight, tier, activeTab /* legIndex */);
+              const nextUnselected = (selectedLegs ?? []).findIndex((l, i) => i > activeTab && !l);
+  if (nextUnselected !== -1) setActiveTab(nextUnselected);
             if (isRoundTrip && !selectedOutboundFlight) {
               setTimeout(() => {
                 document.getElementById("return-flights-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
