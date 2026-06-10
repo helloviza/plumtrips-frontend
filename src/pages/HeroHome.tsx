@@ -104,7 +104,7 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
               </div>
               <h1
                 style={{
-                  fontFamily: "Montserrat, sans-serif",
+                  fontFamily: "Poppins, sans-serif",
                   fontWeight: 800,
                   fontSize: "clamp(2rem, 4vw, 3rem)",
                   lineHeight: 1.13,
@@ -126,7 +126,7 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
               </h1>
               <p
                 style={{
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "Poppins, sans-serif",
                   fontWeight: 300,
                   fontSize: 15,
                   color: "rgba(255,255,255,0.60)",
@@ -445,7 +445,7 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
           </div>
 
           {/* Stats bar */}
-          <div style={{ display: "flex", gap: 40, marginTop: 36 }}>
+          {/* <div style={{ display: "flex", gap: 40, marginTop: 36 }}>
             {[
               { ico: "⭐", val: "4.8/5", lbl: "Average Customer Rating" },
               { ico: "👥", val: "50,000+", lbl: "Happy Travelers" },
@@ -497,7 +497,7 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
 
         </div>
       </div>
