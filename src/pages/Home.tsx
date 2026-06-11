@@ -105,7 +105,7 @@ export default function Home() {
         ================================================================ */}
         <HeroHome onTabChange={setTab} />
         <TrustBar {...trustBarProps} />
-              <TrendingDestination {...trendingDestinationProps} onActionClick={() => navigate("/holidays")}  />
+      <TrendingDestination {...trendingDestinationProps} onActionClick={() => navigate("/holidays")}  />
       <TravelYourWay {...travelYourWayProps}  onActionClick={() => navigate("/offers")} />
       <AIPlanner {...aiPlannerProps} />
       <CorporateTravel {...corporateTravelProps} />

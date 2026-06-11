@@ -44,7 +44,7 @@ export const trustBarProps: TrustBarProps = {
 // ── TrustedPartners ──────────────────────────
 export const trustedPartnersProps: TrustedPartnersProps = {
   heading: "Our Trusted Partners",
-  logos: ["IndiGo", "Air India", "Vistara", "Marriott", "Hilton", "MakeMyTrip"],
+  logos: ["/home/airindia.png", "/home/indigo.png","/home/vistara.png", "/home/marriott.png", "/home/hilton.png", "/home/mmt.png"],
 };
 
 // ── TravelYourWay ────────────────────────────
@@ -119,7 +119,7 @@ export const corporateTravelProps: CorporateTravelProps = {
   eyebrow: "CORPORATE TRAVEL",
   title: "Simplify Business Travel,\nMaximize Productivity",
   subtitle: "End-to-end travel management for teams of any size. Control costs, automate approvals, and keep everyone moving.",
-  imageUrl: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=900&q=80",
+  imageUrl: "/home/meeting_img.jpeg",
   features: [
     "Centralized travel management",
     "Real-time expense tracking",

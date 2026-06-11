@@ -8,7 +8,7 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
       <style>{`
         .trending-section {
           background: #fff;
-          padding: 72px 48px;
+          padding: 20px 48px;
         }
         .trending-grid {
           display: grid;
@@ -16,9 +16,9 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
           gap: 16px;
         }
         @media (max-width: 900px) {
-          .trending-section { padding: 48px 24px; }
+          .trending-section { padding: 10px 24px; }
           .trending-grid { grid-template-columns: repeat(3, 1fr); }
-        }
+        } 
         @media (max-width: 640px) {
           .trending-section { padding: 36px 16px; }
           .trending-grid { grid-template-columns: repeat(2, 1fr); }

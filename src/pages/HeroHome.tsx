@@ -105,8 +105,8 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
               <h1
                 style={{
                   fontFamily: "Poppins, sans-serif",
-                  fontWeight: 800,
-                  fontSize: "clamp(2rem, 4vw, 3rem)",
+                  fontWeight: 800, 
+                  fontSize: "clamp(2rem, 3vw, 2.5rem)",
                   lineHeight: 1.13,
                   letterSpacing: "-0.02em",
                   color: "#fff",
@@ -175,7 +175,17 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
                     >
                       Cheapest this week
                     </span>
-                    <span style={{ fontSize: 13 }}>📈</span>
+                    <img
+  src="/home/graph.png"
+  alt="Flight"
+  style={{
+    width: 30,
+    height: 30,
+    marginRight: -4,
+    marginBottom: -2,
+    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))",
+  }}
+/>
                   </div>
                   <div
                     style={{
@@ -208,16 +218,17 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
                     >
                       ₹4,899
                     </div>
-                    <span
-                      style={{
-                        fontSize: 28,
-                        marginRight: -4,
-                        marginBottom: -2,
-                        filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))",
-                      }}
-                    >
-                      ✈️
-                    </span>
+<img
+  src="/home/flighttakeoff.png"
+  alt="Flight"
+  style={{
+    width: 50,
+    height: 50,
+    marginRight: -4,
+    marginBottom: -2,
+    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))",
+  }}
+/>
                   </div>
                   <div
                     style={{
@@ -373,14 +384,17 @@ export default function HeroHome({ onTabChange }: HeroHomeProps) {
                         ₹12,000
                       </div>
                     </div>
-                    <span
-                      style={{
-                        fontSize: 26,
-                        filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.3))",
-                      }}
-                    >
-                      🏨
-                    </span>
+<img
+  src="/icons/HOTELS.png"
+  alt="Flight"
+  style={{
+    width: 70,
+    height: 60,
+    marginRight: -4,
+    marginBottom: -2,
+    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))",
+  }}
+/>
                   </div>
                   <div
                     style={{

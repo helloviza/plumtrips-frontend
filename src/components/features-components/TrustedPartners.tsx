@@ -42,21 +42,20 @@ export function TrustedPartners({ heading, logos }: TrustedPartnersProps) {
         >
           {heading}
         </div>
-        <div className="partners-logos">
-          {logos.map((logo) => (
-            <span
-              key={logo}
-              style={{
-                fontFamily: FONT,
-                fontWeight: 800,
-                fontSize: 22,
-                color: "#9aa6b6",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {logo}
-            </span>
-          ))}
+<div className="partners-logos">
+  {logos.map((logo, index) => (
+    <img
+      key={index}
+      src={logo}
+      alt={`Partner ${index + 1}`}
+      style={{
+        height: "40px",
+        width: "auto",
+        objectFit: "contain",
+      }}
+    />
+  ))}
+
         </div>
       </div>
     </section>
