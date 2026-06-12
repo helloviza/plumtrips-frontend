@@ -1,59 +1,187 @@
-﻿import { motion } from "framer-motion";
+﻿import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function Hotels() {
+import HeroHotel from "./HeroHotel";
+import { useScrollEffect } from "../hooks/useScrollEffect";
+
+import {
+  TrustBar,
+  TravelYourWay,
+  TrendingDestination,
+  trustBarProps,
+  AIPlanner,
+  CorporateTravel,
+  StatsStrip,
+  Testimonials,
+  TravelStories,
+  TrustedPartners,
+  ConciergeCTA,
+  travelStoriesProps,
+  aiPlannerProps,
+  corporateTravelProps,
+  statsStripProps,
+  conciergeCTAProps,
+  hotelCollectionsProps,
+  hotelTrendingDestinationsProps,
+  topHotelBrandsProps,
+  guestStoriesProps,
+} from "../components/features-components";
+
+// ---------------------------------------------------------------------------
+// HotelHome — Hotels landing page at route "/hotels"
+// ---------------------------------------------------------------------------
+export default function HotelHome() {
+  const navigate = useNavigate();
+
+  // ✨ Same rich scroll effects as the flights Home page
+  useScrollEffect();
+
   return (
-    <div className="relative min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/assets/hotel-bg.jpg')" }}
-    >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+    <>
+      {/* Google Fonts */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+      />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet"
+      />
 
-      {/* Center Card */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-6">
-        <motion.div
-          className="max-w-3xl bg-white/40 backdrop-blur-lg shadow-2xl rounded-3xl p-12 text-center"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-[#00477f] to-[#d06549] bg-clip-text text-transparent animate-pulse">
-            Hotels by Plumtrips
-          </h1>
-          <p className="text-lg text-gray-700 mb-8">
-            A curated collection of luxurious hotels is on the way. We're
-            designing an experience where **comfort, elegance, and modern design**
-            meet to delight every traveler.
-          </p>
+      <style>{`
+        /* ── Base utilities ─────────────────────────────────────────────── */
+        .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .hero-gradient { background: linear-gradient(to bottom, rgba(0,48,89,0.45), rgba(26,28,30,0.15)); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #003059; border-radius: 10px; }
 
-          {/* Luxury highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#00477f]">ðŸ¨ Elegant Stays</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Boutique & design-driven hotels for the discerning traveler.
-              </p>
-            </div>
-            <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#d06549]">âœ¨ Modern Comfort</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Clean, safe, and seamlessly styled - luxury without compromise.
-              </p>
-            </div>
-            <div className="bg-[#f9f9f9] rounded-xl p-6 shadow-md hover:shadow-lg transition">
-              <h3 className="text-xl font-semibold text-[#00477f]">ðŸŒ Smart Travel</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Connected locations with easy access and effortless transfers.
-              </p>
-            </div>
-          </div>
+        /* ── Scroll-progress bar ────────────────────────────────────────── */
+        #scroll-progress {
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%;
+          height: 3px;
+          background: linear-gradient(90deg, #003059, #c9a84c, #f0d080);
+          /* Warm gold gradient — hotel feel vs. flights' cool blue */
+          transform: scaleX(0);
+          transform-origin: left;
+          z-index: 9999;
+          pointer-events: none;
+          box-shadow: 0 0 8px rgba(201, 168, 76, 0.7);
+        }
 
-          {/* Footer */}
-          <p className="text-gray-500 text-sm">
-            ðŸŒŸ Coming soon - the <span className="font-bold text-[#00477f]">Plumtrips way</span> 
-            of booking your perfect stay.
-          </p>
-        </motion.div>
+        /* ── Section reveal — staggered slide-up + fade ─────────────────── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(40px);
+          transition:
+            opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.active {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        /* ── Card hover lift ─────────────────────────────────────────────── */
+        .hover-lift {
+          transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
+        }
+        .hover-lift:hover {
+          transform: translateY(-6px) scale(1.015);
+          box-shadow: 0 20px 40px rgba(0, 48, 89, 0.12);
+        }
+
+        /* ── Section divider fade-in line ────────────────────────────────── */
+        .section-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(201,168,76,0.25), transparent);
+          margin: 0 auto;
+          width: 0;
+          transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .section-divider.active { width: 80%; }
+
+        /* ── Parallax wrapper ────────────────────────────────────────────── */
+        .parallax-clip { overflow: hidden; }
+
+        /* ── Tilt target ─────────────────────────────────────────────────── */
+        [data-tilt] { will-change: transform; }
+
+        /* ── Reduced-motion safety net ───────────────────────────────────── */
+        @media (prefers-reduced-motion: reduce) {
+          .reveal,
+          .hover-lift,
+          [data-tilt],
+          #scroll-progress,
+          .section-divider {
+            transition: none !important;
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            width: 80% !important;
+          }
+        }
+      `}</style>
+
+      {/* ── Scroll-progress bar (warm gold for hotel page) ── */}
+      <div id="scroll-progress" aria-hidden="true" />
+
+      <div
+        className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[124px]"
+        style={{ fontFamily: "Inter, sans-serif" }}
+      >
+        {/* ── HERO ── */}
+        <HeroHotel />
+
+        {/* ── CONTENT SECTIONS ── */}
+        <div className="reveal"><TrustBar {...trustBarProps} /></div>
+
+        <div className="reveal parallax-clip">
+          <TrendingDestination
+            {...hotelTrendingDestinationsProps}
+            onActionClick={() => navigate("/holidays")}
+          />
+        </div>
+
+        <div className="section-divider reveal" />
+
+        <div className="reveal" data-tilt>
+          <TravelYourWay
+            {...hotelCollectionsProps}
+            onActionClick={() => navigate("/offers")}
+          />
+        </div>
+
+        <div className="reveal"><AIPlanner {...aiPlannerProps} /></div>
+
+        <div className="section-divider reveal" />
+
+        <div className="reveal"><CorporateTravel {...corporateTravelProps} /></div>
+
+        <div className="reveal"><StatsStrip {...statsStripProps} /></div>
+
+        <div className="reveal" data-tilt>
+          <Testimonials {...guestStoriesProps} />
+        </div>
+
+        <div className="section-divider reveal" />
+
+        <div className="reveal parallax-clip">
+          <TravelStories
+            {...travelStoriesProps}
+            onActionClick={() => navigate("/blogs")}
+          />
+        </div>
+
+        <div className="reveal"><TrustedPartners {...topHotelBrandsProps} /></div>
+
+        <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
       </div>
-    </div>
+    </>
   );
 }

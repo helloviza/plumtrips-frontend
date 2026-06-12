@@ -15,6 +15,29 @@ export function TravelYourWay({ eyebrow, title, actionLabel, onActionClick, item
           grid-template-columns: repeat(${items.length}, 1fr);
           gap: 16px;
         }
+        .travel-way-card {
+          border-radius: 16px;
+          overflow: hidden;
+          position: relative;
+          height: 240px;
+          cursor: pointer;
+          box-shadow: 0 8px 24px rgba(10,30,63,0.10);
+          transition: transform 0.32s ease, box-shadow 0.32s ease;
+        }
+        .travel-way-card:hover {
+          transform: scale(1.045);
+          box-shadow: 0 16px 40px rgba(10,30,63,0.22);
+        }
+        .travel-way-card-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          transition: transform 0.32s ease;
+        }
+        .travel-way-card:hover .travel-way-card-bg {
+          transform: scale(1.06);
+        }
         @media (max-width: 900px) {
           .travel-way-section { padding: 48px 24px; }
           .travel-way-grid { grid-template-columns: repeat(3, 1fr); }
@@ -32,25 +55,10 @@ export function TravelYourWay({ eyebrow, title, actionLabel, onActionClick, item
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="travel-way-grid">
           {items.map((item) => (
-            <div
-              key={item.name}
-              style={{
-                borderRadius: 16,
-                overflow: "hidden",
-                position: "relative",
-                height: 200,
-                cursor: "pointer",
-                boxShadow: "0 8px 24px rgba(10,30,63,0.10)",
-              }}
-            >
+            <div key={item.name} className="travel-way-card">
               <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: `url('${item.imageUrl}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
+                className="travel-way-card-bg"
+                style={{ backgroundImage: `url('${item.imageUrl}')` }}
               />
               <div
                 style={{

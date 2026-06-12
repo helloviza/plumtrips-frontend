@@ -29,6 +29,22 @@ export {
   trustedPartnersProps,
 } from "./data";
 
+export {
+  hotelCollectionsProps,
+  hotelTrendingDestinationsProps,
+  aiHotelFinderProps,
+  exclusiveHotelOffersProps,
+  topHotelBrandsProps,
+  whyBookWithPumTripsProps,
+  hotelsByExperiencesProps,
+  guestStoriesProps,
+  exploreOnMapProps,
+  needHelpChoosingProps,
+  pumTripsPrivilegeProps,
+
+
+} from "./data";
+
 // Types
 export type {
   AIPlannerProps,
@@ -51,6 +67,15 @@ export type {
   TrustBarProps,
   TrustItem,
   TrustedPartnersProps,
+} from "./types";
+
+
+export type {
+  HotelCollectionsProps,
+  HotelTrendingDestinationsProps,
+  TopHotelBrandsProps,
+  GuestStoriesProps
+
 } from "./types";
 
 // Design tokens (if you need to extend)

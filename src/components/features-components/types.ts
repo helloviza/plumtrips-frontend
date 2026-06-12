@@ -160,3 +160,140 @@ export interface ConciergeCTAProps {
   onWhatsAppClick?: () => void;
   onCallbackClick?: () => void;
 }
+
+
+
+
+// ─────────────────────────────────────────────
+// PlumTrips — Hotels Page Centralised Data
+// Edit content here; components stay untouched.
+// ─────────────────────────────────────────────
+ 
+// ── Types ─────────────────────────────────────
+ 
+export interface HotelCollectionsProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void;
+  items: {
+    name: string;
+    description: string;
+    imageUrl: string;
+  }[];
+}
+ 
+export interface HotelTrendingDestinationsProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void;
+  items: {
+    name: string;
+    description: string;  // e.g. "₹7,999" (Or PricePerNight)
+    imageUrl: string;
+  }[];
+}
+ 
+export interface AIHotelFinderProps {
+  badge: string;
+  title: string;
+  bullets: string[];
+  fields: {
+    label: string;
+    placeholder: string;
+  }[];
+  ctaLabel: string;
+  suggestion: {
+    imageUrl: string;
+    badge: string;
+    name: string;
+    location: string;
+    rating: string;
+    ratingCount: string;
+    pricePerNight: string;
+  };
+}
+ 
+export interface ExclusiveHotelOffersProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void; 
+  items: {
+    title: string;
+    subtitle: string;
+    ctaLabel: string;
+    imageUrl: string;
+    isHighlighted?: boolean;  // dark card with login CTA
+    highlightBadge?: string;
+    highlightCta?: string;
+  }[];
+}
+ 
+export interface TopHotelBrandsProps {
+  heading: string;
+  logos: string[];
+}
+ 
+export interface WhyBookWithPumTripsProps {
+  heading: string;
+  items: {
+    icon: string;
+    title: string;
+    description: string;
+  }[];
+}
+  
+export interface HotelsByExperiencesProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void;
+  items: {
+    icon: string;
+    name: string;
+    description: string;
+    imageUrl: string;
+  }[];
+}
+ 
+export interface GuestStoriesProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void;
+  reviews: {
+    name: string;
+    city: string;
+    avatarUrl: string;
+    quote: string;
+  }[];
+}
+ 
+export interface ExploreOnMapProps {
+  eyebrow: string;
+  title: string;
+  actionLabel: string;
+  onActionClick?: () => void;
+  previewImageUrl: string;
+}
+ 
+export interface NeedHelpChoosingProps {
+  heading: string;
+  subheading: string;
+  bullets: string[];
+  ctaLabel: string;
+  expertImageUrl: string;
+}
+ 
+export interface PumTripsPrivilegeProps {
+  brandLabel: string;
+  brandDescription: string;
+  ctaLabel: string;
+  perks: {
+    icon: string;
+    title: string;
+    description: string;
+  }[];
+}

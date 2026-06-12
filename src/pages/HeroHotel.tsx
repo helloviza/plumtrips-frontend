@@ -1,21 +1,10 @@
 import { useRef } from "react";
-import SearchPage from "../pages/flights_new/SearchPage";
-import type { SearchForm } from "../lib/types_t";
-import type { CityLeg } from "../components/SearchTabs";
+import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
 // ---------------------------------------------------------------------------
-// Props
+// HeroHotel — Hotels page hero (no tab switcher)
 // ---------------------------------------------------------------------------
-interface HeroHomeProps {
-  onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
-  tripType?: "oneWay" | "roundTrip" | "multiCity";
-  onTripTypeChange?: (t: "oneWay" | "roundTrip" | "multiCity") => void;
-}
-
-// ---------------------------------------------------------------------------
-// HeroHome — Flights page hero (no tab switcher)
-// ---------------------------------------------------------------------------
-export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
+export default function HeroHotel() {
   const heroImgRef = useRef<HTMLImageElement>(null);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -37,13 +26,13 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
       onMouseMove={handleHeroMouseMove}
       onMouseLeave={handleHeroMouseLeave}
     >
-      {/* Background */}
+      {/* Background — hotel-flavoured image */}
       <div className="absolute inset-0 z-0">
         <img
           ref={heroImgRef}
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPrdPFPE8eNavLsNhU40Vr6HgI6m6zUFGkKy7pMsMq6f7mll2KFuCsho_t5W0X0nniQXQIiVeXavDh_DPHCYMYIc0vv75xa6PUV13_Mu-rZjBln8Ci_jFfWpkStL4seYnTwcW4S1fYr70VC2NSM8MfRyBdlBj5x-SGzva53bTVO5colVAd-V3hKXlT0_W8-Gb8YWjzDDD2yNpUjLZ46kLTmEAITKba_8Y8JiIpVPiY5Lztat_8ytxVUyZCuYO4LKE77OrsjG5c3cnO"
-          alt="Panoramic mountain view"
-          className="w-full h-full object-fill brightness-75 transition-transform duration-[10000ms]"
+          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80"
+          alt="Luxury hotel pool"
+          className="w-full h-full object-cover brightness-75 transition-transform duration-[10000ms]"
           style={{ transform: "scale(1.1) translate(0px,0px)" }}
         />
         <div className="absolute inset-0 hero-gradient" />
@@ -93,7 +82,7 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                     color: "#fff",
                   }}
                 >
-                  ✈ Fly Smarter · Stay Better
+                  🏨 Stay Better · Live More
                 </span>
               </div>
               <h1
@@ -107,7 +96,9 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                   margin: "0 0 8px",
                 }}
               >
-                Explore the World <br /> At Unbeatable Prices
+                Find Your Perfect Stay,
+                <br />
+                Every Night
               </h1>
               <p
                 style={{
@@ -118,12 +109,11 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                   margin: 0,
                 }}
               >
-                Best fares on domestic &amp; international flights · Hotels from ₹999/night
+                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting ₹999/night
               </p>
             </div>
-            
 
-            {/* Right: Flight Deal Card */}
+            {/* Right: Hotel Deal Card */}
             <div style={{ flexShrink: 0, alignSelf: "flex-start", marginTop: 4 }}>
               <div
                 style={{
@@ -139,43 +129,56 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.65)" }}>
-                    Cheapest this week
+                    Tonight's top pick
                   </span>
-                  <img src="/home/graph.png" alt="" style={{ width: 30, height: 30, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
+                  <span style={{ fontSize: 13 }}>🔥</span>
                 </div>
-                <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 14, color: "#fff", marginBottom: 6 }}>
-                  Delhi → Mumbai
+                <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 13, color: "#fff", marginBottom: 4 }}>
+                  The Leela Palace, Delhi
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
-                  <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
-                    ₹4,899
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  {"★★★★★".split("").map((s, i) => (
+                    <span key={i} style={{ color: "#fbbf24", fontSize: 11 }}>{s}</span>
+                  ))}
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)", marginLeft: 2 }}>
+                    5-star
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 22, color: "#FF9A6C", lineHeight: 1 }}>
+                      ₹8,499
+                    </div>
+                    <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.35)", textDecoration: "line-through" }}>
+                      ₹12,000
+                    </div>
                   </div>
-                  <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
+                  <img
+                    src="/icons/HOTELS.png"
+                    alt=""
+                    style={{ width: 70, height: 60, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                  />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
-                    IndiGo · 2h 10m
-                  </span>
                   <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 600, color: "#6ee7a0", background: "rgba(110,231,160,0.12)", borderRadius: 6, padding: "2px 7px" }}>
-                    Non-stop
+                    29% off
+                  </span>
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
+                    Breakfast incl.
                   </span>
                 </div>
                 <button
                   style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
                 >
-                  View Deals →
+                  View Hotels →
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Flight Search Form — inline, no tab wrapper */}
+          {/* Hotel Search Form — inline, no tab wrapper */}
           <div className="w-full reveal" style={{ transitionDelay: "0.08s" }}>
-            <SearchPage
-              onSearch={onSearch ?? (() => {})}
-              tripType={tripType}
-              onTripTypeChange={onTripTypeChange ?? (() => {})}
-            />
+            <HotelSearchForm />
           </div>
 
         </div>

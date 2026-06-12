@@ -15,10 +15,33 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
           grid-template-columns: repeat(${items.length}, 1fr);
           gap: 16px;
         }
+        .trending-card {
+          border-radius: 16px;
+          overflow: hidden;
+          position: relative;
+          height: 240px;
+          cursor: pointer;
+          box-shadow: 0 8px 24px rgba(10,30,63,0.10);
+          transition: transform 0.32s ease, box-shadow 0.32s ease;
+        }
+        .trending-card:hover {
+          transform: scale(1.045);
+          box-shadow: 0 16px 40px rgba(10,30,63,0.22);
+        }
+        .trending-card-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          transition: transform 0.32s ease;
+        }
+        .trending-card:hover .trending-card-bg {
+          transform: scale(1.06);
+        }
         @media (max-width: 900px) {
           .trending-section { padding: 10px 24px; }
           .trending-grid { grid-template-columns: repeat(3, 1fr); }
-        } 
+        }
         @media (max-width: 640px) {
           .trending-section { padding: 36px 16px; }
           .trending-grid { grid-template-columns: repeat(2, 1fr); }
@@ -32,25 +55,10 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="trending-grid">
           {items.map((item) => (
-            <div
-              key={item.name}
-              style={{
-                borderRadius: 16,
-                overflow: "hidden",
-                position: "relative",
-                height: 200,
-                cursor: "pointer",
-                boxShadow: "0 8px 24px rgba(10,30,63,0.10)",
-              }}
-            >
+            <div key={item.name} className="trending-card">
               <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: `url('${item.imageUrl}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
+                className="trending-card-bg"
+                style={{ backgroundImage: `url('${item.imageUrl}')` }}
               />
               <div
                 style={{

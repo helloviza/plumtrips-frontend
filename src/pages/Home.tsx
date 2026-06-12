@@ -1,43 +1,46 @@
 ﻿import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getHomeCarousels } from "../lib/api";
 import HeroHome from "./HeroHome";
-import SearchTabs, { type TopTab } from "../components/SearchTabs";
-import { useNavigate } from "react-router-dom";
+import type { SearchForm } from "../lib/types_t";
+import type { CityLeg } from "../components/SearchTabs";
+import { useScrollEffect } from "../hooks/useScrollEffect";
 
-import { TrustBar,TravelYourWay,TrendingDestination, trustBarProps, AIPlanner, CorporateTravel, StatsStrip, Testimonials, TravelStories, TrustedPartners, ConciergeCTA, trendingDestinationProps, travelYourWayProps, aiPlannerProps, corporateTravelProps, statsStripProps, testimonialsProps, travelStoriesProps, trustedPartnersProps, conciergeCTAProps } from "../components/features-components";
+import {
+  TrustBar,
+  TravelYourWay,
+  TrendingDestination,
+  trustBarProps,
+  AIPlanner,
+  CorporateTravel,
+  StatsStrip,
+  Testimonials,
+  TravelStories,
+  TrustedPartners,
+  ConciergeCTA,
+  trendingDestinationProps,
+  travelYourWayProps,
+  aiPlannerProps,
+  corporateTravelProps,
+  statsStripProps,
+  testimonialsProps,
+  travelStoriesProps,
+  trustedPartnersProps,
+  conciergeCTAProps,
+} from "../components/features-components";
 
 // ---------------------------------------------------------------------------
-// Reveal hook — mirrors the IntersectionObserver from the original JS
-// ---------------------------------------------------------------------------
-const useReveal = () => {
-  useEffect(() => {
-    const els = document.querySelectorAll<HTMLElement>(".reveal");
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("active");
-            obs.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
-    );
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, []);
-};
-
-// ---------------------------------------------------------------------------
-// Main Home component
+// Home — Flights landing page at route "/"
 // ---------------------------------------------------------------------------
 export default function Home() {
   const navigate = useNavigate();
-  useReveal();
+
+  // ✨ Replaces the old `useReveal()` — adds parallax, tilt, counters & bar
+  useScrollEffect();
 
   const [_carouselImages, setCarouselImages] = useState<string[]>([]);
-  const [_tab, setTab] = useState<TopTab>("flights");
+  const [tripType, setTripType] = useState<"oneWay" | "roundTrip" | "multiCity">("oneWay");
 
   useEffect(() => {
     getHomeCarousels().then((items) =>
@@ -52,23 +55,13 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Interactive card helpers
-  const cardEnter = (
-    e: React.MouseEvent,
-    type: "orange" | "blue" = "orange"
-  ) => {
-    const el = e.currentTarget as HTMLElement;
-    el.style.transform = "scale(1.03)";
-    el.style.boxShadow =
-      type === "orange"
-        ? "0 10px 30px -5px rgba(208,101,73,0.3)"
-        : "0 10px 30px -5px rgba(0,71,127,0.4)";
-  };
-  const cardLeave = (e: React.MouseEvent) => {
-    const el = e.currentTarget as HTMLElement;
-    el.style.transform = "";
-    el.style.boxShadow = "";
-  };
+  function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
+    sessionStorage.setItem(
+      "flightSearch",
+      JSON.stringify({ form, multiLegs: multiLegs ?? null })
+    );
+    navigate("/flights-new/results");
+  }
 
   return (
     <>
@@ -83,43 +76,162 @@ export default function Home() {
       />
 
       <style>{`
+        /* ── Base utilities ─────────────────────────────────────────────── */
         .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         .hero-gradient { background: linear-gradient(to bottom, rgba(0,48,89,0.45), rgba(26,28,30,0.15)); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #003059; border-radius: 10px; }
-        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.165,0.84,0.44,1); }
-        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* ── Scroll-progress bar ────────────────────────────────────────── */
+        #scroll-progress {
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%;
+          height: 3px;
+          background: linear-gradient(90deg, #003059, #0077cc, #00c2ff);
+          transform: scaleX(0);
+          transform-origin: left;
+          z-index: 9999;
+          pointer-events: none;
+          /* Subtle glow */
+          box-shadow: 0 0 8px rgba(0, 194, 255, 0.7);
+        }
+
+        /* ── Section reveal — staggered slide-up + fade ─────────────────── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(40px);
+          transition:
+            opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+          /* transition-delay is injected per-sibling by useScrollEffects */
+        }
+        .reveal.active {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        /* ── Card hover lift ─────────────────────────────────────────────── */
+        .hover-lift {
+          transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                      box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: transform;
+        }
+        .hover-lift:hover {
+          transform: translateY(-6px) scale(1.015);
+          box-shadow: 0 20px 40px rgba(0, 48, 89, 0.12);
+        }
+
+        /* ── Shimmer skeleton placeholders ──────────────────────────────── */
+        @keyframes shimmer {
+          0%   { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+        .shimmer {
+          background: linear-gradient(90deg, #e8eaf0 25%, #f4f5f8 50%, #e8eaf0 75%);
+          background-size: 800px 100%;
+          animation: shimmer 1.6s infinite linear;
+          border-radius: 6px;
+        }
+
+        /* ── Section divider fade-in line ────────────────────────────────── */
+        .section-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(0,48,89,0.12), transparent);
+          margin: 0 auto;
+          width: 0;
+          transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .section-divider.active { width: 80%; }
+
+        /* ── Parallax wrapper — overflow clip so children can shift freely  */
+        .parallax-clip { overflow: hidden; }
+
+        /* ── Tilt target — GPU-composited ────────────────────────────────── */
+        [data-tilt] { will-change: transform; }
+
+        /* ── Reduced-motion safety net ───────────────────────────────────── */
         @media (prefers-reduced-motion: reduce) {
-          .reveal { transition: none !important; opacity: 1 !important; transform: none !important; }
+          .reveal,
+          .hover-lift,
+          [data-tilt],
+          #scroll-progress,
+          .section-divider {
+            transition: none !important;
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            width: 80% !important;
+          }
         }
       `}</style>
 
-<div
+      {/* ── Scroll-progress bar ── */}
+      <div id="scroll-progress" aria-hidden="true" />
+
+      <div
         className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[124px]"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
-        {/* ================================================================
-            HERO SECTION — extracted into HeroHome component
-        ================================================================ */}
-        <HeroHome onTabChange={setTab} />
-        <TrustBar {...trustBarProps} />
-      <TrendingDestination {...trendingDestinationProps} onActionClick={() => navigate("/holidays")}  />
-      <TravelYourWay {...travelYourWayProps}  onActionClick={() => navigate("/offers")} />
-      <AIPlanner {...aiPlannerProps} />
-      <CorporateTravel {...corporateTravelProps} />
-      <StatsStrip {...statsStripProps} />
-      <Testimonials {...testimonialsProps} />
-      <TravelStories {...travelStoriesProps} onActionClick={() => navigate("/blogs")} />
-      <TrustedPartners {...trustedPartnersProps} />
-      <ConciergeCTA {...conciergeCTAProps} />
+        {/* ── HERO ── */}
+        <HeroHome
+          onSearch={handleFlightSearch}
+          tripType={tripType}
+          onTripTypeChange={setTripType}
+        />
 
+        {/* ── CONTENT SECTIONS ──
+            Add `reveal` to each section wrapper for staggered entry.
+            Add `data-parallax="0.12"` to background image containers.
+            Add `data-tilt` to card grids that should respond to scroll velocity.
+            Add `data-count="…"` to stat numbers to animate them.
+        */}
+        <div className="reveal"><TrustBar {...trustBarProps} /></div>
 
-        {/* ================================================================
-            CONTENT SECTIONS
-        ================================================================ */}
+        <div className="reveal parallax-clip">
+          <TrendingDestination
+            {...trendingDestinationProps}
+            onActionClick={() => navigate("/holidays")}
+          />
+        </div>
 
+        <div className="section-divider reveal" />
+
+        <div className="reveal" data-tilt>
+          <TravelYourWay
+            {...travelYourWayProps}
+            onActionClick={() => navigate("/offers")}
+          />
+        </div>
+
+        <div className="reveal"><AIPlanner {...aiPlannerProps} /></div>
+
+        <div className="section-divider reveal" />
+
+        <div className="reveal"><CorporateTravel {...corporateTravelProps} /></div>
+
+        {/* StatsStrip: add data-count to the individual number elements inside
+            the component, or wrap here if the component exposes no inner refs */}
+        <div className="reveal"><StatsStrip {...statsStripProps} /></div>
+
+        <div className="reveal" data-tilt>
+          <Testimonials {...testimonialsProps} />
+        </div>
+
+        <div className="section-divider reveal" />
+
+        <div className="reveal parallax-clip">
+          <TravelStories
+            {...travelStoriesProps}
+            onActionClick={() => navigate("/blogs")}
+          />
+        </div>
+
+        <div className="reveal"><TrustedPartners {...trustedPartnersProps} /></div>
+
+        <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
       </div>
     </>
   );

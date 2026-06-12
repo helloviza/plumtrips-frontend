@@ -27,6 +27,10 @@ import BookingStep5Review        from "./BookingStep5Review";
 import BookingStep6Payment       from "./BookingStep6Payment";
 import BookingStep7Confirmation  from "./ConfirmationPage";
 
+
+
+
+
 // ─── RAZORPAY LOADER ────────────────────────────────────────
 
 function loadRazorpay(): Promise<boolean> {
@@ -40,7 +44,7 @@ function loadRazorpay(): Promise<boolean> {
   });
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 
 // ─── PROPS ──────────────────────────────────────────────────
@@ -252,7 +256,7 @@ const ssrFn = apiGetSSRForLegs(allFlights);
 
   async function saveBooking(bookingId?: number, pnr?: string) {
     try {
-      await fetch(`${API_BASE}/api/v1/flights/bookings`, {
+      await fetch(`${API_BASE}/api/v1/flights/tbo/booking-save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

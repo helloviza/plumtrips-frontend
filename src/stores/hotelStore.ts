@@ -35,6 +35,7 @@ export interface Room {
   originalPrice?: number;
   taxesAndFees: number;
   additionalCharges?: number;
+  additionalChargesCurrency?: string;
   quantity: number;
   /** Extra name lines from supplier (e.g. TBO Name[1]) */
   roomSubtitle?: string;
@@ -329,7 +330,12 @@ export const useHotelStore = create<HotelBookingState>()(
 
       resetFilters: () => set({ filters: defaultFilters }),
 
-      setSelectedHotel: (hotel) => set({ selectedHotel: hotel }),
+      setSelectedHotel: (hotel) => set((s) => {
+        if (s.selectedHotel?.id !== hotel?.id) {
+          return { selectedHotel: hotel, selectedRooms: [] };
+        }
+        return { selectedHotel: hotel };
+      }),
 
       addRoom: (room) =>
         set((s) => {

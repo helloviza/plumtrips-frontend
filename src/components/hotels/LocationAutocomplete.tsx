@@ -10,6 +10,7 @@ interface LocationAutocompleteProps {
   placeholder?: string;
   error?: string;
   variant?: 'default' | 'bar';
+  theme?: 'light' | 'dark';
 }
 
 export default function LocationAutocomplete({
@@ -18,6 +19,7 @@ export default function LocationAutocomplete({
   placeholder = 'Enter city, area, or hotel name',
   error,
   variant = 'default',
+  theme = 'light',
 }: LocationAutocompleteProps) {
   const isBar = variant === 'bar';
   const [isOpen, setIsOpen] = useState(false);
@@ -105,7 +107,7 @@ export default function LocationAutocomplete({
           className={cn(
             'w-full transition-colors',
             isBar
-              ? 'border-0 bg-transparent py-0 pl-0 pr-8 text-[15px] font-black text-[#0d2d5e] placeholder:font-normal placeholder:text-gray-400 focus:outline-none focus:ring-0'
+              ? `border-0 bg-transparent py-0 pl-0 pr-8 text-[15px] font-black ${theme === 'dark' ? 'text-white placeholder:text-white/50' : 'text-[#0d2d5e] placeholder:text-gray-400'} focus:outline-none focus:ring-0`
               : 'rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-10 text-gray-900 placeholder:text-gray-400 focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/15',
             { 'border-red-500 focus:border-red-500 focus:ring-red-500/20': error && !isBar }
           )}

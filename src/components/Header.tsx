@@ -3,19 +3,19 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
-import { MapPin, Smartphone } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
 
 const allNav = [
-  { to: "/flights-new/results", label: "Flights" },
-  { to: "/hotels/results", label: "Hotels" },
-  { to: "/holidays", label: "Holidays" },
-  { to: "/mice", label: "Group Booking" },
-  { to: "/blogs", label: "Blogs" },
-  { to: "/offers", label: "Offers" },
-  { to: "/business", label: "Business" },
+  { to: "/",        label: "Flights",       exact: true  },
+  { to: "/hotels",  label: "Hotels",        exact: true  },
+  { to: "/holidays", label: "Holidays",     exact: false },
+  { to: "/mice",    label: "Group Booking", exact: false },
+  { to: "/blogs",   label: "Blogs",         exact: false },
+  { to: "/offers",  label: "Offers",        exact: false },
+  { to: "/business", label: "Business",     exact: false },
 ];
 
 export default function Header() {
@@ -27,9 +27,7 @@ export default function Header() {
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
-  useEffect(() => {
-    closeMobile();
-  }, [location.pathname]);
+  useEffect(() => { closeMobile(); }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -41,21 +39,17 @@ export default function Header() {
   const isTransparentPage =
     location.pathname === "/" ||
     location.pathname === "/home" ||
-    location.pathname === "/holidays" ||
-    location.pathname.includes("-personal") ||
-    location.pathname.includes("-corporate");
+    location.pathname === "/hotels";
 
   const isFloating = isTransparentPage && !scrolled;
 
   const externalByLabel = useMemo(
-    () =>
-      ({
-        Business: EXTERNAL_BUSINESS_URL,
-      }) as Record<string, string>,
+    () => ({ Business: EXTERNAL_BUSINESS_URL }) as Record<string, string>,
     []
   );
 
-  const renderNavItemDesktop = (item: { to: string; label: string }) => {
+  // ── Desktop nav item ──
+  const renderNavItemDesktop = (item: { to: string; label: string; exact: boolean }) => {
     const externalUrl = externalByLabel[item.label];
     const baseClasses =
       "relative flex items-center h-full px-4 text-[14px] font-medium transition-colors duration-200";
@@ -79,10 +73,9 @@ export default function Header() {
       <NavLink
         key={item.to}
         to={item.to}
+        end={item.exact}
         className={({ isActive }) =>
-          `${baseClasses} ${
-            isActive ? "text-white" : "text-white/70 hover:text-white"
-          }`
+          `${baseClasses} ${isActive ? "text-white" : "text-white/70 hover:text-white"}`
         }
         onClick={closeMobile}
       >
@@ -98,7 +91,8 @@ export default function Header() {
     );
   };
 
-  const renderNavItemMobile = (item: { to: string; label: string }) => {
+  // ── Mobile nav item ──
+  const renderNavItemMobile = (item: { to: string; label: string; exact: boolean }) => {
     const externalUrl = externalByLabel[item.label];
     if (externalUrl) {
       return (
@@ -119,6 +113,7 @@ export default function Header() {
       <NavLink
         key={item.to}
         to={item.to}
+        end={item.exact}
         className={({ isActive }) =>
           `block rounded-lg px-4 py-3 text-[15px] transition-all ${
             isActive
@@ -135,20 +130,8 @@ export default function Header() {
 
   return (
     <>
-      {/*
-        ── OUTER STICKY WRAPPER ──
-        Single sticky container with transparent background.
-        The gap between the utility bar and the nav pill lives here as padding —
-        padding inside a transparent element shows the page content behind it,
-        giving you the "transparent space" effect without any white flash.
-      */}
       <div className="sticky top-0 z-[1000] w-full font-sans bg-transparent">
 
-        {/* ── TOP UTILITY BAR ── */}
-        {/*
-          pb-4 creates the transparent gap between this bar and the nav pill below.
-          The outer wrapper is transparent so this padding shows the page through.
-        */}
         {/* ── TOP UTILITY BAR ── */}
         <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[11px] font-medium text-white/70">
           <div className="flex gap-8">
@@ -162,25 +145,20 @@ export default function Header() {
               <span className="opacity-70">📋</span> Manage Booking
             </button>
           </div>
-<div className="flex gap-8">
-  <button className="flex items-center gap-2 hover:text-white transition-colors">
-    <MapPin size={16} />
-    <span>India (INR)</span>
-    <span className="text-[9px] opacity-60">▼</span>
-  </button>
-{/* 
-  <button className="flex items-center gap-2 hover:text-white transition-colors">
-    <Smartphone size={16} />
-    <span>70659 32396</span>
-  </button> */}
-</div>
+          <div className="flex gap-8">
+            <button className="flex items-center gap-2 hover:text-white transition-colors">
+              <MapPin size={16} />
+              <span>India (INR)</span>
+              <span className="text-[9px] opacity-60">▼</span>
+            </button>
+          </div>
         </div>
 
-{/* ── MAIN NAV WRAPPER ── */}
+        {/* ── MAIN NAV WRAPPER ── */}
         <div
           className={`w-full transition-all duration-300 ease-in-out ${
             isFloating
-              ? "bg-transparent px-4 md:px-6 pt-4" // <-- Added pt-4 here for the transparent gap
+              ? "bg-transparent px-4 md:px-6 pt-4"
               : "bg-[#0b1528] shadow-[0_4px_20px_rgba(0,0,0,0.15)] border-b border-white/5"
           }`}
         >
@@ -191,36 +169,27 @@ export default function Header() {
                 : "max-w-full h-[64px] px-6 md:px-10 rounded-none border-transparent"
             }`}
           >
-            {/* ── LEFT: Logo ── */}
+            {/* Logo */}
             <div className="flex-shrink-0 flex items-center h-full">
-              <Link
-                to="/"
-                className="flex items-center"
-                aria-label="Plumtrips home"
-                onClick={closeMobile}
-              >
+              <Link to="/" className="flex items-center" aria-label="Plumtrips home" onClick={closeMobile}>
                 <img
                   src={logo}
                   alt="Plumtrips"
-                  className={`${
-                    isFloating ? "h-30" : "h-28"
-                  } w-auto select-none object-contain pointer-events-none transition-all duration-300`}
+                  className={`${isFloating ? "h-30" : "h-28"} w-auto select-none object-contain pointer-events-none transition-all duration-300`}
                 />
               </Link>
             </div>
 
-            {/* ── CENTER: Nav items (desktop) ── */}
+            {/* Desktop nav */}
             <nav className="hidden md:flex flex-1 items-center justify-center h-full gap-2">
               {allNav.map(renderNavItemDesktop)}
             </nav>
 
-            {/* ── RIGHT: UserMenu + mobile burger ── */}
+            {/* Right: UserMenu + mobile burger */}
             <div className="flex-shrink-0 flex items-center gap-4 h-full">
               <div className="signin-wrapper flex items-center h-full">
                 <UserMenu />
               </div>
-
-              {/* Mobile burger */}
               <button
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 md:hidden hover:bg-white/10 transition-colors"
@@ -228,21 +197,9 @@ export default function Header() {
                 aria-label="Toggle navigation menu"
               >
                 <div className="space-y-1.5">
-                  <span
-                    className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${
-                      mobileOpen ? "translate-y-[8px] rotate-45" : ""
-                    }`}
-                  />
-                  <span
-                    className={`block h-[2px] w-5 bg-white transition-opacity duration-300 ${
-                      mobileOpen ? "opacity-0" : "opacity-100"
-                    }`}
-                  />
-                  <span
-                    className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${
-                      mobileOpen ? "-translate-y-[8px] -rotate-45" : ""
-                    }`}
-                  />
+                  <span className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "translate-y-[8px] rotate-45" : ""}`} />
+                  <span className={`block h-[2px] w-5 bg-white transition-opacity duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`} />
+                  <span className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "-translate-y-[8px] -rotate-45" : ""}`} />
                 </div>
               </button>
             </div>
@@ -264,43 +221,24 @@ export default function Header() {
       </div>
 
       <style>{`
-        :root {
-          --accent: #d06549;
-        }
-
-        .signin-wrapper button,
-        .signin-wrapper a[role="button"] {
-          background-color: var(--accent) !important;
-          color: white !important;
-          padding: 8px 20px !important;
-          border-radius: 8px !important;
-          border: none !important;
-          font-size: 14px !important;
-          font-weight: 600 !important;
-          cursor: pointer !important;
-          letter-spacing: 0.02em !important;
-          box-shadow: 0 4px 14px rgba(208, 101, 73, 0.3) !important;
+        :root { --accent: #d06549; }
+        .signin-wrapper button, .signin-wrapper a[role="button"] {
+          background-color: var(--accent) !important; color: white !important;
+          padding: 8px 20px !important; border-radius: 8px !important;
+          border: none !important; font-size: 14px !important; font-weight: 600 !important;
+          cursor: pointer !important; letter-spacing: 0.02em !important;
+          box-shadow: 0 4px 14px rgba(208,101,73,0.3) !important;
           transition: all 0.2s ease-in-out !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: 8px !important;
+          display: flex !important; align-items: center !important; gap: 8px !important;
         }
-
-        .signin-wrapper button::before,
-        .signin-wrapper a[role="button"]::before {
-          content: "";
-          display: inline-block;
-          width: 16px;
-          height: 16px;
+        .signin-wrapper button::before, .signin-wrapper a[role="button"]::before {
+          content: ""; display: inline-block; width: 16px; height: 16px;
           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E");
-          background-size: contain;
-          background-repeat: no-repeat;
+          background-size: contain; background-repeat: no-repeat;
         }
-
-        .signin-wrapper button:hover,
-        .signin-wrapper a[role="button"]:hover {
+        .signin-wrapper button:hover, .signin-wrapper a[role="button"]:hover {
           background-color: #bd553b !important;
-          box-shadow: 0 6px 20px rgba(208, 101, 73, 0.5) !important;
+          box-shadow: 0 6px 20px rgba(208,101,73,0.5) !important;
           transform: translateY(-1px) !important;
         }
       `}</style>
