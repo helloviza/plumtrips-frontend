@@ -44,25 +44,25 @@ export default function HotelBookingShell({
           </button>
 
           {/* Step indicators */}
-          <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto scrollbar-none">
+          <div className="flex-1 flex items-center justify-between gap-1 sm:gap-2 overflow-x-auto scrollbar-none max-w-4xl mx-auto w-full px-2">
             {BOOKING_STEPS.slice(0, 7).map((label, i) => {
               const stepNum = i + 1;
               const done   = stepNum < activeStep + 1; // +1 since activeStep is 0-indexed here but 1-indexed in flights? Wait, BOOKING_STEPS in hotel is 0-indexed. activeStep=0 is first step.
               const active = stepNum === activeStep + 1;
               return (
-                <div key={label} className="flex items-center gap-1 shrink-0">
-                  <div className="flex items-center gap-1">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                <div key={label} className={`flex items-center ${i < BOOKING_STEPS.length - 1 ? 'flex-1' : ''}`}>
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black transition-all ${
                       done ? "bg-emerald-500 text-white" : active ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
                     }`}>
                       {done ? "✓" : stepNum}
                     </div>
-                    <span className={`hidden md:block text-[10px] font-semibold whitespace-nowrap ${
+                    <span className={`hidden md:block text-[10px] sm:text-xs font-semibold whitespace-nowrap ${
                       active ? "text-blue-600" : done ? "text-emerald-500" : "text-slate-300"
                     }`}>{label}</span>
                   </div>
                   {i < BOOKING_STEPS.length - 1 && (
-                    <div className={`w-4 h-px mx-0.5 shrink-0 ${done ? "bg-emerald-300" : "bg-slate-200"}`} />
+                    <div className={`flex-1 h-[2px] mx-1 sm:mx-3 shrink-0 transition-colors ${done ? "bg-emerald-300" : "bg-slate-200"}`} />
                   )}
                 </div>
               );

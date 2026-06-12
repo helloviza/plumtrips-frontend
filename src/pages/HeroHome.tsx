@@ -3,18 +3,12 @@ import SearchPage from "../pages/flights_new/SearchPage";
 import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
   tripType?: "oneWay" | "roundTrip" | "multiCity";
   onTripTypeChange?: (t: "oneWay" | "roundTrip" | "multiCity") => void;
 }
 
-// ---------------------------------------------------------------------------
-// HeroHome — Flights page hero (no tab switcher)
-// ---------------------------------------------------------------------------
 export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -29,6 +23,14 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
     if (heroImgRef.current)
       heroImgRef.current.style.transform = "scale(1.1) translate(0,0)";
   };
+
+  const TRENDING = [
+    { city: "Dubai",     img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80" },
+    { city: "Singapore", img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80" },
+    { city: "Bali",      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80" },
+    { city: "Europe",    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80" },
+    { city: "Thailand",  img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80" },
+  ];
 
   return (
     <div
@@ -63,7 +65,7 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
 
           {/* Headline + Deal Card */}
           <div
-            className="mb-2 reveal"
+            className=" reveal"
             style={{
               transitionDelay: "0.04s",
               display: "flex",
@@ -74,7 +76,7 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
           >
             {/* Left: copy block */}
             <div style={{ flex: "1 1 0", minWidth: 0 }}>
-              <div className="mb-3">
+              <div className="mb-5">
                 <span
                   style={{
                     display: "inline-flex",
@@ -121,7 +123,6 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                 Best fares on domestic &amp; international flights · Hotels from ₹999/night
               </p>
             </div>
-            
 
             {/* Right: Flight Deal Card */}
             <div style={{ flexShrink: 0, alignSelf: "flex-start", marginTop: 4 }}>
@@ -167,6 +168,41 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Trending destinations — own row below headline */}
+          <div
+            className="reveal"
+            style={{
+              transitionDelay: "0.06s",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              marginBottom: 16,
+            }}
+          >
+            <span style={{
+              fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 500,
+              color: "rgba(255,255,255,0.4)",
+            }}>
+              Trending destinations:
+            </span>
+            {TRENDING.map(d => (
+              <button key={d.city} style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "4px 14px 4px 4px", borderRadius: 999,
+                background: "rgba(255,255,255,0.09)", backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                fontFamily: "Poppins, sans-serif", fontSize: 12.5, fontWeight: 500,
+                color: "rgba(255,255,255,0.88)", cursor: "pointer",
+              }}>
+                <img src={d.img} alt={d.city} style={{
+                  width: 24, height: 24, borderRadius: "50%", objectFit: "cover",
+                }} />
+                {d.city}
+              </button>
+            ))}
           </div>
 
           {/* Flight Search Form — inline, no tab wrapper */}

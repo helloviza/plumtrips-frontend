@@ -231,7 +231,7 @@ export default function GuestDetails() {
     processSubmit(data);
   };
 
-  const basePrice = selectedRooms.reduce((s, r) => s + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0);
+  const basePrice = selectedRooms.reduce((s, r) => s + (r.price * r.quantity), 0);
 
   // ── Room unavailable screen ───────────────────────────────────────────────
   if (roomUnavailable) {
@@ -444,8 +444,8 @@ export default function GuestDetails() {
               </div>
             ))}
             <div className="flex justify-between text-sm text-gray-400">
-              <span>Taxes, fees & surcharges</span>
-              <span>{formatCurrency(selectedRooms.reduce((s, r) => s + (r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0))}</span>
+              <span>Taxes & fees</span>
+              <span>Calculated at checkout</span>
             </div>
             <div className="mt-3 flex justify-between border-t border-gray-100 pt-3 font-bold text-gray-900">
               <span>Estimated total</span>
@@ -468,3 +468,4 @@ export default function GuestDetails() {
     </HotelBookingShell>
   );
 }
+

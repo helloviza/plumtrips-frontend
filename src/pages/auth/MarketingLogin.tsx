@@ -5,14 +5,13 @@ import toast from 'react-hot-toast';
 
 export default function MarketingLogin() {
   const { marketlogin } = useAuth();
-  const navigate   = useNavigate();
-  const [email,    setEmail]    = useState('');
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!email || !password) { toast.error('Enter email and password'); return; }
     setLoading(true);
     try {
@@ -26,166 +25,312 @@ export default function MarketingLogin() {
     }
   };
 
+  const colors = {
+    // Left panel – midnight navy (matches the target PNG right panel)
+    rightPanelBg: '#0b1528',
+    // Slightly lighter navy for depth
+    rightPanelSurface: '#111e35',
+    onSurface: '#e1e3e4',
+    onSurfaceVariant: '#8a9bb5',
+    outline: '#a48b85',
+    outlineVariant: '#56423d',
+    primary: '#df7154',       // sunset orange
+    onPrimary: '#ffffff',
+    // Input box fill – white filled boxes as in the target PNG
+    inputBg: '#ffffff',
+    inputBgFocus: '#ffffff',
+    inputBorder: 'rgba(255,255,255,0.9)',
+    inputBorderFocus: '#df7154',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '12px',
+    fontWeight: 600,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
+    color: colors.onSurface,
+    display: 'block',
+    marginBottom: '8px',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    // Filled box style matching the target PNG
+    background: colors.inputBg,
+    border: `1px solid ${colors.inputBorder}`,
+    borderRadius: '4px',
+    color: '#1a1a1a',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: '14px',
+    padding: '12px 14px',
+    outline: 'none',
+    transition: 'border-color 0.2s, background 0.2s',
+    boxSizing: 'border-box' as const,
+  };
+
+  // Monaco nighttime harbor – matches the zip's screen.png exactly
+  const heroImage = '/assets/marketing-hero.jpg';
+  const fallbackImage = 'https://images.openai.com/static-rsc-4/uCS59ISOlOLRDM1PMUS773kjKyZwYf5cKygCxnetFJVY4eI7OJS1ljua9JY2dloLYlVDHD3lskKR65g6qhgOf09njbgWhcpsBs2q9YpiDrL2u89nq5zr2Pq0QI9-AhQhVw5C7pHg23mmSULPhgd_9SVqT_kILiwBQkIIr6ovE4XNLHJtRNqW6wmPFWr0wQPY?purpose=fullsize';
+
   return (
-    /* page */
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      fontFamily: 'Inter, sans-serif',
+      position: 'relative',
+      // Hero image spans full viewport
+      backgroundColor: '#0a1525',
+      backgroundImage: `url(${heroImage}), url(${fallbackImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center 40%',
+      padding: '50px 180px',
+      boxSizing: 'border-box',
+    }}>
 
-      {/* ── Left panel – Navy brand ── */}
-      <div
-        className="relative flex lg:w-1/2 hero-gradient overflow-hidden"
-        style={{ background: '#00477f' }}
-      >
-        <div className="relative z-10 flex flex-col justify-between w-full px-10 py-12 lg:px-16 lg:py-16">
+      {/* Full-viewport cinematic overlay */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(to top, rgba(5,12,28,0.92) 0%, rgba(5,12,28,0.45) 45%, rgba(5,12,28,0.15) 100%)',
+        pointerEvents: 'none',
+      }} />
 
-          {/* Logo */}
-          <div onClick={() => navigate("/")} className="flex items-center gap-4 cursor-pointer">
-            <img
-                src="/assets/logo.png"
-                alt="Plumtrips"
-                className="h-12 w-auto object-contain"
-              />
-            <div>
-              <div className="text-white font-bold text-2xl leading-none flash-font">Marketing Panel</div>
-            </div>
-          </div>
-
-          {/* Tagline */}
-          <div className="mt-auto mb-10 lg:mb-0">
-            <h2 className="text-[#d06549] text-3xl lg:text-4xl font-bold leading-tight flash-font mb-4">
-              Craft stories that<br />move the world.
-            </h2>
-            <p className="text-white/65 text-base leading-relaxed max-w-sm">
-              Your all-in-one platform to create, manage, and market travel experiences — from content to bookings in minutes.
-            </p>
-
-            {/* Feature list */}
-            <ul className="mt-8 space-y-3">
-              {[
-  'Create blogs, packages & landing pages',
-  'Build and manage custom itineraries',
-  'Upload & manage media at scale (S3)',
-  'Schedule content, offers & campaigns',
-  'SEO tools for travel discovery',
-  'Direct customer marketing & engagement',
-].map((f) => (
-                <li key={f} className="flex items-center gap-3 text-white/80 text-sm">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ background: '#d06549' }}
-                  />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Decorative circles */}
-        <div
-          className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full opacity-10"
-          style={{ background: '#d06549' }}
-        />
-        <div
-          className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-[0.07]"
-          style={{ background: '#ffffff' }}
-        />
+      {/* Bottom-left text overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: 64,
+        left: 80,
+        zIndex: 10,
+        maxWidth: '520px',
+      }}>
+        <p style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '12px',
+          fontWeight: 600,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: '#ffffff',
+          margin: '0 0 16px',
+        }}>
+          Premium Marketing Intelligence
+        </p>
+        <h2 style={{
+          fontFamily: '"Playfair Display", serif',
+          fontSize: '64px',
+          fontWeight: 700,
+          lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+          color: '#ffffff',
+          margin: '0 0 20px',
+        }}>
+          Craft stories that<br />move the world
+        </h2>
+        <p style={{
+          fontFamily: '"Source Serif 4", serif',
+          fontSize: '18px',
+          fontWeight: 400,
+          lineHeight: 1.6,
+          color: 'rgba(225,227,228,0.80)',
+          margin: 0,
+        }}>
+          The all-in-one platform for luxury travel marketing and high-end editorial distribution.
+        </p>
       </div>
 
-      {/* ── Right panel – Login form ── */}
-      <div className="flex flex-1 items-center justify-center bg-white px-6 py-12 lg:px-16">
-        <form
-          className="w-full max-w-sm"
-          onSubmit={handleSubmit}
-        >
-          {/* Form header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-[#d06549] flash-font">Sign in</h1>
-            <p className="text-[#00477f] text-lg mt-1">Access the Plumtrips Marketing Panel</p>
-          </div>
+      {/* ── Floating form card ── */}
+      <div style={{
+        position: 'relative',
+        zIndex: 20,
+        background: colors.rightPanelBg,
+        borderRadius: '12px',
+        width: '490px',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '48px 44px 36px',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+      }}>
 
-          {/* Email field */}
-          <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Email address
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="m2 7 10 7 10-7"/>
-                </svg>
-              </span>
-              <input
-                type="email"
-                placeholder="admin@plumtrips.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                autoComplete="email"
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                style={{ '--tw-ring-color': '#00477f' } as React.CSSProperties}
-              />
-            </div>
-          </div>
+        {/* Heading */}
+        <h1 style={{
+          fontFamily: '"Playfair Display", serif',
+          fontSize: '32px',
+          fontWeight: 700,
+          lineHeight: 1.2,
+          color: colors.onSurface,
+          margin: '0 0 36px',
+        }}>
+          Access the Plumtrips<br />Marketing Panel
+        </h1>
 
-          {/* Password field */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </span>
-              <input
-                type={showPass ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                style={{ '--tw-ring-color': '#00477f' } as React.CSSProperties}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(p => !p)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition"
-              >
-                {showPass
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                }
-              </button>
-            </div>
-          </div>
+        {/* Email field */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>Email ID</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            autoComplete="email"
+            style={inputStyle}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = colors.inputBorderFocus;
+              e.currentTarget.style.background = colors.inputBgFocus;
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = colors.inputBorder;
+              e.currentTarget.style.background = colors.inputBg;
+            }}
+          />
+        </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2"
-            style={{ background: loading ? '#00477f99' : '#00477f' }}
-            onMouseEnter={e => !loading && ((e.currentTarget as HTMLButtonElement).style.background = '#003a6b')}
-            onMouseLeave={e => !loading && ((e.currentTarget as HTMLButtonElement).style.background = '#00477f')}
+        {/* Password field */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Password</label>
+            <button type="button" style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '13px',
+              fontWeight: 500,
+              color: colors.primary,
+              padding: 0,
+            }}>
+              Reset Password
+            </button>
+          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            autoComplete="current-password"
+            style={inputStyle}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = colors.inputBorderFocus;
+              e.currentTarget.style.background = colors.inputBgFocus;
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = colors.inputBorder;
+              e.currentTarget.style.background = colors.inputBg;
+            }}
+          />
+        </div>
+
+        {/* Remember me */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+          <div
+            onClick={() => setRememberMe(p => !p)}
+            style={{
+              width: '16px',
+              height: '16px',
+              border: `1px solid ${rememberMe ? colors.primary : 'rgba(255,255,255,0.3)'}`,
+              borderRadius: '2px',
+              cursor: 'pointer',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: rememberMe ? colors.primary : 'transparent',
+              transition: 'all 0.15s',
+            }}
           >
-            {loading
-              ? (
-                <svg
-                  className="animate-spin w-4 h-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
-              )
-              : 'Sign in to Dashboard'
-            }
-          </button>
-        </form>
+            {rememberMe && (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5 3.5-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+          <span
+            style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: colors.onSurface, cursor: 'pointer', userSelect: 'none' }}
+            onClick={() => setRememberMe(p => !p)}
+          >
+            Remember me
+          </span>
+        </div>
+
+        {/* Submit button */}
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleSubmit}
+          style={{
+            width: '100%',
+            padding: '14px',
+            background: loading ? `${colors.primary}99` : colors.primary,
+            border: 'none',
+            borderRadius: '4px',
+            color: '#ffffff',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'background 0.15s',
+            boxShadow: loading ? 'none' : '0 0 20px rgba(223,113,84,0.25)',
+            marginBottom: '16px',
+          }}
+          onMouseEnter={e => !loading && ((e.currentTarget as HTMLButtonElement).style.background = '#c85e43')}
+          onMouseLeave={e => !loading && ((e.currentTarget as HTMLButtonElement).style.background = colors.primary)}
+        >
+          {loading ? (
+            <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+          ) : 'Launch Panel'}
+        </button>
+
+        {/* Contact note */}
+        <p style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '13px',
+          color: colors.onSurfaceVariant,
+          textAlign: 'center',
+          margin: '0 0 28px',
+        }}>
+          Don't have an account?{' '}
+          <span style={{ color: colors.onSurface, fontWeight: 600, cursor: 'pointer' }}>
+            Contact Partnership Management
+          </span>
+        </p>
+
+        {/* Footer links */}
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          paddingTop: '20px',
+          display: 'flex',
+          gap: '20px',
+          justifyContent: 'center',
+        }}>
+          {['Privacy Policy', 'Terms of Service', 'Help'].map(link => (
+            <span
+              key={link}
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '12px',
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                color: colors.onSurfaceVariant,
+                cursor: 'pointer',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = colors.onSurface)}
+              onMouseLeave={e => (e.currentTarget.style.color = colors.onSurfaceVariant)}
+            >
+              {link}
+            </span>
+          ))}
+        </div>
+
       </div>
     </div>
   );

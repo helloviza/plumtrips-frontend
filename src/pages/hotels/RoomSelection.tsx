@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   BedDouble, Maximize2, Eye,
@@ -62,55 +63,56 @@ export default function RoomSelection() {
     </div>
   );
 
+  const lowestRoomTotal = rooms.reduce((min, room) => room.price < min ? room.price : min, Infinity);
+
+  const scrollToRooms = () => {
+    document.getElementById('rooms-list')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const getSelectedRoom = (roomId: string) => selectedRooms.find(r => r.id === roomId);
   const totalRoomsSelected = selectedRooms.reduce((sum, r) => sum + r.quantity, 0);
-  const totalPrice = selectedRooms.reduce((sum, r) => sum + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity, 0);
+  const totalPrice = selectedRooms.reduce((sum, r) => sum + (r.price * r.quantity), 0);
 
   const handleAddRoom = (room: Room) => {
     clearRooms();
     addRoom(room);
   };
   
-  // Find the lowest room price for the sidebar summary
-  const lowestRoomTotal = rooms.length > 0 
-    ? Math.min(...rooms.map(r => r.price + r.taxesAndFees + (r.additionalCharges || 0))) 
-    : 0;
-
   const cancelDateMatch = rooms[0]?.cancellationPolicy.match(/until (\d+ [a-zA-Z]+ \d+)/i);
   const cancelDateStr = cancelDateMatch ? cancelDateMatch[1] : "8 Jun 2026";
 
   const totalGuests = searchParams.adults + searchParams.children;
 
-  const scrollToRooms = () => {
-    document.getElementById('choose-your-room')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <HotelBookingShell>
-      <div className="bg-[#f8f7f4] font-sans pb-24">
-        <main className="mx-auto max-w-7xl px-4 py-6">
-        
+    <HotelBookingShell activeStep={1} maxWidth="7xl">
+      <div className="font-sans pb-24 w-full">
         {/* Top Gallery Section */}
         <div className="mb-6 rounded-2xl overflow-hidden bg-white p-2 shadow-sm border border-slate-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[400px]">
             {/* Main Left Image */}
-            <div className="md:col-span-2 rounded-xl overflow-hidden relative group">
+            <div className="md:col-span-2 rounded-xl overflow-hidden relative group cursor-pointer" onClick={() => setIsGalleryOpen(true)}>
               {hotel.images?.[0] ? (
                 <img src={hotel.images[0]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               ) : (
                 <div className="w-full h-full bg-slate-200 flex items-center justify-center"><BedDouble className="w-16 h-16 text-slate-400"/></div>
               )}
+              {/* Mobile View All Photos Overlay */}
+              <div className="absolute bottom-4 right-4 md:hidden z-10">
+                <div className="bg-black/60 backdrop-blur-md border border-white/20 text-white font-bold py-2 px-4 rounded-full flex items-center gap-2 text-sm shadow-lg">
+                  <Images className="w-4 h-4" /> View Photos
+                </div>
+              </div>
             </div>
             {/* Right Stacked Images */}
             <div className="hidden md:flex flex-col gap-2 h-full">
-              <div className="flex-1 rounded-xl overflow-hidden relative group">
+              <div className="flex-1 min-h-0 rounded-xl overflow-hidden relative group">
                 {hotel.images?.[1] ? (
                   <img src={hotel.images[1]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full bg-slate-200" />
                 )}
               </div>
-              <div className="flex-1 rounded-xl overflow-hidden relative group cursor-pointer">
+              <div className="flex-1 min-h-0 rounded-xl overflow-hidden relative group cursor-pointer">
                 {hotel.images?.[2] ? (
                   <img src={hotel.images[2]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
@@ -118,7 +120,7 @@ export default function RoomSelection() {
                 )}
                 {/* View All Photos Overlay */}
                 <div 
-                  className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity hover:bg-black/50 cursor-pointer"
+                  className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity hover:bg-black/50 cursor-pointer z-10"
                   onClick={() => setIsGalleryOpen(true)}
                 >
                   <div className="bg-white/20 backdrop-blur-md border border-white/40 text-white font-bold py-2 px-4 rounded-full flex items-center gap-2">
@@ -194,13 +196,13 @@ export default function RoomSelection() {
             </section>
 
             {/* Choose Your Room */}
-            <section id="choose-your-room" className="scroll-mt-24">
+            <section id="rooms-list" className="scroll-mt-24">
               <h2 className="text-2xl font-bold text-slate-900 mb-6">Choose Your Room</h2>
               
               <div className="flex flex-col gap-6">
                 {rooms.map((room, index) => {
                   const selected = getSelectedRoom(room.id);
-                  const totalStay = room.price + room.taxesAndFees;
+                  const totalStay = room.price;
                   const roomImage = room.images?.[0] || hotel.images?.[(index + 1) % (hotel.images.length || 1)];
                   
                   return (
@@ -221,9 +223,11 @@ export default function RoomSelection() {
                             <BedDouble className="w-12 h-12" />
                           </div>
                         )}
-                        <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1.5 border border-white">
-                          <Maximize2 className="w-3.5 h-3.5" /> {room.size} sq.ft
-                        </div>
+                        {room.size > 0 && (
+                          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1.5 border border-white">
+                            <Maximize2 className="w-3.5 h-3.5" /> {room.size} sq.ft
+                          </div>
+                        )}
                       </div>
 
                       {/* Right Side: Content */}
@@ -260,12 +264,12 @@ export default function RoomSelection() {
                             <div className="flex items-start gap-2 mb-2.5">
                               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                               <span className="text-xs font-bold text-amber-900 leading-tight">
-                                Mandatory extra charges — payable directly to the hotel at check-in/check-out
+                                Mandatory extra charges – payable directly to the hotel at check-in/check-out
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-xs font-bold text-amber-800 ml-6 bg-white px-3 py-2 rounded-lg border border-amber-100">
-                              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/> mandatory_tax</span>
-                              <span>AED {Math.round(room.additionalCharges / 22)}</span>
+                              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/> Mandatory Tax</span>
+                              <span>{room.additionalChargesCurrency || 'AED'} {room.additionalCharges}</span>
                             </div>
                           </div>
                         ) : null}
@@ -308,7 +312,7 @@ export default function RoomSelection() {
                   <div className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter mb-1">
                     {formatCurrency(lowestRoomTotal)}
                   </div>
-                  <div className="text-xs font-medium text-slate-500 mb-4">per night / incl. taxes</div>
+                  <div className="text-xs font-medium text-slate-500 mb-4">per night / estimated</div>
                   <Button fullWidth size="lg" className="bg-orange-600 hover:bg-orange-700 font-bold rounded-xl text-base shadow-lg shadow-orange-600/20" onClick={scrollToRooms}>
                     View Rooms &rarr;
                   </Button>
@@ -384,7 +388,6 @@ export default function RoomSelection() {
             </div>
           </div>
         </div>
-      </main>
 
       {/* Floating Bottom Right Support Widget */}
       <div className="fixed bottom-6 right-6 z-50">
@@ -419,8 +422,8 @@ export default function RoomSelection() {
     </div>
 
       {/* Fullscreen Photo Gallery Modal */}
-      {isGalleryOpen && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-300">
+      {isGalleryOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in duration-300">
           <div className="p-4 flex justify-between items-center bg-black/50 sticky top-0 z-10 backdrop-blur-md">
             <h3 className="text-white font-bold text-lg">{hotel.name} - Photos</h3>
             <button 
@@ -439,7 +442,8 @@ export default function RoomSelection() {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </HotelBookingShell>

@@ -25,7 +25,9 @@ import {
   hotelTrendingDestinationsProps,
   topHotelBrandsProps,
   guestStoriesProps,
+  aiHotelFinderProps,
 } from "../components/features-components";
+import { AIHotelFinder } from "../components/features-components/AIHotelFinder";
 
 // ---------------------------------------------------------------------------
 // HotelHome — Hotels landing page at route "/hotels"
@@ -139,7 +141,7 @@ export default function HotelHome() {
         <HeroHotel />
 
         {/* ── CONTENT SECTIONS ── */}
-        <div className="reveal"><TrustBar {...trustBarProps} /></div>
+       <TrustBar {...trustBarProps} />
 
         <div className="reveal parallax-clip">
           <TrendingDestination
@@ -157,7 +159,7 @@ export default function HotelHome() {
           />
         </div>
 
-        <div className="reveal"><AIPlanner {...aiPlannerProps} /></div>
+        <div className="reveal"><AIHotelFinder {...aiHotelFinderProps}/></div>
 
         <div className="section-divider reveal" />
 

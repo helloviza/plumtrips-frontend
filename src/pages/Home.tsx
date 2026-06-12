@@ -188,7 +188,7 @@ export default function Home() {
             Add `data-tilt` to card grids that should respond to scroll velocity.
             Add `data-count="…"` to stat numbers to animate them.
         */}
-        <div className="reveal"><TrustBar {...trustBarProps} /></div>
+        <TrustBar {...trustBarProps} />
 
         <div className="reveal parallax-clip">
           <TrendingDestination

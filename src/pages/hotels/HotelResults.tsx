@@ -380,7 +380,7 @@ export default function HotelResults() {
 
   // Sticky bottom summary bar for multiple room selections
   const totalRoomsSelected = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + r.quantity, 0) : 0;
-  const totalPrice = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + (r.price + (r.additionalCharges || 0)) * r.quantity, 0) : 0;
+  const totalPrice = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + (r.price * r.quantity), 0) : 0;
 
   return (
     <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -556,5 +556,6 @@ export default function HotelResults() {
     </div>
   );
 }
+
 
 

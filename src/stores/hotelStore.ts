@@ -330,12 +330,7 @@ export const useHotelStore = create<HotelBookingState>()(
 
       resetFilters: () => set({ filters: defaultFilters }),
 
-      setSelectedHotel: (hotel) => set((s) => {
-        if (s.selectedHotel?.id !== hotel?.id) {
-          return { selectedHotel: hotel, selectedRooms: [] };
-        }
-        return { selectedHotel: hotel };
-      }),
+      setSelectedHotel: (hotel) => set({ selectedHotel: hotel }),
 
       addRoom: (room) =>
         set((s) => {

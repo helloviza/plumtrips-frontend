@@ -106,7 +106,7 @@ items: [
 
 // ── AIPlanner ────────────────────────────────
 export const aiPlannerProps: AIPlannerProps = {
-  badge: "✨ AI Trip Planner",
+  badge: " AI Trip Planner",
   title: "Not sure where to go?",
   subtitle: "Let AI plan the perfect trip for you — based on your budget, vibe and dates.",
   fields: [
@@ -119,7 +119,7 @@ export const aiPlannerProps: AIPlannerProps = {
   ctaLabel: "Generate My Trip",
   suggestion: {
     imageUrl: "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=800&q=80",
-    badge: "✨ Suggested for you",
+    badge: "Suggested for you",
     destination: "Switzerland",
     tagline: "7 days · Alps, Lucerne & Interlaken",
     estimatedPrice: "₹72,500",
@@ -197,9 +197,6 @@ export const travelStoriesProps: TravelStoriesProps = {
 export const conciergeCTAProps: ConciergeCTAProps = {
   title: "Your Journey, Our Priority",
   subtitle: "Expert concierge assistance — call or message anytime to curate your perfect trip.",
-  whatsappLabel: "💬 Chat on WhatsApp",
-  callbackLabel: "📞 Request a Callback",
-  phone: "+91 98765 43210",
 };
 
 
@@ -287,7 +284,7 @@ export const hotelTrendingDestinationsProps: HotelTrendingDestinationsProps = {
  
 // ── AIHotelFinder ─────────────────────────────
 export const aiHotelFinderProps: AIHotelFinderProps = {
-  badge: "✨ AI Hotel Finder",
+  badge: "AI Hotel Finder",
   title: "Tell us what you need, our AI will find the perfect stay.",
   bullets: [
     "Personalized recommendations",
@@ -460,24 +457,18 @@ export const guestStoriesProps: GuestStoriesProps = {
       name: "Ananya Sharma",
       city: "Mumbai",
       avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80",
-      rating: 5,
-      verified: true,
       quote: "Our stay in Bali was beyond amazing! PumTrips curated everything perfectly.",
     },
     {
       name: "Rohit Verma",
       city: "Bangalore",
       avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
-      rating: 5,
-      verified: true,
       quote: "Excellent service and great hotel options. Highly recommended!",
     },
     {
       name: "Neha Iyer",
       city: "Delhi",
       avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80",
-      rating: 5,
-      verified: true,
       quote: "The concierge support was incredible throughout our Switzerland trip.",
     },
   ],

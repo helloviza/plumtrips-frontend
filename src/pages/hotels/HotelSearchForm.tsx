@@ -431,7 +431,11 @@ export default function HotelsSearchForm() {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.13)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.70)"; }}
               >
-                🏨 {dest.name}
+              <img
+                    src="/icons/HOTELS.png"
+                    alt=""
+                    style={{ width: 30, height: 20, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                  />{dest.name}
               </button>
             ))}
           </div>
@@ -440,7 +444,11 @@ export default function HotelsSearchForm() {
           <button type="button" onClick={handleSearch}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px 10px 24px", borderRadius: 11, border: "none", background: C.orange, color: "#fff", fontFamily: "Poppins, sans-serif", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", boxShadow: "0 8px 28px rgba(255,104,44,0.50)", letterSpacing: "0.02em" }}>
             Find Hotels
-            <span style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.22)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏨</span>
+            <span style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.22)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>              <img
+                    src="/icons/HOTELS.png"
+                    alt=""
+                    style={{ width: 30, height: 30, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                  /></span>
           </button>
         </div>
       </div>

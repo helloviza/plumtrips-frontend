@@ -5,11 +5,11 @@ import type { ConciergeCTAProps } from "./types";
 export function ConciergeCTA({
   title,
   subtitle,
-  whatsappLabel,
-  callbackLabel,
-  phone,
-  onWhatsAppClick,
-  onCallbackClick,
+  // whatsappLabel,
+  // callbackLabel,
+  // phone,
+  // onWhatsAppClick,
+  // onCallbackClick,
 }: ConciergeCTAProps) {
   return (
     <section className="concierge-section">
@@ -63,7 +63,7 @@ export function ConciergeCTA({
             {subtitle}
           </p>
         </div>
-        <div className="concierge-actions">
+        {/* <div className="concierge-actions">
           <button
             onClick={onWhatsAppClick}
             style={{
@@ -105,7 +105,7 @@ export function ConciergeCTA({
             {callbackLabel}
           </button>
           <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 16, color: "#fff" }}>{phone}</span>
-        </div>
+        </div> */}
       </div>
     </section>
   );

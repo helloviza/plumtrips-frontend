@@ -154,11 +154,7 @@ export interface TravelStoriesProps {
 export interface ConciergeCTAProps {
   title: string;
   subtitle: string;
-  whatsappLabel: string;
-  callbackLabel: string;
-  phone: string;
-  onWhatsAppClick?: () => void;
-  onCallbackClick?: () => void;
+
 }
 
 
@@ -199,11 +195,9 @@ export interface AIHotelFinderProps {
   badge: string;
   title: string;
   bullets: string[];
-  fields: {
-    label: string;
-    placeholder: string;
-  }[];
+  fields: PlannerField[];
   ctaLabel: string;
+  onFind?: () => void;
   suggestion: {
     imageUrl: string;
     badge: string;
@@ -212,6 +206,7 @@ export interface AIHotelFinderProps {
     rating: string;
     ratingCount: string;
     pricePerNight: string;
+    onViewDetails?: () => void;
   };
 }
  

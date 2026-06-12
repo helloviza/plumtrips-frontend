@@ -235,6 +235,8 @@ function normRoom(raw: any, index: number): Room {
   let additionalCharges = parseInt(String(raw.additionalCharges || raw.AdditionalCharges || 0));
   if (isNaN(additionalCharges)) additionalCharges = 0;
   
+  let additionalChargesCurrency: string | undefined = raw.additionalChargesCurrency || raw.AdditionalChargesCurrency;
+  
   if (!additionalCharges && Array.isArray(raw.Supplements)) {
     const flatSupplements = raw.Supplements.flat(Infinity);
     additionalCharges = flatSupplements.reduce((sum: number, supp: any) => {
@@ -245,13 +247,17 @@ function normRoom(raw: any, index: number): Room {
         supp.ChargeType === 'AtProperty' ||
         (supp.Description && supp.Description.toLowerCase().includes('mandatory')))
       ) {
+        if (!additionalChargesCurrency && supp.Currency) additionalChargesCurrency = supp.Currency;
         return sum + (parseInt(String(supp.Price || supp.Amount || 0)) || 0);
       }
       return sum;
     }, 0);
   }
   if (!additionalCharges && Array.isArray(raw.MandatoryTaxes)) {
-    additionalCharges = raw.MandatoryTaxes.reduce((sum: number, tax: any) => sum + parseInt(String(tax.Amount || tax.Price || 0)), 0);
+    additionalCharges = raw.MandatoryTaxes.reduce((sum: number, tax: any) => {
+      if (!additionalChargesCurrency && tax.Currency) additionalChargesCurrency = tax.Currency;
+      return sum + parseInt(String(tax.Amount || tax.Price || 0));
+    }, 0);
   }
 
   const roomImages = Array.isArray(raw.Images) ? raw.Images : Array.isArray(raw.images) ? raw.images : raw.RoomPicture ? [raw.RoomPicture] : raw.Picture ? [raw.Picture] : [];
@@ -273,6 +279,7 @@ function normRoom(raw: any, index: number): Room {
     originalPrice,
     taxesAndFees: taxes,
     additionalCharges,
+    additionalChargesCurrency,
     quantity: 1,
     images: roomImages,
     roomSubtitle: roomSubtitle || undefined,

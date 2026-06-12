@@ -1,9 +1,6 @@
 import { useRef } from "react";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
-// ---------------------------------------------------------------------------
-// HeroHotel — Hotels page hero (no tab switcher)
-// ---------------------------------------------------------------------------
 export default function HeroHotel() {
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -19,6 +16,14 @@ export default function HeroHotel() {
       heroImgRef.current.style.transform = "scale(1.1) translate(0,0)";
   };
 
+  const TRENDING = [
+    { city: "Dubai",     img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80" },
+    { city: "Singapore", img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80" },
+    { city: "Bali",      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80" },
+    { city: "Europe",    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80" },
+    { city: "Thailand",  img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80" },
+  ];
+
   return (
     <div
       className="relative flex flex-col overflow-hidden"
@@ -26,7 +31,7 @@ export default function HeroHotel() {
       onMouseMove={handleHeroMouseMove}
       onMouseLeave={handleHeroMouseLeave}
     >
-      {/* Background — hotel-flavoured image */}
+      {/* Background */}
       <div className="absolute inset-0 z-0">
         <img
           ref={heroImgRef}
@@ -52,7 +57,7 @@ export default function HeroHotel() {
 
           {/* Headline + Deal Card */}
           <div
-            className="mb-2 reveal"
+            className=" reveal"
             style={{
               transitionDelay: "0.04s",
               display: "flex",
@@ -63,7 +68,7 @@ export default function HeroHotel() {
           >
             {/* Left: copy block */}
             <div style={{ flex: "1 1 0", minWidth: 0 }}>
-              <div className="mb-3">
+              <div className="mb-5">
                 <span
                   style={{
                     display: "inline-flex",
@@ -82,7 +87,11 @@ export default function HeroHotel() {
                     color: "#fff",
                   }}
                 >
-                  🏨 Stay Better · Live More
+                  <img
+                    src="/icons/HOTELS.png"
+                    alt=""
+                    style={{ width: 40, height: 40, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                  />Stay Better · Live More
                 </span>
               </div>
               <h1
@@ -174,6 +183,42 @@ export default function HeroHotel() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Trending destinations — own row below headline */}
+          <div
+            className="reveal"
+            style={{
+              transitionDelay: "0.06s",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              marginTop: -4,
+              marginBottom: 16,
+            }}
+          >
+            <span style={{
+              fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 500,
+              color: "rgba(255,255,255,0.4)",
+            }}>
+              Trending destinations:
+            </span>
+            {TRENDING.map(d => (
+              <button key={d.city} style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "4px 14px 4px 4px", borderRadius: 999,
+                background: "rgba(255,255,255,0.09)", backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                fontFamily: "Poppins, sans-serif", fontSize: 12.5, fontWeight: 500,
+                color: "rgba(255,255,255,0.88)", cursor: "pointer",
+              }}>
+                <img src={d.img} alt={d.city} style={{
+                  width: 24, height: 24, borderRadius: "50%", objectFit: "cover",
+                }} />
+                {d.city}
+              </button>
+            ))}
           </div>
 
           {/* Hotel Search Form — inline, no tab wrapper */}

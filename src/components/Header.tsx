@@ -3,10 +3,17 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
-import { MapPin } from "lucide-react";
+import { MapPin, PhoneCall, Briefcase, ClipboardList } from "lucide-react";
 
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
+
+const REGIONS = [
+  { id: "IN", text: "🇮🇳 India — INR (₹)" },
+  { id: "AE", text: "🇦🇪 Dubai (UAE) — AED (د.إ)" },
+  { id: "VN", text: "🇻🇳 Vietnam — VND (₫)" },
+  { id: "US", text: "🇺🇸 USA — USD ($)" },
+];
 
 const allNav = [
   { to: "/",        label: "Flights",       exact: true  },
@@ -21,6 +28,9 @@ const allNav = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [regionMenuOpen, setRegionMenuOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState(REGIONS[0]);
+  
   const { openAuth } = useUi();
   const location = useLocation();
 
@@ -136,21 +146,54 @@ export default function Header() {
         <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[11px] font-medium text-white/70">
           <div className="flex gap-8">
             <button className="flex items-center gap-2 hover:text-white transition-colors">
-              <span className="opacity-70">📞</span> 24/7 Support
+              <PhoneCall size={14} className="opacity-70" /> 24/7 Support
             </button>
             <button className="flex items-center gap-2 hover:text-white transition-colors">
-              <span className="opacity-70">💼</span> Corporate Travel
+              <Briefcase size={14} className="opacity-70" /> Corporate Travel
             </button>
             <button className="flex items-center gap-2 hover:text-white transition-colors">
-              <span className="opacity-70">📋</span> Manage Booking
+              <ClipboardList size={14} className="opacity-70" /> Manage Booking
             </button>
           </div>
-          <div className="flex gap-8">
-            <button className="flex items-center gap-2 hover:text-white transition-colors">
+          <div className="flex gap-8 relative">
+            <button 
+              className="flex items-center gap-2 hover:text-white transition-colors"
+              onClick={() => setRegionMenuOpen(!regionMenuOpen)}
+            >
               <MapPin size={16} />
-              <span>India (INR)</span>
-              <span className="text-[9px] opacity-60">▼</span>
+              <span>{selectedRegion.text}</span>
+              <span className={`text-[9px] opacity-60 transition-transform duration-200 ${regionMenuOpen ? "rotate-180" : ""}`}>
+                ▼
+              </span>
             </button>
+
+            {/* Dropdown Menu */}
+            {regionMenuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-[1000]" 
+                  onClick={() => setRegionMenuOpen(false)} 
+                />
+                <div className="absolute right-0 top-[calc(100%+8px)] flex flex-col w-[200px] bg-[#0b1528] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[1001]">
+                  {REGIONS.map((region) => (
+                    <button
+                      key={region.id}
+                      className={`text-left px-4 py-3 text-[12px] transition-colors ${
+                        selectedRegion.id === region.id 
+                          ? "bg-[#d06549]/20 text-white font-medium" 
+                          : "text-white/70 hover:text-white hover:bg-white/5"
+                      }`}
+                      onClick={() => {
+                        setSelectedRegion(region);
+                        setRegionMenuOpen(false);
+                      }}
+                    >
+                      {region.text}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
