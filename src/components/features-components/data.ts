@@ -118,10 +118,10 @@ export const aiPlannerProps: AIPlannerProps = {
   ],
   ctaLabel: "Generate My Trip",
   suggestion: {
-    imageUrl: "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=800&q=80",
+    imageUrl: "/assets/attached_assets/dest-italy.png",
     badge: "Suggested for you",
-    destination: "Switzerland",
-    tagline: "7 days · Alps, Lucerne & Interlaken",
+    destination: "Italy",
+    tagline: "7 Days · Rome, Florence & Venice",
     estimatedPrice: "₹72,500",
   },
 };
@@ -299,10 +299,10 @@ export const aiHotelFinderProps: AIHotelFinderProps = {
   ],
   ctaLabel: "Find My Perfect Stay ✦",
   suggestion: {
-    imageUrl: "https://images.unsplash.com/photo-1502786129293-79981df4e689?w=400&q=80",
+    imageUrl: "/assets/attached_assets/dest-italy.png",
     badge: "AI Suggested for You",
-    name: "The Chedi Andermatt",
-    location: "Switzerland",
+    name: "Hotel Caravel",
+    location: "Italy",
     rating: "4.8",
     ratingCount: "340",
     pricePerNight: "₹18,999",

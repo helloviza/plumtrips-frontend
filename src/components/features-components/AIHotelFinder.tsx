@@ -1,6 +1,7 @@
 import React from "react";
 import { C, FONT, IconArrow } from "./token";
 import type { AIHotelFinderProps, PlannerField } from "./types";
+import { Link } from "react-router-dom";
 
 // ── Sub-components ────────────────────────────────────────────────
 
@@ -386,6 +387,7 @@ export function AIHotelFinder({
                   {suggestion.pricePerNight}
                 </div>
               </div>
+              <Link to={"/holidays"}>
               <button
                 onClick={suggestion.onViewDetails}
                 style={{
@@ -401,7 +403,7 @@ export function AIHotelFinder({
                 }}
               >
                 View details
-              </button>
+              </button></Link>
             </div>
           </div>
         </div>

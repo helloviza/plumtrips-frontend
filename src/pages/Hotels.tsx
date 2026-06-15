@@ -55,9 +55,6 @@ export default function HotelHome() {
         .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         .hero-gradient { background: linear-gradient(to bottom, rgba(0,48,89,0.45), rgba(26,28,30,0.15)); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #003059; border-radius: 10px; }
 
         /* ── Scroll-progress bar ────────────────────────────────────────── */
         #scroll-progress {
@@ -66,7 +63,6 @@ export default function HotelHome() {
           width: 100%;
           height: 3px;
           background: linear-gradient(90deg, #003059, #c9a84c, #f0d080);
-          /* Warm gold gradient — hotel feel vs. flights' cool blue */
           transform: scaleX(0);
           transform-origin: left;
           z-index: 9999;
@@ -134,14 +130,14 @@ export default function HotelHome() {
       <div id="scroll-progress" aria-hidden="true" />
 
       <div
-        className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[124px]"
+        className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
         {/* ── HERO ── */}
         <HeroHotel />
 
         {/* ── CONTENT SECTIONS ── */}
-       <TrustBar {...trustBarProps} />
+        <TrustBar {...trustBarProps} />
 
         <div className="reveal parallax-clip">
           <TrendingDestination
@@ -163,12 +159,13 @@ export default function HotelHome() {
 
         <div className="section-divider reveal" />
 
-        <div className="reveal"><CorporateTravel {...corporateTravelProps} /></div>
+        <div className="reveal"><CorporateTravel {...corporateTravelProps} onPrimaryClick={() => {
+  window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
 
         <div className="reveal"><StatsStrip {...statsStripProps} /></div>
 
         <div className="reveal" data-tilt>
-          <Testimonials {...guestStoriesProps} />
+          <Testimonials {...guestStoriesProps} onActionClick={()=>navigate("/reviews")} />
         </div>
 
         <div className="section-divider reveal" />

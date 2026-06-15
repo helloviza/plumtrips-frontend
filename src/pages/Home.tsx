@@ -80,9 +80,6 @@ export default function Home() {
         .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         .hero-gradient { background: linear-gradient(to bottom, rgba(0,48,89,0.45), rgba(26,28,30,0.15)); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #003059; border-radius: 10px; }
 
         /* ── Scroll-progress bar ────────────────────────────────────────── */
         #scroll-progress {
@@ -95,7 +92,6 @@ export default function Home() {
           transform-origin: left;
           z-index: 9999;
           pointer-events: none;
-          /* Subtle glow */
           box-shadow: 0 0 8px rgba(0, 194, 255, 0.7);
         }
 
@@ -106,7 +102,6 @@ export default function Home() {
           transition:
             opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
             transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-          /* transition-delay is injected per-sibling by useScrollEffects */
         }
         .reveal.active {
           opacity: 1;
@@ -172,7 +167,7 @@ export default function Home() {
       <div id="scroll-progress" aria-hidden="true" />
 
       <div
-        className="bg-[#f9f9fc] text-[#1a1c1e] overflow-x-hidden -mt-[124px]"
+        className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
         style={{ fontFamily: "Inter, sans-serif" }}
       >
         {/* ── HERO ── */}
@@ -182,12 +177,6 @@ export default function Home() {
           onTripTypeChange={setTripType}
         />
 
-        {/* ── CONTENT SECTIONS ──
-            Add `reveal` to each section wrapper for staggered entry.
-            Add `data-parallax="0.12"` to background image containers.
-            Add `data-tilt` to card grids that should respond to scroll velocity.
-            Add `data-count="…"` to stat numbers to animate them.
-        */}
         <TrustBar {...trustBarProps} />
 
         <div className="reveal parallax-clip">
@@ -206,18 +195,17 @@ export default function Home() {
           />
         </div>
 
-        <div className="reveal"><AIPlanner {...aiPlannerProps} /></div>
+        <div className="reveal"><AIPlanner {...aiPlannerProps}   /></div>
 
         <div className="section-divider reveal" />
 
-        <div className="reveal"><CorporateTravel {...corporateTravelProps} /></div>
+        <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={()=> navigate("/go/concierge")}
+        {...corporateTravelProps} onPrimaryClick={() => {window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
 
-        {/* StatsStrip: add data-count to the individual number elements inside
-            the component, or wrap here if the component exposes no inner refs */}
         <div className="reveal"><StatsStrip {...statsStripProps} /></div>
 
         <div className="reveal" data-tilt>
-          <Testimonials {...testimonialsProps} />
+          <Testimonials {...testimonialsProps} onActionClick={()=>navigate("/reviews")} />
         </div>
 
         <div className="section-divider reveal" />

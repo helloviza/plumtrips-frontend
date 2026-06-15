@@ -1,8 +1,12 @@
 import React from "react";
 import { C, SectionHead } from "./token";
+
 import type { TravelYourWayProps } from "./types";
+import { useNavigate } from "react-router-dom";
 
 export function TravelYourWay({ eyebrow, title, actionLabel, onActionClick, items }: TravelYourWayProps) {
+
+  const navigate=useNavigate();
   return (
     <section className="travel-way-section">
       <style>{`
@@ -55,7 +59,7 @@ export function TravelYourWay({ eyebrow, title, actionLabel, onActionClick, item
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="travel-way-grid">
           {items.map((item) => (
-            <div key={item.name} className="travel-way-card">
+            <div key={item.name} className="travel-way-card" onClick={() => navigate('/offers')}>
               <div
                 className="travel-way-card-bg"
                 style={{ backgroundImage: `url('${item.imageUrl}')` }}

@@ -121,7 +121,7 @@ export default function Home_Holiday() {
         <div className="absolute inset-0 z-0 bg-[#002040]">
           <img 
             ref={heroImgRef}
-            src="/assets/holidays_hero_premium.png" 
+            src="/assets/attached_assets/holidays_hero_premium.png" 
             alt="Cinematic luxury travel destination" 
             className="w-full h-full object-cover transition-transform duration-[10000ms] brightness-90"
             style={{ transform: "scale(1.1) translate(0px,0px)" }}
@@ -466,7 +466,7 @@ export default function Home_Holiday() {
       {/* 8. FINAL CTA */}
       <section className="py-24 px-6 lg:px-12 relative overflow-hidden bg-[#003059]">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#00477f] via-[#003059] to-[#001e38]"></div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
+        <div className="max-w-full mx-auto text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold font-montserrat text-white mb-6">Your next unforgettable journey starts here.</h2>
           <p className="text-xl text-white/80 mb-10 font-medium">Tell us where you want to go — we'll handle the planning.</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">

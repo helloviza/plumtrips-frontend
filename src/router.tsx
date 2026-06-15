@@ -596,6 +596,7 @@ import Search from "./pages/flights/Search";
 import SearchTabs from "./components/SearchTabs";
 import Home_Holiday from "./pages/Home_Holiday";
 import HomeCarouselPage from "./pages/marketing/HomeCarousel";
+import  Reviews from "./components/Reviews";
 
 // BLOG
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -803,6 +804,11 @@ export const router = createBrowserRouter(
         { path: "hotels/confirmation", element: <BookingConfirmation /> },
         { path: "engine/hotels", element: <HotelsEnginePage /> },
 
+
+                    {
+              path: "/reviews",
+              element: <Reviews/>,
+            },
 
         //Read Blogs
 

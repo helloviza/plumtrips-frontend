@@ -1,8 +1,11 @@
 import React from "react";
 import { SectionHead } from "./token";
 import type { TrendingDestinationProps } from "./types";
+import { useNavigate } from "react-router-dom";
 
 export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick, items }: TrendingDestinationProps) {
+
+  const navigate=useNavigate();
   return (
     <section className="trending-section">
       <style>{`
@@ -53,7 +56,7 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
 
       <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
-        <div className="trending-grid">
+        <div className="trending-grid" onClick={() => navigate('/holidays')}>
           {items.map((item) => (
             <div key={item.name} className="trending-card">
               <div

@@ -1,6 +1,7 @@
 import React from "react";
 import { C, FONT, IconArrow } from "./token";
 import type { AIPlannerProps, PlannerField } from "./types";
+import { Link } from "react-router-dom";
 
 function Field({ label, placeholder, fullWidth }: PlannerField) {
   return (
@@ -194,6 +195,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
                   {suggestion.estimatedPrice}
                 </div>
               </div>
+              <Link to={"/holidays"}>
               <button
                 onClick={suggestion.onViewItinerary}
                 style={{
@@ -209,7 +211,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
                 }}
               >
                 View itinerary
-              </button>
+              </button></Link>
             </div>
           </div>
         </div>
