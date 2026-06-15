@@ -123,7 +123,7 @@ export function AIHotelFinder({
           padding: 72px 48px;
         }
         .ai-hotel-grid {
-          max-width: 1184px;
+          max-width: 100%;
           margin: 0 auto;
           display: grid;
           grid-template-columns: 1.4fr 1fr;

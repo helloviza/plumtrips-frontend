@@ -28,7 +28,7 @@ export function TrustedPartners({ heading, logos }: TrustedPartnersProps) {
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto", textAlign: "center" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", textAlign: "center" }}>
         <div
           style={{
             fontFamily: FONT,

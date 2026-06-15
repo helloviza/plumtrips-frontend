@@ -116,7 +116,7 @@ export function StatsStrip({ stats }: StatsStripProps) {
         }
 
         .stats-grid {
-          max-width: 1184px;
+          max-width: 100%;
           margin: 0 auto;
           display: grid;
           grid-template-columns: repeat(${stats.length}, 1fr);

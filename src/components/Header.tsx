@@ -208,7 +208,7 @@ export default function Header() {
           <div
             className={`mx-auto flex items-center justify-between transition-all duration-300 ease-in-out ${
               isFloating
-                ? "max-w-7xl bg-[#0b1528]/40 backdrop-blur-xl border border-white/20 rounded-2xl h-[72px] px-5 md:px-8 shadow-xl"
+                ? "max-w-full bg-[#0b1528]/40 backdrop-blur-xl border border-white/20 rounded-2xl h-[72px] px-5 md:px-8 shadow-xl"
                 : "max-w-full h-[64px] px-6 md:px-10 rounded-none border-transparent"
             }`}
           >

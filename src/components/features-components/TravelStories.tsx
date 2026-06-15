@@ -55,7 +55,7 @@ export function TravelStories({ eyebrow, title, actionLabel, onActionClick, feat
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="travel-stories-grid">
           {/* ── Featured story ── */}

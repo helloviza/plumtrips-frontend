@@ -21,7 +21,7 @@ export function CorporateTravel({
           padding: 72px 48px;
         }
         .corporate-grid {
-          max-width: 1184px;
+          max-width: 100%;
           margin: 0 auto;
           display: grid;
           grid-template-columns: 1fr 1fr;

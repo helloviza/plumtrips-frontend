@@ -51,7 +51,7 @@ export function TravelYourWay({ eyebrow, title, actionLabel, onActionClick, item
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="travel-way-grid">
           {items.map((item) => (

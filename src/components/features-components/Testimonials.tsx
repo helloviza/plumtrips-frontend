@@ -25,7 +25,7 @@ export function Testimonials({ eyebrow, title, actionLabel, onActionClick, revie
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="testimonials-grid">
           {reviews.map((review) => {

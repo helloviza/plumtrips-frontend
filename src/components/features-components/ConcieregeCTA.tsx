@@ -19,7 +19,7 @@ export function ConciergeCTA({
           padding: 56px 48px;
         }
         .concierge-inner {
-          max-width: 1184px;
+          max-width: 100%;
           margin: 0 auto;
           display: flex;
           align-items: center;

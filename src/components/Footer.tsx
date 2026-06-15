@@ -232,7 +232,7 @@ export default function Footer() {
       {showPopup && <CallbackPopup onClose={() => setShowPopup(false)} />}
 
       <footer style={{ backgroundColor: BG, color: TEXT }}>
-        <div className="mx-auto max-w-6xl px-4 py-10">
+        <div className="mx-auto w-full px-4 py-10">
           {/* ---------- TOP ROW: 4 link columns + callback CTA on the RIGHT ---------- */}
           <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
             <Group title="PRODUCTS" className="md:col-span-2">

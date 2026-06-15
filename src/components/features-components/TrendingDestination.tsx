@@ -51,7 +51,7 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
         <div className="trending-grid">
           {items.map((item) => (

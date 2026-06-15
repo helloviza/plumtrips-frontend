@@ -57,7 +57,7 @@ export function TrustBar({ items }: TrustBarProps) {
         }
       `}</style>
 
-      <div style={{ maxWidth: 1184, margin: "0 auto" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <div className="trustbar-card">
           {items.map((item, i) => {
             const Icon = ICON_MAP[item.icon];

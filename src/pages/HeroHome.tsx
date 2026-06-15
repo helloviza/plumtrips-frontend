@@ -61,7 +61,7 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
 
       {/* Hero content */}
       <div className="relative z-10 flex-grow flex items-center w-full">
-        <div className="relative z-[3] mx-auto max-w-6xl w-full px-6 pt-[140px] pb-14">
+        <div className="relative z-[3] mx-auto w-full px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
