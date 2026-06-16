@@ -13,6 +13,17 @@ body {
   background: #00477f;
   /* brand fallback so no white seams */
   -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
+  background: #00477f;
+  /* brand fallback so no white seams */
+  -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-synthesis-weight: none;
 }

@@ -8,7 +8,7 @@ import m4 from "../../../public/mice/a9.jpeg";
 /* ─── Brand ─────────────────────────────────────────── */
 const BRAND = "#00477f";
 const ACCENT = "#d06549";
-const xyz="#000000"
+const xyz = "#000000";
 
 /* ─── Data ───────────────────────────────────────────── */
 type EventKey = "Meetings" | "Incentives" | "Conferences" | "Exhibitions";
@@ -161,18 +161,16 @@ export default function MicePage() {
   return (
     <main
       className="min-h-screen"
-      style={{ background: "#f8fafc", fontFamily: "'Exo 2', system-ui, sans-serif" }}
+      style={{ background: "#f8fafc", fontFamily: "Poppins, sans-serif" }}
     >
       {/* ════════════════════════════════════════
           HERO
       ════════════════════════════════════════ */}
       <section className="relative overflow-hidden" style={{ minHeight: 520 }}>
-        {/* BG image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(/assets/mice/miceevents.png)` }}
         />
-        {/* Overlay */}
         <div
           className="absolute inset-0"
           style={{
@@ -181,7 +179,6 @@ export default function MicePage() {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-16 flex flex-col items-center text-center">
-          {/* Eyebrow */}
           <span
             className="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-5"
             style={{ background: `${ACCENT}33`, color: "#ffcbb8", border: `1px solid ${ACCENT}66` }}
@@ -202,7 +199,6 @@ export default function MicePage() {
             Meetings, Incentives, Conferences & Exhibitions — crafted with concierge precision from concept to applause.
           </p>
 
-          {/* Tab switcher */}
           <div className="mt-10 flex flex-wrap justify-center gap-2">
             {EVENT_KEYS.map((key) => (
               <button
@@ -220,7 +216,6 @@ export default function MicePage() {
             ))}
           </div>
 
-          {/* Stats */}
           <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl">
             {STATS.map((s) => (
               <div
@@ -242,35 +237,30 @@ export default function MicePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-16">
         <div className="grid md:grid-cols-2 gap-10 items-center">
 
-          {/* Image */}
           <div className="relative">
             <div
               className="absolute -inset-2 rounded-3xl opacity-20"
               style={{ background: `linear-gradient(135deg, ${BRAND}, ${ACCENT})` }}
             />
-           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
-  {/* Render ALL images, show only the active one */}
-  {EVENT_KEYS.map((key) => (
-    <img
-      key={key}                          // ← stable key, never remounts
-      src={EVENTS[key].img}
-      alt={EVENTS[key].imgAlt}
-      className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-      style={{ opacity: key === active ? 1 : 0 }}  // ← fade in/out
-    />
-  ))}
-
-  {/* Number badge */}
-  <div
-    className="absolute top-4 left-4 w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-extrabold shadow-lg z-10"
-    style={{ background: ACCENT }}
-  >
-    {ev.num}
-  </div>
-</div>
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-[4/3]">
+              {EVENT_KEYS.map((key) => (
+                <img
+                  key={key}
+                  src={EVENTS[key].img}
+                  alt={EVENTS[key].imgAlt}
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+                  style={{ opacity: key === active ? 1 : 0 }}
+                />
+              ))}
+              <div
+                className="absolute top-4 left-4 w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-extrabold shadow-lg z-10"
+                style={{ background: ACCENT }}
+              >
+                {ev.num}
+              </div>
+            </div>
           </div>
 
-          {/* Content */}
           <div>
             <span
               className="text-xs font-bold uppercase tracking-widest"
@@ -314,7 +304,6 @@ export default function MicePage() {
           </div>
         </div>
 
-        {/* Mini tab strip (desktop) for context */}
         <div className="hidden md:grid grid-cols-4 gap-4 mt-12">
           {EVENT_KEYS.map((key) => {
             const isActive = key === active;
@@ -349,10 +338,7 @@ export default function MicePage() {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center mb-10">
-            <span
-              className="text-xs font-bold uppercase tracking-widest"
-              style={{ color: ACCENT }}
-            >
+            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: ACCENT }}>
               Our Process
             </span>
             <h2 className="mt-2 text-2xl md:text-3xl font-extrabold text-slate-900">
@@ -363,7 +349,6 @@ export default function MicePage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {PROCESS.map((p, i) => (
               <div key={p.step} className="relative">
-                {/* Connector line */}
                 {i < PROCESS.length - 1 && (
                   <div
                     className="hidden lg:block absolute top-6 left-[calc(50%+24px)] right-[-50%] h-px"
@@ -423,7 +408,6 @@ export default function MicePage() {
           className="rounded-3xl overflow-hidden grid md:grid-cols-2 shadow-xl"
           style={{ background: BRAND }}
         >
-          {/* Image */}
           <div className="aspect-[4/3] md:aspect-auto overflow-hidden">
             <img
               src="/assets/mice/e2.jpeg"
@@ -433,7 +417,6 @@ export default function MicePage() {
             />
           </div>
 
-          {/* Text */}
           <div className="p-8 md:p-10 flex flex-col justify-center">
             <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#ffb89a" }}>
               After the event
@@ -485,7 +468,6 @@ export default function MicePage() {
               key={i}
               className="rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm bg-white relative overflow-hidden"
             >
-              {/* Decorative quote mark */}
               <div
                 className="absolute -top-3 -right-2 text-8xl font-extrabold leading-none select-none"
                 style={{ color: `${ACCENT}12` }}
@@ -514,27 +496,6 @@ export default function MicePage() {
           ))}
         </div>
       </section>
-
-      {/* ════════════════════════════════════════
-          TRUSTED BY
-      ════════════════════════════════════════ */}
-      {/* <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
-        <div className="bg-white rounded-2xl p-6 ring-1 ring-slate-100 shadow-sm">
-          <p className="text-center text-xs font-bold uppercase tracking-widest text-slate-400">
-            Trusted by teams from
-          </p>
-          <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-3">
-            {LOGO_SLOTS.map((slot) => (
-              <div
-                key={slot}
-                className="h-14 rounded-xl ring-1 ring-slate-100 bg-slate-50 flex items-center justify-center"
-              >
-                <span className="text-slate-300 text-xs">Your Logo</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
 
       {/* ════════════════════════════════════════
           RFP FORM
@@ -612,7 +573,6 @@ export default function MicePage() {
       </section>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800;900&display=swap');
         :root { --mice-accent: ${ACCENT}; --mice-brand: ${BRAND}; }
         .mice-input {
           width: 100%;
@@ -624,7 +584,7 @@ export default function MicePage() {
           color: #1e293b;
           outline: none;
           transition: border-color 0.15s, box-shadow 0.15s;
-          font-family: inherit;
+          font-family: Poppins, sans-serif;
         }
         .mice-input::placeholder { color: #94a3b8; }
         .mice-input:focus {

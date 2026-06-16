@@ -10,16 +10,18 @@ import s1 from "../../assets/auth/slide1.jpg";
 import s2 from "../../assets/auth/slide2.jpg";
 import s3 from "../../assets/auth/slide3.jpg";
 import s4 from "../../assets/auth/slide4.jpg";
-import s5 from "../../assets/auth/slide5.jpg";
+
 import googleIcon from "../../assets/google.svg";
 
 const SLIDES = [
-  { src: s1, caption: "Lock Flight Prices & Pay Later" },
-  { src: s2, caption: "Book Hotels at Exclusive Rates" },
-  { src: s3, caption: "Best Deals on International Trips" },
-  { src: s4, caption: "Visa Assistance Without Hassle" },
-  { src: s5, caption: "MICE & Corporate Travel Experts" },
+  { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb", caption: "Lock Flight Prices & Pay Later" },
+  { src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1", caption: "Book Hotels at Exclusive Rates" },
+  { src: "https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81", caption: "Best Deals on International Trips" },
+  { src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470", caption: "Visa Assistance Without Hassle" },
+  { src: "/assets/mice/e2.jpeg", caption: "MICE & Corporate Travel Experts" },
 ];
+
+
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -149,7 +151,7 @@ export default function AuthModal() {
   if (!authOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div className="fixed inset-0 z-[2000]" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       {/* overlay */}
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
