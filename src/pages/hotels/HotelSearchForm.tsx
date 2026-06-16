@@ -306,11 +306,22 @@ export default function HotelsSearchForm() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSearch() {
-    if (!validate()) return;
-    resetBooking();
-    navigate("/hotels/results");
-  }
+// ✅ Replace with
+function handleSearch() {
+  if (!validate()) return;
+  resetBooking();
+
+  const params = new URLSearchParams({
+    location:  location.trim(),
+    checkIn:   checkIn,
+    checkOut:  checkOut,
+    adults:    String(adults),
+    children:  String(children),
+    rooms:     String(rooms),
+  });
+
+  navigate(`/hotels/results?${params.toString()}`);
+}
 
   const [calOpen, setCalOpen] = useState(false);
   const calAnchorRef = useRef<HTMLDivElement>(null);
@@ -426,7 +437,25 @@ export default function HotelsSearchForm() {
             <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Popular:</span>
             {POPULAR_DESTINATIONS.slice(0, 4).map((dest) => (
               <button key={dest.name} type="button"
-                onClick={() => { setSearchParams({ location: `${dest.name}, ${dest.country}` }); clearError("location"); }}
+                // ✅ Replace with
+onClick={() => {
+  const loc = `${dest.name}, ${dest.country}`;
+  setSearchParams({ location: loc });
+  clearError("location");
+  // If dates already selected, navigate immediately with params
+  if (checkIn && checkOut) {
+    const params = new URLSearchParams({
+      location: loc,
+      checkIn,
+      checkOut,
+      adults:   String(adults),
+      children: String(children),
+      rooms:    String(rooms),
+    });
+    resetBooking();
+    navigate(`/hotels/results?${params.toString()}`);
+  }
+}}
                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 999, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", fontFamily: "Poppins, sans-serif", fontSize: 11.5, fontWeight: 500, color: "rgba(255,255,255,0.70)", cursor: "pointer", transition: "all 0.15s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.13)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.70)"; }}

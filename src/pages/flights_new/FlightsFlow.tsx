@@ -8,6 +8,7 @@
 //    /flights/confirmation → confirmation
 //
 //  State is persisted in sessionStorage so refresh works.
+//  Query params are passed at every navigation for shareability.
 // ============================================================
 
 import { useState, useEffect } from "react";
@@ -39,7 +40,7 @@ function isInternationalRoute(form: SearchForm | null): boolean {
   return INTERNATIONAL_CODES.has(form.to.code) || INTERNATIONAL_CODES.has(form.from.code);
 }
 
-// ── State shape (no longer includes `page` — that's the URL now) ──────────────
+// ── State shape ───────────────────────────────────────────────────────────────
 interface FlightState {
   searchForm: SearchForm | null;
   multiLegs?: CityLeg[];
@@ -82,6 +83,23 @@ const DEFAULT_SEARCH_FORM: SearchForm = {
   fareType:    "Regular",
 };
 
+// ── Build query params from SearchForm ────────────────────────────────────────
+function searchFormToParams(form: SearchForm): Record<string, string> {
+  return {
+    from:     form.from.code,
+    to:       form.to.code,
+    depart:   form.departDate,
+    trip:     form.tripType,
+    adults:   String(form.adults),
+    children: String(form.children),
+    infants:  String(form.infants),
+    cabin:    form.cabinClass,
+    fare:     form.fareType,
+    ...(form.returnDate  && { return:  form.returnDate }),
+    ...(form.nonStopOnly && { nonStop: "1" }),
+  };
+}
+
 // ── Restore state from sessionStorage on refresh ──────────────────────────────
 function buildInitialState(): FlightState {
   try {
@@ -103,7 +121,6 @@ function buildInitialState(): FlightState {
     if (raw) return JSON.parse(raw) as FlightState;
   } catch { /* ignore */ }
 
-  // ── NEW: if landing directly on /results with no state, use a default form
   const onResultsPage = window.location.pathname.includes("/results");
   if (onResultsPage) {
     return { ...DEFAULT_STATE, searchForm: DEFAULT_SEARCH_FORM };
@@ -133,11 +150,14 @@ export default function FlightsFlow() {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
   }, [state]);
 
-  // Helper: navigate to a sub-page URL
-  function goTo(page: Page) {
+  // ── Navigate with query params ───────────────────────────────────────────────
+  function goTo(page: Page, params?: Record<string, string>) {
     const base = "/flights-new";
-    const url = page === "search" ? base : `${base}/${page}`;
-    navigate(url);
+    const path = page === "search" ? base : `${base}/${page}`;
+    const search = params && Object.keys(params).length
+      ? `?${new URLSearchParams(params).toString()}`
+      : "";
+    navigate(path + search);
     window.scrollTo({ top: 0 });
   }
 
@@ -153,7 +173,8 @@ export default function FlightsFlow() {
       selectedReturnTier: null,
       selectedLegs: Array(legs?.length ?? 0).fill(null),
     }));
-    goTo("results");
+
+    goTo("results", searchFormToParams(form));
   }
 
   function handleDateChange(newDate: string) {
@@ -168,24 +189,46 @@ export default function FlightsFlow() {
         selectedReturnTier: null,
       };
     });
+
+    // Merge updated date into existing params so other params are preserved
+    const existing = Object.fromEntries(new URLSearchParams(location.search));
+    navigate(
+      `/flights-new/results?${new URLSearchParams({ ...existing, depart: newDate }).toString()}`
+    );
     window.scrollTo({ top: 0 });
   }
 
   function handleBook(flight: DisplayFlight, tier: FareTier, legIndex?: number) {
     const tripType = state.searchForm?.tripType;
     const totalLegs = state.multiLegs?.length ?? 1;
+    const baseParams = state.searchForm ? searchFormToParams(state.searchForm) : {};
 
     // Round-Trip: two-step selection
     if (tripType === "roundTrip") {
       if (!state.selectedFlight) {
+        // First leg selected — stay on results, update params to reflect outbound choice
         setState((s) => ({ ...s, selectedFlight: flight, selectedTier: tier }));
+        const existing = Object.fromEntries(new URLSearchParams(location.search));
+        navigate(
+          `/flights-new/results?${new URLSearchParams({
+            ...existing,
+            outboundId: String((flight as any).id ?? ""),
+            outboundTier: tier.name ?? "",
+          }).toString()}`
+        );
       } else {
         setState((s) => ({
           ...s,
           selectedReturnFlight: flight,
           selectedReturnTier: tier,
         }));
-        goTo("booking");
+        goTo("booking", {
+          ...baseParams,
+          outboundId:   String((state.selectedFlight as any).id ?? ""),
+          outboundTier: state.selectedTier?.name ?? "",
+          returnId:     String((flight as any).id ?? ""),
+          returnTier:   tier.name ?? "",
+        });
       }
       return;
     }
@@ -195,6 +238,7 @@ export default function FlightsFlow() {
       const newLegs = [...state.selectedLegs];
       newLegs[legIndex] = { flight, tier };
       const allLegsSelected = newLegs.every(Boolean) && newLegs.length === totalLegs;
+
       if (allLegsSelected) {
         setState((s) => ({
           ...s,
@@ -202,16 +246,37 @@ export default function FlightsFlow() {
           selectedTier: newLegs[0]!.tier,
           selectedLegs: newLegs,
         }));
-        goTo("booking");
+
+        const legParams = newLegs.reduce<Record<string, string>>((acc, leg, i) => {
+          if (leg) {
+            acc[`leg${i}Id`]   = String((leg.flight as any).id ?? "");
+            acc[`leg${i}Tier`] = leg.tier.name ?? "";
+          }
+          return acc;
+        }, {});
+
+        goTo("booking", { ...baseParams, ...legParams });
       } else {
         setState((s) => ({ ...s, selectedLegs: newLegs }));
+        const existing = Object.fromEntries(new URLSearchParams(location.search));
+        navigate(
+          `/flights-new/results?${new URLSearchParams({
+            ...existing,
+            [`leg${legIndex}Id`]:   String((flight as any).id ?? ""),
+            [`leg${legIndex}Tier`]: tier.name ?? "",
+          }).toString()}`
+        );
       }
       return;
     }
 
     // One-Way
     setState((s) => ({ ...s, selectedFlight: flight, selectedTier: tier }));
-    goTo("booking");
+    goTo("booking", {
+      ...baseParams,
+      flightId: String((flight as any).id ?? ""),
+      tier:     tier.name ?? "",
+    });
   }
 
   function handleConfirm(
@@ -222,7 +287,14 @@ export default function FlightsFlow() {
     totalPaid?: number,
   ) {
     setState((s) => ({ ...s, bookingId, pnr, passengerNames, contactEmail, totalPaid }));
-    goTo("confirmation");
+
+    const baseParams = state.searchForm ? searchFormToParams(state.searchForm) : {};
+    goTo("confirmation", {
+      ...baseParams,
+      ...(bookingId !== undefined && { bookingId: String(bookingId) }),
+      ...(pnr                     && { pnr }),
+      ...(totalPaid !== undefined  && { total: String(totalPaid) }),
+    });
   }
 
   function handleReset() {
@@ -231,7 +303,6 @@ export default function FlightsFlow() {
     navigate("/");
     window.scrollTo({ top: 0 });
   }
-  
 
   // ── Render based on URL ──────────────────────────────────────────────────────
   const page = urlToPage(location.pathname);
@@ -241,19 +312,18 @@ export default function FlightsFlow() {
     case "search":
       return <SearchPage onSearch={handleSearch} />;
 
-case "results":
-  // Removed the hard redirect — ResultsPage handles null form gracefully
-  return (
-    <ResultsPage
-      form={state.searchForm ?? DEFAULT_SEARCH_FORM}  // ← fallback here too
-      multiLegs={state.multiLegs}
-      onBack={handleReset}
-      onBook={handleBook}
-      onNewSearch={handleSearch}
-      selectedOutboundFlight={state.selectedFlight}
-      selectedLegs={state.selectedLegs}
-    />
-  );
+    case "results":
+      return (
+        <ResultsPage
+          form={state.searchForm ?? DEFAULT_SEARCH_FORM}
+          multiLegs={state.multiLegs}
+          onBack={handleReset}
+          onBook={handleBook}
+          onNewSearch={handleSearch}
+          selectedOutboundFlight={state.selectedFlight}
+          selectedLegs={state.selectedLegs}
+        />
+      );
 
     case "booking":
       if (!state.selectedFlight || !state.selectedTier || !state.searchForm) {
@@ -276,7 +346,7 @@ case "results":
           infants={state.searchForm.infants}
           forcePassport={isIntl}
           isInternational={isIntl}
-          onBack={() => goTo("results")}
+          onBack={() => goTo("results", state.searchForm ? searchFormToParams(state.searchForm) : undefined)}
           onConfirm={handleConfirm}
         />
       );

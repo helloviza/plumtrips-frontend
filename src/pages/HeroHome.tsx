@@ -8,7 +8,8 @@ interface HeroHomeProps {
   tripType?: "oneWay" | "roundTrip" | "multiCity";
   onTripTypeChange?: (t: "oneWay" | "roundTrip" | "multiCity") => void;
 }
-
+// At the top, add today's date
+const today = new Date().toLocaleDateString("en-CA");
 export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -161,11 +162,27 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                     Non-stop
                   </span>
                 </div>
-                <button
-                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
-                >
-                  View Deals →
-                </button>
+
+<button
+  onClick={() =>
+    onSearch?.({
+      tripType: "oneWay",
+      from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+      to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+      departDate:  today,
+      returnDate:  "",
+      adults:      1,
+      children:    0,
+      infants:     0,
+      cabinClass:  "Economy",
+      nonStopOnly: false,
+      fareType:    "Regular",
+    })
+  }
+  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
+>
+  View Deals →
+</button>
               </div>
             </div>
           </div>

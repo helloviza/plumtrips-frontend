@@ -55,13 +55,29 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
-    sessionStorage.setItem(
-      "flightSearch",
-      JSON.stringify({ form, multiLegs: multiLegs ?? null })
-    );
-    navigate("/flights-new/results");
-  }
+// ✅ Fixed — includes query params
+function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
+  sessionStorage.setItem(
+    "flightSearch",
+    JSON.stringify({ form, multiLegs: multiLegs ?? null })
+  );
+
+  const params = new URLSearchParams({
+    from:     form.from.code,
+    to:       form.to.code,
+    depart:   form.departDate,
+    trip:     form.tripType,
+    adults:   String(form.adults),
+    children: String(form.children),
+    infants:  String(form.infants),
+    cabin:    form.cabinClass,
+    fare:     form.fareType,
+    ...(form.returnDate  && { return:  form.returnDate }),
+    ...(form.nonStopOnly && { nonStop: "1" }),
+  });
+
+  navigate(`/flights-new/results?${params.toString()}`);
+}
 
   return (
     <>

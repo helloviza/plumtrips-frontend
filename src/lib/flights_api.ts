@@ -540,7 +540,7 @@ export async function apiGetCalendarPrices(
   cabinClass: SearchForm["cabinClass"] = "Economy"
 ): Promise<Record<string, number>> {
   if (MOCK_MODE) {
-    return buildMockCalendarPrices(fromCode, toCode);
+    return {};
   }
 
   try {
@@ -548,6 +548,7 @@ export async function apiGetCalendarPrices(
       from: fromCode,
       to: toCode,
       cabinClass: String(cabinClassCode(cabinClass)),
+      daysAhead: "62",
     });
 
     const res = await fetch(
@@ -555,64 +556,25 @@ export async function apiGetCalendarPrices(
     );
 
     if (!res.ok) {
-      console.warn(`[apiGetCalendarPrices] HTTP ${res.status} — falling back to mock`);
-      return buildMockCalendarPrices(fromCode, toCode);
+      console.warn(`[apiGetCalendarPrices] HTTP ${res.status}; leaving calendar prices blank`);
+      return {};
     }
 
     const json = await res.json();
     const data: Record<string, number> = json?.data ?? json;
 
-    if (typeof data !== "object" || Array.isArray(data)) {
-      console.warn("[apiGetCalendarPrices] Unexpected response shape — falling back");
-      return buildMockCalendarPrices(fromCode, toCode);
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      console.warn("[apiGetCalendarPrices] Unexpected response shape; leaving calendar prices blank");
+      return {};
     }
 
-    if (Object.keys(data).length === 0) {
-      return buildMockCalendarPrices(fromCode, toCode);
-    }
-
-    return data;
+    return Object.fromEntries(
+      Object.entries(data).filter(([, price]) => typeof price === "number" && price > 0)
+    );
   } catch (err) {
-    console.warn("[apiGetCalendarPrices] Network error — falling back to mock", err);
-    return buildMockCalendarPrices(fromCode, toCode);
+    console.warn("[apiGetCalendarPrices] Network error; leaving calendar prices blank", err);
+    return {};
   }
-}
-
-function buildMockCalendarPrices(
-  fromCode: string,
-  toCode: string
-): Record<string, number> {
-  const routeSeed = [...`${fromCode}${toCode}`].reduce(
-    (acc, c) => acc + c.charCodeAt(0),
-    0
-  );
-
-  const isIntl = ["DXB", "SIN", "BKK", "LHR", "JFK", "NRT", "CDG"].includes(toCode);
-  const basePrice = isIntl
-    ? 12000 + (routeSeed % 8000)
-    : 3500 + (routeSeed % 5500);
-
-  const map: Record<string, number> = {};
-  const today = new Date();
-
-  for (let i = 0; i < 90; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const key = d.toLocaleDateString("en-CA");
-
-    const dow = d.getDay();
-    const isWeekend = dow === 0 || dow === 6 || dow === 5;
-    const isSaleDay = (i + routeSeed) % 11 === 0;
-
-    const variance = Math.sin(i * 0.4 + routeSeed) * 0.12 + (Math.random() * 0.08 - 0.04);
-    const weekendMult = isWeekend ? 1.15 : 1;
-    const saleMult = isSaleDay ? 0.82 : 1;
-
-    const price = Math.round(basePrice * (1 + variance) * weekendMult * saleMult / 10) * 10;
-    map[key] = Math.max(1499, price);
-  }
-
-  return map;
 }
 
 // ── Search ──────────────────────────────────────────────────
@@ -1529,5 +1491,4 @@ export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRR
     // Since each leg's traceId is independent, this just works
   );
 }
-
 
