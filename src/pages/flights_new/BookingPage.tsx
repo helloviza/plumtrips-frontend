@@ -49,7 +49,10 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
-type FlightBookPassenger = BookPassenger & { MealDynamic?: Array<Record<string, unknown>> };
+type FlightBookPassenger = BookPassenger & {
+  MealDynamic?: Array<Record<string, unknown>>;
+  Baggage?: Array<Record<string, unknown>>;
+};
 
 interface BookingPageProps {
   flight: DisplayFlight;
@@ -359,28 +362,55 @@ const ssrFn = apiGetSSRForLegs(allFlights);
       return !normalized || ["none", "no_meal", "nomeal", "no meal", "no meal preference"].includes(normalized);
     };
 
+    const isNoBaggageCode = (code?: string) => {
+      const normalized = String(code || "").trim().toLowerCase();
+      return !normalized || ["none", "no_baggage", "nobaggage", "no baggage", "included only"].includes(normalized);
+    };
+
     const ssrAvailablePerLeg = ssrDataPerLeg.map(
   (ssr) => ssr !== null && (ssr.meals?.length ?? 0) > 0
 );
 
+    const baggageAvailablePerLeg = ssrDataPerLeg.map(
+      (ssr) => ssr !== null && (ssr.baggage?.length ?? 0) > 0
+    );
+
     const buildMealItem = (paxIndex: number, legIndex: number) => {
       const extra = mealExtrasByPaxAndLeg[paxIndex]?.[legIndex];
-      if (!extra || isNoMealCode(extra.mealCode)) return null;
-      const code = String(extra.mealCode).trim();
-      if (!code || code.length < 2) return null;
       if (!ssrAvailablePerLeg[legIndex]) return null;
+      const code = extra ? String(extra.mealCode).trim() : "NoMeal";
+      if (!code || code.length < 2) return null;
 
       const leg = legs[legIndex] ?? { flight };
       return {
         AirlineCode: leg.flight.airlineCode,
         FlightNumber: normalizeFlightNumber(leg.flight.flightNumber),
         WayType: 2,
-        Code: extra.mealCode,
+        Code: isNoMealCode(code) ? "NoMeal" : code,
         Description: 2,
         AirlineDescription: "",
-        Quantity: 1,
+        Quantity: isNoMealCode(code) ? 0 : 1,
         Currency: "INR",
-        Price: extra.mealPrice ?? 0,
+        Price: isNoMealCode(code) ? 0 : extra?.mealPrice ?? 0,
+        Origin: leg.flight.fromCode,
+        Destination: leg.flight.toCode,
+      };
+    };
+
+    const buildBaggageItem = (paxIndex: number, legIndex: number) => {
+      const extra = mealExtrasByPaxAndLeg[paxIndex]?.[legIndex];
+      if (!baggageAvailablePerLeg[legIndex]) return null;
+      const code = extra ? String(extra.baggageCode || "").trim() : "NoBaggage";
+      const leg = legs[legIndex] ?? { flight };
+      return {
+        AirlineCode: leg.flight.airlineCode,
+        FlightNumber: normalizeFlightNumber(leg.flight.flightNumber),
+        WayType: 2,
+        Code: isNoBaggageCode(code) ? "NoBaggage" : code,
+        Description: 2,
+        Weight: isNoBaggageCode(code) ? 0 : extra?.baggageKg ?? 0,
+        Currency: "INR",
+        Price: isNoBaggageCode(code) ? 0 : extra?.baggagePrice ?? 0,
         Origin: leg.flight.fromCode,
         Destination: leg.flight.toCode,
       };
@@ -413,10 +443,14 @@ const ssrFn = apiGetSSRForLegs(allFlights);
         const selectedMeals = legIndexes
           .map((legIndex) => buildMealItem(i, legIndex))
           .filter((meal): meal is Record<string, unknown> => meal !== null);
+        const selectedBaggage = legIndexes
+          .map((legIndex) => buildBaggageItem(i, legIndex))
+          .filter((bag): bag is Record<string, unknown> => bag !== null);
 
         return {
           ...base,
           ...(selectedMeals.length > 0 ? { MealDynamic: selectedMeals } : {}),
+          ...(selectedBaggage.length > 0 ? { Baggage: selectedBaggage } : {}),
         };
       });
 

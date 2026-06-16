@@ -74,6 +74,7 @@ export default function BookingStep4Extras({
         mealCode: "NoMeal",
         mealLabel: "No meal",
         mealPrice: 0,
+        baggageCode: "NoBaggage",
         baggageKg: 0,
         baggagePrice: 0,
       }
@@ -260,7 +261,7 @@ export default function BookingStep4Extras({
                           onClick={() =>
                             updateExtra(
                               i,
-                              { baggageKg: opt.kg, baggagePrice: opt.price },
+                              { baggageCode: opt.code, baggageKg: opt.kg, baggagePrice: opt.price },
                               activeLeg
                             )
                           }

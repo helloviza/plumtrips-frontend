@@ -38,6 +38,7 @@ export interface ExtraSelection {
   mealCode: string;
   mealLabel: string;
   mealPrice: number;
+  baggageCode: string;
   baggageKg: number;
   baggagePrice: number;
 }

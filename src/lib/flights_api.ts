@@ -1109,6 +1109,7 @@ export type SSRMeal = {
 };
 
 export type SSRBaggage = {
+  code: string;
   kg: number;
   label: string;
   description: string;
@@ -1275,10 +1276,11 @@ const rawBaggage: any[] = Array.isArray(bagOuter?.[0])
   const baggage: SSRBaggage[] =
     bagByWeight.size > 0
       ? [
-          { kg: 0, label: "Included only", description: "Use fare allowance", price: 0 },
+          { code: "NoBaggage", kg: 0, label: "Included only", description: "Use fare allowance", price: 0 },
           ...[...bagByWeight.values()]
             .sort((a, b) => Number(a.Weight) - Number(b.Weight))
             .map((b: any) => ({
+              code: String(b.Code ?? ""),
               kg: Number(b.Weight),
               label: `+ ${b.Weight} kg`,
               description: b.Text ?? `Extra ${b.Weight}kg check-in`,
@@ -1491,4 +1493,3 @@ export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRR
     // Since each leg's traceId is independent, this just works
   );
 }
-

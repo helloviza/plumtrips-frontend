@@ -1,7 +1,11 @@
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
 export default function HeroHotel() {
+  const navigate = useNavigate();
+const today = new Date().toLocaleDateString("en-CA");
+const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
   const heroImgRef = useRef<HTMLImageElement>(null);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -176,11 +180,22 @@ export default function HeroHotel() {
                     Breakfast incl.
                   </span>
                 </div>
-                <button
-                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
-                >
-                  View Hotels →
-                </button>
+<button
+  onClick={() => {
+    const params = new URLSearchParams({
+      location: "New Delhi, India",
+      checkIn:  today,
+      checkOut: tomorrow,
+      adults:   "1",
+      children: "0",
+      rooms:    "1",
+    });
+    navigate(`/hotels/results?${params.toString()}`);
+  }}
+  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
+>
+  View Hotels →
+</button>
               </div>
             </div>
           </div>

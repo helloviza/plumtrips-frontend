@@ -322,6 +322,7 @@ export default function Home_Holiday() {
                   className="w-full h-full"
                   onMouseEnter={cardEnter}
                   onMouseLeave={cardLeave}
+                  onClick={scrollToForm}
                   style={{ transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)" }}
                 >
                   <img src={exp.img} alt={exp.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
@@ -406,6 +407,7 @@ export default function Home_Holiday() {
                   className="w-full h-full"
                   onMouseEnter={cardEnter}
                   onMouseLeave={cardLeave}
+                  onClick={scrollToForm}
                   style={{ transition: "all 0.5s cubic-bezier(0.165,0.84,0.44,1)" }}
                 >
                   <div className="relative h-56 overflow-hidden">

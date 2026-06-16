@@ -100,8 +100,40 @@ function searchFormToParams(form: SearchForm): Record<string, string> {
   };
 }
 
+// ── Safely write state to sessionStorage ──────────────────────────────────────
+function persistState(s: FlightState) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+  } catch { /* ignore quota errors */ }
+}
+
+// ── Resolve flight id across possible field names ─────────────────────────────
+function flightId(flight: DisplayFlight): string {
+  const f = flight as any;
+  return String(f.id ?? f.flightId ?? f._id ?? f.key ?? "");
+}
+
 // ── Restore state from sessionStorage on refresh ──────────────────────────────
 function buildInitialState(): FlightState {
+  const pathname = window.location.pathname;
+  const onBookingOrConfirmation =
+    pathname.includes("/booking") || pathname.includes("/confirmation");
+
+  // Always try SESSION_KEY first — this is what keeps booking/confirmation
+  // alive across a refresh.
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as FlightState;
+      // For booking/confirmation pages we MUST have a selectedFlight;
+      // for other pages any cached state is fine.
+      if (!onBookingOrConfirmation || parsed.selectedFlight) {
+        return parsed;
+      }
+    }
+  } catch { /* ignore */ }
+
+  // flightSearch key written by external entry points
   try {
     const raw = sessionStorage.getItem("flightSearch");
     if (raw) {
@@ -116,13 +148,9 @@ function buildInitialState(): FlightState {
     }
   } catch { /* ignore */ }
 
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (raw) return JSON.parse(raw) as FlightState;
-  } catch { /* ignore */ }
-
-  const onResultsPage = window.location.pathname.includes("/results");
-  if (onResultsPage) {
+  // If we land directly on /results with no state, seed a default form so
+  // the results page can at least render the search bar.
+  if (pathname.includes("/results")) {
     return { ...DEFAULT_STATE, searchForm: DEFAULT_SEARCH_FORM };
   }
 
@@ -133,9 +161,9 @@ function buildInitialState(): FlightState {
 type Page = "search" | "results" | "booking" | "confirmation";
 
 function urlToPage(pathname: string): Page {
-  if (pathname.endsWith("/results"))      return "results";
-  if (pathname.endsWith("/booking"))      return "booking";
-  if (pathname.endsWith("/confirmation")) return "confirmation";
+  if (pathname.includes("/results"))      return "results";
+  if (pathname.includes("/booking"))      return "booking";
+  if (pathname.includes("/confirmation")) return "confirmation";
   return "search";
 }
 
@@ -145,9 +173,10 @@ export default function FlightsFlow() {
   const location = useLocation();
   const [state, setState] = useState<FlightState>(buildInitialState);
 
-  // Persist state to sessionStorage whenever it changes
+  // Keep sessionStorage in sync (backup for minor state updates that don't
+  // go through the explicit persistState() call before navigation).
   useEffect(() => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+    persistState(state);
   }, [state]);
 
   // ── Navigate with query params ───────────────────────────────────────────────
@@ -161,10 +190,21 @@ export default function FlightsFlow() {
     window.scrollTo({ top: 0 });
   }
 
+  // ── Shared helper: update state + persist + navigate atomically ──────────────
+  function setAndPersist(updater: (s: FlightState) => FlightState): FlightState {
+    let next!: FlightState;
+    setState((s) => {
+      next = updater(s);
+      persistState(next); // write BEFORE navigate so refresh sees it
+      return next;
+    });
+    return next;
+  }
+
   // ── Handlers ────────────────────────────────────────────────────────────────
   function handleSearch(form: SearchForm, legs?: CityLeg[]) {
-    setState((s) => ({
-      ...s,
+    const next: FlightState = {
+      ...state,
       searchForm: form,
       multiLegs: legs,
       selectedFlight: null,
@@ -172,15 +212,16 @@ export default function FlightsFlow() {
       selectedReturnFlight: null,
       selectedReturnTier: null,
       selectedLegs: Array(legs?.length ?? 0).fill(null),
-    }));
-
+    };
+    persistState(next);
+    setState(next);
     goTo("results", searchFormToParams(form));
   }
 
   function handleDateChange(newDate: string) {
     setState((s) => {
       if (!s.searchForm) return s;
-      return {
+      const next = {
         ...s,
         searchForm: { ...s.searchForm, departDate: newDate },
         selectedFlight: null,
@@ -188,9 +229,10 @@ export default function FlightsFlow() {
         selectedReturnFlight: null,
         selectedReturnTier: null,
       };
+      persistState(next);
+      return next;
     });
 
-    // Merge updated date into existing params so other params are preserved
     const existing = Object.fromEntries(new URLSearchParams(location.search));
     navigate(
       `/flights-new/results?${new URLSearchParams({ ...existing, depart: newDate }).toString()}`
@@ -203,53 +245,62 @@ export default function FlightsFlow() {
     const totalLegs = state.multiLegs?.length ?? 1;
     const baseParams = state.searchForm ? searchFormToParams(state.searchForm) : {};
 
-    // Round-Trip: two-step selection
+    // ── Round-Trip ────────────────────────────────────────────────────────────
     if (tripType === "roundTrip") {
       if (!state.selectedFlight) {
-        // First leg selected — stay on results, update params to reflect outbound choice
-        setState((s) => ({ ...s, selectedFlight: flight, selectedTier: tier }));
+        // First leg — stay on results
+        const next: FlightState = { ...state, selectedFlight: flight, selectedTier: tier };
+        persistState(next);
+        setState(next);
+
         const existing = Object.fromEntries(new URLSearchParams(location.search));
         navigate(
           `/flights-new/results?${new URLSearchParams({
             ...existing,
-            outboundId: String((flight as any).id ?? ""),
+            outboundId:   flightId(flight),
             outboundTier: tier.name ?? "",
           }).toString()}`
         );
       } else {
-        setState((s) => ({
-          ...s,
+        // Second leg — go to booking
+        const next: FlightState = {
+          ...state,
           selectedReturnFlight: flight,
           selectedReturnTier: tier,
-        }));
+        };
+        persistState(next);
+        setState(next);
+
         goTo("booking", {
           ...baseParams,
-          outboundId:   String((state.selectedFlight as any).id ?? ""),
+          outboundId:   flightId(state.selectedFlight),
           outboundTier: state.selectedTier?.name ?? "",
-          returnId:     String((flight as any).id ?? ""),
+          returnId:     flightId(flight),
           returnTier:   tier.name ?? "",
         });
       }
       return;
     }
 
-    // Multi-City: collect one flight per leg
+    // ── Multi-City ────────────────────────────────────────────────────────────
     if (tripType === "multiCity" && legIndex !== undefined) {
       const newLegs = [...state.selectedLegs];
       newLegs[legIndex] = { flight, tier };
       const allLegsSelected = newLegs.every(Boolean) && newLegs.length === totalLegs;
 
       if (allLegsSelected) {
-        setState((s) => ({
-          ...s,
+        const next: FlightState = {
+          ...state,
           selectedFlight: newLegs[0]!.flight,
-          selectedTier: newLegs[0]!.tier,
-          selectedLegs: newLegs,
-        }));
+          selectedTier:   newLegs[0]!.tier,
+          selectedLegs:   newLegs,
+        };
+        persistState(next);
+        setState(next);
 
         const legParams = newLegs.reduce<Record<string, string>>((acc, leg, i) => {
           if (leg) {
-            acc[`leg${i}Id`]   = String((leg.flight as any).id ?? "");
+            acc[`leg${i}Id`]   = flightId(leg.flight);
             acc[`leg${i}Tier`] = leg.tier.name ?? "";
           }
           return acc;
@@ -257,12 +308,15 @@ export default function FlightsFlow() {
 
         goTo("booking", { ...baseParams, ...legParams });
       } else {
-        setState((s) => ({ ...s, selectedLegs: newLegs }));
+        const next: FlightState = { ...state, selectedLegs: newLegs };
+        persistState(next);
+        setState(next);
+
         const existing = Object.fromEntries(new URLSearchParams(location.search));
         navigate(
           `/flights-new/results?${new URLSearchParams({
             ...existing,
-            [`leg${legIndex}Id`]:   String((flight as any).id ?? ""),
+            [`leg${legIndex}Id`]:   flightId(flight),
             [`leg${legIndex}Tier`]: tier.name ?? "",
           }).toString()}`
         );
@@ -270,11 +324,14 @@ export default function FlightsFlow() {
       return;
     }
 
-    // One-Way
-    setState((s) => ({ ...s, selectedFlight: flight, selectedTier: tier }));
+    // ── One-Way ───────────────────────────────────────────────────────────────
+    const next: FlightState = { ...state, selectedFlight: flight, selectedTier: tier };
+    persistState(next); // ← write BEFORE navigate to survive refresh
+    setState(next);
+
     goTo("booking", {
       ...baseParams,
-      flightId: String((flight as any).id ?? ""),
+      flightId: flightId(flight),
       tier:     tier.name ?? "",
     });
   }
@@ -286,7 +343,9 @@ export default function FlightsFlow() {
     contactEmail?: string,
     totalPaid?: number,
   ) {
-    setState((s) => ({ ...s, bookingId, pnr, passengerNames, contactEmail, totalPaid }));
+    const next: FlightState = { ...state, bookingId, pnr, passengerNames, contactEmail, totalPaid };
+    persistState(next);
+    setState(next);
 
     const baseParams = state.searchForm ? searchFormToParams(state.searchForm) : {};
     goTo("confirmation", {
@@ -327,7 +386,16 @@ export default function FlightsFlow() {
 
     case "booking":
       if (!state.selectedFlight || !state.selectedTier || !state.searchForm) {
-        navigate("/flights-new/results", { replace: true });
+        // State missing even after rehydration — send back to results if we
+        // have a search form, otherwise home.
+        if (state.searchForm) {
+          navigate(
+            `/flights-new/results?${new URLSearchParams(searchFormToParams(state.searchForm)).toString()}`,
+            { replace: true }
+          );
+        } else {
+          navigate("/", { replace: true });
+        }
         return null;
       }
       return (
