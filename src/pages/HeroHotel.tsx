@@ -4,9 +4,8 @@ import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
 export default function HeroHotel() {
   const navigate = useNavigate();
-  const today    = new Date().toLocaleDateString("en-CA");
-  const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
-
+const today = new Date().toLocaleDateString("en-CA");
+const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
   const heroImgRef = useRef<HTMLImageElement>(null);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -30,416 +29,216 @@ export default function HeroHotel() {
   ];
 
   return (
-    <>
-      <style>{`
-        /* ── Root ── */
-        .hh-root {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          min-height: 520px;
-        }
+    <div
+      className="relative flex flex-col overflow-hidden"
+      style={{ minHeight: 560 }}
+      onMouseMove={handleHeroMouseMove}
+      onMouseLeave={handleHeroMouseLeave}
+    >
+      {/* Background */}
+      <div className="absolute inset-0 z-0">
+        <img
+          ref={heroImgRef}
+          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80"
+          alt="Luxury hotel pool"
+          className="w-full h-full object-cover brightness-75 transition-transform duration-[10000ms]"
+          style={{ transform: "scale(1.1) translate(0px,0px)" }}
+        />
+        <div className="absolute inset-0 hero-gradient" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.18) 70%, rgba(255,255,255,0.55) 100%)",
+          }}
+          aria-hidden
+        />
+      </div>
 
-        /* ── Background ── */
-        .hh-bg {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-        }
-        .hh-bg img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          filter: brightness(0.72);
-          transition: transform 10000ms ease;
-          transform: scale(1.1) translate(0, 0);
-        }
-        .hh-bg-gradient {
-          position: absolute;
-          inset: 0;
-        }
-        .hh-bg-fade {
-          pointer-events: none;
-          position: absolute;
-          inset-inline: 0;
-          bottom: 0;
-          z-index: 2;
-          height: 7rem;
-          background: linear-gradient(
-            to bottom,
-            transparent 0%,
-            rgba(255,255,255,0.18) 70%,
-            rgba(255,255,255,0.55) 100%
-          );
-        }
+      {/* Hero content */}
+      <div className="relative z-10 flex-grow flex items-center w-full">
+        <div className="relative z-[3] mx-auto w-full px-6 pt-[140px] pb-14">
 
-        /* ── Content ── */
-        .hh-content {
-          position: relative;
-          z-index: 10;
-          flex-grow: 1;
-          display: flex;
-          align-items: center;
-          width: 100%;
-        }
-        .hh-inner {
-          position: relative;
-          z-index: 3;
-          width: 100%;
-          /* mobile-first */
-          padding: 100px 16px 40px;
-          box-sizing: border-box;
-        }
+          {/* Headline + Deal Card */}
+          <div
 
-        /* ── Top row ── */
-        .hh-top-row {
-          display: flex;
-          flex-direction: column;   /* stack on mobile */
-          align-items: flex-start;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-
-        /* ── Copy ── */
-        .hh-copy {
-          flex: 1 1 0;
-          min-width: 0;
-        }
-        .hh-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 5px 14px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.10);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255,255,255,0.18);
-          font-family: Poppins, sans-serif;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: #fff;
-          margin-bottom: 14px;
-        }
-        .hh-badge img {
-          width: 36px;
-          height: 36px;
-          margin-right: -4px;
-          margin-bottom: -2px;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
-        }
-        .hh-headline {
-          font-family: Poppins, sans-serif;
-          font-weight: 800;
-          font-size: clamp(1.6rem, 5vw, 2.5rem);
-          line-height: 1.13;
-          letter-spacing: -0.02em;
-          color: #fff;
-          margin: 0 0 8px;
-        }
-        .hh-subline {
-          font-family: Poppins, sans-serif;
-          font-weight: 300;
-          font-size: clamp(12px, 2.5vw, 15px);
-          color: rgba(255,255,255,0.60);
-          margin: 0;
-        }
-
-        /* ── Deal card ── */
-        .hh-deal-card {
-          width: 100%;           /* full-width on mobile */
-          border-radius: 16px;
-          padding: 14px 16px;
-          background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(255,255,255,0.22);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
-          box-sizing: border-box;
-        }
-        .hh-card-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 10px;
-        }
-        .hh-card-label {
-          font-family: Poppins, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.65);
-        }
-        .hh-card-hotel-name {
-          font-family: Poppins, sans-serif;
-          font-weight: 600;
-          font-size: 13px;
-          color: #fff;
-          margin-bottom: 4px;
-        }
-        .hh-stars {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          margin-bottom: 8px;
-        }
-        .hh-star { color: #fbbf24; font-size: 11px; }
-        .hh-star-label {
-          font-family: Poppins, sans-serif;
-          font-size: 10px;
-          color: rgba(255,255,255,0.45);
-          margin-left: 2px;
-        }
-        .hh-price-row {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          margin-bottom: 6px;
-        }
-        .hh-price {
-          font-family: Poppins, sans-serif;
-          font-weight: 800;
-          font-size: clamp(18px, 4vw, 22px);
-          color: #FF9A6C;
-          line-height: 1;
-        }
-        .hh-price-strike {
-          font-family: Poppins, sans-serif;
-          font-size: 10px;
-          color: rgba(255,255,255,0.35);
-          text-decoration: line-through;
-        }
-        .hh-card-hotel-img {
-          width: 60px;
-          height: 52px;
-          margin-right: -4px;
-          margin-bottom: -2px;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
-        }
-        .hh-tags {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 10px;
-          flex-wrap: wrap;
-        }
-        .hh-tag-discount {
-          font-family: Poppins, sans-serif;
-          font-size: 10px;
-          font-weight: 600;
-          color: #6ee7a0;
-          background: rgba(110,231,160,0.12);
-          border-radius: 6px;
-          padding: 2px 7px;
-        }
-        .hh-tag-info {
-          font-family: Poppins, sans-serif;
-          font-size: 10px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.55);
-          background: rgba(255,255,255,0.10);
-          border-radius: 6px;
-          padding: 2px 7px;
-        }
-        .hh-cta {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-family: Poppins, sans-serif;
-          font-size: 12px;
-          font-weight: 600;
-          color: #FF9A6C;
-          padding: 0;
-        }
-
-        /* ── Trending ── */
-        .hh-trending {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin-top: -4px;
-          margin-bottom: 16px;
-        }
-        .hh-trending-label {
-          font-family: Poppins, sans-serif;
-          font-size: 11px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.40);
-        }
-        .hh-pill {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 12px 4px 4px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.09);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255,255,255,0.15);
-          font-family: Poppins, sans-serif;
-          font-size: 12px;
-          font-weight: 500;
-          color: rgba(255,255,255,0.88);
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        .hh-pill:hover { background: rgba(255,255,255,0.16); }
-        .hh-pill img {
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-
-        /* ── Search wrapper ── */
-        .hh-search { width: 100%; }
-
-        /* ── Tablet (≥ 640px) ── */
-        @media (min-width: 640px) {
-          .hh-inner { padding: 120px 28px 48px; }
-          .hh-badge { font-size: 11px; }
-          .hh-badge img { width: 40px; height: 40px; }
-        }
-
-        /* ── Desktop (≥ 900px): side-by-side ── */
-        @media (min-width: 900px) {
-          .hh-root    { min-height: 560px; }
-          .hh-inner   {
-            padding: 140px 40px 56px;
-            max-width: 1280px;
-            margin-inline: auto;
-          }
-          .hh-top-row {
-            flex-direction: row;
-            align-items: flex-start;
-            gap: 24px;
-          }
-          .hh-deal-card {
-            width: 212px;
-            flex-shrink: 0;
-            align-self: flex-start;
-            margin-top: 4px;
-          }
-        }
-
-        /* ── Wide (≥ 1280px) ── */
-        @media (min-width: 1280px) {
-          .hh-inner { padding-inline: 64px; }
-        }
-      `}</style>
-
-      <div
-        className="hh-root reveal"
-        onMouseMove={handleHeroMouseMove}
-        onMouseLeave={handleHeroMouseLeave}
-      >
-        {/* Background */}
-        <div className="hh-bg">
-          <img
-            ref={heroImgRef}
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80"
-            alt="Luxury hotel pool"
-          />
-          <div className="hh-bg-gradient hero-gradient" />
-          <div className="hh-bg-fade" aria-hidden />
-        </div>
-
-        {/* Hero content */}
-        <div className="hh-content">
-          <div className="hh-inner">
-
-            {/* Top row: copy + deal card */}
-            <div className="hh-top-row reveal" style={{ transitionDelay: "0.04s" }}>
-
-              {/* Copy */}
-              <div className="hh-copy">
-                <div className="hh-badge">
-                  <img src="/icons/HOTELS.png" alt="" />
-                  Stay Better · Live More
-                </div>
-                <h1 className="hh-headline">
-                  Find Your Perfect Stay,<br />Every Night
-                </h1>
-                <p className="hh-subline">
-                  Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting ₹999/night
-                </p>
+  className="reveal flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-10"
+  style={{ transitionDelay: "0.04s" }}
+>
+          
+            {/* Left: copy block */}
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <div className="mb-5">
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 16px",
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.10)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    fontFamily: "Poppins, sans-serif",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "#fff",
+                  }}
+                >
+                  <img
+                    src="/icons/HOTELS.png"
+                    alt=""
+                    style={{ width: 40, height: 40, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                  />Stay Better · Live More
+                </span>
               </div>
+              <h1
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 800,
+                  fontSize: "clamp(2rem, 3vw, 2.5rem)",
+                  lineHeight: 1.13,
+                  letterSpacing: "-0.02em",
+                  color: "#fff",
+                  margin: "0 0 8px",
+                }}
+              >
+                Find Your Perfect Stay,
+                <br />
+                Every Night
+              </h1>
+              <p
+                style={{
+                  fontFamily: "Poppins, sans-serif",
+                  fontWeight: 300,
+                  fontSize: 15,
+                  color: "rgba(255,255,255,0.60)",
+                  margin: 0,
+                }}
+              >
+                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting ₹999/night
+              </p>
+            </div>
 
-              {/* Deal card */}
-              <div className="hh-deal-card">
-                <div className="hh-card-header">
-                  <span className="hh-card-label">Tonight's top pick</span>
+            {/* Right: Hotel Deal Card */}
+            <div style={{ flexShrink: 0, alignSelf: "flex-start", marginTop: 4 }}>
+              <div
+                style={{
+                  width: 212,
+                  borderRadius: 16,
+                  padding: "14px 16px",
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(24px)",
+                  WebkitBackdropFilter: "blur(24px)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.65)" }}>
+                    Tonight's top pick
+                  </span>
                   <span style={{ fontSize: 13 }}>🔥</span>
                 </div>
-
-                <div className="hh-card-hotel-name">The Leela Palace, Delhi</div>
-
-                <div className="hh-stars">
-                  {"★★★★★".split("").map((s, i) => (
-                    <span key={i} className="hh-star">{s}</span>
-                  ))}
-                  <span className="hh-star-label">5-star</span>
+                <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 13, color: "#fff", marginBottom: 4 }}>
+                  The Leela Palace, Delhi
                 </div>
-
-                <div className="hh-price-row">
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  {"★★★★★".split("").map((s, i) => (
+                    <span key={i} style={{ color: "#fbbf24", fontSize: 11 }}>{s}</span>
+                  ))}
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)", marginLeft: 2 }}>
+                    5-star
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 6 }}>
                   <div>
-                    <div className="hh-price">₹8,499</div>
-                    <div className="hh-price-strike">₹12,000</div>
+                    <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 22, color: "#FF9A6C", lineHeight: 1 }}>
+                      ₹8,499
+                    </div>
+                    <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.35)", textDecoration: "line-through" }}>
+                      ₹12,000
+                    </div>
                   </div>
                   <img
                     src="/icons/HOTELS.png"
                     alt=""
-                    className="hh-card-hotel-img"
+                    style={{ width: 70, height: 60, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
                   />
                 </div>
-
-                <div className="hh-tags">
-                  <span className="hh-tag-discount">29% off</span>
-                  <span className="hh-tag-info">Breakfast incl.</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 600, color: "#6ee7a0", background: "rgba(110,231,160,0.12)", borderRadius: 6, padding: "2px 7px" }}>
+                    29% off
+                  </span>
+                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
+                    Breakfast incl.
+                  </span>
                 </div>
-
-                <button
-                  className="hh-cta"
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      location: "New Delhi, India",
-                      checkIn:  today,
-                      checkOut: tomorrow,
-                      adults:   "1",
-                      children: "0",
-                      rooms:    "1",
-                    });
-                    navigate(`/hotels/results?${params.toString()}`);
-                  }}
-                >
-                  View Hotels →
-                </button>
+<button
+  onClick={() => {
+    const params = new URLSearchParams({
+      location: "New Delhi, India",
+      checkIn:  today,
+      checkOut: tomorrow,
+      adults:   "1",
+      children: "0",
+      rooms:    "1",
+    });
+    navigate(`/hotels/results?${params.toString()}`);
+  }}
+  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
+>
+  View Hotels →
+</button>
               </div>
             </div>
-
-            {/* Trending destinations */}
-            <div className="hh-trending reveal" style={{ transitionDelay: "0.06s" }}>
-              <span className="hh-trending-label">Trending destinations:</span>
-              {TRENDING.map(d => (
-                <button key={d.city} className="hh-pill">
-                  <img src={d.img} alt={d.city} />
-                  {d.city}
-                </button>
-              ))}
-            </div>
-
-            {/* Hotel Search Form */}
-            <div className="hh-search reveal" style={{ transitionDelay: "0.08s" }}>
-              <HotelSearchForm />
-            </div>
-
           </div>
+
+          {/* Trending destinations — own row below headline */}
+          <div
+            className="reveal"
+            style={{
+              transitionDelay: "0.06s",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              marginTop: -4,
+              marginBottom: 16,
+            }}
+          >
+            <span style={{
+              fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 500,
+              color: "rgba(255,255,255,0.4)",
+            }}>
+              Trending destinations:
+            </span>
+            {TRENDING.map(d => (
+              <button key={d.city} style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "4px 14px 4px 4px", borderRadius: 999,
+                background: "rgba(255,255,255,0.09)", backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                fontFamily: "Poppins, sans-serif", fontSize: 12.5, fontWeight: 500,
+                color: "rgba(255,255,255,0.88)", cursor: "pointer",
+              }}>
+                <img src={d.img} alt={d.city} style={{
+                  width: 24, height: 24, borderRadius: "50%", objectFit: "cover",
+                }} />
+                {d.city}
+              </button>
+            ))}
+          </div>
+
+          {/* Hotel Search Form — inline, no tab wrapper */}
+          <div className="w-full reveal" style={{ transitionDelay: "0.08s" }}>
+            <HotelSearchForm />
+          </div>
+
         </div>
       </div>
-    </>
+    </div>
   );
 }

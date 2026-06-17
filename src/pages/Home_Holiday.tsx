@@ -103,7 +103,7 @@ export default function Home_Holiday() {
   };
 
   return (
-    <div className="bg-[#f9f9fc] text-[#1a1c1e] font-sans overflow-x-hidden selection:bg-[#d06549] selection:text-white -mt-[72px]" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="bg-[#f9f9fc] text-[#1a1c1e] font-sans overflow-x-hidden selection:bg-[#d06549] selection:text-white -mt-[72px] font-poppins">
       <style>{`
         .glass-panel { background: rgba(255,255,255,0.92); border: 1px solid rgba(0,71,127,0.1); box-shadow: 0 18px 35px rgba(0,0,0,0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         .hero-gradient { background: linear-gradient(160deg, rgba(0,40,80,0.4) 0%, rgba(0,55,105,0.3) 50%, rgba(0,30,60,0.2) 100%); }

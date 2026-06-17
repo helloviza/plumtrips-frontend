@@ -67,7 +67,7 @@ export default function DynamicDestination({ params }: { params: { slug: string 
 
   return (
     <div 
-      className={`min-h-screen font-sans overflow-x-hidden -mt-[72px]`}
+      className={`min-h-screen font-sans overflow-x-hidden -mt-[72px] font-poppins`}
       style={{ 
         backgroundColor: pageTheme.bg, 
         color: pageTheme.text 

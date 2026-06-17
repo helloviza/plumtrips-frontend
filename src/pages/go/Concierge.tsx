@@ -99,7 +99,7 @@ export default function Concierge() {
 
   return (
     <div
-      className="min-h-[100dvh] selection:bg-[#ffdbd2] selection:text-[#3c0800]"
+      className="min-h-[100dvh] selection:bg-[#ffdbd2] selection:text-[#3c0800] font-poppins"
       style={{
         backgroundImage: `linear-gradient(rgba(11,21,40,0.50), rgba(11,21,40,0.50)), url('${HERO_IMAGE}')`,
         backgroundSize: "cover",

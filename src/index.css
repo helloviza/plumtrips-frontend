@@ -219,7 +219,7 @@ button,
     opacity: 0;
     pointer-events: none;
     mix-blend-mode: screen;
-    animation: fw-sparks .95s ease-out .18s both;
+    animation: fw-sparks .95s ease-out .18s both; 
     transform: translate(-50%, -50%);
   }
 
@@ -228,4 +228,9 @@ button,
     outline: none;
     box-shadow: none;
   }
+}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+.font-poppins, .font-poppins * {
+  font-family: 'Poppins', sans-serif !important;
 }
