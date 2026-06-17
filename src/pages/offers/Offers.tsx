@@ -134,12 +134,12 @@ useEffect(() => {
         {/* Flash Deal Banner */}
         <div className="py-3 px-6 text-center relative z-40" style={{ backgroundColor: "#d06549", color: "#ffffff" }}>
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 flex-wrap">
-            <span style={{ fontSize: 18 }}>⏱</span>
-            <p className="text-sm font-semibold tracking-wider uppercase" style={{ fontFamily: "Poppins, sans-serif" }}>
+            <span style={{ fontSize: 25 }}>⏱</span>
+            <p className="text-xl font-semibold tracking-wider uppercase" style={{ fontFamily: "Poppins, sans-serif" }}>
               Flash Deal: <span className="font-bold">25% Off</span> Kyoto Master Artisan — Ends in{" "}
-              <span className="px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.2)" }}>{flashTimer}</span>
+              <span className=" text-xl px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.2)" }}>{flashTimer}</span>
             </p>
-            <Link to="/go/concierge" className="bg-white px-4 py-1 rounded-full text-xs font-bold hover:opacity-90 transition-opacity" style={{ color: "#d06549" }}>Claim Now</Link>
+            <Link to="/go/concierge" className="bg-white px-4 py-1 rounded-full text-sm font-bold hover:opacity-90 transition-opacity" style={{ color: "#d06549" }}>Claim Now</Link>
           </div>
         </div>
 
@@ -152,9 +152,9 @@ useEffect(() => {
           <div className="relative z-10 px-6 md:px-12 max-w-7xl mx-auto w-full">
             <div className="max-w-2xl text-white">
               <span className="uppercase tracking-widest block mb-4 text-xs font-semibold" style={{ color: "#ffb59f", fontFamily: "Poppins, sans-serif" }}>Seasonal Edition</span>
-              <h1 className="leading-tight mb-6" style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(3rem, 8vw, 5.5rem)", lineHeight: 1.05 }}>
+              <h1 className="leading-tight mb-6" style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(1.5rem, 4vw, 3rem)", lineHeight: 1.05 }}>
                 Exclusive Travel Offers<br />
-                <span className="serif-italic" style={{ color: "#ffb59f" }}>Holidays, Flights & Hotels</span>
+                <span  style={{ color: "#ffb59f" }}>Holidays, Flights & Hotels</span>
               </h1>
               <p className="mb-8 max-w-lg opacity-90 text-lg" style={{ fontFamily: "Poppins, sans-serif", lineHeight: 1.6 }}>
                 Experience luxury for less. Plumtrips brings curated offers that combine best-in-class pricing with unmatched concierge service — perfect for leisure and corporate travellers alike.

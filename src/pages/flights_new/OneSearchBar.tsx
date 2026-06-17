@@ -553,7 +553,7 @@ function TripTypePicker({
   const opts: { key: SearchForm["tripType"]; label: string; icon: string }[] = [
     { key: "oneWay",    label: "One-way",    icon: "→" },
     { key: "roundTrip", label: "Round trip", icon: "⇄" },
-    { key: "multiCity", label: "Multi-city", icon: "⊕" },
+    // { key: "multiCity", label: "Multi-city", icon: "⊕" },   //To Add Multicity Remove this comment //We can be able to easily move forward
   ];
 
   return createPortal(

@@ -613,7 +613,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
   const tripTypes = [
     { key: "oneWay" as const,    icon: "✈",  label: "One way"    },
     { key: "roundTrip" as const, icon: "⇄",  label: "Round trip" },
-    { key: "multiCity" as const, icon: "⊞",  label: "Multi-city" },
+    // { key: "multiCity" as const, icon: "⊞",  label: "Multi-city" },   ///To Update Multicity Remove this comment
   ];
 
   // ── MULTI-CITY RENDER ────────────────────────────────────────
