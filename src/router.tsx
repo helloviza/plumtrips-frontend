@@ -597,6 +597,7 @@ import SearchTabs from "./components/SearchTabs";
 import Home_Holiday from "./pages/Home_Holiday";
 import HomeCarouselPage from "./pages/marketing/HomeCarousel";
 import  Reviews from "./components/Reviews";
+import TripPlanner from "./pages/Itenary/TripPlanner";
 
 // BLOG
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -824,6 +825,11 @@ export const router = createBrowserRouter(
               path: "mice",
               element: <MicePage />,
             },
+
+                    {
+          path: "/tripPlanner",
+          element: <TripPlanner />,
+        },
 
             {
               path: "support",

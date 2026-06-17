@@ -1,7 +1,8 @@
-import { useRef } from "react";
 import SearchPage from "../pages/flights_new/SearchPage";
 import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
+import { useState, useEffect, useRef } from "react";
+import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
 
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
@@ -24,6 +25,29 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
     if (heroImgRef.current)
       heroImgRef.current.style.transform = "scale(1.1) translate(0,0)";
   };
+
+  const [dealPrice, setDealPrice] = useState<number | null>(null);
+const [dealAirline, setDealAirline] = useState<string>("IndiGo");
+const [dealDuration, setDealDuration] = useState<string>("2h 10m");
+
+useEffect(() => {
+  apiSearchFlights({
+    tripType: "oneWay",
+    from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+    to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+    departDate: today, returnDate: "", adults: 1, children: 0, infants: 0,
+    cabinClass: "Economy", nonStopOnly: false, fareType: "Regular",
+  }).then(result => {
+    // Sort by price and pick the cheapest non-stop (or just cheapest)
+    const sorted = [...(result.outbound ?? [])].sort((a, b) => a.price - b.price);
+    const cheapest = sorted[0];
+    if (cheapest) {
+      setDealPrice(cheapest.price);
+      setDealAirline(cheapest.airline);
+      setDealDuration(`${Math.floor(cheapest.duration / 60)}h ${cheapest.duration % 60}m`);
+    }
+  }).catch(() => {}); // silently fail — card stays with fallback
+}, []);
 
   const TRENDING = [
     { city: "Dubai",     img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80" },
@@ -146,14 +170,14 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                   Delhi → Mumbai
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
-                  <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
-                    ₹4,899
-                  </div>
+<div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
+  {dealPrice ? formatINR(dealPrice) : "₹4,899"}
+</div>
                   <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
                   <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
-                    IndiGo · 2h 10m
+                  {dealAirline} · {dealDuration}
                   </span>
                   <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 600, color: "#6ee7a0", background: "rgba(110,231,160,0.12)", borderRadius: 6, padding: "2px 7px" }}>
                     Non-stop
