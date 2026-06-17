@@ -56,7 +56,10 @@ export const trustBarProps: TrustBarProps = {
 // ── TrustedPartners ──────────────────────────
 export const trustedPartnersProps: TrustedPartnersProps = {
   heading: "Our Trusted Partners",
-  logos: ["/home/airindia.png", "/home/indigo.png","/home/vistara.png", "/home/logos/spicejet.png", "/home/logos/akasa.png", "/home/logos/etihad.png"],
+  logos: ["/home/airindia.png", "/home/indigo.png","/home/vistara.png", "/home/logos/spicejet.png",
+     "/home/logos/akasa.png", "/home/logos/etihad.png","/home/AirAstana.jpg","/home/CandadianAirlines.jpg",
+    "/home/EmirateLogo.jpg","/home/FlyDubai.jpg","/home/ITA.png","/home/JETAIR.png","/home/Lufthansa.png",
+   "/home/Oman.jpg"],
 };
 
 // ── TravelYourWay ────────────────────────────
