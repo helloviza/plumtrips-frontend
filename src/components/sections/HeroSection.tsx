@@ -198,6 +198,7 @@ import { motion, useInView } from "framer-motion";
 import { Button } from "../ui_d/button";
 import { Input } from "../ui_d/input";
 import { Textarea } from "../ui_d/textarea";
+import { submitInquiry } from "../../lib/api";
 import type { HeroSection as HeroSectionType } from "../../types/destination";
 
 // Re-using the same resolveImage logic from HeroSection to handle local vs remote images
@@ -266,11 +267,7 @@ export function HeroSection({ data, children }: { data: HeroSectionType['data'],
           <p className="text-xl text-white/90 font-light mb-10 max-w-md">
             {data.description}
           </p>
-          <div className="flex items-center gap-6">
-            <Button className="bg-[#e35d29] hover:bg-[#c94e1e] text-white rounded-full px-10 py-6 text-lg font-semibold h-auto">
-              {data.form.buttonText}
-            </Button>
-          </div>
+
         </motion.div>
 
         <div className="w-full max-w-[360px] ml-auto">
@@ -297,10 +294,30 @@ function HeroForm({
   buttonText: string;
 }) {
   const [submitted, setSubmitted] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+      travelers: Number(formData.get("travelers")) || 0,
+      month: formData.get("month") as string,
+      formType: "hero" as const,
+    };
+
+    try {
+      setLoading(true);
+      await submitInquiry(payload);
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to submit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -344,12 +361,13 @@ function HeroForm({
       transition={{ duration: 0.35 }}
     >
       <h3 className="text-2xl font-serif text-[#0a1c2b] mb-6 font-semibold">{title}</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="inquiry-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
             Name
           </label>
           <Input
+            name="name"
             placeholder="John Doe"
             required
             className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
@@ -362,6 +380,7 @@ function HeroForm({
               {isCorporate ? 'Work Email' : 'Email'}
             </label>
             <Input
+              name="email"
               placeholder="john@example.com"
               type="email"
               required
@@ -373,8 +392,10 @@ function HeroForm({
               Phone
             </label>
             <Input
+              name="phone"
               placeholder="+1 234 567 8900"
               type="tel"
+              required
               className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
             />
           </div>
@@ -386,6 +407,8 @@ function HeroForm({
               {isCorporate ? 'Team Size' : 'Travelers'}
             </label>
             <Input
+              name="travelers"
+              type="number"
               placeholder={isCorporate ? 'Min 10' : '2'}
               className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
             />
@@ -395,6 +418,7 @@ function HeroForm({
               {isCorporate ? 'Date' : 'Travel Month'}
             </label>
             <Input
+              name="month"
               placeholder="mm/yyyy"
               className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
             />
@@ -403,9 +427,10 @@ function HeroForm({
 
         <Button
           type="submit"
-          className="w-full bg-[#d06549] hover:bg-[#b8543a] text-white rounded-xl h-12 text-base font-bold mt-4 shadow-md"
+          disabled={loading}
+          className="w-full bg-[#d06549] hover:bg-[#b8543a] text-white rounded-xl h-12 text-base font-bold mt-4 shadow-md disabled:opacity-50"
         >
-          {buttonText}
+          {loading ? "Sending..." : buttonText}
         </Button>
 
         {isCorporate && (

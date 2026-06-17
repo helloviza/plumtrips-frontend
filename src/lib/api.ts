@@ -1,7 +1,7 @@
 // apps/frontend/src/lib/api.ts
 
 // Minimal client for your backend (runs in browser)
-const BACKEND = import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
+const BACKEND = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
 
 // Default timeout (ms) for network calls. You can override per call below.
 const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_HTTP_TIMEOUT_MS || 90000); // 90s
@@ -1102,4 +1102,26 @@ export async function updateHomeCarousel(
 
 export async function deleteHomeCarousel(id: string): Promise<void> {
   return del(`/homeCarousel/${id}`);
+}
+/* ------------------------------------------------------------------ */
+/* Inquiries API                                                      */
+/* ------------------------------------------------------------------ */
+
+export type InquiryPayload = {
+  name: string;
+  email?: string;
+  phone: string;
+  destination?: string;
+  departureCity?: string;
+  budget?: string;
+  month?: string;
+  travelers?: number;
+  formType: "hero" | "holiday" | "general";
+};
+
+export async function submitInquiry(payload: InquiryPayload) {
+  return postJson<{ ok: boolean; message: string; data: any }>(
+    "/api/v1/inquiries",
+    payload
+  );
 }

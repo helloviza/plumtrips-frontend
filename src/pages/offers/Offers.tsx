@@ -80,7 +80,33 @@ export default function OffersPage() {
   const [activeTab, setActiveTab] = useState<OfferType>("All");
   const [items, setItems] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [flashTimer] = useState("04:22:15");
+const endTime = new Date(Date.now() + 4 * 60 * 60 * 1000 + 22 * 60 * 1000 + 15 * 1000);
+
+const [flashTimer, setFlashTimer] = useState("");
+
+useEffect(() => {
+  const updateTimer = () => {
+    const diff = endTime.getTime() - Date.now();
+
+    if (diff <= 0) {
+      setFlashTimer("00:00:00");
+      return;
+    }
+
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+
+    setFlashTimer(
+      `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    );
+  };
+
+  updateTimer();
+  const interval = setInterval(updateTimer, 1000);
+
+  return () => clearInterval(interval);
+}, []);
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -8,6 +8,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import "./index.css";
 import { router } from "./router";
+import { Toaster } from "./components/ui_d/toaster";
 
 /**
  * Global event wiring for Profile Meter actions:
@@ -85,5 +86,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     {/* Global event bridge for app-wide actions */}
     <GlobalEvents />
     <RouterProvider router={router} />
+    <Toaster />
   </React.StrictMode>
 );

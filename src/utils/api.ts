@@ -1,7 +1,7 @@
 // apps/frontend/src/utils/api.ts
 
 export const API_BASE =
-  (import.meta.env.VITE_BACKEND_ORIGIN as string) || "http://localhost:3000";
+  (import.meta.env.VITE_BACKEND_ORIGIN as string) || "http://localhost:8080";
 
 /** Build a safe URL like `${API_BASE}/path` without duplicate slashes */
 function makeUrl(path: string) {

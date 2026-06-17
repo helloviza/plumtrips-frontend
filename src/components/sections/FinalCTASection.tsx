@@ -46,7 +46,19 @@ export function FinalCTASection({ data }: { data: FinalCTASectionType['data'] })
           <p className="text-xl text-white/70 font-light mb-12 max-w-2xl mx-auto">
             {data.description}
           </p>
-          <Button className="bg-[#e35d29] hover:bg-[#c94e1e] text-white rounded-full px-10 py-7 text-lg font-semibold h-auto shadow-xl shadow-[#e35d29]/20 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-[#e35d29]/30">
+          <Button 
+            className="bg-[#e35d29] hover:bg-[#c94e1e] text-white rounded-full px-10 py-7 text-lg font-semibold h-auto shadow-xl shadow-[#e35d29]/20 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-[#e35d29]/30"
+            onClick={() => {
+              const formEl = document.getElementById("inquiry-form");
+              if (formEl) {
+                formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                formEl.style.transform = "scale(1.03)";
+                formEl.style.transition = "transform 0.3s ease";
+                setTimeout(() => { formEl.style.transform = "scale(1)"; }, 300);
+                setTimeout(() => { formEl.querySelector("input")?.focus(); }, 400);
+              }
+            }}
+          >
             {data.buttonText}
           </Button>
         </FadeIn>

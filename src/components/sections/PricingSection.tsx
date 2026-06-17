@@ -58,7 +58,19 @@ export function PricingSection({ data, theme }: { data: PricingSectionType['data
                 )}
               </div>
 
-              <Button className={`w-full rounded-full h-12 font-semibold mt-8 ${tier.highlight ? 'bg-white text-[#e35d29] hover:bg-gray-100' : isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-[#0a1c2b] hover:bg-[#0a1c2b]/90 text-white'}`}>
+              <Button 
+                className={`w-full rounded-full h-12 font-semibold mt-8 ${tier.highlight ? 'bg-white text-[#e35d29] hover:bg-gray-100' : isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-[#0a1c2b] hover:bg-[#0a1c2b]/90 text-white'}`}
+                onClick={() => {
+                  const formEl = document.getElementById("inquiry-form");
+                  if (formEl) {
+                    formEl.scrollIntoView({ behavior: "smooth", block: "center" });
+                    formEl.style.transform = "scale(1.03)";
+                    formEl.style.transition = "transform 0.3s ease";
+                    setTimeout(() => { formEl.style.transform = "scale(1)"; }, 300);
+                    setTimeout(() => { formEl.querySelector("input")?.focus(); }, 400);
+                  }
+                }}
+              >
                 {tier.stars ? `Select ${tier.stars.split(' ')[0]}* Package` : `Select ${tier.name}`}
               </Button>
             </div>

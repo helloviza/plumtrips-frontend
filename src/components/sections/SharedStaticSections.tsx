@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Check, Star } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { Button } from "../ui_d/button";
@@ -15,13 +15,19 @@ import destThailand from "../../../public/assets/attached_assets/dest-thailand.p
 import destJapan from "../../../public/assets/attached_assets/dest-japan.png";
 import destBali from "../../../public/assets/attached_assets/dest-bali.png";
 
-const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode, delay?: number, className?: string }) => {
+const FadeIn = ({ children, delay = 0, className = "", onClick }: { 
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+  onClick?: () => void;  // 👈 add this
+}) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   
   return (
     <motion.div
       ref={ref}
+      onClick={onClick}   // 👈 forward it here
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
@@ -33,7 +39,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 };
 
 export function SharedStaticSections() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   const scrollToForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -136,14 +142,22 @@ export function SharedStaticSections() {
               { img: destJapan, name: "Japan", vibe: "Cultural & Serene", duration: "10-14 Days", exp: "Ryokans & cherry blossoms" },
               { img: destBali, name: "Bali", vibe: "Wellness & Nature", duration: "5-8 Days", exp: "Jungle retreats & beach clubs" }
             ].map((dest, i) => (
-              <FadeIn key={i} delay={i * 0.1} className="group cursor-pointer">
+              <FadeIn 
+                key={i} 
+                delay={i * 0.1} 
+                className="group cursor-pointer"
+                onClick={() => navigate(`/${dest.name.toLowerCase()}-personal`)}
+              >
                 <div className="relative overflow-hidden rounded-xl aspect-[3/4] mb-4">
                   <img src={dest.img} alt={dest.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded text-[10px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-[#0a1c2b] uppercase tracking-wider">
                     {dest.vibe}
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a1c2b]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                    <Button className="w-full bg-[#e35d29] text-white hover:bg-[#c94e1e]" onClick={(e) => { e.stopPropagation(); setLocation(`/country/${dest.name.toLowerCase()}`); }}>
+                    <Button 
+                      className="w-full bg-[#e35d29] text-white hover:bg-[#c94e1e]" 
+                      onClick={(e) => { e.stopPropagation(); navigate(`/${dest.name.toLowerCase()}-personal`); }}
+                    >
                       Get Custom Plan
                     </Button>
                   </div>
