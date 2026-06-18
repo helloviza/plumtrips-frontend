@@ -113,7 +113,7 @@ export default function Home_Holiday() {
 
       {/* 1. HERO SECTION */}
       <section 
-        className="relative min-h-[85vh] flex items-center pt-[200px] pb-12 px-6 lg:px-12 overflow-hidden"
+        className="relative min-h-[85vh] flex items-center pt-[180px] pb-12 px-6 lg:px-12 overflow-hidden"
         onMouseMove={handleHeroMouseMove}
         onMouseLeave={handleHeroMouseLeave}
       >
