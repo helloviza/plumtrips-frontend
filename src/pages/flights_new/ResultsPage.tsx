@@ -1086,14 +1086,17 @@ const sourceFlights = useMemo(() => {
 
       {/* ── HEADER ── */}
       <header style={{
-        background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
+         background: "#fff"
+        //background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
       }}>
-       <div style={{ width: "100%", padding: "0" }}>
+<div style={{ width: "100%", padding: "16px 70px" }}>
 
-  <OneSearchBar
-    form={form}
-    onSearch={(f, legs) => onNewSearch?.(f, legs)}
-  />
+<OneSearchBar
+  form={form}
+  tripType={form.tripType}
+  onSearch={(f, legs) => onNewSearch?.(f, legs)}
+/>
+
 
 
           {/* Multi-city leg tabs */}
@@ -1224,7 +1227,7 @@ const sourceFlights = useMemo(() => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 24px", display: "flex", gap: 20 }}>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "12px 12px", display: "flex", gap: 20 }}>
 
         {/* Desktop sidebar */}
         <aside style={{ width: 260, flexShrink: 0 }} className="hidden lg:block">

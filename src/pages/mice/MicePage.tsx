@@ -160,8 +160,8 @@ export default function MicePage() {
 
   return (
     <main
-      className="min-h-screen"
-      style={{ background: "#f8fafc", fontFamily: "Poppins, sans-serif" }}
+      className="min-h-screen -mt-[124px] "
+      style={{ background: "#f8fafc", fontFamily: "Poppins, sans-serif"  }}
     >
       {/* ════════════════════════════════════════
           HERO

@@ -841,9 +841,34 @@ export default function OneSearchBar({
     if (tripTypeProp) setForm(f => ({ ...f, tripType: tripTypeProp }));
   }, [tripTypeProp]);
 
-  useEffect(() => {
-    if (formProp) setForm(f => ({ ...f, ...formProp }));
-  }, [formProp]);
+useEffect(() => {
+  if (!formProp) return;
+  setForm(f => ({
+    ...f,
+    tripType:    formProp.tripType    ?? f.tripType,
+    from:        formProp.from        ?? f.from,
+    to:          formProp.to          ?? f.to,
+    departDate:  formProp.departDate  ?? f.departDate,
+    returnDate:  formProp.returnDate  ?? f.returnDate,
+    adults:      formProp.adults      ?? f.adults,
+    children:    formProp.children    ?? f.children,
+    infants:     formProp.infants     ?? f.infants,
+    cabinClass:  formProp.cabinClass  ?? f.cabinClass,
+    nonStopOnly: formProp.nonStopOnly ?? f.nonStopOnly,
+    fareType:    formProp.fareType    ?? f.fareType,
+  }));
+}, [
+  formProp?.tripType,
+  formProp?.from?.code,
+  formProp?.to?.code,
+  formProp?.departDate,
+  formProp?.returnDate,
+  formProp?.adults,
+  formProp?.children,
+  formProp?.infants,
+  formProp?.cabinClass,
+  formProp?.nonStopOnly,
+]);
 
   // ── [Price D] Calendar prices ─────────────────────────────
   // One-way / round-trip: keyed by from→to route
@@ -966,7 +991,7 @@ export default function OneSearchBar({
   background: "#fff",
   borderRadius: 0,
   boxShadow: "none",
-  overflow: "visible", position: "relative",
+  overflow: "hidden", position: "relative",
   minHeight: 64,
    }}>
 
@@ -978,7 +1003,7 @@ export default function OneSearchBar({
               padding: "0 14px",
               background: popup === "tripType" ? "rgba(0,48,95,0.10)" : "rgba(0,48,95,0.06)",
               border: "none", borderRight: `1px solid ${S.border}`, cursor: "pointer",
-              borderRadius: "0",
+              borderRadius: "12px 0 0 12px",
               transition: "background .15s",
             }}
             onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,48,95,0.10)")}
@@ -1146,7 +1171,7 @@ export default function OneSearchBar({
             fontWeight: 800, fontSize: 13, letterSpacing: "0.04em",
             transition: "background .2s", flexShrink: 0,
             display: "flex", alignItems: "center", gap: 8,
-            borderRadius: "0",
+            borderRadius: "0 12px 12px 0",
           }}
           onMouseEnter={e => (e.currentTarget.style.background = S.accentDk)}
           onMouseLeave={e => (e.currentTarget.style.background = S.accent)}

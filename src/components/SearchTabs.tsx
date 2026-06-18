@@ -36,6 +36,7 @@ export default function SearchTabs({ onTabChange }: Props) {
   }
 
   function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
+    sessionStorage.removeItem("flightFlowState");
     sessionStorage.setItem(
       "flightSearch",
       JSON.stringify({ form, multiLegs: multiLegs ?? null })

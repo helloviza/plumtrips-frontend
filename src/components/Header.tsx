@@ -8,6 +8,20 @@ import { MapPin, PhoneCall, Briefcase, ClipboardList } from "lucide-react";
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
 
+/**
+ * Use this on any page that wants its hero/content to bleed under the
+ * floating header (same treatment as Home and Hotels).
+ *
+ * Utility bar (~36px) + floating nav (72px) + top padding (16px) = ~124px
+ *
+ * Usage:
+ *   import { HEADER_BLEED } from "./Header";
+ *   <div className={HEADER_BLEED}>...</div>
+ *
+ * Or just add `-mt-[124px]` directly to your page's top wrapper.
+ */
+export const HEADER_BLEED = "-mt-[124px]" as const;
+
 const REGIONS = [
   { id: "IN", text: "🇮🇳 India — INR (₹)" },
   { id: "AE", text: "🇦🇪 Dubai (UAE) — AED (د.إ)" },
@@ -46,12 +60,7 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isTransparentPage =
-    location.pathname === "/" ||
-    location.pathname === "/home" ||
-    location.pathname === "/hotels";
-
-  const isFloating = isTransparentPage && !scrolled;
+  const isFloating = !scrolled;
 
   const externalByLabel = useMemo(
     () => ({ Business: EXTERNAL_BUSINESS_URL }) as Record<string, string>,

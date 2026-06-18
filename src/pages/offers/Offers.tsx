@@ -129,10 +129,10 @@ useEffect(() => {
         .soft-lift:hover { box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); transform: translateY(-2px) scale(1.01); }
       `}</style>
 
-      <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#f8f9ff", color: "#121c2a", fontFamily: "Poppins, sans-serif" }}>
+      <main className="min-h-screen overflow-x-hidden -mt-[124px]  " style={{ backgroundColor: "#f8f9ff", color: "#121c2a", fontFamily: "Poppins, sans-serif" }}>
 
         {/* Flash Deal Banner */}
-        <div className="py-3 px-6 text-center relative z-40" style={{ backgroundColor: "#d06549", color: "#ffffff" }}>
+        {/* <div className="py-3 px-6 text-center relative z-40 " style={{ backgroundColor: "#d06549", color: "#ffffff" }}>
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 flex-wrap">
             <span style={{ fontSize: 25 }}>⏱</span>
             <p className="text-xl font-semibold tracking-wider uppercase" style={{ fontFamily: "Poppins, sans-serif" }}>
@@ -141,7 +141,7 @@ useEffect(() => {
             </p>
             <Link to="/go/concierge" className="bg-white px-4 py-1 rounded-full text-sm font-bold hover:opacity-90 transition-opacity" style={{ color: "#d06549" }}>Claim Now</Link>
           </div>
-        </div>
+        </div> */}
 
         {/* Hero */}
         <section className="relative flex items-center overflow-hidden" style={{ height: "min(88vh, 820px)", minHeight: 540 }}>

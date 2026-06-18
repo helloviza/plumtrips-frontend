@@ -1,6 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+
 import { useNavigate } from "react-router-dom";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
+
+
 
 export default function HeroHotel() {
   const navigate = useNavigate();
@@ -57,7 +60,7 @@ const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
 
       {/* Hero content */}
       <div className="relative z-10 flex-grow flex items-center w-full">
-        <div className="relative z-[3] mx-auto w-full px-6 pt-[140px] pb-14">
+        <div className="relative z-[3] mx-auto w-[95%] px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
