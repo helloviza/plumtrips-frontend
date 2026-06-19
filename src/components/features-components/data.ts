@@ -361,7 +361,9 @@ export const topHotelBrandsProps: TopHotelBrandsProps = {
   heading: "Top Hotel Brands",
   logos: [
     "/home/logos/taj.png","/home/logos/oberoi.png","/home/marriott.png","/home/hilton.png","/home/logos/hyatt.jpg",
-    "/home/logos/lemeridian.png","/home/logos/accor.png" ,"/home/logos/ihg.png"
+    "/home/logos/lemeridian.png","/home/logos/accor.png" ,"/home/logos/ihg.png","/home/logos/CHGearth.png","/home/logos/fern.png",
+    "/home/logos/itc.png","/home/logos/lalit.jpg","/home/logos/leela.png","/home/logos/neemrana.png","/home/logos/roseate.png",
+    "/home/logos/sarovar.png"
   ]
 };
  

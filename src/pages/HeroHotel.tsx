@@ -23,13 +23,34 @@ const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
       heroImgRef.current.style.transform = "scale(1.1) translate(0,0)";
   };
 
-  const TRENDING = [
-    { city: "Dubai",     img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80" },
-    { city: "Singapore", img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80" },
-    { city: "Bali",      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80" },
-    { city: "Europe",    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80" },
-    { city: "Thailand",  img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80" },
-  ];
+const TRENDING = [
+  {
+    city: "Dubai",
+    img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80",
+    url: "/dubai-personal",
+  },
+  {
+    city: "Singapore",
+    img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80",
+    url: "/singapore-personal",
+  },
+  {
+    city: "Bali",
+    img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80",
+    url: "/bali-personal",
+  },
+  {
+    city: "Europe",
+    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80",
+    url: "/europe-personal",
+  },
+  {
+    city: "Thailand",
+    img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80",
+    url: "/thailand-personal",
+  },
+];
+
 
   return (
     <div
@@ -60,7 +81,7 @@ const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
 
       {/* Hero content */}
       <div className="relative z-10 flex-grow flex items-center w-full">
-        <div className="relative z-[3] mx-auto w-[95%] px-6 pt-[140px] pb-14">
+        <div className="relative z-[3] mx-auto w-[92%] px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
@@ -85,7 +106,7 @@ const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
                     fontFamily: "Poppins, sans-serif",
                     fontSize: 11,
                     fontWeight: 600,
-                    letterSpacing: "0.14em",
+                    letterSpacing: "0.11em",
                     textTransform: "uppercase",
                     color: "#fff",
                   }}
@@ -219,7 +240,7 @@ const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
               Trending destinations:
             </span>
             {TRENDING.map(d => (
-              <button key={d.city} style={{
+              <button key={d.city} onClick={() => navigate(d.url)} style={{
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "4px 14px 4px 4px", borderRadius: 999,
                 background: "rgba(255,255,255,0.09)", backdropFilter: "blur(8px)",

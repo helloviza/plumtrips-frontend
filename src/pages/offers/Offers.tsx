@@ -143,29 +143,49 @@ useEffect(() => {
           </div>
         </div> */}
 
-        {/* Hero */}
-        <section className="relative flex items-center overflow-hidden" style={{ height: "min(88vh, 820px)", minHeight: 540 }}>
-          <div className="absolute inset-0 z-0">
-            <div className="h-full w-full bg-center bg-cover" style={{ backgroundImage: `url(${HERO_BG})` }} />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
-          </div>
-          <div className="relative mt-48 z-10 px-6 md:px-12 max-w-7xl mx-auto w-full">
-            <div className="max-w-2xl text-white">
-              <span className="uppercase tracking-widest block mb-4 text-xs font-semibold" style={{ color: "#ffb59f", fontFamily: "Poppins, sans-serif" }}>Seasonal Edition</span>
-              <h1 className="leading-tight mb-6" style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(1.5rem, 4vw, 3rem)", lineHeight: 1.05 }}>
-                Exclusive Travel Offers<br />
-                <span  style={{ color: "#ffb59f" }}>Holidays, Flights & Hotels</span>
-              </h1>
-              <p className="mb-8 max-w-lg opacity-90 text-lg" style={{ fontFamily: "Poppins, sans-serif", lineHeight: 1.6 }}>
-                Experience luxury for less. Plumtrips brings curated offers that combine best-in-class pricing with unmatched concierge service — perfect for leisure and corporate travellers alike.
-              </p>
-              <div className="flex gap-4 flex-wrap">
-                <Link to="/go/concierge" className="px-8 py-4 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: "#d06549", color: "#ffffff", fontFamily: "Poppins, sans-serif" }}>Speak to a Concierge</Link>
-                <button onClick={() => document.getElementById("journey-steps")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="glass-panel px-8 py-4 rounded-full text-sm font-semibold flex items-center gap-2" style={{ color: "#121c2a", fontFamily: "Poppins, sans-serif" }}>Explore More ↓</button>
-              </div>
-            </div>
-          </div>
-        </section>
+{/* Hero */}
+<section className="relative flex items-center overflow-hidden" style={{ height: "min(88vh, 820px)", minHeight: 540 }}>
+  <div className="absolute inset-0 z-0">
+    <div className="h-[100vh] w-full bg-center bg-cover" style={{ backgroundImage: `url(${HERO_BG})` }} />
+    <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
+  </div>
+  <div className="relative mt-12 z-10 px-6 md:px-12 max-w-7xl mx-auto w-full">
+    <div className="flex items-start justify-between gap-8">
+      {/* Left: Hero Text */}
+      <div className="max-w-2xl text-white">
+        <span className="uppercase tracking-widest block mb-4 text-xs font-semibold" style={{ color: "#ffb59f", fontFamily: "Poppins, sans-serif" }}>Seasonal Edition</span>
+        <h1 className="leading-tight mb-6" style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(1.5rem, 4vw, 3rem)", lineHeight: 1.05 }}>
+          Exclusive Travel Offers<br />
+          <span style={{ color: "#ffb59f" }}>Holidays, Flights & Hotels</span>
+        </h1>
+        <p className="mb-8 max-w-lg opacity-90 text-lg" style={{ fontFamily: "Poppins, sans-serif", lineHeight: 1.6 }}>
+          Experience luxury for less. Plumtrips brings curated offers that combine best-in-class pricing with unmatched concierge service — perfect for leisure and corporate travellers alike.
+        </p>
+        <div className="flex gap-4 flex-wrap">
+          <Link to="/go/concierge" className="px-8 py-4 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: "#d06549", color: "#ffffff", fontFamily: "Poppins, sans-serif" }}>Speak to a Concierge</Link>
+          <button onClick={() => document.getElementById("journey-steps")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="glass-panel px-8 py-4 rounded-full text-sm font-semibold flex items-center gap-2" style={{ color: "#121c2a", fontFamily: "Poppins, sans-serif" }}>Explore More ↓</button>
+        </div>
+      </div>
+
+      {/* Right: Flash Deal Card */}
+      <div className="hidden md:flex flex-shrink-0 flex-col gap-3 w-64 rounded-2xl p-5" style={{ background: "rgba(208,101,73,0.15)", border: "1px solid rgba(208,101,73,0.45)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+        <div className="flex items-center gap-2">
+          <span style={{ fontSize: 20 }}>⏱</span>
+          <span className="text-[10px] font-bold tracking-[3px] uppercase" style={{ color: "#ffb59f" }}>Flash Deal</span>
+        </div>
+        <div>
+          <p className="text-white font-semibold text-base leading-snug mb-1">25% Off<br />Kyoto Master Artisan</p>
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>Limited time offer</p>
+        </div>
+        <div className="rounded-xl p-3 text-center" style={{ background: "rgba(0,0,0,0.3)" }}>
+          <p className="text-[10px] tracking-widest uppercase mb-1" style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Poppins, sans-serif" }}>Ends in</p>
+          <span className="text-white font-bold text-2xl tracking-widest" style={{ fontVariantNumeric: "tabular-nums" }}>{flashTimer}</span>
+        </div>
+        <Link to="/go/concierge" className="w-full text-center py-3 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity" style={{ backgroundColor: "#d06549", color: "#ffffff", fontFamily: "Poppins, sans-serif" }}>Claim Now →</Link>
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* Journey Steps */}
         <section className="py-16 bg-white">

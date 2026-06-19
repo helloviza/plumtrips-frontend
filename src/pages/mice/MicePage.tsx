@@ -181,7 +181,7 @@ export default function MicePage() {
         <div className="relative mx-auto mt-40 max-w-7xl px-4 sm:px-6 pt-20 pb-16 flex flex-col items-center text-center">
           <span
             className="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-5"
-            style={{ background: `${ACCENT}33`, color: "#ffcbb8", border: `1px solid ${ACCENT}66` }}
+            style={{ background: `${ACCENT}33`, color: "#d06549", border: `1px solid ${ACCENT}66` }}
           >
             MICE — Corporate & Group Events
           </span>
@@ -192,7 +192,7 @@ export default function MicePage() {
           >
             Events that move
             <br />
-            <span style={{ color: "#ffb89a" }}>people forward</span>
+            <span style={{ color: "#d06549" }}>people forward</span>
           </h1>
 
           <p className="mt-5 text-white max-w-xl text-lg leading-relaxed">

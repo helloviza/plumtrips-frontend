@@ -40,7 +40,7 @@ export default function Reviews() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#f9f9fc] font-inter">
+    <div className="min-h-screen -mt-[124px] bg-[#f9f9fc] font-inter">
       
       {/* ── HERO SECTION ── */}
       <section className="relative overflow-hidden bg-[#003059] pt-32 pb-24 lg:pt-40 lg:pb-32 px-6">

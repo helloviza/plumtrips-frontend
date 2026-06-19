@@ -3,6 +3,7 @@ import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
 import { useState, useEffect, useRef } from "react";
 import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
+import { useNavigate } from "react-router-dom";
 
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
@@ -49,13 +50,35 @@ useEffect(() => {
   }).catch(() => {}); // silently fail — card stays with fallback
 }, []);
 
-  const TRENDING = [
-    { city: "Dubai",     img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80" },
-    { city: "Singapore", img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80" },
-    { city: "Bali",      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80" },
-    { city: "Europe",    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80" },
-    { city: "Thailand",  img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80" },
-  ];
+const TRENDING = [
+  {
+    city: "Dubai",
+    img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80",
+    url: "/dubai-personal",
+  },
+  {
+    city: "Singapore",
+    img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80",
+    url: "/singapore-personal",
+  },
+  {
+    city: "Bali",
+    img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80",
+    url: "/bali-personal",
+  },
+  {
+    city: "Europe",
+    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80",
+    url: "/europe-personal",
+  },
+  {
+    city: "Thailand",
+    img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80",
+    url: "/thailand-personal",
+  },
+];
+
+const navigate=useNavigate();
 
   return (
     <div
@@ -86,7 +109,7 @@ useEffect(() => {
 
       {/* Hero content */}
       <div className="relative z-10 flex-grow flex items-center ">
-        <div className="relative z-[3] mx-auto w-[95%] px-6 pt-[140px] pb-14">
+        <div className="relative z-[3] mx-auto w-[92%] px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
@@ -227,7 +250,7 @@ useEffect(() => {
               Trending destinations:
             </span>
             {TRENDING.map(d => (
-              <button key={d.city} style={{
+              <button key={d.city} onClick={() => navigate(d.url)} style={{
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "4px 14px 4px 4px", borderRadius: 999,
                 background: "rgba(255,255,255,0.09)", backdropFilter: "blur(8px)",
