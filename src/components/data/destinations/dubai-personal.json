@@ -1,0 +1,197 @@
+{
+  "id": "dubai-personal",
+  "name": "Dubai",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#faf8f4",
+    "text": "#1a1c1e",
+    "selectionBg": "#c9882e",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "",
+        "title": {
+          "regular": "Where the desert ",
+          "italic": "meets the extraordinary"
+        },
+        "description": "A city built for those who dream bigger.",
+        "backgroundImage": "/assets/attached_assets/dubai_hero.jpg",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "The kind of evenings ",
+          "italic": "people quote later."
+        },
+        "description": "Discover the breathtaking excess of Dubai through our exclusive access.",
+        "items": [
+          {
+            "img": "/assets/attached_assets/dubai_burj.jpg",
+            "title": "Sky-High Suites",
+            "loc": "Luxury Stay",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/dubai_desert.jpg",
+            "title": "Desert Safari",
+            "loc": "Nature & Adventure",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "/assets/attached_assets/dubai_culinary.jpg",
+            "title": "Gold-Leaf Dining",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/dubai_yacht.jpg",
+            "title": "Private Yacht",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/dubai_souks.jpg",
+            "title": "Gold Souk & Old Town",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "memories",
+      "type": "FeatureList",
+      "data": {
+        "title": {
+          "regular": "And a team that's obsessively ",
+          "italic": "detail oriented."
+        },
+        "theme": "light",
+        "items": [
+          {
+            "title": "Burj Khalifa top",
+            "desc": "The morning we stood above the clouds."
+          },
+          {
+            "title": "Desert camp",
+            "desc": "The night under stars with no city in sight."
+          },
+          {
+            "title": "Yacht at sunset",
+            "desc": "The golden hour that stretched into dinner."
+          },
+          {
+            "title": "Old Dubai walk",
+            "desc": "The spice souk that rewired our senses."
+          }
+        ],
+        "image": "/assets/attached_assets/exp-dubai.png"
+      }
+    },
+    {
+      "id": "inclusions",
+      "type": "InclusionsExclusions",
+      "data": {
+        "theme": "light",
+        "inclusions": [
+          "5 nights accommodation",
+          "Daily breakfast",
+          "Private transfers",
+          "All entrance fees"
+        ],
+        "exclusions": [
+          "International flights",
+          "Personal insurance",
+          "Visa fees"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "badge": "Our very best work",
+        "title": {
+          "regular": "Our very best work. ",
+          "italic": "Okay, entirely yours."
+        },
+        "testimonials": [
+          {
+            "quote": "Dubai was already on our list, but the way they curated it made it feel entirely different.",
+            "author": "Rahul Nair",
+            "company": "Vertex Capital",
+            "location": "Dubai"
+          },
+          {
+            "quote": "The yacht dinner was beyond anything we imagined. Absolute perfection from start to finish.",
+            "author": "Aisha Al-Farsi",
+            "company": "Luxe Interiors",
+            "location": "Abu Dhabi"
+          },
+          {
+            "quote": "They made sure we saw the real Dubai — not just the famous skyline. Incredibly thoughtful.",
+            "author": "Marcus Webb",
+            "company": "Sterling Group",
+            "location": "Sydney"
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "Everything we ",
+          "italic": "got asked frequently."
+        },
+        "faqs": [
+          {
+            "question": "How does the planning process work?",
+            "answer": "Once you submit an inquiry, our travel experts will contact you via WhatsApp to understand your preferences. We then craft a custom itinerary tailored specifically for you."
+          },
+          {
+            "question": "Are flights and visas included?",
+            "answer": "Yes, we handle all flight bookings and provide complete end-to-end UAE visa assistance to ensure a completely stress-free experience."
+          },
+          {
+            "question": "Can I customize the itinerary?",
+            "answer": "Absolutely. The itinerary is fully customizable. We work with you to adjust the pacing, hotels, and experiences until it perfectly matches your vision."
+          },
+          {
+            "question": "Do you offer support during the trip?",
+            "answer": "Yes, you will have a dedicated travel expert available 24/7 on WhatsApp throughout your entire journey to handle any requests or emergencies."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "badge": "The Next Step",
+        "title": {
+          "regular": "The journeys people remember are ",
+          "italic": "usually planned differently."
+        },
+        "description": "Tell us where you want to go — we'll handle the planning.",
+        "buttonText": "Get My Personalized Trip Plan"
+      }
+    }
+  ]
+}

@@ -178,7 +178,7 @@ export default function MicePage() {
           }}
         />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-16 flex flex-col items-center text-center">
+        <div className="relative mx-auto mt-40 max-w-7xl px-4 sm:px-6 pt-20 pb-16 flex flex-col items-center text-center">
           <span
             className="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-5"
             style={{ background: `${ACCENT}33`, color: "#ffcbb8", border: `1px solid ${ACCENT}66` }}

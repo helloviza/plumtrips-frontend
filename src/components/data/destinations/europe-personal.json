@@ -1,0 +1,197 @@
+{
+  "id": "europe-personal",
+  "name": "Europe",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f4f4f8",
+    "text": "#1a1c1e",
+    "selectionBg": "#4a6fa5",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "",
+        "title": {
+          "regular": "Drifting through ",
+          "italic": "cobblestone dreams"
+        },
+        "description": "Old world charm. New stories to tell.",
+        "backgroundImage": "/assets/attached_assets/europe_hero.jpg",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "The kind of evenings ",
+          "italic": "people quote later."
+        },
+        "description": "Discover the timeless beauty of Europe through our exclusive access.",
+        "items": [
+          {
+            "img": "/assets/attached_assets/europe_chateau.jpg",
+            "title": "Private Château Stay",
+            "loc": "Luxury Stay",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/europe_alps.jpg",
+            "title": "Alpine Hideaways",
+            "loc": "Nature & Scenery",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "/assets/attached_assets/europe_culinary.jpg",
+            "title": "Michelin Dining",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/europe_coast.jpg",
+            "title": "Amalfi Escape",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/europe_cities.jpg",
+            "title": "City Hopping",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "memories",
+      "type": "FeatureList",
+      "data": {
+        "title": {
+          "regular": "And a team that's obsessively ",
+          "italic": "detail oriented."
+        },
+        "theme": "light",
+        "items": [
+          {
+            "title": "Paris at dawn",
+            "desc": "The morning we watched sunrise over the Seine."
+          },
+          {
+            "title": "Tuscan vineyard",
+            "desc": "The wine tasting that turned into dinner."
+          },
+          {
+            "title": "Northern Lights",
+            "desc": "The sky that made everyone stop talking."
+          },
+          {
+            "title": "Santorini sunset",
+            "desc": "The view that needed no filter."
+          }
+        ],
+        "image": "/assets/attached_assets/exp-europe.png"
+      }
+    },
+    {
+      "id": "inclusions",
+      "type": "InclusionsExclusions",
+      "data": {
+        "theme": "light",
+        "inclusions": [
+          "7 nights accommodation",
+          "Daily breakfast",
+          "Private transfers",
+          "All entrance fees"
+        ],
+        "exclusions": [
+          "International flights",
+          "Personal insurance",
+          "Visa fees"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "badge": "Our very best work",
+        "title": {
+          "regular": "Our very best work. ",
+          "italic": "Okay, entirely yours."
+        },
+        "testimonials": [
+          {
+            "quote": "Every city felt like it was planned just for us. Truly a once-in-a-lifetime experience.",
+            "author": "Priya Mehta",
+            "company": "Horizon Ventures",
+            "location": "Mumbai"
+          },
+          {
+            "quote": "From Paris to Prague, every detail was flawless. We didn't have to think about a thing.",
+            "author": "James Harrington",
+            "company": "Apex Partners",
+            "location": "London"
+          },
+          {
+            "quote": "The château in Bordeaux alone was worth it. The whole trip was extraordinary.",
+            "author": "Sophie Laurent",
+            "company": "Creative Studio",
+            "location": "Toronto"
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "Everything we ",
+          "italic": "got asked frequently."
+        },
+        "faqs": [
+          {
+            "question": "How does the planning process work?",
+            "answer": "Once you submit an inquiry, our travel experts will contact you via WhatsApp to understand your preferences. We then craft a custom itinerary tailored specifically for you."
+          },
+          {
+            "question": "Are flights and visas included?",
+            "answer": "Yes, we handle all flight bookings and provide complete end-to-end Schengen visa assistance to ensure a completely stress-free experience."
+          },
+          {
+            "question": "Can I customize the itinerary?",
+            "answer": "Absolutely. The itinerary is fully customizable. We work with you to adjust the pacing, hotels, and experiences until it perfectly matches your vision."
+          },
+          {
+            "question": "Do you offer support during the trip?",
+            "answer": "Yes, you will have a dedicated travel expert available 24/7 on WhatsApp throughout your entire journey to handle any requests or emergencies."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "badge": "The Next Step",
+        "title": {
+          "regular": "The journeys people remember are ",
+          "italic": "usually planned differently."
+        },
+        "description": "Tell us where you want to go — we'll handle the planning.",
+        "buttonText": "Get My Personalized Trip Plan"
+      }
+    }
+  ]
+}

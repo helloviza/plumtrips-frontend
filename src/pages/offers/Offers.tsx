@@ -149,7 +149,7 @@ useEffect(() => {
             <div className="h-full w-full bg-center bg-cover" style={{ backgroundImage: `url(${HERO_BG})` }} />
             <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
           </div>
-          <div className="relative z-10 px-6 md:px-12 max-w-7xl mx-auto w-full">
+          <div className="relative mt-48 z-10 px-6 md:px-12 max-w-7xl mx-auto w-full">
             <div className="max-w-2xl text-white">
               <span className="uppercase tracking-widest block mb-4 text-xs font-semibold" style={{ color: "#ffb59f", fontFamily: "Poppins, sans-serif" }}>Seasonal Edition</span>
               <h1 className="leading-tight mb-6" style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(1.5rem, 4vw, 3rem)", lineHeight: 1.05 }}>

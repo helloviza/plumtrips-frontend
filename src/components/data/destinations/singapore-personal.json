@@ -1,0 +1,197 @@
+{
+  "id": "singapore-personal",
+  "name": "Singapore",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f4f8f5",
+    "text": "#1a1c1e",
+    "selectionBg": "#2e7d5a",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "",
+        "title": {
+          "regular": "A city that does ",
+          "italic": "everything right"
+        },
+        "description": "The future looks like this.",
+        "backgroundImage": "/assets/attached_assets/singapore_hero.jpg",
+        "form": {
+          "title": "Plan a trip you'll actually like",
+          "buttonText": "Plan",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "experiences",
+      "type": "Experiences",
+      "data": {
+        "badge": "Curated Moments",
+        "title": {
+          "regular": "The kind of evenings ",
+          "italic": "people quote later."
+        },
+        "description": "Discover the seamless wonder of Singapore through our exclusive access.",
+        "items": [
+          {
+            "img": "/assets/attached_assets/singapore_marina.jpg",
+            "title": "Marina Bay Suites",
+            "loc": "Luxury Stay",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/singapore_gardens.jpg",
+            "title": "Gardens by the Bay",
+            "loc": "Nature & Scenery",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "/assets/attached_assets/singapore_culinary.jpg",
+            "title": "Hawker to Haute Cuisine",
+            "loc": "Food & Dining",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/singapore_sentosa.jpg",
+            "title": "Sentosa Island",
+            "loc": "Exclusive",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/attached_assets/singapore_streets.jpg",
+            "title": "Cultural Neighbourhoods",
+            "loc": "Exclusive",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "memories",
+      "type": "FeatureList",
+      "data": {
+        "title": {
+          "regular": "And a team that's obsessively ",
+          "italic": "detail oriented."
+        },
+        "theme": "light",
+        "items": [
+          {
+            "title": "MBS infinity pool",
+            "desc": "The morning swim above the entire skyline."
+          },
+          {
+            "title": "Chinatown at night",
+            "desc": "The lantern-lit dinner we didn't plan for."
+          },
+          {
+            "title": "Supertree light show",
+            "desc": "The light display that made everyone look up."
+          },
+          {
+            "title": "Lau Pa Sat run",
+            "desc": "The midnight hawker feast that sealed the trip."
+          }
+        ],
+        "image": "/assets/attached_assets/exp-singapore.png"
+      }
+    },
+    {
+      "id": "inclusions",
+      "type": "InclusionsExclusions",
+      "data": {
+        "theme": "light",
+        "inclusions": [
+          "4 nights accommodation",
+          "Daily breakfast",
+          "Private transfers",
+          "All entrance fees"
+        ],
+        "exclusions": [
+          "International flights",
+          "Personal insurance",
+          "Visa fees"
+        ]
+      }
+    },
+    {
+      "id": "testimonials",
+      "type": "Testimonials",
+      "data": {
+        "badge": "Our very best work",
+        "title": {
+          "regular": "Our very best work. ",
+          "italic": "Okay, entirely yours."
+        },
+        "testimonials": [
+          {
+            "quote": "Singapore feels like it was built for this kind of trip. They made it feel completely personal.",
+            "author": "Lena Tan",
+            "company": "Pacific Wealth",
+            "location": "Singapore"
+          },
+          {
+            "quote": "From the infinity pool to the hawker stalls — every contrast was perfectly balanced.",
+            "author": "David Okonkwo",
+            "company": "Meridian Labs",
+            "location": "Lagos"
+          },
+          {
+            "quote": "The most organised trip we've ever been on. It didn't feel organised at all — that's the magic.",
+            "author": "Claire Beaumont",
+            "company": "Nomad Studio",
+            "location": "Paris"
+          }
+        ]
+      }
+    },
+    {
+      "id": "faqs",
+      "type": "FAQAccordion",
+      "data": {
+        "badge": "Support",
+        "title": {
+          "regular": "Everything we ",
+          "italic": "got asked frequently."
+        },
+        "faqs": [
+          {
+            "question": "How does the planning process work?",
+            "answer": "Once you submit an inquiry, our travel experts will contact you via WhatsApp to understand your preferences. We then craft a custom itinerary tailored specifically for you."
+          },
+          {
+            "question": "Are flights and visas included?",
+            "answer": "Yes, we handle all flight bookings and provide complete visa assistance — most nationalities enjoy visa-free entry to Singapore, and we handle any exceptions."
+          },
+          {
+            "question": "Can I customize the itinerary?",
+            "answer": "Absolutely. The itinerary is fully customizable. We work with you to adjust the pacing, hotels, and experiences until it perfectly matches your vision."
+          },
+          {
+            "question": "Do you offer support during the trip?",
+            "answer": "Yes, you will have a dedicated travel expert available 24/7 on WhatsApp throughout your entire journey to handle any requests or emergencies."
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "badge": "The Next Step",
+        "title": {
+          "regular": "The journeys people remember are ",
+          "italic": "usually planned differently."
+        },
+        "description": "Tell us where you want to go — we'll handle the planning.",
+        "buttonText": "Get My Personalized Trip Plan"
+      }
+    }
+  ]
+}

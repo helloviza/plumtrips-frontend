@@ -210,7 +210,7 @@ export default function Header() {
         <div
           className={`w-full transition-all duration-300 ease-in-out ${
             isFloating
-              ? "bg-transparent px-4 md:px-6 pt-4"
+              ? "bg-transparent max-w-[95%] mx-auto px-4 md:px-6 pt-4"
               : "bg-[#0b1528] shadow-[0_4px_20px_rgba(0,0,0,0.15)] border-b border-white/5"
           }`}
         >
