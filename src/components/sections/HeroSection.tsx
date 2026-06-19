@@ -260,7 +260,7 @@ export function HeroSection({ data, children }: { data: HeroSectionType['data'],
           className="text-white max-w-2xl"
         >
           <p className="text-[#e35d29] font-medium tracking-widest uppercase mb-4 text-xs">{data.badge}</p>
-          <h1 className="text-6xl md:text-[5.5rem] font-serif font-medium leading-[1.05] mb-6">
+          <h1 className="text-3xl md:text-[3.5rem] font-serif font-medium leading-[1.05] mb-6">
             {data.title.regular}<br />
             <span className="italic text-[#e35d29]">{data.title.italic}</span>
           </h1>
@@ -271,7 +271,7 @@ export function HeroSection({ data, children }: { data: HeroSectionType['data'],
         </motion.div>
 
         <div className="w-full max-w-[360px] ml-auto">
-          <div className="bg-white rounded-2xl p-6 md:p-8 shadow-2xl">
+        <div className="w-full max-w-[380px] ml-auto bg-white/[0.08] backdrop-blur-xl border border-white/[0.18] rounded-2xl p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]">
             <HeroForm
               isCorporate={data.form.isCorporate}
               title={data.form.title}
@@ -307,7 +307,6 @@ function HeroForm({
       month: formData.get("month") as string,
       formType: "hero" as const,
     };
-
     try {
       setLoading(true);
       await submitInquiry(payload);
@@ -320,6 +319,14 @@ function HeroForm({
     }
   };
 
+  const inputClass =
+    "w-full bg-white/[0.08] border border-white/[0.15] text-white placeholder:text-white/30 " +
+    "rounded-[10px] h-11 px-3.5 text-sm outline-none transition-all " +
+    "focus:bg-white/[0.12] focus:border-[#e35d29]/60";
+
+  const labelClass =
+    "text-[10px] font-medium tracking-widest uppercase text-white/50 block mb-1.5";
+
   if (submitted) {
     return (
       <motion.div
@@ -329,26 +336,23 @@ function HeroForm({
         transition={{ duration: 0.4 }}
         className="text-center py-8"
       >
-        <div className="w-16 h-16 bg-[#e35d29]/10 text-[#e35d29] rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 bg-[#e35d29]/20 text-[#e35d29] rounded-full flex items-center justify-center mx-auto mb-6">
           <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-
-        <h3 className="text-2xl font-serif text-[#0a1c2b] mb-3 font-semibold">Request Received!</h3>
-        <p className="text-sm text-gray-600 leading-relaxed mb-8">
-          Thank you for reaching out. Our expert concierge will get back to you within{" "}
-          <span className="text-[#0a1c2b] font-bold">24 hours</span> with a personalised itinerary.
+        <h3 className="text-2xl font-serif text-white mb-3 font-medium">Request Received!</h3>
+        <p className="text-sm text-white/60 leading-relaxed mb-8">
+          Our expert concierge will get back to you within{" "}
+          <span className="text-white font-semibold">24 hours</span> with a personalised itinerary.
         </p>
-
-        <div className="border-t border-gray-100 mb-6" />
-
-        <Button
+        <div className="border-t border-white/10 mb-6" />
+        <button
           onClick={() => setSubmitted(false)}
-          className="w-full bg-gray-100 hover:bg-gray-200 text-[#0a1c2b] rounded-xl h-11 text-sm font-semibold transition-all"
+          className="w-full bg-white/10 hover:bg-white/15 text-white rounded-xl h-11 text-sm font-medium transition-all border border-white/15"
         >
           Submit another request
-        </Button>
+        </button>
       </motion.div>
     );
   }
@@ -360,84 +364,51 @@ function HeroForm({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
     >
-      <h3 className="text-2xl font-serif text-[#0a1c2b] mb-6 font-semibold">{title}</h3>
-      <form id="inquiry-form" onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
-            Name
-          </label>
-          <Input
-            name="name"
-            placeholder="John Doe"
-            required
-            className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
-          />
+      <h3 className="text-[22px] font-serif text-white mb-1.5 font-medium">{title}</h3>
+      <p className="text-[13px] text-white/50 mb-6">Our concierge responds within 24 hours.</p>
+
+      <form id="inquiry-form" onSubmit={handleSubmit} className="space-y-3.5">
+        <div>
+          <label className={labelClass}>Name</label>
+          <input name="name" placeholder="John Doe" required className={inputClass} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
-              {isCorporate ? 'Work Email' : 'Email'}
-            </label>
-            <Input
-              name="email"
-              placeholder="john@example.com"
-              type="email"
-              required
-              className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelClass}>{isCorporate ? "Work Email" : "Email"}</label>
+            <input name="email" placeholder="john@example.com" type="email" required className={inputClass} />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
-              Phone
-            </label>
-            <Input
-              name="phone"
-              placeholder="+1 234 567 8900"
-              type="tel"
-              required
-              className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
-            />
+          <div>
+            <label className={labelClass}>Phone</label>
+            <input name="phone" placeholder="+1 234 567 8900" type="tel" required className={inputClass} />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
-              {isCorporate ? 'Team Size' : 'Travelers'}
-            </label>
-            <Input
-              name="travelers"
-              type="number"
-              placeholder={isCorporate ? 'Min 10' : '2'}
-              className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelClass}>{isCorporate ? "Team Size" : "Travelers"}</label>
+            <input name="travelers" type="number" placeholder={isCorporate ? "Min 10" : "2"} className={inputClass} />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#00477f] uppercase tracking-wider block">
-              {isCorporate ? 'Date' : 'Travel Month'}
-            </label>
-            <Input
-              name="month"
-              placeholder="mm/yyyy"
-              className="bg-gray-50 border-gray-200 text-[#0a1c2b] placeholder:text-gray-400 h-11 rounded-lg w-full"
-            />
+          <div>
+            <label className={labelClass}>{isCorporate ? "Date" : "Travel Month"}</label>
+            <input name="month" placeholder="mm/yyyy" className={inputClass} />
           </div>
         </div>
 
-        <Button
+        <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#d06549] hover:bg-[#b8543a] text-white rounded-xl h-12 text-base font-bold mt-4 shadow-md disabled:opacity-50"
+          className="w-full mt-1 bg-gradient-to-br from-[#e35d29] to-[#c94d1f] hover:from-[#c94d1f] hover:to-[#b34018] text-white rounded-xl h-12 text-[15px] font-medium transition-all shadow-[0_4px_16px_rgba(227,93,41,0.35)] disabled:opacity-50"
         >
           {loading ? "Sending..." : buttonText}
-        </Button>
+        </button>
 
-        {isCorporate && (
-          <p className="text-center text-xs text-gray-500 mt-4 leading-tight">
-            No commitment required. We'll get back to you within 24 hours.
-          </p>
-        )}
+        <div className="flex items-center gap-2 pt-4 border-t border-white/10">
+          <svg className="w-3.5 h-3.5 text-[#ef4b0f] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span className="text-[12px] text-[#ef4b0f]">No commitment required · 100% private</span>
+        </div>
       </form>
     </motion.div>
   );

@@ -114,7 +114,7 @@ const TRENDING = [
                   <img
                     src="/icons/HOTELS.png"
                     alt=""
-                    style={{ width: 40, height: 40, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
+                    style={{  height: "25px", marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }}
                   />Stay Better · Live More
                 </span>
               </div>
