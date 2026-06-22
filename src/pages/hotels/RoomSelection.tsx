@@ -50,7 +50,7 @@ export default function RoomSelection() {
     </div>
   );
 
-  if (isLoading && rooms.length === 0) {
+  if (loading && rooms.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
         <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
