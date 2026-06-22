@@ -43,11 +43,7 @@ export default function HotelHome() {
   const title = encodeURIComponent("Plumtrips Demo Call");
 
   const details = encodeURIComponent(
-    `Thank you for booking a demo with Plumtrips.
-
-Please choose a suitable date and time before saving the event.
-
-Our team will join you via Google Meet.`
+    `I'd like to see how Plumtrips works and learn how it can streamline travel planning, bookings, and expense management for my organization.`
   );
 
   const location = encodeURIComponent("Google Meet");
