@@ -12,7 +12,7 @@ export function PricingSection({ data, theme }: { data: PricingSectionType['data
           <p className="text-[#e35d29] font-medium tracking-widest uppercase mb-4 text-xs">{data.badge}</p>
           <h2 className="text-4xl md:text-5xl font-serif font-medium leading-tight">
             {data.title.regular}<br/>
-            <span className="italic text-[#e35d29]">{data.title.italic}</span>
+            <span className=" text-[#e35d29]">{data.title.italic}</span>
           </h2>
           <p className={`${isDark ? 'text-white/70' : 'text-[#0a1c2b]/70'} mt-6 max-w-xl mx-auto`}>
             {data.description}

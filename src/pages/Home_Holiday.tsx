@@ -158,138 +158,147 @@ export default function Home_Holiday() {
             </motion.p>
           </div>
 
-<motion.div 
-  initial={{ opacity: 0, scale: 0.95 }}
-  animate={{ opacity: 1, scale: 1 }}
-  transition={{ duration: 0.8, delay: 0.5 }}
-  className="lg:col-span-5 w-full mt-8 lg:mt-0"
-  id="inquiry-form"
->
-  <div
-    className="max-w-[420px] mx-auto lg:ml-auto lg:mr-0 rounded-3xl p-7 sm:p-8"
-    style={{
-      background: "rgba(255,255,255,0.10)",
-      border: "1px solid rgba(255,255,255,0.22)",
-      backdropFilter: "blur(20px)",
-      WebkitBackdropFilter: "blur(20px)",
-      boxShadow: "0 24px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
-      
-    }}
-  >
-    <h3 className="text-xl font-bold text-white mb-6 text-center tracking-wide">
-      Plan Your Journey
-    </h3>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="lg:col-span-5 w-full mt-8 lg:mt-0"
+            id="inquiry-form"
+          >
+            <div
+              className="max-w-[420px] mx-auto lg:ml-auto lg:mr-0 rounded-3xl p-7 sm:p-8"
+              style={{
+                background: "rgba(255,255,255,0.10)",
+                border: "1px solid rgba(255,255,255,0.22)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                boxShadow: "0 24px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+              }}
+            >
+              <h3 className="text-xl font-bold text-white mb-6 text-center tracking-wide">
+                Plan Your Journey
+              </h3>
 
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FormField control={form.control} name="destination" render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Destination</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <Input
-                    placeholder="Amalfi Coast"
-                    className="pl-9 h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
-                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage className="text-[#ffb3a7] text-[10px]" />
-            </FormItem>
-          )} />
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-          <FormField control={form.control} name="departureCity" render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">From</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Mumbai"
-                  className="h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="text-[#ffb3a7] text-[10px]" />
-            </FormItem>
-          )} />
-        </div>
+                  {/* Row 1: Destination + From */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="destination" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Destination</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                            <Input
+                              placeholder="Amalfi Coast"
+                              className="pl-9 h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
+                              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="text-[#ffb3a7] text-[10px]" />
+                      </FormItem>
+                    )} />
 
-        <div className="grid grid-cols-2 gap-3">
-        <FormField control={form.control} name="budget" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Budget Range</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger
-                  className="h-10 text-sm text-white rounded-xl border-white/20 focus:ring-[#febb3c]/60"
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
-                >
-                  <SelectValue placeholder="Select budget range" className="text-white/35" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent className="bg-[#003059] border-white/20">
-                  {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m) => (
-                    <SelectItem key={m} value={m} className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-[#ffb3a7] text-[10px]" />
-            </FormItem>
-          )} />
+                    <FormField control={form.control} name="departureCity" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">From</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Mumbai"
+                            className="h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
+                            style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-[#ffb3a7] text-[10px]" />
+                      </FormItem>
+                    )} />
+                  </div>
 
-          <FormField control={form.control} name="travelers" render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Travelers</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <Input
-                    type="number" min="1" max="20"
-                    className="pl-9 h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
-                    style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
-                    {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage className="text-[#ffb3a7] text-[10px]" />
-            </FormItem>
-          )} />
-        </div>
+                  {/* Row 2: Travel Month + Travelers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={form.control} name="month" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Travel Month</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger
+                              className="h-10 text-sm text-white rounded-xl border-white/20 focus:ring-[#febb3c]/60"
+                              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
+                            >
+                              <SelectValue placeholder="Select month" className="text-white/35" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent
+                            className="bg-[#003059] border-white/20 max-h-48 overflow-y-auto"
+                            position="popper"
+                            side="bottom"
+                            sideOffset={4}
+                            avoidCollisions={false}
+                          >
+                            {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m) => (
+                              <SelectItem key={m} value={m} className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">{m}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-[#ffb3a7] text-[10px]" />
+                      </FormItem>
+                    )} />
 
-        <FormField control={form.control} name="budget" render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Budget Range</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger
-                  className="h-10 text-sm text-white rounded-xl border-white/20 focus:ring-[#febb3c]/60"
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
-                >
-                  <SelectValue placeholder="Select budget range" className="text-white/35" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent className="bg-[#003059] border-white/20">
-                <SelectItem value="under-1L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">Under ₹1L</SelectItem>
-                <SelectItem value="1L-2L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹1L – ₹2L</SelectItem>
-                <SelectItem value="2L-5L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹2L – ₹5L</SelectItem>
-                <SelectItem value="5L-plus" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹5L+</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage className="text-[#ffb3a7] text-[10px]" />
-          </FormItem>
-        )} />
+                    <FormField control={form.control} name="travelers" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Travelers</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+                            <Input
+                              type="number" min="1" max="20"
+                              className="pl-9 h-10 text-sm text-white placeholder:text-white/35 rounded-xl border-white/20 focus-visible:ring-[#febb3c]/60"
+                              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
+                              {...field}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="text-[#ffb3a7] text-[10px]" />
+                      </FormItem>
+                    )} />
+                  </div>
 
-        <Button type="submit" size="lg" className="w-full bg-[#d06549] hover:bg-[#b8543a] text-white font-bold text-base h-12 rounded-xl shadow-lg mt-2 transition-all">
-          Get My Trip Plan
-        </Button>
-      </form>
-    </Form>
-  </div>
-</motion.div>
+                  {/* Row 3: Budget Range (full width) */}
+                  <FormField control={form.control} name="budget" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white/70 font-semibold text-[10px] uppercase tracking-widest">Budget Range</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger
+                            className="h-10 text-sm text-white rounded-xl border-white/20 focus:ring-[#febb3c]/60"
+                            style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.22)" }}
+                          >
+                            <SelectValue placeholder="Select budget range" className="text-white/35" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-[#003059] border-white/20">
+                          <SelectItem value="under-1L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">Under ₹1L</SelectItem>
+                          <SelectItem value="1L-2L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹1L – ₹2L</SelectItem>
+                          <SelectItem value="2L-5L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹2L – ₹5L</SelectItem>
+                          <SelectItem value="5L-plus" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹5L+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-[#ffb3a7] text-[10px]" />
+                    </FormItem>
+                  )} />
+
+                  <Button type="submit" size="lg" className="w-full bg-[#d06549] hover:bg-[#b8543a] text-white font-bold text-base h-12 rounded-xl shadow-lg mt-2 transition-all">
+                    Get My Trip Plan
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          </motion.div>
         </div>
       </section>
 

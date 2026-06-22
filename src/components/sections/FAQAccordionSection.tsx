@@ -64,7 +64,7 @@ export function FAQAccordionSection({ data }: { data: FAQAccordionSectionType['d
             </span>
             <h2 className="text-4xl md:text-5xl font-serif font-medium text-[#0a1c2b]">
               {data.title.regular}
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
           </div>
         </FadeIn>

@@ -252,7 +252,7 @@ export function HeroSection({ data, children }: { data: HeroSectionType['data'],
         <div className={`absolute inset-0 bg-gradient-to-b from-[#0a1c2b]/80 via-[#0a1c2b]/40 ${isDark ? 'to-[#0a1c2b]' : 'to-[#f9f9fc]'}`}></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-16 mt-20">
+      <div className="relative z-10 w-full max-w-[1400px] mx-14 flex flex-col md:flex-row justify-between items-center gap-16 mt-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -262,7 +262,7 @@ export function HeroSection({ data, children }: { data: HeroSectionType['data'],
           <p className="text-[#e35d29] font-medium tracking-widest uppercase mb-4 text-xs">{data.badge}</p>
           <h1 className="text-3xl md:text-[3.5rem] font-serif font-medium leading-[1.05] mb-6">
             {data.title.regular}<br />
-            <span className="italic text-[#e35d29]">{data.title.italic}</span>
+            <span className=" text-[#e35d29]">{data.title.italic}</span>
           </h1>
           <p className="text-xl text-white/90 font-light mb-10 max-w-md">
             {data.description}

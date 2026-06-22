@@ -18,7 +18,7 @@ export function ItinerarySection({ data, theme }: { data: ItinerarySectionType['
           <p className="text-[#e35d29] font-medium tracking-widest uppercase mb-4 text-xs">{data.badge}</p>
           <h2 className={`text-4xl md:text-5xl font-serif font-medium leading-tight ${textClasses}`}>
             {data.title.regular}<br/>
-            <span className="italic text-[#e35d29]">{data.title.italic}</span>
+            <span className=" text-[#e35d29]">{data.title.italic}</span>
           </h2>
         </div>
         <p className={`text-lg ${descClasses} max-w-md`}>

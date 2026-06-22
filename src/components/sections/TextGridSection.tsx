@@ -38,7 +38,7 @@ export function TextGridSection({ data }: { data: TextGridSectionType['data'] })
             </span>
             <h2 className={`text-4xl md:text-5xl font-serif font-medium mb-4 ${textClass} max-w-2xl`}>
               {data.title.regular}
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
             {data.description && (
               <p className={`${descClass} max-w-2xl text-lg mt-6`}>{data.description}</p>

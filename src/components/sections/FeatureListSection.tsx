@@ -55,7 +55,7 @@ export function FeatureListSection({ data, theme }: { data: FeatureListSectionTy
             )}
             <h2 className={`text-4xl md:text-5xl font-serif font-medium leading-tight ${textClasses}`}>
               {data.title.regular}<br/>
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
           </div>
           <ul className="space-y-32">
@@ -82,7 +82,7 @@ export function FeatureListSection({ data, theme }: { data: FeatureListSectionTy
             )}
             <h2 className={`text-4xl md:text-5xl font-serif font-medium leading-tight mb-8 ${textClasses}`}>
               {data.title.regular}<br/>
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
             {data.image && (
               <img src={resolveImage(data.image)} alt="Features" className="w-full h-80 object-cover rounded-2xl shadow-xl" />

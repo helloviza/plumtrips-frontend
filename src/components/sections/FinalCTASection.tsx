@@ -41,7 +41,7 @@ export function FinalCTASection({ data }: { data: FinalCTASectionType['data'] })
           </span>
           <h2 className="text-5xl md:text-6xl lg:text-[4.5rem] font-serif font-medium text-white mb-8 leading-[1.1]">
             {data.title.regular}
-            <span className="italic text-[#e35d29]">{data.title.italic}</span>
+            <span className=" text-[#e35d29]">{data.title.italic}</span>
           </h2>
           <p className="text-xl text-white/70 font-light mb-12 max-w-2xl mx-auto">
             {data.description}

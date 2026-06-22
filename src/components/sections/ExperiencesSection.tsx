@@ -67,7 +67,7 @@ export function ExperiencesSection({ data, theme }: { data: ExperiencesSectionTy
             <span className="text-[#e35d29] font-medium tracking-widest uppercase mb-3 text-sm">{data.badge}</span>
             <h2 className={`text-4xl md:text-5xl font-serif font-medium mb-4 ${textClasses}`}>
               {data.title.regular}
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
             <p className={`${descClasses} max-w-2xl text-lg`}>{data.description}</p>
           </div>

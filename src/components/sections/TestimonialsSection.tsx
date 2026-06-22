@@ -32,7 +32,7 @@ export function TestimonialsSection({ data }: { data: TestimonialsSectionType['d
             </span>
             <h2 className="text-4xl md:text-5xl font-serif font-medium max-w-xl">
               {data.title.regular}
-              <span className="italic text-[#e35d29]">{data.title.italic}</span>
+              <span className=" text-[#e35d29]">{data.title.italic}</span>
             </h2>
           </div>
         </FadeIn>
@@ -41,7 +41,7 @@ export function TestimonialsSection({ data }: { data: TestimonialsSectionType['d
           {data.testimonials.map((test, i) => (
             <FadeIn key={i} delay={i * 0.1}>
               <div className="bg-[#122b40] border border-white/5 p-8 rounded-2xl h-full flex flex-col justify-between hover:border-[#e35d29]/30 transition-colors">
-                <p className="text-white/80 leading-relaxed text-lg mb-8 font-light italic">
+                <p className="text-white/80 leading-relaxed text-lg mb-8 font-light ">
                   "{test.quote}"
                 </p>
                 <div>
