@@ -22,6 +22,12 @@ const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
  */
 export const HEADER_BLEED = "-mt-[124px]" as const;
 
+/**
+ * Only these paths get the glassmorphic floating header on load.
+ * Every other route starts (and stays) with the solid header.
+ */
+const FLOATING_PATHS = ["/", "/hotels", "/holidays", "/mice", "/blogs", "/offers"];
+
 const REGIONS = [
   { id: "IN", text: "🇮🇳 India — INR (₹)" },
   { id: "AE", text: "🇦🇪 Dubai (UAE) — AED (د.إ)" },
@@ -60,7 +66,10 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isFloating = !scrolled;
+  // Only allowed paths get the floating/glassmorphic treatment.
+  // All other routes are always solid, regardless of scroll position.
+  const allowsFloating = FLOATING_PATHS.includes(location.pathname);
+  const isFloating = allowsFloating && !scrolled;
 
   const externalByLabel = useMemo(
     () => ({ Business: EXTERNAL_BUSINESS_URL }) as Record<string, string>,

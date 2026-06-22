@@ -55,6 +55,33 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const handleBookDemo = () => {
+  const title = encodeURIComponent("Plumtrips Demo Call");
+
+  const details = encodeURIComponent(
+    `Thank you for booking a demo with Plumtrips.
+
+Please choose a suitable date and time before saving the event.
+
+Our team will join you via Google Meet.`
+  );
+
+  const location = encodeURIComponent("Google Meet");
+
+  const guests = encodeURIComponent(
+    "sauravvk@plumtrips.com,imran.ali@plumtrips.com"
+  );
+
+  const url =
+    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+    `&text=${title}` +
+    `&details=${details}` +
+    `&location=${location}` +
+    `&add=${guests}`;
+
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
 // ✅ Fixed — includes query params
 function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
   sessionStorage.setItem(
@@ -215,7 +242,7 @@ function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
 
         <div className="section-divider reveal" />
 
-        <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={()=> navigate("/go/concierge")}
+        <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={handleBookDemo}
         {...corporateTravelProps} onPrimaryClick={() => {window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
 
         <div className="reveal"><StatsStrip {...statsStripProps} /></div>
