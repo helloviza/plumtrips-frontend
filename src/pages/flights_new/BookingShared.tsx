@@ -168,32 +168,21 @@ export function ErrorBanner({ message }: { message: string }) {
 }
 
 // ─── SEAT PRICE HELPER ───────────────────────────────────────
-//
-// Sums seat-upgrade charges across all passengers and legs.
-// Each passenger may have:
-//   - selectedSeat  (string)              → single leg
-//   - selectedSeats (Record<number, str>) → one entry per leg
-//
-// The SeatMap.prices map drives the charge; if a seat code isn't
-// in prices it is a free (standard) seat and contributes 0.
 
 export function calcSeatTotal(
   passengers: PassengerData[],
-  seatMaps: Record<number, SeatMap>,   // legIndex → SeatMap
+  seatMaps: Record<number, SeatMap>,
 ): number {
   let total = 0;
 
   for (const pax of passengers) {
-    // Multi-leg path
     if (pax.selectedSeats) {
       for (const [legIdxStr, seat] of Object.entries(pax.selectedSeats)) {
         const legIdx = Number(legIdxStr);
         const map = seatMaps[legIdx];
         if (map && seat) total += map.prices[seat] ?? 0;
       }
-    }
-    // Single-leg path (fallback)
-    else if (pax.selectedSeat) {
+    } else if (pax.selectedSeat) {
       const map = seatMaps[0];
       if (map) total += map.prices[pax.selectedSeat] ?? 0;
     }
@@ -203,14 +192,6 @@ export function calcSeatTotal(
 }
 
 // ─── FARE CALCULATION ────────────────────────────────────────
-//
-// FIX 1 — seat prices now included via seatMaps + passengers.
-// FIX 2 — taxes only applied when the fare does NOT already
-//          include them (tier.taxesIncluded === false).
-//          If the FareTier type does not expose taxesIncluded,
-//          add it: `taxesIncluded?: boolean` (defaults to false
-//          = taxes NOT included, which is the safe/conservative
-//          assumption so no one is silently under-charged).
 
 export function calcFares({
   tier, returnTier, multiCityLegs, adults, children, infants, extras,
@@ -221,10 +202,9 @@ export function calcFares({
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; children: number; infants: number;
   extras: ExtraSelection[];
-  // Optional: pass these in from the booking state to get seat totals.
   passengers?: PassengerData[];
   seatMaps?: Record<number, SeatMap>;
-}) {  // Use API per-pax fares if available, else fall back to price * ratio
+}) {
   const adultUnit  = tier.adultFare  ?? tier.price;
   const childUnit  = tier.childFare  ?? Math.round(tier.price * 0.75);
   const infantUnit = tier.infantFare ?? Math.round(tier.price * 0.1);
@@ -250,7 +230,6 @@ export function calcFares({
   const subtotal = Object.values(baseFares).reduce((a, b) => a + b, 0);
   const extrasTotal = extras.reduce((sum, e) => sum + e.mealPrice + e.baggagePrice, 0);
 
-  // Seat charges: prefer API value (TotalSeatCharges), then UI-computed
   const seatsTotal = (passengers && seatMaps)
     ? calcSeatTotal(passengers, seatMaps)
     : (tier.seatCharges ?? 0);
@@ -259,7 +238,11 @@ export function calcFares({
   const taxes = 0;
   const taxesIncluded = true;
 
-  return { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded };
+  // Convenience fee: 7% of subtotal — purely cosmetic, waived to ₹0
+  // Total is NOT affected. This is display-only.
+  const convenienceFeeDisplay = Math.round(subtotal * 0.07);
+
+  return { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded, convenienceFeeDisplay };
 }
 
 // ─── PRICE SIDEBAR ───────────────────────────────────────────
@@ -275,18 +258,18 @@ export function PriceSidebar({
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; children: number; infants: number;
   discount: number; extras: ExtraSelection[];
-  // FIX 1: pass through so seat charges appear
   passengers?: PassengerData[];
   seatMaps?: Record<number, SeatMap>;
   currentStep: number;
 }) {
-  const { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded } =
+  const { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded, convenienceFeeDisplay } =
     calcFares({
       tier, returnTier, multiCityLegs,
       adults, children, infants,
       extras, passengers, seatMaps,
     });
 
+  // Convenience fee is purely cosmetic — NOT added to total
   const total = Math.round(subtotal + extrasTotal + seatsTotal + taxes - discount);
 
   const isRoundTrip  = !!returnFlight && !!returnTier;
@@ -328,7 +311,6 @@ export function PriceSidebar({
           {baseFares.return    > 0 && <LineItem label="Return fare"       value={baseFares.return} />}
           {baseFares.multiCity > 0 && <LineItem label="Multi-city fares"  value={baseFares.multiCity} />}
 
-          {/* FIX 1: Seat upgrade charge — only shown when non-zero */}
           {seatsTotal > 0 && (
             <LineItem label="Seat upgrades" value={seatsTotal} accent="blue" />
           )}
@@ -337,7 +319,7 @@ export function PriceSidebar({
             <LineItem label="Meals & baggage" value={extrasTotal} accent="violet" />
           )}
 
-          {/* FIX 2: Taxes line — hidden entirely when fare already includes them */}
+          {/* Taxes */}
           {!taxesIncluded && taxes > 0 && (
             <LineItem label="Taxes & fees (5%)" value={taxes} />
           )}
@@ -349,6 +331,15 @@ export function PriceSidebar({
               </span>
             </div>
           )}
+
+          {/* ── Convenience fee — cosmetic only, waived to ₹0 ── */}
+          <div className="flex justify-between items-center">
+            <span className="text-slate-400">Convenience fee</span>
+            <span className="flex items-center gap-1.5">
+              <span className="line-through text-slate-300 font-medium">{formatINR(convenienceFeeDisplay)}</span>
+              <span className="text-[9px] bg-emerald-100 text-emerald-700 rounded-full px-1.5 py-0.5 font-black uppercase tracking-wide">FREE</span>
+            </span>
+          </div>
 
           {discount > 0 && (
             <LineItem label="Promo discount" value={-discount} accent="emerald" />
@@ -445,7 +436,6 @@ export function BookingShell({
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   adults: number; childcount: number; infants: number;
   discount: number; extras: ExtraSelection[];
-  // FIX 1: forwarded to PriceSidebar
   passengers?: PassengerData[];
   seatMaps?: Record<number, SeatMap>;
   currentStep: number;

@@ -13,7 +13,7 @@
 
 import { useState, useMemo } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import { MOCK_MODE, apiFareQuote, apiBookFlight, apiGetSSRForLegs } from "../../lib/flights_api";
+import { MOCK_MODE, apiFareQuote, apiBookFlight, apiGetSSRForLegs, formatINR } from "../../lib/flights_api";
 import type { BookPassenger, SSRResult } from "../../lib/flights_api";
 import { createFlightPaymentOrder, verifyFlightPayment } from "../../services/paymentApi";
 import { calcFares, BookingShell, emptyPassenger } from "./BookingShared";
@@ -87,6 +87,9 @@ export default function BookingPage({
   const [error, setError]     = useState<string | null>(null);
   const [fareChanged, setFareChanged] = useState(false);
   const [updatedFare, setUpdatedFare] = useState<number | null>(null);
+  const [fareChangeMessage, setFareChangeMessage] = useState<string | null>(null);
+  const [lockedFareTiers, setLockedFareTiers] = useState<Record<number, FareTier>>({});
+  const [pendingFareTiers, setPendingFareTiers] = useState<Record<number, FareTier>>({});
 
   // FIX #1: SSR state — one entry per leg, null until loaded
   const [ssrDataPerLeg, setSsrDataPerLeg] = useState<(SSRResult | null)[]>([]);
@@ -788,3 +791,4 @@ Promise.resolve().then(() => {
     </BookingShell>
   );
 }
+

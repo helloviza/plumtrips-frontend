@@ -17,6 +17,7 @@ interface Step1Props {
   error: string | null;
   fareChanged: boolean;
   updatedFare: number | null;
+  fareChangeMessage?: string | null;
   onLockFare: () => void;
   onAcceptNewFare: () => void;
   onAbort: () => void;
@@ -25,7 +26,7 @@ interface Step1Props {
 export default function BookingStep1FareReview({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   isInternational, loading, error,
-  fareChanged, updatedFare,
+  fareChanged, updatedFare, fareChangeMessage,
   onLockFare, onAcceptNewFare, onAbort,
 }: Step1Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
@@ -92,8 +93,12 @@ export default function BookingStep1FareReview({
             <div className="flex-1">
               <div className="font-black text-amber-900 text-sm mb-1">Fare Updated by Airline</div>
               <p className="text-xs text-amber-700 mb-4">
-                Price changed from <strong>{formatINR(tier.price)}</strong> to{" "}
-                <strong className="text-amber-900">{formatINR(updatedFare)}</strong> per adult since you last checked.
+                {fareChangeMessage ?? (
+                  <>
+                    Price changed from <strong>{formatINR(tier.price)}</strong> to{" "}
+                    <strong className="text-amber-900">{formatINR(updatedFare)}</strong> per adult since you last checked.
+                  </>
+                )}
               </p>
               <div className="flex gap-3">
                 <button
@@ -249,3 +254,4 @@ function FlightDetailCard({
     </div>
   );
 }
+
