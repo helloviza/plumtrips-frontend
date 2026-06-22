@@ -1,4 +1,5 @@
 import { enableImageFallback } from "./utils/fixImageFallback";
+import { CurrencyProvider } from "./context/currencyContext";
 enableImageFallback();
 
 
@@ -84,8 +85,10 @@ function GlobalEvents() {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     {/* Global event bridge for app-wide actions */}
+    <CurrencyProvider>
     <GlobalEvents />
     <RouterProvider router={router} />
     <Toaster />
+    </CurrencyProvider>
   </React.StrictMode>
 );

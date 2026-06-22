@@ -480,7 +480,7 @@ function FlightCard({
             gap: 4, minWidth: 130, flexShrink: 0,
           }}>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: S.navyDeep, lineHeight: 1 }}>{formatINR(flight.price)}</div>
-            <div style={{ fontSize: 10, color: S.muted }}>per adult</div>
+            <div style={{ fontSize: 10, color: S.muted }}>total fare</div>
             <div style={{ fontSize: 10, fontWeight: 700, color: flight.isRefundable ? S.green : S.muted }}>
               {flight.isRefundable ? "✓ Refundable" : "Non-refundable"}
             </div>

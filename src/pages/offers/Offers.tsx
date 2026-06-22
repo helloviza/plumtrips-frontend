@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { getOffers, type Offer } from "../../lib/api";
+import { useCurrency } from "../../context/currencyContext";
 
 const HERO_BG = "https://images.openai.com/static-rsc-4/jZ0v3WnqJ3eC4VYsKw8lpJREAQFEGnP4by3sO70qJw9Q26ta0zvj2JhiUcthpAS6UIQkG1OT6ioNkVWwQUlCEHNdeF9scvY6ZAG_dflhsOZSu3ybVa79_iXjiLZq3K3Hg0stdvYt-u_0_L0rlpYOOwHyVTqkPOm8T86TPgnRhOpa6El7Hpc3Auus3SJRa7-X?purpose=fullsize";
 
@@ -8,20 +9,20 @@ type OfferType = "All" | "Hotel" | "Flight" | "Tour" | "Transfer" | "Activity" |
 const TABS: OfferType[] = ["All", "Hotel", "Flight", "Tour", "Transfer", "Activity", "Package", "Other"];
 
 const STATIC_OFFERS = [
-  { id: "holiday1", type: "Tour", label: "Save 30%", labelVariant: "primary" as const, title: "Romantic Maldives Escape", subtitle: "5 Nights · Water Villa + Seaplane Transfers", priceCrossed: "₹6,83,700", price: "₹4,78,200", img: "/assets/offers/maldives.jpg", perk: "Exclusive Perk" },
-  { id: "holiday2", type: "Tour", label: "Limited Availability", labelVariant: "error" as const, title: "Swiss Alps Experience", subtitle: "7 Nights · Scenic Trains & Luxury Stays", priceCrossed: "₹8,74,500", price: "₹6,56,000", img: "/assets/offers/switzerland.jpg", perk: "Butler Service" },
-  { id: "flight1", type: "Flight", label: "Flash Deal", labelVariant: "dark" as const, title: "Return to Dubai", subtitle: "From Delhi · Direct Flights", priceCrossed: null, price: "₹18,500", img: "/assets/offers/dubai-flight.jpg", perk: "Priority Boarding" },
-  { id: "flight2", type: "Flight", label: "Exclusive Perk", labelVariant: "dark" as const, title: "Singapore Special", subtitle: "From Mumbai · Full-Service Airline", priceCrossed: null, price: "₹24,000", img: "/assets/offers/singapore-flight.jpg", perk: "Lounge Access" },
-  { id: "hotel1", type: "Hotel", label: "Save 23%", labelVariant: "primary" as const, title: "Udaipur Heritage Palace Stay", subtitle: "2 Nights · Lake View Suite", priceCrossed: "₹2,66,500", price: "₹2,05,200", img: "/assets/offers/udaipur-hotel.jpg", perk: "Breakfast Included" },
-  { id: "hotel2", type: "Hotel", label: "Member Rate", labelVariant: "primary" as const, title: "Dubai Marina Luxury", subtitle: "3 Nights · Breakfast Included", priceCrossed: "₹4,00,000", price: "₹3,00,000", img: "/assets/offers/dubai-hotel.jpg", perk: "Late Checkout" },
+  { id: "holiday1", type: "Tour", label: "Save 30%", labelVariant: "primary" as const, title: "Romantic Maldives Escape", subtitle: "5 Nights · Water Villa + Seaplane Transfers", priceCrossed: 683700, price: 478200, img: "/assets/offers/maldives.jpg", perk: "Exclusive Perk" },
+  { id: "holiday2", type: "Tour", label: "Limited Availability", labelVariant: "error" as const, title: "Swiss Alps Experience", subtitle: "7 Nights · Scenic Trains & Luxury Stays", priceCrossed: 874500, price: 656000, img: "/assets/offers/switzerland.jpg", perk: "Butler Service" },
+  { id: "flight1", type: "Flight", label: "Flash Deal", labelVariant: "dark" as const, title: "Return to Dubai", subtitle: "From Delhi · Direct Flights", priceCrossed: null, price: 18500, img: "/assets/offers/dubai-flight.jpg", perk: "Priority Boarding" },
+  { id: "flight2", type: "Flight", label: "Exclusive Perk", labelVariant: "dark" as const, title: "Singapore Special", subtitle: "From Mumbai · Full-Service Airline", priceCrossed: null, price: 24000, img: "/assets/offers/singapore-flight.jpg", perk: "Lounge Access" },
+  { id: "hotel1", type: "Hotel", label: "Save 23%", labelVariant: "primary" as const, title: "Udaipur Heritage Palace Stay", subtitle: "2 Nights · Lake View Suite", priceCrossed: 266500, price: 205200, img: "/assets/offers/udaipur-hotel.jpg", perk: "Breakfast Included" },
+  { id: "hotel2", type: "Hotel", label: "Member Rate", labelVariant: "primary" as const, title: "Dubai Marina Luxury", subtitle: "3 Nights · Breakfast Included", priceCrossed: 400000, price: 300000, img: "/assets/offers/dubai-hotel.jpg", perk: "Late Checkout" },
 ];
 
 const IMMERSIONS = [
-  { id: "im1", size: "large", category: "ESTATE IMMERSION", badge: "LIMITED WINDOW", title: "The Dynastic Echo", description: "Fourteen days of deep seclusion in a restored 17th-century private monastery.", remaining: "2 Suites", priceCrossed: "₹46,65,000 pp", price: "Member: ₹35,00,000 pp", img: "/assets/offers/maldives.jpg" },
+  { id: "im1", size: "large", category: "ESTATE IMMERSION", badge: "LIMITED WINDOW", title: "The Dynastic Echo", description: "Fourteen days of deep seclusion in a restored 17th-century private monastery.", remaining: "2 Suites", priceCrossed: 4665000, price: 3500000, img: "/assets/offers/maldives.jpg" },
   { id: "im2", size: "tall", category: "Highland Retreat", badge: "LIMITED TIME", title: "Glenfinnan Manor", description: "Master the art of falconry and estate management in a residence that hosted kings.", dates: "Oct – Nov 2024", remaining: "4 Capacity Left", img: "/assets/offers/switzerland.jpg" },
-  { id: "im3", size: "standard", title: "Varanasi Private Ghat", tagline: "A ritual of dawn & dusk", price: "₹15,42,000", img: "/assets/offers/udaipur-hotel.jpg" },
-  { id: "im4", size: "standard", title: "Bavarian Archives", tagline: "Alpine Slow Living", price: "₹10,75,000", img: "/assets/offers/dubai-hotel.jpg" },
-  { id: "im5", size: "standard", title: "Kyoto Master Artisan", tagline: "7 days of silent craft", priceCrossed: "₹23,75,000", price: "₹18,33,000", img: "/assets/offers/dubai-flight.jpg" },
+  { id: "im3", size: "standard", title: "Varanasi Private Ghat", tagline: "A ritual of dawn & dusk", price: 1542000, img: "/assets/offers/udaipur-hotel.jpg" },
+  { id: "im4", size: "standard", title: "Bavarian Archives", tagline: "Alpine Slow Living", price: 1075000, img: "/assets/offers/dubai-hotel.jpg" },
+  { id: "im5", size: "standard", title: "Kyoto Master Artisan", tagline: "7 days of silent craft", priceCrossed: 2375000, price: 1833000, img: "/assets/offers/dubai-flight.jpg" },
 ];
 
 const MICE = [
@@ -43,6 +44,8 @@ function ChipBadge({ label, variant }: { label: string; variant: "primary" | "er
 }
 
 function OfferCard({ offer }: { offer: (typeof STATIC_OFFERS)[number] }) {
+  const { convert } = useCurrency();
+
   return (
     <Link
       to="/go/concierge"
@@ -62,8 +65,14 @@ function OfferCard({ offer }: { offer: (typeof STATIC_OFFERS)[number] }) {
         <div className="border-t border-[#e5e7eb] pt-4">
           <div className="flex justify-between items-end mb-4">
             <div>
-              {offer.priceCrossed && <span className="text-xs text-[#8b716a] line-through block">Market: {offer.priceCrossed}</span>}
-              <span className="text-[#d06549] font-bold text-lg">{offer.priceCrossed ? `Member: ${offer.price}` : offer.price}</span>
+              {offer.priceCrossed && (
+                <span className="text-xs text-[#8b716a] line-through block">
+                  Market: {convert(offer.priceCrossed)}
+                </span>
+              )}
+              <span className="text-[#d06549] font-bold text-lg">
+                {offer.priceCrossed ? `Member: ${convert(offer.price)}` : convert(offer.price)}
+              </span>
             </div>
             <span className="text-[10px] font-bold text-[#d06549] uppercase tracking-tight">{offer.perk}</span>
           </div>
@@ -77,6 +86,7 @@ function OfferCard({ offer }: { offer: (typeof STATIC_OFFERS)[number] }) {
 }
 
 export default function OffersPage() {
+  const { convert } = useCurrency(); 
   const [activeTab, setActiveTab] = useState<OfferType>("All");
   const [items, setItems] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,8 +271,8 @@ useEffect(() => {
                       <div className="flex items-center gap-6 text-sm" style={{ color: "rgba(255,255,255,0.9)" }}>
                         <span>Remaining: <strong style={{ color: "#ffb59f" }}>{IMMERSIONS[0].remaining}</strong></span>
                         <div>
-                          <span className="text-xs block" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "line-through" }}>{IMMERSIONS[0].priceCrossed}</span>
-                          <span className="font-semibold">{IMMERSIONS[0].price}</span>
+<span className="text-xs block" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "line-through" }}>{convert(IMMERSIONS[0].priceCrossed!)}</span>
+<span className="font-semibold">{convert(IMMERSIONS[0].price!)}</span>
                         </div>
                       </div>
                     </div>
@@ -309,8 +319,8 @@ useEffect(() => {
                     <div className="flex justify-between items-center">
                       <span className="italic text-sm" style={{ color: "rgba(255,255,255,0.8)" }}>{im.tagline}</span>
                       <div className="text-right">
-                        {im.priceCrossed && <span className="text-xs block" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "line-through" }}>{im.priceCrossed}</span>}
-                        <span className="font-bold" style={{ color: "#ffb59f" }}>{im.price}</span>
+                      {im.priceCrossed && <span className="text-xs block" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "line-through" }}>{convert(im.priceCrossed)}</span>}
+                      <span className="font-bold" style={{ color: "#ffb59f" }}>{im.price ? convert(im.price) : ""}</span>
                       </div>
                     </div>
                   </div>

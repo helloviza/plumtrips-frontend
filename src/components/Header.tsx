@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 import { MapPin, PhoneCall, Briefcase, ClipboardList } from "lucide-react";
-
+import { useCurrency, REGION_CURRENCY } from "../context/currencyContext";
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
 
@@ -49,6 +49,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [regionMenuOpen, setRegionMenuOpen] = useState(false);
+  const { setCurrency } = useCurrency();
   const [selectedRegion, setSelectedRegion] = useState(REGIONS[0]);
   
   const { openAuth } = useUi();
@@ -202,9 +203,10 @@ export default function Header() {
                           : "text-white/70 hover:text-white hover:bg-white/5"
                       }`}
                       onClick={() => {
-                        setSelectedRegion(region);
-                        setRegionMenuOpen(false);
-                      }}
+  setSelectedRegion(region);
+  setCurrency(REGION_CURRENCY[region.id]); // ← this is the new line
+  setRegionMenuOpen(false);
+}}
                     >
                       {region.text}
                     </button>
