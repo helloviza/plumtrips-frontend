@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // src/pages/marketing/Cruises.tsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -151,7 +152,7 @@ function CruiseModal({ mode, initial, onClose, onSave }: ModalProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Price (₹) *</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Price ({symbol}) *</label>
               <input
                 type="number"
                 value={form.price}
@@ -282,6 +283,7 @@ function DeleteConfirm({ title, onConfirm, onCancel }: { title: string; onConfir
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CruisesPage() {
+  const { formatCurrency, symbol } = useCurrency();
   const [items, setItems] = useState<Cruise[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<{ mode: FormMode; item?: Cruise } | null>(null);
@@ -404,7 +406,7 @@ export default function CruisesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4"><span className="font-semibold text-slate-700">₹{c.price.toLocaleString("en-IN")}</span></td>
+                    <td className="px-5 py-4"><span className="font-semibold text-slate-700">{formatCurrency(c.price.toLocaleString("en-IN"))}</span></td>
                     <td className="px-5 py-4">
                       <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${c.scope === "International" ? "bg-blue-50 text-blue-600" : "bg-violet-50 text-violet-600"}`}>
                         {c.scope}

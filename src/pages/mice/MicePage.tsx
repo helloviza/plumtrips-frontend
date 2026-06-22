@@ -1,3 +1,4 @@
+import { useCurrency } from "../../hooks/useCurrency";
 ﻿import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import m1 from "../../../public/mice/m12.jpeg";
@@ -155,6 +156,7 @@ function Icon({ children, size = 20 }: { children: ReactNode; size?: number }) {
 
 /* ─── Main Page ──────────────────────────────────────── */
 export default function MicePage() {
+  const { symbol } = useCurrency();
   const [active, setActive] = useState<EventKey>("Meetings");
   const ev = EVENTS[active];
 
@@ -533,7 +535,7 @@ export default function MicePage() {
               { placeholder: "Group Size (approx.)", name: "groupSize" },
               { placeholder: "Preferred Dates", name: "dates" },
               { placeholder: "City / Destination", name: "destination" },
-              { placeholder: "Budget (₹) or range", name: "budget", colSpan: true },
+              { placeholder: `Budget (${symbol}) or range`, name: "budget", colSpan: true },
             ].map(({ colSpan, type, ...field }) => (
               <input
                 key={field.name}

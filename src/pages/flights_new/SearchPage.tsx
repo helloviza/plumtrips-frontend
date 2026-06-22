@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { SearchForm, Airport } from "../../lib/types_t";
@@ -27,10 +28,10 @@ interface CityLeg {
 }
 
 // ── FORMAT HELPER ─────────────────────────────────────────────
-function formatPriceShort(price: number): string {
-  if (price >= 100000) return `₹${(price / 100000).toFixed(1)}L`;
-  if (price >= 1000)   return `₹${(price / 1000).toFixed(1)}k`;
-  return `₹${price}`;
+function formatCurrency(price: number): string {
+  if (price >= 100000) return `{symbol}${(price / 100000).toFixed(1)}L`;
+  if (price >= 1000)   return `{symbol}${(price / 1000).toFixed(1)}k`;
+  return `{symbol}${price}`;
 }
 
 // ── PORTAL POSITION HOOK ──────────────────────────────────────
@@ -273,7 +274,7 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
             <span style={{ lineHeight: 1 }}>{d}</span>
             {price !== undefined && !disabled && (
               <span style={{ fontSize: 7.5, fontWeight: 800, color: pColor, lineHeight: 1, whiteSpace: "nowrap", letterSpacing: "-0.02em" }}>
-                {formatPriceShort(price)}
+                {formatCurrency(price)}
               </span>
             )}
           </span>
@@ -339,7 +340,7 @@ function CalendarPopup({ value, value2, isRange, min, onChange, onClose, anchorR
             </span>
           ))}
           {priceRange.min > 0 && (
-            <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 800 }}>From {formatPriceShort(priceRange.min)}</span>
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 800 }}>From {formatCurrency(priceRange.min)}</span>
           )}
         </div>
       )}
@@ -496,6 +497,7 @@ interface SearchPageProps {
 }
 
 export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTypeChange }: SearchPageProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const today = new Date().toLocaleDateString("en-CA");
 
   const [airports, setAirports] = useState<Airport[]>(MOCK_AIRPORTS);

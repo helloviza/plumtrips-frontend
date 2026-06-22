@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 ﻿// apps/frontend/src/pages/go/Concierge.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -23,6 +24,7 @@ const WHATSAPP_E164 = "917065932396";
 type StyleKey = "adventure" | "beach" | "culture" | "wellness" | "luxury" | "budget";
 
 export default function Concierge() {
+  const { formatCurrency, symbol } = useCurrency();
   const [sp] = useSearchParams();
   const fromSlug = sp.get("from") || "";
 
@@ -255,7 +257,7 @@ export default function Concierge() {
                 <LineField label="Budget (total or per night)">
                   <input className="lux-line-input" value={budget}
                     onChange={(e) => setBudget(e.target.value)}
-                    placeholder="e.g. ₹10k total" />
+                    placeholder="e.g. {formatCurrency(10)}k total" />
                 </LineField>
 
                 <LineField label="Travellers (count/type)">

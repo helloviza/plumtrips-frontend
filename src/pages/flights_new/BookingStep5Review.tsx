@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  BookingStep5Review.tsx — Step 5: Full Booking Review
 // ============================================================
@@ -6,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import type { PassengerData, ExtraSelection } from "./BookingShared";
 import { SectionHeading, AIRLINE_COLORS, calcFares } from "./BookingShared";
-import { formatINR } from "../../lib/flights_api";
+
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
 
@@ -31,6 +32,7 @@ export default function BookingStep5Review({
   adults, children, infants, extras, discount, isInternational,
   onConfirm, onBack,
 }: Step5Props) {
+  const { formatCurrency, symbol } = useCurrency();
   const [agreed, setAgreed] = useState(false);
 
   // ── Auth ─────────────────────────────────────────────────
@@ -214,7 +216,7 @@ export default function BookingStep5Review({
       <ReviewCard title="💰 Final Fare Breakdown">
         <div className="space-y-2 text-sm">
           {adults > 0 && (
-            <FareRow label={`${adults} Adult${adults > 1 ? "s" : ""} × ${formatINR(tier.price)}`} value={baseFares.adult} />
+            <FareRow label={`${adults} Adult${adults > 1 ? "s" : ""} × ${formatCurrency(tier.price)}`} value={baseFares.adult} />
           )}
           {children > 0 && (
             <FareRow label={`${children} Child${children > 1 ? "ren" : ""}`} value={baseFares.child} />
@@ -230,7 +232,7 @@ export default function BookingStep5Review({
 
           <div className="flex justify-between items-center border-t-2 border-slate-200 pt-3 mt-2">
             <span className="font-black text-slate-900 text-base">Total Payable</span>
-            <span className="font-black text-blue-600 text-xl">{formatINR(total)}</span>
+            <span className="font-black text-blue-600 text-xl">{formatCurrency(total)}</span>
           </div>
         </div>
       </ReviewCard>
@@ -286,7 +288,7 @@ export default function BookingStep5Review({
           className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200 disabled:shadow-none"
         >
           {agreed
-            ? `${user ? "" : "🔐 Sign in & "}Proceed to Payment — ${formatINR(total)} →`
+            ? `${user ? "" : "🔐 Sign in & "}Proceed to Payment — ${formatCurrency(total)} →`
             : "Please confirm details above to continue"}
         </button>
       </div>
@@ -310,7 +312,7 @@ function FareRow({ label, value, accent }: { label: string; value: number; accen
   return (
     <div className={`flex justify-between items-center ${color}`}>
       <span className="text-slate-500">{label}</span>
-      <span className="font-semibold">{value < 0 ? `−${formatINR(-value)}` : formatINR(value)}</span>
+      <span className="font-semibold">{value < 0 ? `−${formatCurrency(-value)}` : formatCurrency(value)}</span>
     </div>
   );
 }
@@ -338,7 +340,7 @@ function LegRow({ flight, tier, label }: { flight: DisplayFlight; tier: FareTier
           </div>
         </div>
         <div className="text-right">
-          <div className="font-black text-blue-600 text-sm">{formatINR(tier.price)}</div>
+          <div className="font-black text-blue-600 text-sm">{formatCurrency(tier.price)}</div>
           <div className="text-[9px] text-slate-400">per adult</div>
         </div>
       </div>

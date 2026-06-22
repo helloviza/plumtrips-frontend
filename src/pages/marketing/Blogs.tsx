@@ -290,7 +290,7 @@ const BlogBlockEditor: React.FC<{
             { f: 'kicker', ph: 'Kicker (e.g. Editor\'s pick)' },
             { f: 'name', ph: 'Hotel / Property name' },
             { f: 'loc', ph: 'Location / City' },
-            { f: 'price', ph: 'Price (e.g. from ₹8,000/night)' },
+            { f: 'price', ph: 'Price (e.g. from {formatCurrency(8)},000/night)' },
             { f: 'nights', ph: 'Suggested nights (e.g. 2–3 nights)' },
           ] as const).map(({ f, ph }) => (
             <div key={f}>

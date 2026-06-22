@@ -1,9 +1,10 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  BookingStep7Confirmation.tsx — Step 7: Booking Confirmed
 // ============================================================
 
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import { formatINR } from "../../lib/flights_api";
+
 import { AIRLINE_COLORS } from "./BookingShared";
 
 interface Step7Props {
@@ -26,6 +27,7 @@ export default function BookingStep7Confirmation({
   bookingId, pnr, passengerNames, contactEmail,
   totalPaid, isInternational, onDone,
 }: Step7Props) {
+  const { formatCurrency, symbol } = useCurrency();
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
 
@@ -132,7 +134,7 @@ export default function BookingStep7Confirmation({
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Amount Paid</div>
             <div className="text-[10px] text-emerald-600">Inclusive of all taxes and fees</div>
           </div>
-          <div className="font-black text-3xl text-emerald-700">{formatINR(totalPaid)}</div>
+          <div className="font-black text-3xl text-emerald-700">{formatCurrency(totalPaid)}</div>
         </div>
       </div>
 

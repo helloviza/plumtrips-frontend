@@ -1,9 +1,10 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  BookingStep1FareReview.tsx — Step 1: Fare Review & Lock
 // ============================================================
 
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import { formatINR } from "../../lib/flights_api";
+
 import { AIRLINE_COLORS, SectionHeading, ErrorBanner } from "./BookingShared";
 
 interface Step1Props {
@@ -28,6 +29,7 @@ export default function BookingStep1FareReview({
   fareChanged, updatedFare,
   onLockFare, onAcceptNewFare, onAbort,
 }: Step1Props) {
+  const { formatCurrency, symbol } = useCurrency();
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
 
@@ -92,8 +94,8 @@ export default function BookingStep1FareReview({
             <div className="flex-1">
               <div className="font-black text-amber-900 text-sm mb-1">Fare Updated by Airline</div>
               <p className="text-xs text-amber-700 mb-4">
-                Price changed from <strong>{formatINR(tier.price)}</strong> to{" "}
-                <strong className="text-amber-900">{formatINR(updatedFare)}</strong> per adult since you last checked.
+                Price changed from <strong>{formatCurrency(tier.price)}</strong> to{" "}
+                <strong className="text-amber-900">{formatCurrency(updatedFare)}</strong> per adult since you last checked.
               </p>
               <div className="flex gap-3">
                 <button
@@ -244,7 +246,7 @@ function FlightDetailCard({
         <div className="text-xs text-slate-500">
           Fare: <strong className="text-slate-700">{tier.name}</strong>
         </div>
-        <div className="font-black text-blue-600 text-sm">{formatINR(tier.price)} <span className="text-slate-400 font-medium text-[10px]">/ adult</span></div>
+        <div className="font-black text-blue-600 text-sm">{formatCurrency(tier.price)} <span className="text-slate-400 font-medium text-[10px]">/ adult</span></div>
       </div>
     </div>
   );

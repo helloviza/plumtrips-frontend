@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 ﻿import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { getOffers, type Offer } from "../../lib/api";
@@ -7,22 +8,9 @@ const HERO_BG = "https://images.openai.com/static-rsc-4/jZ0v3WnqJ3eC4VYsKw8lpJRE
 type OfferType = "All" | "Hotel" | "Flight" | "Tour" | "Transfer" | "Activity" | "Package" | "Other";
 const TABS: OfferType[] = ["All", "Hotel", "Flight", "Tour", "Transfer", "Activity", "Package", "Other"];
 
-const STATIC_OFFERS = [
-  { id: "holiday1", type: "Tour", label: "Save 30%", labelVariant: "primary" as const, title: "Romantic Maldives Escape", subtitle: "5 Nights · Water Villa + Seaplane Transfers", priceCrossed: "₹6,83,700", price: "₹4,78,200", img: "/assets/offers/maldives.jpg", perk: "Exclusive Perk" },
-  { id: "holiday2", type: "Tour", label: "Limited Availability", labelVariant: "error" as const, title: "Swiss Alps Experience", subtitle: "7 Nights · Scenic Trains & Luxury Stays", priceCrossed: "₹8,74,500", price: "₹6,56,000", img: "/assets/offers/switzerland.jpg", perk: "Butler Service" },
-  { id: "flight1", type: "Flight", label: "Flash Deal", labelVariant: "dark" as const, title: "Return to Dubai", subtitle: "From Delhi · Direct Flights", priceCrossed: null, price: "₹18,500", img: "/assets/offers/dubai-flight.jpg", perk: "Priority Boarding" },
-  { id: "flight2", type: "Flight", label: "Exclusive Perk", labelVariant: "dark" as const, title: "Singapore Special", subtitle: "From Mumbai · Full-Service Airline", priceCrossed: null, price: "₹24,000", img: "/assets/offers/singapore-flight.jpg", perk: "Lounge Access" },
-  { id: "hotel1", type: "Hotel", label: "Save 23%", labelVariant: "primary" as const, title: "Udaipur Heritage Palace Stay", subtitle: "2 Nights · Lake View Suite", priceCrossed: "₹2,66,500", price: "₹2,05,200", img: "/assets/offers/udaipur-hotel.jpg", perk: "Breakfast Included" },
-  { id: "hotel2", type: "Hotel", label: "Member Rate", labelVariant: "primary" as const, title: "Dubai Marina Luxury", subtitle: "3 Nights · Breakfast Included", priceCrossed: "₹4,00,000", price: "₹3,00,000", img: "/assets/offers/dubai-hotel.jpg", perk: "Late Checkout" },
-];
 
-const IMMERSIONS = [
-  { id: "im1", size: "large", category: "ESTATE IMMERSION", badge: "LIMITED WINDOW", title: "The Dynastic Echo", description: "Fourteen days of deep seclusion in a restored 17th-century private monastery.", remaining: "2 Suites", priceCrossed: "₹46,65,000 pp", price: "Member: ₹35,00,000 pp", img: "/assets/offers/maldives.jpg" },
-  { id: "im2", size: "tall", category: "Highland Retreat", badge: "LIMITED TIME", title: "Glenfinnan Manor", description: "Master the art of falconry and estate management in a residence that hosted kings.", dates: "Oct – Nov 2024", remaining: "4 Capacity Left", img: "/assets/offers/switzerland.jpg" },
-  { id: "im3", size: "standard", title: "Varanasi Private Ghat", tagline: "A ritual of dawn & dusk", price: "₹15,42,000", img: "/assets/offers/udaipur-hotel.jpg" },
-  { id: "im4", size: "standard", title: "Bavarian Archives", tagline: "Alpine Slow Living", price: "₹10,75,000", img: "/assets/offers/dubai-hotel.jpg" },
-  { id: "im5", size: "standard", title: "Kyoto Master Artisan", tagline: "7 days of silent craft", priceCrossed: "₹23,75,000", price: "₹18,33,000", img: "/assets/offers/dubai-flight.jpg" },
-];
+
+
 
 const MICE = [
   { icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png", title: "Meetings", desc: "Seamless city-to-city arrangements, boardroom-ready venues, and smooth transfers for executives." },
@@ -77,6 +65,24 @@ function OfferCard({ offer }: { offer: (typeof STATIC_OFFERS)[number] }) {
 }
 
 export default function OffersPage() {
+  const { formatCurrency, symbol } = useCurrency();
+
+  const STATIC_OFFERS = [
+  { id: "holiday1", type: "Tour", label: "Save 30%", labelVariant: "primary" as const, title: "Romantic Maldives Escape", subtitle: "5 Nights · Water Villa + Seaplane Transfers", priceCrossed: `${symbol}6,83,700`, price: `${symbol}4,78,200`, img: "/assets/offers/maldives.jpg", perk: "Exclusive Perk" },
+  { id: "holiday2", type: "Tour", label: "Limited Availability", labelVariant: "error" as const, title: "Swiss Alps Experience", subtitle: "7 Nights · Scenic Trains & Luxury Stays", priceCrossed: `${symbol}8,74,500`, price: `${symbol}6,56,000`, img: "/assets/offers/switzerland.jpg", perk: "Butler Service" },
+  { id: "flight1", type: "Flight", label: "Flash Deal", labelVariant: "dark" as const, title: "Return to Dubai", subtitle: "From Delhi · Direct Flights", priceCrossed: null, price: `${symbol}18,500`, img: "/assets/offers/dubai-flight.jpg", perk: "Priority Boarding" },
+  { id: "flight2", type: "Flight", label: "Exclusive Perk", labelVariant: "dark" as const, title: "Singapore Special", subtitle: "From Mumbai · Full-Service Airline", priceCrossed: null, price: `${symbol}24,000`, img: "/assets/offers/singapore-flight.jpg", perk: "Lounge Access" },
+  { id: "hotel1", type: "Hotel", label: "Save 23%", labelVariant: "primary" as const, title: "Udaipur Heritage Palace Stay", subtitle: "2 Nights · Lake View Suite", priceCrossed: `${symbol}2,66,500`, price: `${symbol}2,05,200`, img: "/assets/offers/udaipur-hotel.jpg", perk: "Breakfast Included" },
+  { id: "hotel2", type: "Hotel", label: "Member Rate", labelVariant: "primary" as const, title: "Dubai Marina Luxury", subtitle: "3 Nights · Breakfast Included", priceCrossed: `${symbol}4,00,000`, price: `${symbol}3,00,000`, img: "/assets/offers/dubai-hotel.jpg", perk: "Late Checkout" },
+];
+
+  const IMMERSIONS = [
+  { id: "im1", size: "large", category: "ESTATE IMMERSION", badge: "LIMITED WINDOW", title: "The Dynastic Echo", description: "Fourteen days of deep seclusion in a restored 17th-century private monastery.", remaining: "2 Suites", priceCrossed: `${symbol}46,65,000 pp`, price: `Member: ${formatCurrency(3500000)} pp`, img: "/assets/offers/maldives.jpg" },
+  { id: "im2", size: "tall", category: "Highland Retreat", badge: "LIMITED TIME", title: "Glenfinnan Manor", description: "Master the art of falconry and estate management in a residence that hosted kings.", dates: "Oct – Nov 2024", remaining: "4 Capacity Left", img: "/assets/offers/switzerland.jpg" },
+  { id: "im3", size: "standard", title: "Varanasi Private Ghat", tagline: "A ritual of dawn & dusk", price: `${symbol}15,42,000`, img: "/assets/offers/udaipur-hotel.jpg" },
+  { id: "im4", size: "standard", title: "Bavarian Archives", tagline: "Alpine Slow Living", price: `${symbol}10,75,000`, img: "/assets/offers/dubai-hotel.jpg" },
+  { id: "im5", size: "standard", title: "Kyoto Master Artisan", tagline: "7 days of silent craft", priceCrossed: `${symbol}23,75,000`, price: `${symbol}18,33,000`, img: "/assets/offers/dubai-flight.jpg" },
+];
   const [activeTab, setActiveTab] = useState<OfferType>("All");
   const [items, setItems] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);

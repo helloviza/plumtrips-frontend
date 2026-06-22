@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -10,7 +11,7 @@ import { useHotelStore } from '../../stores/hotelStore';
 import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import Button from '../../components/ui/Button';
-import { generateId, formatCurrency } from '../../lib/utils';
+import { generateId } from '../../lib/utils';
 import toast from 'react-hot-toast';
 
 const guestSchema = z.object({
@@ -56,6 +57,7 @@ const getFormSchema = (isInternational: boolean) => z.object({
 type FormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 export default function GuestDetails() {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const {
     user, setUser, setGuests, setSpecialRequests,

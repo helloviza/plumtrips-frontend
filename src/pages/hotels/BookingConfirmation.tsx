@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,13 +8,14 @@ import {
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
-import { formatCurrency, formatDate, calculateNights } from '../../lib/utils';
+import { formatDate, calculateNights } from '../../lib/utils';
 import { getHotelBookingDetail, cancelHotel } from '../../hooks/useHotelApi';
 import toast from 'react-hot-toast';
 
 const POLL_DELAY_MS = 120_000; // 2 minutes — per spec
 
 export default function BookingConfirmation() {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const {
     bookingId: storeBookingId,

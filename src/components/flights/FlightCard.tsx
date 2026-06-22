@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // apps/frontend/src/components/flights/FlightCard.tsx
 export type Flight = {
   id: string;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export default function FlightCard({ flight, onSelect }: Props) {
+  const { formatCurrency, symbol } = useCurrency();
   return (
     <div className="rounded-lg border bg-white p-4">
       <div className="flex items-center justify-between gap-3">
@@ -38,7 +40,7 @@ export default function FlightCard({ flight, onSelect }: Props) {
         </div>
         <div className="text-right">
           <div className="text-xl font-bold">
-            ₹{Math.round(flight.priceINR).toLocaleString("en-IN")}
+            {formatCurrency(Math.round(flight.priceINR).toLocaleString("en-IN"))}
           </div>
           <button
             type="button"

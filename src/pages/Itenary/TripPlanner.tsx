@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import React, { useEffect } from "react";
 import { 
   Plane, Calendar, Users, Wallet, Sparkles, MapPin, 
@@ -15,6 +16,7 @@ const C = {
 };
 
 export default function TripPlanner() {
+  const { formatCurrency, symbol } = useCurrency();
   useEffect(() => {
     if (document.getElementById("pt-poppins")) return;
     const l = document.createElement("link");
@@ -72,7 +74,7 @@ export default function TripPlanner() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.1)", padding: "10px 18px", borderRadius: 12, backdropFilter: "blur(10px)" }}>
               <Wallet size={18} style={{ opacity: 0.7 }} />
-              <span style={{ fontSize: 14, fontWeight: 500 }}>Budget: ₹1,80,000</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>Budget: {formatCurrency(1)},80,000</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(45,140,255,0.15)", border: `1px solid rgba(45,140,255,0.3)`, padding: "10px 18px", borderRadius: 12, color: "#6DB2FF" }}>
               <Sun size={18} />
@@ -120,7 +122,7 @@ export default function TripPlanner() {
                     <div style={{ fontSize: 13, color: C.textMuted }}>DPS</div>
                   </div>
                   <div style={{ textAlign: "right", paddingLeft: 24, borderLeft: "1px dashed #E5E7EB" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: C.orange }}>₹26,000</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.orange }}>{symbol}26,000</div>
                     <div style={{ fontSize: 11, color: C.textMuted }}>2 travelers</div>
                   </div>
                 </div>
@@ -151,7 +153,7 @@ export default function TripPlanner() {
                     <div style={{ fontSize: 13, color: C.textMuted }}>DEL</div>
                   </div>
                   <div style={{ textAlign: "right", paddingLeft: 24, borderLeft: "1px dashed #E5E7EB" }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: C.orange }}>₹26,000</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.orange }}>{symbol}26,000</div>
                     <div style={{ fontSize: 11, color: C.textMuted }}>2 travelers</div>
                   </div>
                 </div>
@@ -185,7 +187,7 @@ export default function TripPlanner() {
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", paddingLeft: 20, borderLeft: "1px dashed #E5E7EB" }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>4 NIGHTS</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: C.navy }}>₹84,000</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: C.navy }}>{symbol}84,000</div>
                   <div style={{ fontSize: 12, color: C.textMuted }}>inc. taxes</div>
                 </div>
                 <button style={{ color: C.blue, fontSize: 14, fontWeight: 600, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
@@ -467,23 +469,23 @@ export default function TripPlanner() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textMuted }}>
                 <span>Flights (2 pax)</span>
-                <span style={{ fontWeight: 600, color: C.navy }}>₹52,000</span>
+                <span style={{ fontWeight: 600, color: C.navy }}>{symbol}52,000</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textMuted }}>
                 <span>Hotel (4 nights)</span>
-                <span style={{ fontWeight: 600, color: C.navy }}>₹84,000</span>
+                <span style={{ fontWeight: 600, color: C.navy }}>{symbol}84,000</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textMuted }}>
                 <span>Activities & Passes</span>
-                <span style={{ fontWeight: 600, color: C.navy }}>₹18,500</span>
+                <span style={{ fontWeight: 600, color: C.navy }}>{symbol}18,500</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textMuted }}>
                 <span>Private Transfers</span>
-                <span style={{ fontWeight: 600, color: C.navy }}>₹8,000</span>
+                <span style={{ fontWeight: 600, color: C.navy }}>{symbol}8,000</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: C.textMuted }}>
                 <span>Taxes & Fees</span>
-                <span style={{ fontWeight: 600, color: C.navy }}>₹9,800</span>
+                <span style={{ fontWeight: 600, color: C.navy }}>{symbol}9,800</span>
               </div>
             </div>
 
@@ -492,13 +494,13 @@ export default function TripPlanner() {
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 4 }}>
                 <span style={{ fontSize: 16, fontWeight: 600, color: C.navy }}>Total Estimate</span>
-                <span style={{ fontSize: 28, fontWeight: 800, color: C.orange, lineHeight: 1 }}>₹1,72,300</span>
+                <span style={{ fontSize: 28, fontWeight: 800, color: C.orange, lineHeight: 1 }}>{symbol}1,72,300</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#10B981", fontSize: 12, fontWeight: 600, background: "rgba(16,185,129,0.1)", padding: "4px 8px", borderRadius: 6 }}>
-                  <CheckCircle2 size={14} /> ₹7,700 under budget
+                  <CheckCircle2 size={14} /> {formatCurrency(7)},700 under budget
                 </div>
-                <span style={{ fontSize: 12, color: C.textMuted }}>₹86,150 / person</span>
+                <span style={{ fontSize: 12, color: C.textMuted }}>{symbol}86,150 / person</span>
               </div>
             </div>
 

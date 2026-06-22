@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 export type Filters = {
   stops: "any" | "0" | "1" | "2+";
   airlines: Set<string>; // airline codes selected
@@ -62,7 +63,7 @@ export default function FlightsFilters({
 
         {/* Price */}
         <div>
-          <div className="text-sm font-semibold">Price (₹)</div>
+          <div className="text-sm font-semibold">Price ({symbol})</div>
           <div className="mt-2 flex items-center gap-2">
             <input
               type="number"

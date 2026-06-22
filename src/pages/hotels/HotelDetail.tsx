@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelDetail, useHotelRooms } from '../../hooks/useHotelApi';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
 import toast from 'react-hot-toast';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -29,6 +30,7 @@ const MOCK_REVIEWS = [
 ];
 
 export default function HotelDetail() {
+  const { formatCurrency, symbol } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { searchParams, setSelectedHotel, searchResultsMap, selectedHotel: storeHotel, clearRooms } = useHotelStore();

@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  OneSearchBar.tsx — with real calendar prices
 //
@@ -7,7 +8,7 @@
 //            cheapest fare beneath each date number.
 //  [Price B] Prices are colour-coded per visible month:
 //            green = cheapest third, amber = mid, red = high.
-//  [Price C] A legend + "From ₹X" line appears at the bottom
+//  [Price C] A legend + "From {symbol}X" line appears at the bottom
 //            of the popup when prices are loaded.
 //  [Price D] OneSearchBar fetches prices via apiGetCalendarPrices
 //            whenever from/to/cabinClass changes. A tiny
@@ -55,10 +56,10 @@ let legIdCounter = 0;
 const newId = () => `leg-${++legIdCounter}`;
 
 // ─── FORMAT HELPER ────────────────────────────────────────────────────────────
-function formatPriceShort(price: number): string {
-  if (price >= 100000) return `₹${(price / 100000).toFixed(1)}L`;
-  if (price >= 1000)   return `₹${(price / 1000).toFixed(1)}k`;
-  return `₹${price}`;
+function formatCurrency(price: number): string {
+  if (price >= 100000) return `{symbol}${(price / 100000).toFixed(1)}L`;
+  if (price >= 1000)   return `{symbol}${(price / 1000).toFixed(1)}k`;
+  return `{symbol}${price}`;
 }
 
 // ─── PORTAL POSITION HOOK ─────────────────────────────────────────────────────
@@ -320,7 +321,7 @@ function CalendarPopup({
                 whiteSpace: "nowrap",
                 letterSpacing: "-0.02em",
               }}>
-                {formatPriceShort(price)}
+                {formatCurrency(price)}
               </span>
             )}
           </span>
@@ -418,7 +419,7 @@ function CalendarPopup({
           ))}
           {priceRange.min > 0 && (
             <span style={{ marginLeft: "auto", fontSize: 10, color: "#059669", fontWeight: 800 }}>
-              From {formatPriceShort(priceRange.min)}
+              From {formatCurrency(priceRange.min)}
             </span>
           )}
         </div>
@@ -810,6 +811,7 @@ export default function OneSearchBar({
   tripType: tripTypeProp,
   onTripTypeChange,
 }: OneSearchBarProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const today = new Date().toLocaleDateString("en-CA");
 
   const [airports, setAirports] = useState<Airport[]>(MOCK_AIRPORTS);

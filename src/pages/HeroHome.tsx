@@ -1,8 +1,9 @@
+import { useCurrency } from '../hooks/useCurrency';
 import SearchPage from "../pages/flights_new/SearchPage";
 import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
 import { useState, useEffect, useRef } from "react";
-import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
+import { apiSearchFlights } from '../lib/flights_api'; 
 import { useNavigate } from "react-router-dom";
 
 interface HeroHomeProps {
@@ -13,6 +14,7 @@ interface HeroHomeProps {
 // At the top, add today's date
 const today = new Date().toLocaleDateString("en-CA");
 export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const heroImgRef = useRef<HTMLImageElement>(null);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -165,7 +167,7 @@ const navigate=useNavigate();
                   margin: 0,
                 }}
               >
-                Best fares on domestic &amp; international flights · Hotels from ₹999/night
+                Best fares on domestic &amp; international flights · Hotels from {formatCurrency(999)}/night
               </p>
             </div>
 
@@ -194,7 +196,7 @@ const navigate=useNavigate();
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
 <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
-  {dealPrice ? formatINR(dealPrice) : "₹4,899"}
+  {dealPrice ? formatCurrency(dealPrice) : `${symbol}4,899`}
 </div>
                   <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
                 </div>

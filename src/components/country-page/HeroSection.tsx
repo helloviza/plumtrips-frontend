@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import React from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -26,6 +27,7 @@ const inquirySchema = z.object({
 type InquiryFormValues = z.infer<typeof inquirySchema>;
 
 export default function HeroSection({ data }: { data: CountryData }) {
+  const { formatCurrency, symbol } = useCurrency();
   const { toast } = useToast();
   
   const form = useForm<InquiryFormValues, any>({
@@ -230,10 +232,10 @@ export default function HeroSection({ data }: { data: CountryData }) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-[#050814] border-white/10 text-white">
-                          <SelectItem value="under-1L" className="focus:bg-white/10 focus:text-white">Under ₹1L</SelectItem>
-                          <SelectItem value="1L-2L" className="focus:bg-white/10 focus:text-white">₹1L – ₹2L</SelectItem>
-                          <SelectItem value="2L-5L" className="focus:bg-white/10 focus:text-white">₹2L – ₹5L</SelectItem>
-                          <SelectItem value="5L-plus" className="focus:bg-white/10 focus:text-white">₹5L+</SelectItem>
+                          <SelectItem value="under-1L" className="focus:bg-white/10 focus:text-white">Under {formatCurrency(1)}L</SelectItem>
+                          <SelectItem value="1L-2L" className="focus:bg-white/10 focus:text-white">{symbol}1L – {formatCurrency(2)}L</SelectItem>
+                          <SelectItem value="2L-5L" className="focus:bg-white/10 focus:text-white">{symbol}2L – {formatCurrency(5)}L</SelectItem>
+                          <SelectItem value="5L-plus" className="focus:bg-white/10 focus:text-white">{symbol}5L+</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage className="text-red-400 text-xs" />

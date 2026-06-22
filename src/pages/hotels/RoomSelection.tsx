@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,11 +12,12 @@ import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelRooms } from '../../hooks/useHotelApi';
 import type { Room } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
 import toast from 'react-hot-toast';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
 
 export default function RoomSelection() {
+  const { formatCurrency, symbol } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { searchParams, selectedRooms, addRoom, removeRoom, updateRoomQuantity, selectedHotel, searchResultsMap, clearRooms } = useHotelStore();
@@ -48,11 +50,13 @@ export default function RoomSelection() {
     </div>
   );
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
-      <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
-    </div>
-  );
+  if (isLoading && rooms.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+      </div>
+    );
+  }
 
   if (error) return (
     <div className="flex min-h-screen items-center justify-center px-4 bg-[#f8f7f4]">

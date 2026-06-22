@@ -1,9 +1,10 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { Star, MapPin, Shield, Wifi, Coffee, Dumbbell, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Hotel } from '../../stores/hotelStore';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { formatCurrency } from '../../lib/utils';
+import { } from '../../lib/utils';
 import { cn } from '../../lib/utils';
 
 interface HotelCardProps {
@@ -12,6 +13,7 @@ interface HotelCardProps {
 }
 
 export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
 
   const getAmenityIcon = (amenity: string) => {

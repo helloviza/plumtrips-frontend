@@ -1,3 +1,4 @@
+import { useCurrency } from '../hooks/useCurrency';
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { z } from "zod";
@@ -43,6 +44,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 };
 
 export default function Home_Holiday() {
+  const { formatCurrency, symbol } = useCurrency();
   const { toast } = useToast();
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -232,10 +234,10 @@ export default function Home_Holiday() {
                           <SelectTrigger className="bg-white border-[#00477f]/20 text-[#1a1c1e] focus:ring-[#00477f] rounded-xl"><SelectValue placeholder="Select budget range" /></SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-white">
-                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="under-1L">Under ₹1L</SelectItem>
-                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="1L-2L">₹1L – ₹2L</SelectItem>
-                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="2L-5L">₹2L – ₹5L</SelectItem>
-                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="5L-plus">₹5L+</SelectItem>
+                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="under-1L">Under {formatCurrency(1)}L</SelectItem>
+                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="1L-2L">{symbol}1L – {formatCurrency(2)}L</SelectItem>
+                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="2L-5L">{symbol}2L – {formatCurrency(5)}L</SelectItem>
+                          <SelectItem className="cursor-pointer hover:bg-slate-100" value="5L-plus">{symbol}5L+</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage className="text-red-500 text-xs" />

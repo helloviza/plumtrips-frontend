@@ -1,10 +1,11 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  BookingStep6Payment.tsx — Step 6: Payment
 // ============================================================
 
 import type { BookingFormState } from "./BookingShared";
 import { SectionHeading, ErrorBanner, calcFares } from "./BookingShared";
-import { formatINR, MOCK_MODE } from "../../lib/flights_api";
+import { MOCK_MODE } from '../../lib/flights_api';
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 
 interface Step6Props {
@@ -26,6 +27,7 @@ export default function BookingStep6Payment({
   form, adults, children, infants,
   loading, error, onPay, onBack,
 }: Step6Props) {
+  const { formatCurrency, symbol } = useCurrency();
   const { subtotal, extrasTotal, taxes } = calcFares({
     tier, returnTier, multiCityLegs, adults, children, infants, extras: form.extras,
   });
@@ -79,7 +81,7 @@ export default function BookingStep6Payment({
 
               {/* Amount */}
               <span className="text-white font-black text-5xl tracking-tight leading-none">
-                {formatINR(totalPayable)}
+                {formatCurrency(totalPayable)}
               </span>
 
               {/* CTA label */}

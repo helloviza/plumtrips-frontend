@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HotelFilters from '../../components/hotels/HotelFilters';
@@ -9,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelSearch } from '../../hooks/useHotelApi';
-import { calculateNights, formatCurrency } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
@@ -52,17 +53,8 @@ function StarRow({ count }: { count: number }) {
   );
 }
 
-function HotelCard({ 
-  hotel, 
-  nights, 
-  showTotalPrice,
-  isSelected
-}: { 
-  hotel: any; 
-  nights: number; 
-  showTotalPrice: boolean;
-  isSelected?: boolean;
-}) {
+function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; nights: number; showTotalPrice: boolean; isSelected?: boolean; }) {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const { setSelectedHotel } = useHotelStore();
   const price = showTotalPrice ? hotel.price : Math.round(hotel.price / nights);
@@ -225,6 +217,7 @@ function HotelCard({
 }
 
 export default function HotelResults() {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const [urlParams] = useRouterSearchParams();
   const isDefault = urlParams.get('default') === 'true';

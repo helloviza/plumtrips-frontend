@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import UserMenu from "./UserMenu";
 import { useUi } from "../context/UiContext";
 import { MapPin, PhoneCall, Briefcase, ClipboardList } from "lucide-react";
+import { useCurrency, REGIONS } from "../hooks/useCurrency";
 
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
@@ -22,12 +23,7 @@ const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
  */
 export const HEADER_BLEED = "-mt-[124px]" as const;
 
-const REGIONS = [
-  { id: "IN", text: "🇮🇳 India — INR (₹)" },
-  { id: "AE", text: "🇦🇪 Dubai (UAE) — AED (د.إ)" },
-  { id: "VN", text: "🇻🇳 Vietnam — VND (₫)" },
-  { id: "US", text: "🇺🇸 USA — USD ($)" },
-];
+
 
 const allNav = [
   { to: "/",        label: "Flights",       exact: true  },
@@ -40,11 +36,11 @@ const allNav = [
 ];
 
 export default function Header() {
+  const { regionId, setRegion } = useCurrency();
+    const selectedRegion = REGIONS.find(r => r.id === regionId) || REGIONS[0];
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [regionMenuOpen, setRegionMenuOpen] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState(REGIONS[0]);
-  
   const { openAuth } = useUi();
   const location = useLocation();
 
@@ -170,7 +166,7 @@ export default function Header() {
               onClick={() => setRegionMenuOpen(!regionMenuOpen)}
             >
               <MapPin size={16} />
-              <span>{selectedRegion.text}</span>
+              <span>{selectedRegion.label}</span>
               <span className={`text-[9px] opacity-60 transition-transform duration-200 ${regionMenuOpen ? "rotate-180" : ""}`}>
                 ▼
               </span>
@@ -193,11 +189,11 @@ export default function Header() {
                           : "text-white/70 hover:text-white hover:bg-white/5"
                       }`}
                       onClick={() => {
-                        setSelectedRegion(region);
+                        setRegion(region.id);
                         setRegionMenuOpen(false);
                       }}
                     >
-                      {region.text}
+                      {region.label}
                     </button>
                   ))}
                 </div>

@@ -1,10 +1,11 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  ResultsPage.tsx — DateStrip removed
 // ============================================================
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import type { SearchForm, DisplayFlight, ActiveFilters, FareTier, Airport } from "../../lib/types_t";
-import { formatINR, MOCK_MODE, apiSearchFlights, apiFareQuote } from "../../lib/flights_api";
+import { MOCK_MODE, apiSearchFlights, apiFareQuote } from '../../lib/flights_api';
 import type { FlightSearchResult, FareQuoteResult } from "../../lib/flights_api";
 import OneSearchBar from "./OneSearchBar";
 
@@ -159,7 +160,7 @@ function FareTierCard({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep }}>{tier.name}</div>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{formatINR(tier.price)}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{formatCurrency(tier.price)}</div>
             <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>per adult</div>
           </div>
           <div style={{
@@ -352,7 +353,7 @@ function FareModal({
           }}>
             <div>
               <div style={{ fontSize: 10, color: S.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{tiers[selected]?.name}</div>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>{formatINR(tiers[selected]?.price ?? 0)}</div>
+              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>{formatCurrency(tiers[selected]?.price ?? 0)}</div>
               <div style={{ fontSize: 11, color: S.muted }}>per adult · {tiers[selected]?.cancellationFee}</div>
             </div>
             <button
@@ -479,7 +480,7 @@ function FlightCard({
             display: "flex", flexDirection: "column", alignItems: "flex-end",
             gap: 4, minWidth: 130, flexShrink: 0,
           }}>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: S.navyDeep, lineHeight: 1 }}>{formatINR(flight.price)}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: S.navyDeep, lineHeight: 1 }}>{formatCurrency(flight.price)}</div>
             <div style={{ fontSize: 10, color: S.muted }}>per adult</div>
             <div style={{ fontSize: 10, fontWeight: 700, color: flight.isRefundable ? S.green : S.muted }}>
               {flight.isRefundable ? "✓ Refundable" : "Non-refundable"}
@@ -656,8 +657,8 @@ function FilterPanel({
           style={{ width: "100%", accentColor: S.navyDeep, margin: "8px 0" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: "'Sora',sans-serif", fontWeight: 700 }}>
-          <span style={{ color: S.muted }}>{formatINR(minP)}</span>
-          <span style={{ color: S.navyDeep }}>{formatINR(filters.maxPrice ?? maxP)}</span>
+          <span style={{ color: S.muted }}>{formatCurrency(minP)}</span>
+          <span style={{ color: S.navyDeep }}>{formatCurrency(filters.maxPrice ?? maxP)}</span>
         </div>
       </Section>
 
@@ -767,7 +768,7 @@ function FilterPanel({
                     </div>
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 800, color: S.accent, fontFamily: "'Sora',sans-serif", flexShrink: 0 }}>
-                    {formatINR(minPrice)}
+                    {formatCurrency(minPrice)}
                   </span>
                 </div>
               );
@@ -935,6 +936,7 @@ export default function ResultsPage({
   selectedLegs,
   searchKey,
 }: ResultsPageProps) {
+  const { formatCurrency, symbol } = useCurrency();
   // Guard: if form is undefined (direct URL hit with no state)
   if (!form) {
     return (
@@ -1157,7 +1159,7 @@ const sourceFlights = useMemo(() => {
           {SORT_OPTIONS.map(({ key, label }) => {
             const active = sortKey === key;
             const subVal = key === "price" && cheapestPrice
-              ? formatINR(cheapestPrice)
+              ? formatCurrency(cheapestPrice)
               : key === "duration" && fastestDur
                 ? durationStr(fastestDur)
                 : null;

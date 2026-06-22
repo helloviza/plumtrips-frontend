@@ -1,7 +1,8 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState } from 'react';
 import { Search, ChevronDown, ChevronUp, Star, Check, X } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
-import { formatCurrency } from '../../lib/utils';
+import { } from '../../lib/utils';
 
 const BLUE = '#003580';
 
@@ -60,6 +61,7 @@ export default function HotelFilters({
   propertySearch,
   setPropertySearch
 }: HotelFiltersProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const { filters, setFilters, resetFilters } = useHotelStore();
 
   const [showAllAmenities, setShowAllAmenities] = useState(false);

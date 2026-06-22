@@ -1,5 +1,6 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCurrency } from "../../hooks/useCurrency";
 
 type Scope = "International" | "Domestic";
 type Category =
@@ -284,12 +285,7 @@ const BUDGET_RANGES: Record<
   ],
 };
 
-const formatINR = (n: number) =>
-  n.toLocaleString("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  });
+
 
 /* ---------- Typewriter ---------- */
 function useTypewriter(words: string[], typing = 110, deleting = 65, hold = 1600) {
@@ -352,6 +348,7 @@ function Chip({ label, active, onClick }: { label: string; active?: boolean; onC
 
 /* ---------- Card UI ---------- */
 function Card({ pkg }: { pkg: PackageCard }) {
+  const { formatCurrency } = useCurrency();
   return (
     <Link to="/go/concierge" className="group block">
       <div className="relative overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200 bg-white">
@@ -377,7 +374,7 @@ function Card({ pkg }: { pkg: PackageCard }) {
           <div className="mt-3 text-right text-[13px]">
             <span className="text-slate-500">From&nbsp;</span>
             <span className="font-semibold text-[15px]" style={{ color: BRAND_PRIMARY }}>
-              {formatINR(pkg.price)}
+              {formatCurrency(pkg.price)}
             </span>
           </div>
         </div>

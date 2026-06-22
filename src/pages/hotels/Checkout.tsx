@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,7 +12,7 @@ import type { BookGuest } from '../../services/hotelApi';
 import { useHotelStore } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
 import toast from 'react-hot-toast';
 
 const ADD_ON_PRICES: Record<string, number> = {
@@ -20,6 +21,7 @@ const ADD_ON_PRICES: Record<string, number> = {
 };
 
 export default function Checkout() {
+  const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const {
     selectedRooms, selectedHotel, guests, addOns, searchParams,

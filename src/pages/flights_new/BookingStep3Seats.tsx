@@ -1,3 +1,4 @@
+import { useCurrency } from '../../hooks/useCurrency';
 // ============================================================
 //  BookingStep3Seats.tsx — FIXED
 //
@@ -97,6 +98,7 @@ export default function BookingStep3Seats({
   onSeatMapsResolved,
   returnTier,
 }: Step3Props) {
+  const { formatCurrency, symbol } = useCurrency();
   const [activeLeg, setActiveLeg] = useState(0);
   const [activePax, setActivePax] = useState(0);
 
@@ -537,7 +539,7 @@ function AircraftSeatMap({
                                 `Pax ${Number(otherPaxIdx) + 1}`
                               }`
                             : price > 0
-                            ? `${seatType.charAt(0).toUpperCase() + seatType.slice(1)} · Premium · +₹${price}`
+                            ? `${seatType.charAt(0).toUpperCase() + seatType.slice(1)} · Premium · +{symbol}${price}`
                             : `${seatType.charAt(0).toUpperCase() + seatType.slice(1)} · Free`
                         }
                         className={[
@@ -573,7 +575,7 @@ function AircraftSeatMap({
                             <span className="font-mono leading-none">{seat}</span>
                             {price > 0 && (
                               <span className="text-[7px] opacity-60 leading-none">
-                                ₹{price >= 1000 ? `${(price / 1000).toFixed(1)}k` : price}
+                                {price >= 1000 ? `${symbol}${(price / 1000).toFixed(1)}k` : formatCurrency(price)}
                               </span>
                             )}
                           </>
@@ -621,7 +623,7 @@ function AircraftSeatMap({
           <span className="text-amber-500 text-sm">★</span>
           <span className="text-xs text-amber-700 font-medium">
             Premium seats include extra legroom · from{" "}
-            <strong>+₹{premiumPrice.toLocaleString("en-IN")}</strong> per seat
+            <strong>+{formatCurrency(premiumPrice.toLocaleString("en-IN"))}</strong> per seat
           </span>
         </div>
       )}
