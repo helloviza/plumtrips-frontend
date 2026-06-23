@@ -40,31 +40,31 @@
         "description": "Discover the breathtaking excess of Dubai through our exclusive access.",
         "items": [
           {
-            "img": "/assets/attached_assets/dubai_burj.jpg",
+            "img": "/dubai_page/SkyHighDubai.jpeg",
             "title": "Sky-High Suites",
             "loc": "Luxury Stay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/dubai_desert.jpg",
+            "img": "/dubai_page/DesertEDubai.jpeg",
             "title": "Desert Safari",
             "loc": "Nature & Adventure",
             "span": "lg:col-span-1"
           },
           {
-            "img": "/assets/attached_assets/dubai_culinary.jpg",
+            "img": "/dubai_page/DesertsDubai.jpeg",
             "title": "Gold-Leaf Dining",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/dubai_yacht.jpg",
+            "img": "/dubai_page/SeaviewDubai.jpeg",
             "title": "Private Yacht",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/dubai_souks.jpg",
+            "img": "/dubai_page/SkyHighDubai.jpeg",
             "title": "Gold Souk & Old Town",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
