@@ -8,6 +8,11 @@ import type {
   DisplayFlight, FareTier, Airport, SearchForm, TBOFlightResult
 } from "./types_t";
 
+import type {
+  TicketPassportDetail,TicketBaggage,TicketMealDynamic,TicketPassengerFare,
+  TicketLCCPassenger,TicketNonLCCInput,TicketLCCInput,BookTicketResponse,BookTicketInput
+} from "./types_t";
+
 // ─── CONFIG ────────────────────────────────────────────────
 
 /**
@@ -1104,6 +1109,8 @@ export type SSRMeal = {
   code: string;
   label: string;
   description: string;
+  origin:string;
+  destination:string;
   price: number;
   emoji: string;
 };
@@ -1239,13 +1246,15 @@ const realMeals = rawMeals.filter(
   const meals: SSRMeal[] =
     realMeals.length > 0
       ? [
-          { code: "NoMeal", label: "No meal", description: "Skip meal selection", price: 0, emoji: "🚫" },
+          { code: "NoMeal", label: "No meal", description: "Skip meal selection", price: 0,origin:"",destination:"", emoji: "🚫" },
           ...realMeals.map((m: any) => {
             const meta = MEAL_META[m.Code];
             return {
               code: m.Code,
               label: meta?.label ?? m.AirlineDescription ?? m.Code,
               description: meta?.desc ?? m.AirlineDescription ?? "",
+              origin: m.Origin,
+              destination: m.Destination,
               price: Number(m.Price ?? 0),
               emoji: meta?.emoji ?? "🍽️",
             };
@@ -1335,15 +1344,15 @@ function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
 
 
 async function fetchSSRForFlight(
-  flight: DisplayFlight
+  flight: DisplayFlight,
 ): Promise<SSRResult> {
   const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      traceId:       flight.traceId,
-      resultIndex:   flight.resultIndex,
-        }),
+      traceId:              flight.traceId,
+      resultIndex:          flight.resultIndex,
+    }),
   });
   if (!res.ok) {
     let errMsg = `SSR failed (HTTP ${res.status})`;
@@ -1403,6 +1412,15 @@ export type BookPassenger = {
   CountryCode?: string;
   CountryName?: string;
   Nationality?: string;
+  Fare?: {
+    BaseFare: number;
+    Tax: number;
+    TransactionFee: number;
+    YQTax: number;
+    AdditionalTxnFeeOfrd: number;
+    AdditionalTxnFeePub: number;
+    AirTransFee: number;
+  };
 };
 
 export type BookFlightInput = {
@@ -1470,6 +1488,125 @@ return {
 };
 }
 
+
+
+// ── Ticket ──────────────────────────────────────────────────
+
+/**
+ * apiBookTicket — Generate ticket for both LCC and Non-LCC.
+ *
+ * Non-LCC flow:  apiBookFlight → apiBookTicket({ isLCC: false, pnr, bookingId })
+ * LCC flow:      skip apiBookFlight → apiBookTicket({ isLCC: true, resultIndex, passengers })
+ *
+ * Price change:
+ *   If isPriceChanged=true in response, show user the new fare,
+ *   then re-call with isPriceChangeAccepted: true to confirm.
+ */
+export async function apiBookTicket(
+  input: BookTicketInput
+): Promise<BookTicketResponse> {
+  if (MOCK_MODE) {
+    await new Promise((r) => setTimeout(r, 1500));
+    return {
+      isPriceChanged: false,
+      isTimeChanged: false,
+      pnr: "MOCK" + Math.random().toString(36).slice(2, 8).toUpperCase(),
+      bookingId: Math.floor(Math.random() * 9_000_000 + 1_000_000),
+      ticketStatus: 1,
+    };
+  }
+
+  // ── Build request body based on LCC vs Non-LCC ──
+  const body =
+    input.isLCC
+      ? {
+          isLCC: true,
+          TraceId:              input.traceId,
+          ResultIndex:          input.resultIndex,
+          Passengers:           input.passengers,
+          IsPriceChangeAccepted: input.isPriceChangeAccepted ?? false,
+        }
+      : {
+          isLCC: false,
+          TraceId:              input.traceId,
+          PNR:                  input.pnr,
+          BookingId:            input.bookingId,
+          ...(input.passport?.length ? { Passport: input.passport } : {}),
+          IsPriceChangeAccepted: input.isPriceChangeAccepted ?? false,
+        };
+
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ticket`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    let errMsg = `Ticketing failed (HTTP ${res.status})`;
+    try {
+      const errJson = await res.json();
+      console.error("[apiBookTicket] Backend error response:", errJson);
+      if (errJson?.message) errMsg = errJson.message;
+      if (errJson?.error)   errMsg = errJson.error;
+    } catch { /* ignore */ }
+    throw new Error(errMsg);
+  }
+
+  const json = await res.json();
+  const responseData = json?.data ?? json;
+  const response = responseData?.Response ?? responseData;
+
+  // ── TBO error check ──
+// ── TBO error check ──
+  const tboError = response?.Error;
+  if (tboError?.ErrorCode && tboError.ErrorCode !== 0) {
+    throw new Error(tboError.ErrorMessage || "Ticketing failed");
+  }
+
+  // ── Price changed — return as-is so caller can re-invoke ──
+  if (response?.IsPriceChanged === true && !body.IsPriceChangeAccepted) {
+    return {
+      isPriceChanged: true,
+      isTimeChanged:  response.IsTimeChanged ?? false,
+      pnr:            response.PNR ?? "",
+      bookingId:      response.BookingId ?? 0,
+      ticketStatus:   8,   // PriceChanged
+      flightItinerary: response.FlightItinerary,
+    };
+  }
+
+  // ── TicketAlreadyCreated (6) — treat as success ──
+  // Happens when TBO ErrorCode 2 was caught in the backend and
+  // converted. The booking exists and is valid.
+  if (response?.TicketStatus === 6) {
+    return {
+      isPriceChanged: false,
+      isTimeChanged:  false,
+      pnr:            response.PNR ?? "",
+      bookingId:      response.BookingId ?? 0,
+      ticketStatus:   6,
+      message:        "Ticket already created — booking confirmed",
+      flightItinerary: response.FlightItinerary,
+    };
+  }
+
+  return {
+    isPriceChanged:  response?.IsPriceChanged  ?? false,
+    isTimeChanged:   response?.IsTimeChanged   ?? false,
+    pnr:             response?.PNR             ?? "",
+    bookingId:       response?.BookingId       ?? 0,
+    ticketStatus:    response?.TicketStatus    ?? 0,
+    message:         response?.Message,
+    flightItinerary: response?.FlightItinerary,
+  };
+}
+
+
+
+
+
+
+
 // ── Airports ────────────────────────────────────────────────
 
 export async function apiGetAirports(): Promise<Airport[]> {
@@ -1492,4 +1629,39 @@ export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRR
     // fetchSSRForFlight already calls /tbo/ssr with { traceId: flight.traceId, resultIndex: flight.resultIndex }
     // Since each leg's traceId is independent, this just works
   );
+}
+
+
+
+
+
+
+// ── ADD THIS at the bottom of flights_api.ts ──────────────────────────────────
+
+
+export async function apiDownloadTicketPdf(
+  ticketResponse: Record<string, unknown>
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ticket/pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ticketResponse),
+  });
+
+  if (!res.ok) {
+    let msg = `PDF download failed (HTTP ${res.status})`;
+    try { const j = await res.json(); msg = j?.message ?? msg; } catch { /**/ }
+    throw new Error(msg);
+  }
+
+  const blob     = await res.blob();
+  const url      = URL.createObjectURL(blob);
+  const pnr      = (ticketResponse.PNR ?? (ticketResponse.FlightItinerary as any)?.PNR ?? "ticket") as string;
+  const a        = document.createElement("a");
+  a.href         = url;
+  a.download     = `ticket-${pnr}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

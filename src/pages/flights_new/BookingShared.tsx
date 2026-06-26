@@ -35,11 +35,14 @@ export interface SeatMap {
 }
 
 export interface ExtraSelection {
+  baggageLabel: string;
   legIndex: number;
   passengerId: number;
   mealCode: string;
   mealLabel: string;
   mealPrice: number;
+  origin:string;
+  destination:string;
   baggageCode: string;
   baggageKg: number;
   baggagePrice: number;

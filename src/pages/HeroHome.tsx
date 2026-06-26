@@ -2,8 +2,9 @@ import SearchPage from "../pages/flights_new/SearchPage";
 import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
 import { useState, useEffect, useRef } from "react";
-import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
+// import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
 import { useNavigate } from "react-router-dom";
+import {  formatINR } from "../lib/flights_api"; 
 
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
@@ -31,24 +32,24 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
 const [dealAirline, setDealAirline] = useState<string>("IndiGo");
 const [dealDuration, setDealDuration] = useState<string>("2h 10m");
 
-useEffect(() => {
-  apiSearchFlights({
-    tripType: "oneWay",
-    from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-    to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-    departDate: today, returnDate: "", adults: 1, children: 0, infants: 0,
-    cabinClass: "Economy", nonStopOnly: false, fareType: "Regular",
-  }).then(result => {
-    // Sort by price and pick the cheapest non-stop (or just cheapest)
-    const sorted = [...(result.outbound ?? [])].sort((a, b) => a.price - b.price);
-    const cheapest = sorted[0];
-    if (cheapest) {
-      setDealPrice(cheapest.price);
-      setDealAirline(cheapest.airline);
-      setDealDuration(`${Math.floor(cheapest.duration / 60)}h ${cheapest.duration % 60}m`);
-    }
-  }).catch(() => {}); // silently fail — card stays with fallback
-}, []);
+// useEffect(() => {
+//   apiSearchFlights({
+//     tripType: "oneWay",
+//     from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+//     to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+//     departDate: today, returnDate: "", adults: 1, children: 0, infants: 0,
+//     cabinClass: "Economy", nonStopOnly: false, fareType: "Regular",
+//   }).then(result => {
+//     // Sort by price and pick the cheapest non-stop (or just cheapest)
+//     const sorted = [...(result.outbound ?? [])].sort((a, b) => a.price - b.price);
+//     const cheapest = sorted[0];
+//     if (cheapest) {
+//       setDealPrice(cheapest.price);
+//       setDealAirline(cheapest.airline);
+//       setDealDuration(`${Math.floor(cheapest.duration / 60)}h ${cheapest.duration % 60}m`);
+//     }
+//   }).catch(() => {}); // silently fail — card stays with fallback
+// }, []);
 
 const TRENDING = [
   {
@@ -208,21 +209,21 @@ const navigate=useNavigate();
                 </div>
 
 <button
-  onClick={() =>
-    onSearch?.({
-      tripType: "oneWay",
-      from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-      to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-      departDate:  today,
-      returnDate:  "",
-      adults:      1,
-      children:    0,
-      infants:     0,
-      cabinClass:  "Economy",
-      nonStopOnly: false,
-      fareType:    "Regular",
-    })
-  }
+  // onClick={() =>
+  //   onSearch?.({
+  //     tripType: "oneWay",
+  //     from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+  //     to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+  //     departDate:  today,
+  //     returnDate:  "",
+  //     adults:      1,
+  //     children:    0,
+  //     infants:     0,
+  //     cabinClass:  "Economy",
+  //     nonStopOnly: false,
+  //     fareType:    "Regular",
+  //   })
+  // }
   style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
 >
   View Deals →

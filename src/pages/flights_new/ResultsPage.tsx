@@ -1028,9 +1028,13 @@ export default function ResultsPage({
       .catch((e: any) => { setSearchError(e?.message ?? "Search failed"); setLoading(false); });
   }, [form, multiLegs]); // eslint-disable-line
 
-  useEffect(() => {
-    fetchFlights();
-  }, [derivedSearchKey]); // eslint-disable-line
+const lastFetchedKey = useRef<string>("");
+
+useEffect(() => {
+  if (derivedSearchKey === lastFetchedKey.current) return;  // already fetched this exact search
+  lastFetchedKey.current = derivedSearchKey;
+  fetchFlights();
+}, [derivedSearchKey]); // eslint-disable-line
 
   const resetFilters = () => setFilters(defaultFilters());
   

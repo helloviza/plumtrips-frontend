@@ -405,3 +405,130 @@ export interface TBOBookResponse {
     };
   };
 }
+
+
+
+
+// ── Ticket Types ────────────────────────────────────────────
+
+/** Passport detail for Non-LCC ticketing (if not provided at Book stage) */
+export type TicketPassportDetail = {
+  PaxId?: number;
+  PassportNo?: string;
+  PassportExpiry?: string;
+  DateOfBirth: string;   // "YYYY-MM-DDTHH:MM:SS" — always mandatory
+};
+
+/** Extra baggage add-on for LCC passengers */
+export type TicketBaggage = {
+  WayType: 0 | 1 | 2;   // 0=NotSet, 1=Segment, 2=FullJourney
+  Code: string;
+  Description: string;
+  Weight: string;
+  Currency: string;
+  Price: number;
+  Origin: string;
+  Destination: string;
+};
+
+/** Meal add-on for LCC passengers */
+export type TicketMealDynamic = {
+  WayType: 0 | 1 | 2;
+  Code: string;
+  Description: number;
+  AirlineDescription: string;
+  Quantity: string;
+  Price: number;
+  Currency: string;
+  Origin: string;
+  Destination: string;
+  Nationality: string;
+};
+
+/** Per-passenger fare breakdown — required for LCC Ticket call */
+export type TicketPassengerFare = {
+  BaseFare: number;
+  Tax: number;
+  TransactionFee: number;
+  YQTax: number;
+  AdditionalTxnFeeOfrd: number;
+  AdditionalTxnFeePub: number;
+  AirTransFee: number;
+};
+
+/** Full passenger object for LCC Ticket — superset of BookPassenger */
+export type TicketLCCPassenger = {
+  Title: "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss";
+  FirstName: string;
+  LastName: string;
+  PaxType: 1 | 2 | 3;
+  DateOfBirth?: string;
+  Gender: 1 | 2;
+  PassportNo?: string;
+  PassportExpiry?: string;
+  AddressLine1: string;
+  AddressLine2?: string;
+  City: string;
+  CountryCode: string;
+  CountryName: string;
+  ContactNo: string;
+  Email: string;
+  IsLeadPax: boolean;
+  FFAirlineCode?: string;
+  FFNumber?: string;
+  GSTCompanyAddress: string;
+  GSTCompanyContactNumber: string;
+  GSTCompanyName: string;
+  GSTNumber: string;
+  GSTCompanyEmail: string;
+  Fare: TicketPassengerFare;
+  Baggage?: TicketBaggage[];
+  MealDynamic?: TicketMealDynamic[];
+  SeatDynamic?: Array<{
+  WayType: 2;
+  Code: string;       // e.g. "12A"
+  Description: string;
+  Origin: string;
+  Destination: string;
+  Currency: string;
+  Price: number;
+}>;
+};
+
+// ─── apiBookTicket Input ────────────────────────────────────
+
+/** Input for Non-LCC ticketing — needs PNR + BookingId from apiBookFlight */
+export type TicketNonLCCInput = {
+  isLCC: false;
+  traceId: string;
+  pnr: string;
+  bookingId: number;
+  passport?: TicketPassportDetail[];   // required only if DOB/passport not given at Book
+  isPriceChangeAccepted?: boolean;
+};
+
+/** Input for LCC ticketing — no prior Book step needed */
+export type TicketLCCInput = {
+  isLCC: true;
+  traceId: string;
+  resultIndex: string;
+  passengers: TicketLCCPassenger[];
+  isPriceChangeAccepted?: boolean;
+};
+
+export type BookTicketInput = TicketNonLCCInput | TicketLCCInput;
+
+// ─── apiBookTicket Response ─────────────────────────────────
+
+export type BookTicketResponse = {
+  isPriceChanged: boolean;
+  isTimeChanged: boolean;
+  pnr: string;
+  bookingId: number;
+  ticketStatus: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 8 | 9;
+  // 0=Failed, 1=Successful, 2=NotSaved, 3=NotCreated,
+  // 4=NotAllowed, 5=InProgress, 6=TicketAlreadyCreated,
+  // 8=PriceChanged, 9=OtherError
+  message?: string;
+  flightItinerary?: Record<string, unknown>;  // full TBO FlightItinerary if needed downstream
+};
