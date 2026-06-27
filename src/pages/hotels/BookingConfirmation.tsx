@@ -1,19 +1,28 @@
+// import { useCurrency } from '../../hooks/useCurrency';
+import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle, Calendar, MapPin, Users, Clock,
   Download, Share2, RotateCcw, Star, Phone, Mail,
-  Loader2, AlertTriangle, XCircle
+  Loader2, XCircle
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
-import { formatCurrency, formatDate, calculateNights } from '../../lib/utils';
+import { formatDate, calculateNights } from '../../lib/utils';
+import {
+  getConfirmedOnlinePayable,
+  getRoomOnlinePayable,
+  getRoomsPayAtHotelTotal,
+  getRoomsPriceBreakdown,
+} from '../../lib/hotelPricing';
 import { getHotelBookingDetail, cancelHotel } from '../../hooks/useHotelApi';
 import toast from 'react-hot-toast';
 
 const POLL_DELAY_MS = 120_000; // 2 minutes — per spec
 
 export default function BookingConfirmation() {
+  //const { formatINR: formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const {
     bookingId: storeBookingId,
@@ -21,6 +30,7 @@ export default function BookingConfirmation() {
     pnr: storePnr,
     selectedHotel, selectedRooms,
     guests, searchParams, user, resetBooking, setBookingDetail,
+    confirmedPaidAmount, preBookResponse, preBookResponses,
   } = useHotelStore();
 
   // Read localStorage SYNCHRONOUSLY in the useState initializer — this runs
@@ -51,15 +61,20 @@ export default function BookingConfirmation() {
   const pnr = storePnr || localPnr;
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
-  // room.price and room.taxesAndFees are already TotalFare/TotalTax for full stay
-  const totalPrice = selectedRooms.reduce(
-    (sum, r) => sum + (r.price + r.taxesAndFees + (r.additionalCharges || 0)) * r.quantity,
-    0
+  const roomBreakdown = getRoomsPriceBreakdown(selectedRooms);
+  const confirmedBreakdown = getConfirmedOnlinePayable(
+    preBookResponse,
+    selectedRooms,
+    preBookResponses.length > 1 ? preBookResponses : undefined
   );
+  const payAtHotelTotal = getRoomsPayAtHotelTotal(selectedRooms);
+  const totalPaid =
+    confirmedPaidAmount ??
+    confirmedBreakdown.totalPayable ??
+    roomBreakdown.totalPayable;
 
   // ── Booking detail state ──────────────────────────────────────────────────
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<string>('');
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -69,7 +84,6 @@ export default function BookingConfirmation() {
   // ── Fetch booking detail on mount ─────────────────────────────────────────
   const fetchDetail = async (id: string) => {
     setDetailLoading(true);
-    setDetailError(null);
     try {
       const detail = await getHotelBookingDetail(id);
       setBookingDetail(detail);
@@ -79,28 +93,12 @@ export default function BookingConfirmation() {
         detail?.status ??
         'Confirmed';
       setBookingStatus(String(status));
-
-      // If still Pending, schedule a poll after 120 seconds
       if (String(status).toLowerCase() === 'pending') {
         pollTimerRef.current = setTimeout(() => fetchDetail(id), POLL_DELAY_MS);
       }
     } catch (err: any) {
-      // Booking-detail is a non-critical enrichment call — the booking already
-      // succeeded. Log silently and default status to Confirmed so the UI
-      // doesn't show a scary error to the user.
       console.warn('[BookingDetail] fetch failed (non-critical):', err?.message);
       setBookingStatus('Confirmed');
-      // Only surface the error if it looks like a real booking problem
-      // (not a 404 / base-URL mismatch on the detail endpoint).
-      const msg: string = err?.message ?? '';
-      const isInfraError =
-        msg.includes('404') ||
-        msg.includes('GetBookingDetails') ||
-        msg.includes('BASE URL') ||
-        msg.includes('timed out');
-      if (!isInfraError) {
-        setDetailError(msg || 'Could not load booking details');
-      }
     } finally {
       setDetailLoading(false);
     }
@@ -117,18 +115,38 @@ export default function BookingConfirmation() {
 
   // ── Cancel booking ────────────────────────────────────────────────────────
   const handleCancel = async () => {
-    if (!bookingId) return;
+    if (!bookingId) {
+      toast.error('No booking ID found');
+      return;
+    }
+    
     setCancelLoading(true);
     try {
-      await cancelHotel(bookingId, 1);
+      console.log('🚫 Cancelling booking:', bookingId);
+      const result = await cancelHotel(bookingId, 1);
+      console.log('✅ Cancel response:', result);
+      
       setCancelled(true);
+      setBookingStatus('Cancelled');
       toast.success('Booking cancelled successfully.');
       setCancelConfirm(false);
     } catch (err: any) {
+      console.error('❌ Cancel error:', err);
       toast.error(err?.message ?? 'Cancellation failed. Please contact support.');
     } finally {
       setCancelLoading(false);
     }
+  };
+
+  // ── Download E-Ticket/Voucher ─────────────────────────────────────────────
+  const handleDownload = () => {
+    const id = bookingId ?? pnr ?? confirmationNo;
+    if (!id) {
+      toast.error('No booking reference found');
+      return;
+    }
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    window.open(`${base}/api/v1/hotels/voucher/${id}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleAddToCalendar = () => {
@@ -152,10 +170,6 @@ export default function BookingConfirmation() {
       navigator.clipboard.writeText(text);
       toast.success('Booking details copied!');
     }
-  };
-
-  const handleDownload = () => {
-    toast.success('E-ticket download started!');
   };
 
   const handleBookAgain = () => {
@@ -323,9 +337,17 @@ export default function BookingConfirmation() {
                 {selectedRooms.map(room => (
                   <div key={room.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{room.name} × {room.quantity}</span>
-                    <span className="font-medium">{formatCurrency((room.price + room.taxesAndFees + (room.additionalCharges || 0)) * room.quantity)}</span>
+                    <span className="font-medium">{formatINR(getRoomOnlinePayable(room, room.quantity))}</span>
                   </div>
                 ))}
+                {payAtHotelTotal > 0 && (
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <span>Pay at hotel (mandatory)</span>
+                    <span>
+                      ₹{payAtHotelTotal}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Guests */}
@@ -361,8 +383,13 @@ export default function BookingConfirmation() {
               {/* Total */}
               <div className="flex justify-between border-t border-gray-200 pt-3 font-bold text-gray-900">
                 <span>Total Paid</span>
-                <span className="text-xl text-orange-600">{formatCurrency(totalPrice)}</span>
+                <span className="text-xl text-orange-600">{formatINR(totalPaid)}</span>
               </div>
+              {payAtHotelTotal > 0 && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Mandatory property charges are payable directly at the hotel and are not included above.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -415,8 +442,7 @@ export default function BookingConfirmation() {
                 Add to Calendar
               </Button>
               <Button variant="outline" onClick={handleDownload} className="flex items-center justify-center gap-2">
-                <Download className="h-4 w-4" />
-                Download E-Ticket
+                <Download className="h-4 w-4" /> Download E-Ticket
               </Button>
               <Button variant="outline" onClick={handleShare} className="flex items-center justify-center gap-2">
                 <Share2 className="h-4 w-4" />
@@ -472,18 +498,7 @@ export default function BookingConfirmation() {
           </div>
         )}
 
-        {/* ── Create Account CTA ── */}
-        {!user.isLoggedIn && (
-          <div className="mt-6 rounded-xl border border-orange-200 bg-orange-50 p-5 text-center">
-            <h3 className="mb-1 font-bold text-gray-900">Save your booking details</h3>
-            <p className="mb-3 text-sm text-gray-600">
-              Create an account to manage your bookings, earn rewards, and get exclusive deals
-            </p>
-            <Button variant="outline" onClick={() => navigate('/auth/register')}>
-              Create Account (Optional)
-            </Button>
-          </div>
-        )}
+
       </div>
     </div>
   );

@@ -8,6 +8,7 @@
  * Backend response envelope: { ok: boolean, data?: any, error?: string }
  */
 
+import { logApiRequest } from '../utils/apiLogger';
 import { getBackendOrigin } from '../lib/backendOrigin';
 
 const BASE = getBackendOrigin();
@@ -36,17 +37,27 @@ async function request<T>(
 ): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const startTime = performance.now();
+  const url = `${BASE}${path}`;
+
+  let responseStatus: number | string = 'Pending';
+  let responseData: any = null;
+  let errorObj: any = null;
 
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json'
+      },
       credentials: 'include',
       signal: ctrl.signal,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
 
+    responseStatus = res.status;
     const data = await parseJson(res);
+    responseData = data;
 
     // Backend returns { ok: false, error: "..." } even on 200
     if (data && data.ok === false) {
@@ -62,11 +73,29 @@ async function request<T>(
     return data as T;
   } catch (err: any) {
     if (err?.name === 'AbortError') {
-      throw new Error(`Request timed out after ${TIMEOUT_MS / 1000}s`);
+      errorObj = new Error(`Request timed out after ${TIMEOUT_MS / 1000}s`);
+    } else {
+      errorObj = err;
     }
-    throw err;
+    throw errorObj;
   } finally {
     clearTimeout(timer);
+    const durationMs = performance.now() - startTime;
+    
+    // Attempt to extract a friendly API name from the path
+    const apiName = path.split('/').pop()?.replace(/([A-Z])/g, ' $1').trim() || path;
+
+    logApiRequest({
+      apiName: `Hotel ${apiName}`,
+      method,
+      url,
+      headers: { 'Content-Type': 'application/json' },
+      payload: body,
+      status: responseStatus,
+      responseData,
+      durationMs,
+      error: errorObj
+    });
   }
 }
 
@@ -201,6 +230,8 @@ export interface BookGuest {
 
 export interface BookParams {
   bookingCode: string;
+  /** Additional booking codes for multi-room bookings (rooms[1..n]) */
+  bookingCodes?: string[];
   /** Same traceId as search and prebook for this booking (required). */
   traceId: string;
   guestNationality: string;
@@ -363,13 +394,54 @@ export async function getHotelStaticDetails(
 
 /**
  * 5. PreBook — POST /api/v1/hotels/prebook
+ *
+ * Returns the raw response envelope so callers can inspect error codes
+ * (e.g. 402 TBO_INSUFFICIENT_BALANCE) without throwing.
  */
-export async function preBookHotel(params: PreBookParams): Promise<PreBookResult> {
-  const res = await post<PreBookResponse>('/api/v1/hotels/prebook', {
-    bookingCode: params.bookingCode,
-    traceId: params.traceId,
-  });
-  return res?.data;
+export async function preBookHotel(params: PreBookParams): Promise<any> {
+  const BASE_URL = getBackendOrigin();
+  const url = `${BASE_URL}/api/v1/hotels/prebook`;
+  const startTime = performance.now();
+  let responseStatus: number | string = 'Pending';
+  let responseData: any = null;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        bookingCode: params.bookingCode,
+        traceId: params.traceId,
+      }),
+    });
+
+    responseStatus = res.status;
+    const data = await res.json().catch(() => null);
+    responseData = data;
+
+    // Attach HTTP status to the response so runHotelPreBook can check it
+    if (data && typeof data === 'object') {
+      data._httpStatus = res.status;
+    }
+
+    // Return raw envelope for all responses — let runHotelPreBook decide what to do
+    // with 402 (insufficient balance) vs real errors vs success
+    return data;
+  } finally {
+    const durationMs = performance.now() - startTime;
+    logApiRequest({
+      apiName: 'Hotel prebook',
+      method: 'POST',
+      url,
+      headers: { 'Content-Type': 'application/json' },
+      payload: params,
+      status: responseStatus,
+      responseData,
+      durationMs,
+      error: null,
+    });
+  }
 }
 
 /**
@@ -399,6 +471,10 @@ export async function bookHotel(params: BookParams): Promise<BookResult> {
     priceDetails: params.priceDetails,
     roomDetails: params.roomDetails,
   };
+  // Include all booking codes for multi-room support
+  if (params.bookingCodes && params.bookingCodes.length > 1) {
+    body.bookingCodes = params.bookingCodes;
+  }
   if (params.isPackageFare !== undefined) body.isPackageFare = params.isPackageFare;
   if (params.isPackageDetailsMandatory !== undefined) {
     body.isPackageDetailsMandatory = params.isPackageDetailsMandatory;
@@ -439,4 +515,33 @@ export async function cancelHotelBooking(
 export async function getHotelBookingByPnr(pnr: string): Promise<any> {
   const res = await get<any>(`/api/v1/hotels/booking/${pnr}`);
   return res?.data;
+}
+
+/**
+ * 9. Get Hotel Voucher/E-Ticket — POST /api/v1/hotels/voucher
+ * Returns voucher URL or empty string if not yet available.
+ */
+export async function getHotelVoucher(bookingId: string): Promise<string> {
+  const res = await post<any>('/api/v1/hotels/voucher', { bookingId });
+
+  // Log raw response so we can see the actual shape during debugging
+  console.log('[getHotelVoucher] raw response:', JSON.stringify(res));
+
+  // Handle multiple possible shapes the backend/TBO might return:
+  // Shape 1: { ok: true, data: { voucherUrl: "..." } }         ← standard envelope
+  // Shape 2: { ok: true, data: { voucherPdf: "..." } }         ← base64 PDF
+  // Shape 3: { ok: true, data: "https://..." }                 ← plain string in data
+  // Shape 4: { voucherUrl: "..." }                              ← flat (no envelope)
+  const data = res?.data;
+
+  if (typeof data === 'string' && data.startsWith('http')) return data;
+  if (typeof data?.voucherUrl === 'string' && data.voucherUrl) return data.voucherUrl;
+  if (typeof data?.VoucherUrl === 'string' && data.VoucherUrl) return data.VoucherUrl;
+  if (typeof data?.voucherPdf === 'string' && data.voucherPdf) return data.voucherPdf;
+
+  // Fallback: check top-level keys in case envelope was stripped
+  if (typeof res?.voucherUrl === 'string' && res.voucherUrl) return res.voucherUrl;
+  if (typeof res?.VoucherUrl === 'string' && res.VoucherUrl) return res.VoucherUrl;
+
+  return '';
 }

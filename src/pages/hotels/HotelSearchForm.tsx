@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useHotelStore } from "../../stores/hotelStore";
 import LocationAutocomplete from "../../components/hotels/LocationAutocomplete";
 import GuestsRoomsSelector from "../../components/hotels/GuestsRoomsSelector";
+import NationalitySelector from "../../components/hotels/NationalitySelector";
 
 // ─── STYLE TOKENS ──────────────────────────────────────────────
 const C = {
@@ -198,13 +199,13 @@ function CalendarPopup({
 }
 
 // ─── FIELD COLUMN ──────────────────────────────────────────────
-function FieldCol({ label, bordered, children, onClick }: {
-  label: string; bordered?: boolean; children: React.ReactNode; onClick?: () => void;
+function FieldCol({ label, bordered, children, onClick, zIndex }: {
+  label: string; bordered?: boolean; children: React.ReactNode; onClick?: () => void; zIndex?: number;
 }) {
   return (
     <div
       onClick={onClick}
-      style={{ padding: "14px 18px", borderLeft: bordered ? `1px solid ${C.divider}` : "none", cursor: onClick ? "pointer" : "default", transition: "background 0.15s" }}
+      style={{ padding: "14px 18px", borderLeft: bordered ? `1px solid ${C.divider}` : "none", cursor: onClick ? "pointer" : "default", transition: "background 0.15s", position: "relative", zIndex }}
       onMouseEnter={e => { if (onClick) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
     >
@@ -285,6 +286,7 @@ export default function HotelsSearchForm() {
   const adults   = searchParams.adults    ?? 2;
   const children = searchParams.children  ?? 0;
   const rooms    = searchParams.rooms     ?? 1;
+  const nationality = searchParams.nationality ?? "IN";
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -318,6 +320,7 @@ function handleSearch() {
     adults:    String(adults),
     children:  String(children),
     rooms:     String(rooms),
+    nationality: nationality,
   });
 
   navigate(`/hotels/results?${params.toString()}`);
@@ -342,11 +345,13 @@ function handleSearch() {
         {/* Top glass sheen */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1.5, zIndex: 3, background: "linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.55) 50%, rgba(255,255,255,0.04))", pointerEvents: "none" }} />
 
-        {/* Field row: Location | Check-in | Check-out | Guests */}
-        <div ref={calAnchorRef} style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1.2fr", borderBottom: `1px solid ${C.divider}` }}>
+        {/* Field row: Location | Check-in | Check-out | Guests | Nationality */}
+        <div ref={calAnchorRef} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1.1fr 1fr", borderBottom: `1px solid ${C.divider}` }}>
 
           {/* LOCATION */}
           <div style={{
+            position: "relative",
+            zIndex: 50,
             padding: "14px 18px",
             outline: errors.location ? "2px solid rgba(248,113,113,0.6)" : "none",
             outlineOffset: -2,
@@ -370,7 +375,7 @@ function handleSearch() {
           </div>
 
           {/* CHECK-IN */}
-          <div style={errors.checkIn ? { outline: "2px solid rgba(248,113,113,0.6)", outlineOffset: -2 } : undefined}>
+          <div style={{ position: "relative", zIndex: 40, ...(errors.checkIn ? { outline: "2px solid rgba(248,113,113,0.6)", outlineOffset: -2 } : {}) }}>
             <DateField
               label="CHECK-IN"
               bordered
@@ -381,7 +386,7 @@ function handleSearch() {
           </div>
 
           {/* CHECK-OUT */}
-          <div style={errors.checkOut ? { outline: "2px solid rgba(248,113,113,0.6)", outlineOffset: -2 } : undefined}>
+          <div style={{ position: "relative", zIndex: 30, ...(errors.checkOut ? { outline: "2px solid rgba(248,113,113,0.6)", outlineOffset: -2 } : {}) }}>
             <DateField
               label="CHECK-OUT"
               bordered
@@ -393,7 +398,7 @@ function handleSearch() {
           </div>
 
           {/* GUESTS & ROOMS */}
-          <FieldCol label="GUESTS & ROOMS" bordered>
+          <FieldCol label="GUESTS & ROOMS" bordered zIndex={20}>
             <GuestsRoomsSelector
               variant="bar"
               theme="dark"
@@ -405,6 +410,17 @@ function handleSearch() {
               onAdultsChange={(a) => setSearchParams({ adults: a })}
               onChildrenChange={(c) => setSearchParams({ children: c })}
               onChildrenAgesChange={(ages) => setSearchParams({ childrenAges: ages })}
+            />
+          </FieldCol>
+
+          {/* NATIONALITY */}
+          <FieldCol label="NATIONALITY" bordered zIndex={10}>
+            <NationalitySelector
+              variant="bar"
+              theme="dark"
+              value={nationality}
+              onChange={(v) => setSearchParams({ nationality: v })}
+              error={errors.nationality}
             />
           </FieldCol>
         </div>
@@ -451,6 +467,7 @@ onClick={() => {
       adults:   String(adults),
       children: String(children),
       rooms:    String(rooms),
+      nationality: nationality,
     });
     resetBooking();
     navigate(`/hotels/results?${params.toString()}`);

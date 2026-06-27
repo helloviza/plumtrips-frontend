@@ -1,10 +1,13 @@
+// import { useCurrency } from '../../hooks/useCurrency';
+import { formatINR } from '../../lib/flights_api';
 import { Star, MapPin, Shield, Wifi, Coffee, Dumbbell, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Hotel } from '../../stores/hotelStore';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { formatCurrency } from '../../lib/utils';
+import { } from '../../lib/utils';
 import { cn } from '../../lib/utils';
+import { getHotelBaseFare, getHotelTaxes, getHotelTotalPayable } from '../../lib/hotelPricing';
 
 interface HotelCardProps {
   hotel: Hotel;
@@ -12,6 +15,7 @@ interface HotelCardProps {
 }
 
 export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
+  //const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
 
   const getAmenityIcon = (amenity: string) => {
@@ -24,8 +28,10 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
     return null;
   };
 
-  const totalPrice = hotel.price * nights;
-  const totalOriginalPrice = hotel.originalPrice ? hotel.originalPrice * nights : null;
+  const baseFare = getHotelBaseFare(hotel);
+  const taxes = getHotelTaxes(hotel);
+  const totalPrice = getHotelTotalPayable(hotel);
+  const totalOriginalPrice = hotel.originalPrice ? hotel.originalPrice + taxes : null;
   const discount = totalOriginalPrice
     ? Math.round(((totalOriginalPrice - totalPrice) / totalOriginalPrice) * 100)
     : 0;
@@ -123,19 +129,22 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
             <div>
               {totalOriginalPrice && (
                 <div className="text-sm text-gray-500 line-through">
-                  {formatCurrency(totalOriginalPrice)}
+                  {formatINR(totalOriginalPrice)}
                 </div>
               )}
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(totalPrice)}
+                  {formatINR(totalPrice)}
                 </span>
                 {nights > 1 && (
                   <span className="text-sm text-gray-500">for {nights} nights</span>
                 )}
               </div>
               <div className="text-xs text-gray-500">
-                {formatCurrency(hotel.price)} per night + taxes
+                incl. taxes & fees
+                {nights > 1 && (
+                  <span> · ≈ {formatINR(Math.round(totalPrice / nights))}/night</span>
+                )}
               </div>
             </div>
 

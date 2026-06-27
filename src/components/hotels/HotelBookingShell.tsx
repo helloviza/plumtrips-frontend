@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BOOKING_STEPS } from './hotelTheme';
+import HotelSearchSummaryBar from './HotelSearchSummaryBar';
 
 interface HotelBookingShellProps {
   children: ReactNode;
@@ -31,7 +32,7 @@ export default function HotelBookingShell({
   return (
     <div className="min-h-screen" style={{ background: "#f8f7f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* Top nav */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-slate-100 sticky top-[64px] z-30 shadow-sm">
         <div className={`mx-auto px-4 sm:px-6 h-16 flex items-center gap-6 ${maxWClass[maxWidth]}`}>
           <button
             onClick={onBack ?? (() => navigate(-1))}
@@ -86,4 +87,5 @@ export default function HotelBookingShell({
     </div>
   );
 }
+
 

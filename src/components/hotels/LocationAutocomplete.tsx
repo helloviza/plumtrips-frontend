@@ -128,7 +128,7 @@ export default function LocationAutocomplete({
 
       {isOpen && results.length > 0 && (
         <div className="absolute left-0 right-0 z-[100] mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-xl">
-          <div className="max-h-72 overflow-y-auto">
+          <div className="custom-scrollbar max-h-72 overflow-y-auto pr-1">
             {results.map(city => (
               <button
                 key={city.id}

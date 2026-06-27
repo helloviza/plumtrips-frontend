@@ -101,7 +101,14 @@ export function useRazorpayCheckout() {
         });
 
         toast.dismiss(toastId);
-        rzp.open();
+        setTimeout(() => {
+          try {
+            rzp.open();
+          } catch (err: any) {
+            onFailed?.(err.message);
+            finish(() => reject(err));
+          }
+        }, 50);
       });
     },
     []

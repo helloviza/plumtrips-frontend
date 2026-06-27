@@ -1,4 +1,6 @@
+// import { useCurrency } from '../hooks/useCurrency';
 import { useRef, useState, useEffect } from "react";
+import { formatINR } from "../lib/flights_api";
 
 import { useNavigate } from "react-router-dom";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
@@ -6,6 +8,7 @@ import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
 
 export default function HeroHotel() {
+  //const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
 const today = new Date().toLocaleDateString("en-CA");
 const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
@@ -54,13 +57,13 @@ const TRENDING = [
 
   return (
     <div
-      className="relative flex flex-col overflow-hidden"
+      className="relative flex flex-col"
       style={{ minHeight: 560 }}
       onMouseMove={handleHeroMouseMove}
       onMouseLeave={handleHeroMouseLeave}
     >
       {/* Background */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <img
           ref={heroImgRef}
           src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80"
@@ -80,8 +83,8 @@ const TRENDING = [
       </div>
 
       {/* Hero content */}
-      <div className="relative z-10 flex-grow flex items-center w-full">
-        <div className="relative z-[3] mx-auto w-[92%] px-6 pt-[140px] pb-14">
+      <div className="relative z-30 flex-grow flex items-center w-full">
+        <div className="relative z-[30] mx-auto w-[92%] px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
@@ -142,7 +145,7 @@ const TRENDING = [
                   margin: 0,
                 }}
               >
-                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting ₹999/night
+                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting {formatINR(999)}/night
               </p>
             </div>
 
@@ -180,10 +183,10 @@ const TRENDING = [
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 6 }}>
                   <div>
                     <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 22, color: "#FF9A6C", lineHeight: 1 }}>
-                      ₹8,499
+                      {formatINR(8)},499
                     </div>
                     <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.35)", textDecoration: "line-through" }}>
-                      ₹12,000
+                      {formatINR(12)},000
                     </div>
                   </div>
                   <img

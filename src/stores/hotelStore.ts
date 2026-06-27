@@ -18,6 +18,15 @@ export interface Guest {
   nationality?: string;
 }
 
+export interface CancelPolicySlab {
+  charge: number;
+  chargeType: number;
+  currency: string;
+  fromDate?: string;
+  toDate?: string;
+  remarks?: string;
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -29,6 +38,7 @@ export interface Room {
   breakfast: boolean;
   cancellationPolicy: string;
   cancellationDate?: string;
+  cancelPolicies?: CancelPolicySlab[];
   amenities: string[];
   images?: string[];
   price: number;
@@ -69,6 +79,7 @@ export interface Hotel {
   checkInTime?: string;
   checkOutTime?: string;
   isInternational?: boolean;
+    isCorporateAllowed?: boolean;
   policies: {
     ageRestriction?: string;
     idProof: string[];
@@ -140,14 +151,19 @@ export interface PreBookResponse {
   confirmedPrice: number;
   confirmedTaxes: number;
   cancellationPolicy: string;
+  cancelPolicies?: CancelPolicySlab[];
   roomAvailable: boolean;
   priceChanged: boolean;
   originalPrice?: number;
-  sessionExpiresAt: number; // timestamp
+  sessionExpiresAt: number;
   // Pass-through fields required by /book
   isPackageFare?: boolean;
   isPackageDetailsMandatory?: boolean;
   netAmount?: number;
+  /** Index into selectedRooms[] that this prebook belongs to */
+  roomIndex?: number;
+  /** From TBO validationInfo.CorporateBookingAllowed — only show corporate PAN field when true */
+  corporateBookingAllowed?: boolean;
 }
 
 interface HotelBookingState {
@@ -196,16 +212,28 @@ interface HotelBookingState {
   /** Wall time when traceId was last set from a successful /hotels/search (for stale-session guard). */
   traceIdIssuedAt: number | null;
   bookingCode: string | null;
+  /** All booking codes — one per selected room, in selectedRooms[] order */
+  bookingCodes: string[];
   setTraceId: (id: string | null) => void;
   setBookingCode: (code: string) => void;
+  setBookingCodes: (codes: string[]) => void;
 
   preBookResponse: PreBookResponse | null;
   setPreBookResponse: (res: PreBookResponse | null) => void;
 
+  /** Per-room prebook responses — index matches selectedRooms[] index */
+  preBookResponses: (PreBookResponse | null)[];
+  setPreBookResponses: (responses: (PreBookResponse | null)[]) => void;
+  setPreBookResponseForRoom: (index: number, res: PreBookResponse | null) => void;
+
   bookingId: string | null;
   pnr: string | null;
+  tboReferenceNo: string | null;
+  voucherUrl: string | null;
   setBookingId: (id: string) => void;
   setPnr: (pnr: string) => void;
+  setTboReferenceNo: (ref: string) => void;
+  setVoucherUrl: (url: string) => void;
 
   // Raw search results map (HotelCode → raw result) for prebook/book
   searchResultsMap: Record<string, any>;
@@ -220,6 +248,10 @@ interface HotelBookingState {
   // Payment guard
   paymentSubmitted: boolean;
   setPaymentSubmitted: (v: boolean) => void;
+
+  /** Amount charged at checkout (INR), used on confirmation for consistency with payment. */
+  confirmedPaidAmount: number | null;
+  setConfirmedPaidAmount: (amount: number | null) => void;
 
   // Session
   sessionExpired: boolean;
@@ -306,13 +338,18 @@ export const useHotelStore = create<HotelBookingState>()(
       traceId: null,
       traceIdIssuedAt: null,
       bookingCode: null,
+      bookingCodes: [],
       preBookResponse: null,
+      preBookResponses: [],
       bookingId: null,
       pnr: null,
+      tboReferenceNo: null,
+      voucherUrl: null,
       searchResultsMap: {},
       confirmationNo: null,
       bookingDetail: null,
       paymentSubmitted: false,
+      confirmedPaidAmount: null,
       sessionExpired: false,
       roomGuestNames: [],
       specialRequests: '',
@@ -380,13 +417,27 @@ export const useHotelStore = create<HotelBookingState>()(
       setTraceId: (id) =>
         set({ traceId: id, traceIdIssuedAt: id ? Date.now() : null }),
       setBookingCode: (code) => set({ bookingCode: code }),
+      setBookingCodes: (codes) => set({ bookingCodes: codes }),
       setPreBookResponse: (res) => set({ preBookResponse: res }),
+      setPreBookResponses: (responses) => set({ preBookResponses: responses }),
+      setPreBookResponseForRoom: (index, res) =>
+        set((s) => {
+          const updated = [...s.preBookResponses];
+          // Grow the array if needed
+          while (updated.length <= index) updated.push(null);
+          updated[index] = res;
+          // Keep legacy single preBookResponse in sync with room 0 for backward compat
+          return { preBookResponses: updated, ...(index === 0 ? { preBookResponse: res } : {}) };
+        }),
       setBookingId: (id) => set({ bookingId: id }),
       setPnr: (pnr) => set({ pnr }),
+      setTboReferenceNo: (tboReferenceNo) => set({ tboReferenceNo }),
+      setVoucherUrl: (voucherUrl) => set({ voucherUrl }),
       setSearchResultsMap: (map) => set({ searchResultsMap: map }),
       setConfirmationNo: (no) => set({ confirmationNo: no }),
       setBookingDetail: (detail) => set({ bookingDetail: detail }),
       setPaymentSubmitted: (paymentSubmitted) => set({ paymentSubmitted }),
+      setConfirmedPaidAmount: (confirmedPaidAmount) => set({ confirmedPaidAmount }),
       setSessionExpired: (sessionExpired) => set({ sessionExpired }),
       setRoomGuestNames: (roomGuestNames) => set({ roomGuestNames }),
       setSpecialRequests: (specialRequests) => set({ specialRequests }),
@@ -410,14 +461,19 @@ export const useHotelStore = create<HotelBookingState>()(
           addOns: defaultAddOns,
           bookingId: null,
           pnr: null,
+          tboReferenceNo: null,
+          voucherUrl: null,
           traceId: null,
           traceIdIssuedAt: null,
           bookingCode: null,
+          bookingCodes: [],
           preBookResponse: null,
+          preBookResponses: [],
           searchResultsMap: {},
           confirmationNo: null,
           bookingDetail: null,
           paymentSubmitted: false,
+          confirmedPaidAmount: null,
           sessionExpired: false,
           specialRequests: '',
           promoCode: '',
@@ -434,7 +490,9 @@ export const useHotelStore = create<HotelBookingState>()(
         traceId: s.traceId,
         traceIdIssuedAt: s.traceIdIssuedAt,
         bookingCode: s.bookingCode,
+        bookingCodes: s.bookingCodes,
         preBookResponse: s.preBookResponse,
+        preBookResponses: s.preBookResponses,
         selectedHotel: s.selectedHotel,
         selectedRooms: s.selectedRooms,
         guests: s.guests,
@@ -442,7 +500,10 @@ export const useHotelStore = create<HotelBookingState>()(
         // Persist post-booking state so confirmation page survives a reload
         bookingId: s.bookingId,
         confirmationNo: s.confirmationNo,
+        tboReferenceNo: s.tboReferenceNo,
+        voucherUrl: s.voucherUrl,
         bookingDetail: s.bookingDetail,
+        confirmedPaidAmount: s.confirmedPaidAmount,
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.searchParams) {
@@ -450,6 +511,9 @@ export const useHotelStore = create<HotelBookingState>()(
           if (checkIn) state.searchParams.checkIn = new Date(checkIn);
           if (checkOut) state.searchParams.checkOut = new Date(checkOut);
         }
+        // Ensure new array fields exist after hydration from old persisted state
+        if (state && !state.preBookResponses) state.preBookResponses = [];
+        if (state && !state.bookingCodes) state.bookingCodes = [];
         if (
           state &&
           isHotelSearchTraceExpired(state.traceId, state.traceIdIssuedAt)
@@ -457,12 +521,15 @@ export const useHotelStore = create<HotelBookingState>()(
           state.traceId = null;
           state.traceIdIssuedAt = null;
           state.bookingCode = null;
+          state.bookingCodes = [];
           state.preBookResponse = null;
+          state.preBookResponses = [];
         }
         // Check session expiry on rehydrate
         if (state?.preBookResponse) {
           if (Date.now() > state.preBookResponse.sessionExpiresAt) {
             state.preBookResponse = null;
+            state.preBookResponses = [];
             state.sessionExpired = true;
           }
         }
@@ -470,4 +537,6 @@ export const useHotelStore = create<HotelBookingState>()(
     }
   )
 );
+
+
 

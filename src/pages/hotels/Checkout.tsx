@@ -1,17 +1,26 @@
+// import { useCurrency } from '../../hooks/useCurrency';
+import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield, Tag, ChevronDown, ChevronUp,
-  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw, Clock
+  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw, Clock, XCircle
 } from 'lucide-react';
 import { runHotelBook, runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 import { createHotelPaymentOrder } from '../../services/paymentApi';
 import type { BookGuest } from '../../services/hotelApi';
+import { loadRazorpayScript } from '../../lib/loadRazorpayScript';
 import { useHotelStore } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
+import {
+  getConfirmedOnlinePayable,
+  getRoomOnlinePayable,
+  getRoomsListingTotal,
+  hasSupplierPriceChange,
+} from '../../lib/hotelPricing';
 import toast from 'react-hot-toast';
 
 const ADD_ON_PRICES: Record<string, number> = {
@@ -20,14 +29,15 @@ const ADD_ON_PRICES: Record<string, number> = {
 };
 
 export default function Checkout() {
+  //const { formatINR: formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const {
     selectedRooms, selectedHotel, guests, addOns, searchParams,
     promoCode, promoDiscount, applyPromoCode,
-    setBookingId, user, preBookResponse, sessionExpired,
+    setBookingId, user, preBookResponse, preBookResponses, sessionExpired,
     paymentSubmitted, setPaymentSubmitted, traceId,
-    setCurrentStep, setPreBookResponse, setBookingCode,
-    setConfirmationNo, setPnr,
+    setCurrentStep, setPreBookResponse, setPreBookResponses, setBookingCode, setBookingCodes,
+    setConfirmationNo, setPnr, setConfirmedPaidAmount, setTboReferenceNo, setVoucherUrl,
   } = useHotelStore();
 
   const [promoInput, setPromoInput] = useState('');
@@ -35,6 +45,7 @@ export default function Checkout() {
   const [processing, setProcessing] = useState(false);
   const [preBooking, setPreBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
+  const [priceChangeAcknowledged, setPriceChangeAcknowledged] = useState(false);
   const { openRazorpayCheckout } = useRazorpayCheckout();
 
   // Timer state
@@ -42,10 +53,23 @@ export default function Checkout() {
   const [timerModalOpen, setTimerModalOpen] = useState(false);
 
   useEffect(() => {
+    loadRazorpayScript().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    console.log('🛒 Checkout: Mounted. traceId:', traceId);
+    if (!hasSupplierPriceChange(preBookResponse, selectedRooms)) {
+      setPriceChangeAcknowledged(true);
+    }
+    return () => console.log('🛒 Checkout: Unmounted');
+  }, [preBookResponse, selectedRooms]);
+
+  useEffect(() => {
     if (timeLeft <= 0) {
       if (!timerModalOpen) {
         setTimerModalOpen(true);
         setTimeout(() => {
+          console.log('⏰ Checkout: Timer expired, navigating away');
           navigate(selectedHotel ? `/hotels/${selectedHotel.id}/rooms` : '/hotels');
         }, 10000);
       }
@@ -65,19 +89,27 @@ export default function Checkout() {
 
   useEffect(() => {
     if (sessionExpired) {
+      console.log('❌ Checkout: sessionExpired is true, navigating to /hotels');
       toast.error('Session expired. Please start again.');
       navigate('/hotels');
       return;
     }
 
     const kickoff = () => {
+      console.log('🚀 Checkout: kickoff() running. selectedRooms length:', useHotelStore.getState().selectedRooms.length);
       if (useHotelStore.getState().selectedRooms.length === 0) {
+        console.log('❌ Checkout: no selected rooms, navigating to /hotels/results');
         toast.error('Please select rooms first.');
         navigate('/hotels/results');
         return;
       }
       setCurrentStep('checkout');
-      if (!useHotelStore.getState().preBookResponse) {
+      
+      const pbr = useHotelStore.getState().preBookResponse;
+      console.log('🚀 Checkout: kickoff() preBookResponse:', pbr ? pbr.bookingCode : 'null');
+      
+      if (!pbr) {
+        console.log('🚀 Checkout: no preBookResponse found in store, running inline prebook');
         void runInlinePreBook();
       }
     };
@@ -92,10 +124,10 @@ export default function Checkout() {
   const runInlinePreBook = async () => {
     setPreBooking(true);
     try {
-      const { selectedRooms, selectedHotel, traceId } = useHotelStore.getState();
-      const bookingCode = (selectedRooms[0] as { _bookingCode?: string; id?: string })?._bookingCode ?? selectedRooms[0]?.id;
-      if (!bookingCode) {
-        toast.error('No booking code found. Please re-select your room.');
+      const { selectedRooms, traceId } = useHotelStore.getState();
+
+      if (selectedRooms.length === 0) {
+        toast.error('No rooms selected. Please re-select your room.');
         setPreBooking(false);
         return;
       }
@@ -110,16 +142,48 @@ export default function Checkout() {
         return;
       }
 
-      const preBook = await runHotelPreBook(bookingCode, traceId);
+      // Prebook all selected rooms in parallel
+      const results = await Promise.all(
+        selectedRooms.map((room, idx) => {
+          const code = (room as any)._bookingCode ?? room.id ?? '';
+          if (!code) return Promise.resolve({ idx, result: null as any, error: 'No booking code' });
+          return runHotelPreBook(code, traceId)
+            .then(res => ({ idx, result: res, error: null }))
+            .catch(err => ({ idx, result: null, error: err }));
+        })
+      );
 
-      if (!preBook.roomAvailable) {
-        toast.error('Room no longer available. Please select another room.');
-        navigate(`/hotels/${selectedHotel?.id}/rooms`);
+      const responses: any[] = new Array(selectedRooms.length).fill(null);
+      let anyUnavailable = false;
+
+      for (const { idx, result, error } of results) {
+        if (error || !result) {
+          const msg = error ? formatHotelTraceApiError(error, `Could not verify room ${idx + 1} availability.`) : `Could not verify room ${idx + 1}.`;
+          toast.error(msg);
+          setPreBooking(false);
+          return;
+        }
+        if (!result.roomAvailable) {
+          anyUnavailable = true;
+        }
+        responses[idx] = result;
+      }
+
+      if (anyUnavailable) {
+        console.log('❌ Checkout: room no longer available in inline prebook, navigating back to rooms');
+        toast.error('One or more rooms are no longer available. Please select different rooms.');
+        const { selectedHotel } = useHotelStore.getState();
+        navigate(selectedHotel ? `/hotels/${selectedHotel.id}/rooms` : '/hotels/results');
         return;
       }
 
-      setBookingCode(preBook.bookingCode);
-      setPreBookResponse(preBook);
+      setPreBookResponses(responses);
+      if (responses[0]) {
+        setBookingCode(responses[0].bookingCode);
+        setPreBookResponse(responses[0]);
+      }
+      const codes = responses.map((r, idx) => r?.bookingCode ?? ((selectedRooms[idx] as any)._bookingCode ?? selectedRooms[idx]?.id ?? ''));
+      setBookingCodes(codes);
     } catch (err: unknown) {
       toast.error(formatHotelTraceApiError(err, 'Could not verify room availability. Please try again.'));
     } finally {
@@ -129,41 +193,34 @@ export default function Checkout() {
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
 
-  const roomsBasePrice = selectedRooms.reduce((s, r) => s + r.price * r.quantity, 0);
-  const roomsTaxes = selectedRooms.reduce((s, r) => s + r.taxesAndFees * r.quantity, 0);
-
-  const preBookNet = (preBookResponse as { netAmount?: number })?.netAmount ?? 0;
-  const preBookConfirmed = preBookResponse?.confirmedPrice ?? 0;
-  const preBookTaxes = preBookResponse?.confirmedTaxes ?? 0;
-
-  let confirmedPrice: number;
-  let confirmedTaxes: number;
-
-  if (preBookNet > 0) {
-    confirmedPrice = preBookNet;
-    confirmedTaxes = 0;
-  } else if (preBookConfirmed > 0) {
-    confirmedPrice = preBookConfirmed;
-    confirmedTaxes = preBookTaxes;
-  } else {
-    confirmedPrice = roomsBasePrice;
-    confirmedTaxes = roomsTaxes;
-  }
+  const listingTotal = getRoomsListingTotal(selectedRooms);
+  const confirmedBreakdown = getConfirmedOnlinePayable(
+    preBookResponse,
+    selectedRooms,
+    preBookResponses.length > 1 ? preBookResponses : undefined
+  );
+  const confirmedPrice = confirmedBreakdown.baseFare;
+  const confirmedTaxes = confirmedBreakdown.taxes;
+  const confirmedRoomTotal = confirmedBreakdown.totalPayable;
 
   const addOnsTotal = Object.entries(addOns).reduce((s, [k, v]) => s + (v ? (ADD_ON_PRICES[k] || 0) : 0), 0);
-  const subtotal = confirmedPrice + confirmedTaxes + addOnsTotal;
+  const subtotal = confirmedRoomTotal + addOnsTotal;
   const discountAmount = promoDiscount > 0 ? Math.round(subtotal * promoDiscount / 100) : 0;
   const totalPrice = subtotal - discountAmount;
   const payNow = totalPrice;
+
+  const supplierPriceChanged = hasSupplierPriceChange(
+    preBookResponse,
+    selectedRooms,
+    preBookResponses.length > 1 ? preBookResponses : undefined
+  );
+  const originalListingPrice = listingTotal;
 
   const razorpayPrefill = {
     name: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
     email: user.email || undefined,
     contact: user.mobile?.replace(/\D/g, '').slice(-10) || undefined,
   };
-
-  const priceChanged = preBookResponse?.priceChanged;
-  const originalListingPrice = roomsBasePrice + roomsTaxes;
 
   const handleApplyPromo = () => {
     if (!promoInput.trim()) return;
@@ -181,7 +238,7 @@ export default function Checkout() {
   };
 
   const finalizeBooking = async (razorpayPaymentId?: string) => {
-    const expectedGuests = searchParams.rooms * (searchParams.adults + (searchParams.children || 0));
+    const expectedGuests = searchParams.adults + (searchParams.children || 0);
     if (guests.length !== expectedGuests) {
       toast.error(`Please search again. Guest count changed (expected ${expectedGuests}, got ${guests.length}).`);
       resetPaymentState();
@@ -209,13 +266,35 @@ export default function Checkout() {
       return;
     }
 
+    // Get all booking codes for multi-room — prefer per-room prebook codes
+    const storeState = useHotelStore.getState();
+    const allCodes = storeState.preBookResponses.length > 1
+      ? storeState.preBookResponses.map((r, idx) =>
+          r?.bookingCode ??
+          (storeState.selectedRooms[idx] as any)?._bookingCode ??
+          storeState.selectedRooms[idx]?.id ??
+          ''
+        )
+      : [preBookResponse!.bookingCode];
+
+    const primaryBookingCode = allCodes[0];
+    const primaryPreBook = storeState.preBookResponses[0] ?? preBookResponse;
+
     const confirmToast = toast.loading('Confirming booking…');
     try {
-      const result = await runHotelBook({
-        bookingCode: preBookResponse!.bookingCode,
-        traceId: preBookResponse!.traceId,
+      const formatDateStr = (d: Date | string | null): string => {
+        if (!d) return '';
+        const date = d instanceof Date ? d : new Date(d);
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD
+      };
+
+      const bookPayload = {
+        bookingCode: primaryBookingCode,
+        bookingCodes: allCodes.length > 1 ? allCodes : undefined,
+        traceId: primaryPreBook!.traceId,
         guestNationality: 'IN',
-        isVoucherBooking: true,
+        isVoucherBooking: true as const,
         rooms: searchParams.rooms,
         adults: searchParams.adults,
         children: searchParams.children,
@@ -227,43 +306,62 @@ export default function Checkout() {
         hotelId: selectedHotel?.id,
         hotelName: selectedHotel?.name,
         location: selectedHotel?.location,
-        checkIn: searchParams.checkIn,
-        checkOut: searchParams.checkOut,
+        checkIn: formatDateStr(searchParams.checkIn),
+        checkOut: formatDateStr(searchParams.checkOut),
         priceDetails: {
           total: totalPrice,
           taxes: confirmedTaxes,
           additionalCharges: addOnsTotal
         },
-        isPackageFare: (preBookResponse as { isPackageFare?: boolean }).isPackageFare,
-        isPackageDetailsMandatory: (preBookResponse as { isPackageDetailsMandatory?: boolean })
-          .isPackageDetailsMandatory,
-      });
+        isPackageFare: (primaryPreBook as { isPackageFare?: boolean })?.isPackageFare,
+        isPackageDetailsMandatory: (primaryPreBook as { isPackageDetailsMandatory?: boolean })?.isPackageDetailsMandatory,
+      };
+
+      console.log('[Book] sending payload:', JSON.stringify(bookPayload, null, 2));
+
+      const result = await runHotelBook(bookPayload);
 
       const inner: Record<string, unknown> =
         (result as { BookResult?: Record<string, unknown> }).BookResult ??
         (result as unknown as Record<string, unknown>);
-      const bookingId = String(inner?.BookingId ?? inner?.bookingId ?? '');
-      const pnr = String(inner?.pnr ?? '');
-      const confirmationNo = String(
-        inner?.ConfirmationNo ?? inner?.confirmationNo ??
-        inner?.BookingRefNo ?? inner?.bookingRefNo ?? bookingId
-      );
-      const status = String(
-        inner?.HotelBookingStatus ?? inner?.Status ?? inner?.status ?? 'Confirmed'
-      );
 
-      if (!bookingId) {
-        const fallbackConfNo =
-          inner?.ConfirmationNo ?? inner?.BookingRefNo ?? inner?.InvoiceNumber ?? '';
-        if (fallbackConfNo) {
-          setBookingId(String(fallbackConfNo));
-          setConfirmationNo(String(fallbackConfNo));
-          if (pnr) setPnr(pnr);
-          setCurrentStep('confirmed');
-          toast.dismiss(confirmToast);
-          navigate('/hotels/confirmation');
-          return;
-        }
+      // Log the full raw response so we can see the actual shape
+      console.log('[Book] raw result:', JSON.stringify(result));
+      console.log('[Book] inner:', JSON.stringify(inner));
+
+      const bookingId = (inner?.BookingId ?? inner?.bookingId ?? '') as string;
+      const pnr = (inner?.pnr ?? inner?.Pnr ?? inner?.PNR ?? '') as string;
+      const invoiceNumber = (inner?.InvoiceNumber ?? inner?.invoiceNumber ?? '') as string;
+      const voucherUrl = (inner?.voucherUrl ?? inner?.VoucherUrl ?? inner?.VoucherURL ?? '') as string;
+      const tboReferenceNo = (
+        inner?.TBOReferenceNo ??
+        inner?.tboReferenceNo ??
+        inner?.BookingRefNo ??
+        inner?.bookingRefNo ??
+        ''
+      ) as string;
+      // Separate ?? chain from || fallback to avoid Babel parse error
+      const confirmationNo = (
+        inner?.ConfirmationNo ??
+        inner?.confirmationNo ??
+        inner?.BookingRefNo ??
+        inner?.bookingRefNo ??
+        inner?.TBOReferenceNo ??
+        inner?.tboReferenceNo ??
+        (invoiceNumber || bookingId)
+      ) as string;
+      const status = (
+        inner?.HotelBookingStatus ??
+        inner?.hotelBookingStatus ??
+        inner?.Status ??
+        inner?.status ??
+        'Confirmed'
+      ) as string;
+
+      // The booking succeeded if we have ANY of: bookingId, pnr, invoiceNumber, confirmationNo
+      const hasValidBooking = bookingId || pnr || invoiceNumber || confirmationNo;
+
+      if (!hasValidBooking) {
         const msg = `Booking response missing BookingId. Raw: ${JSON.stringify(result)}`;
         setBookError(msg);
         resetPaymentState();
@@ -271,9 +369,14 @@ export default function Checkout() {
         return;
       }
 
-      setBookingId(bookingId);
-      setConfirmationNo(confirmationNo);
+      // Use the best available ID as the canonical booking reference
+      const canonicalId = bookingId || invoiceNumber || pnr || confirmationNo;
+      setBookingId(canonicalId);
+      setConfirmationNo(confirmationNo || canonicalId);
       if (pnr) setPnr(pnr);
+      if (tboReferenceNo) setTboReferenceNo(tboReferenceNo);
+      if (voucherUrl) setVoucherUrl(voucherUrl);
+      setConfirmedPaidAmount(payNow);
       setCurrentStep('confirmed');
 
       try {
@@ -281,8 +384,12 @@ export default function Checkout() {
         const stored = raw ? JSON.parse(raw) : {};
         stored.state = {
           ...(stored.state ?? {}),
-          bookingId,
-          confirmationNo,
+          bookingId: canonicalId,
+          confirmationNo: confirmationNo || canonicalId,
+          pnr,
+          tboReferenceNo,
+          voucherUrl,
+          confirmedPaidAmount: payNow,
         };
         localStorage.setItem('hotel-booking-storage', JSON.stringify(stored));
       } catch { /* ignore */ }
@@ -321,7 +428,11 @@ export default function Checkout() {
       toast.error('Payment already submitted. Please wait.');
       return;
     }
-    if (!preBookResponse?.bookingCode) {
+    if (supplierPriceChanged && !priceChangeAcknowledged) {
+      toast.error('Please confirm the updated price before paying.');
+      return;
+    }
+    if (!preBookResponse?.bookingCode && (preBookResponses.length === 0 || !preBookResponses[0]?.bookingCode)) {
       toast.error('Booking session expired. Please start again.');
       navigate('/hotels');
       return;
@@ -342,9 +453,13 @@ export default function Checkout() {
     const createToast = toast.loading('Creating payment…');
 
     try {
+      const primaryCode = useHotelStore.getState().preBookResponses[0]?.bookingCode
+        ?? preBookResponse?.bookingCode
+        ?? useHotelStore.getState().bookingCode
+        ?? '';
       const orderData = await createHotelPaymentOrder({
         amount: payNow,
-        bookingCode: preBookResponse.bookingCode,
+        bookingCode: primaryCode,
         traceId: traceId.trim(),
         hotelName: selectedHotel?.name,
       });
@@ -392,37 +507,137 @@ export default function Checkout() {
       subtitle={selectedHotel?.name}
       onBack={() => navigate(-1)}
     >
-        <div className="flex items-center justify-between mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm">
+        <div className="flex items-center justify-between mb-4 rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2.5 shadow-sm">
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-red-600 animate-pulse" />
-            <span className="font-semibold text-red-800">Complete your booking soon!</span>
+            <Clock className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-medium text-amber-800">Complete booking in</span>
           </div>
-          <div className="text-xl font-bold tabular-nums text-red-600">
+          <div className="text-sm font-bold tabular-nums text-amber-700">
             {formatTime(timeLeft)}
           </div>
         </div>
 
-        {priceChanged && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl border border-yellow-300 bg-yellow-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
-            <div>
-              <div className="font-semibold text-yellow-800">Price updated</div>
-              <div className="text-sm text-yellow-700">
-                The price has changed from {formatCurrency(originalListingPrice)} to{' '}
-                <strong>{formatCurrency(confirmedPrice + confirmedTaxes)}</strong> since you last viewed this room.
-                This is the latest confirmed price.
+        {supplierPriceChanged && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-gray-900">Supplier updated the price</div>
+                <div className="text-xs text-gray-600 mt-0.5">
+                  Price changed from{' '}
+                  <span className="line-through">{formatINR(originalListingPrice)}</span> to{' '}
+                  <strong className="text-gray-900">{formatINR(confirmedRoomTotal)}</strong>.
+                </div>
+                <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={priceChangeAcknowledged}
+                    onChange={(e) => setPriceChangeAcknowledged(e.target.checked)}
+                    className="mt-0.5 rounded border-gray-300"
+                  />
+                  I confirm the updated price and wish to pay
+                </label>
               </div>
             </div>
           </div>
         )}
 
         {preBookResponse && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
-            <RefreshCw className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <div>
-              <div className="font-semibold text-blue-800">Cancellation policy</div>
-              <div className="text-sm text-blue-700">{preBookResponse.cancellationPolicy}</div>
+          <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Cancellation policy</h3>
+                <div className="text-xs text-gray-600 mt-1">
+                  {preBookResponse.cancellationPolicy && preBookResponse.cancellationPolicy !== 'Please check hotel cancellation policy' ? preBookResponse.cancellationPolicy : 'Review the cancellation policy details below.'}
+                </div>
+              </div>
             </div>
+            
+            {/* Show policies for all rooms */}
+            {selectedRooms.map((room, roomIdx) => {
+              const roomPreBook = preBookResponses[roomIdx] ?? (roomIdx === 0 ? preBookResponse : null);
+              const policies: any[] = (roomPreBook as any)?.cancelPolicies?.length ? (roomPreBook as any).cancelPolicies : [];
+              if (policies.length === 0) return null;
+
+              return (
+                <div key={room.id} className="mt-4 pt-4 border-t border-gray-100">
+                  {selectedRooms.length > 1 && (
+                    <div className="text-xs font-semibold text-gray-600 mb-2">{room.name}</div>
+                  )}
+                  {(() => {
+                    const formatDate = (dStr: string) => {
+                      if (!dStr) return '';
+                      try {
+                        let parseStr = dStr;
+                        const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+                        if (match) {
+                          parseStr = `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`;
+                        }
+                        const d = new Date(parseStr);
+                        if (isNaN(d.getTime())) return dStr;
+                        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                      } catch { return dStr; }
+                    };
+
+                    const getDayBefore = (dStr: string) => {
+                      if (!dStr) return '';
+                      try {
+                        let parseStr = dStr;
+                        const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+                        if (match) {
+                          parseStr = `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`;
+                        }
+                        const d = new Date(parseStr);
+                        if (isNaN(d.getTime())) return formatDate(dStr);
+                        d.setDate(d.getDate() - 1);
+                        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                      } catch { return formatDate(dStr); }
+                    };
+
+                    const penaltySlabs = policies.filter((p: any) => p.charge > 0);
+                    const policyText = roomPreBook?.cancellationPolicy ?? room.cancellationPolicy;
+                    const isRefundable = policyText && !policyText.toLowerCase().includes('non-refundable');
+
+                    return (
+                      <div className="flex flex-col gap-2">
+                        {isRefundable && penaltySlabs.length > 0 && penaltySlabs[0].fromDate && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="font-medium text-gray-900">Free Cancellation</span>
+                            <span className="text-gray-500">until {getDayBefore(penaltySlabs[0].fromDate)}</span>
+                          </div>
+                        )}
+
+                        {isRefundable && penaltySlabs.length === 0 && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="font-medium text-gray-900">Free Cancellation</span>
+                          </div>
+                        )}
+
+                        {penaltySlabs.map((policy: any, idx: number) => {
+                          const chargeText = policy.chargeType === 2 
+                            ? `${policy.charge}% Cancellation Charges`
+                            : `₹${policy.charge} Cancellation Charges`;
+                          const fromText = policy.fromDate ? `${formatDate(policy.fromDate)} onwards` : '';
+
+                          return (
+                            <div key={idx} className="flex items-start gap-2 text-sm mt-1">
+                              <XCircle className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-medium text-gray-900">{fromText}</div>
+                                <div className="text-gray-500 text-xs">{chargeText}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -453,7 +668,7 @@ export default function Checkout() {
               {promoDiscount > 0 && (
                 <div className="mt-2 flex items-center gap-1 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  {promoDiscount}% off applied — saving {formatCurrency(discountAmount)}
+                  {promoDiscount}% off applied — saving {formatINR(discountAmount)}
                 </div>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
@@ -464,27 +679,27 @@ export default function Checkout() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            {user.isLoggedIn && (
-              <div className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-                <div className="flex items-center gap-3">
-                  <Gift className="h-6 w-6 text-yellow-600" />
+              {user.isLoggedIn && (
+              <div className="mt-4 mb-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <Gift className="h-5 w-5 text-indigo-500" />
                   <div>
-                    <div className="font-semibold text-gray-900">Earn reward coins</div>
-                    <div className="text-sm text-gray-600">+250 coins on this booking</div>
+                    <div className="text-sm font-semibold text-gray-900">Earn reward coins</div>
+                    <div className="text-xs text-gray-500">+250 coins on this booking</div>
                   </div>
                 </div>
-                <div className="text-lg font-bold text-yellow-600">+250 🪙</div>
+                <div className="text-sm font-bold text-indigo-600">+250 dYT</div>
               </div>
             )}
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 font-bold text-gray-900">Secure payment</h2>
-              <p className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="mb-2 text-sm font-bold text-gray-900">Secure payment</h2>
+              <p className="text-xs text-gray-500">
                 Pay with UPI, cards, net banking, wallets, and more via Razorpay secure checkout.
               </p>
             </div>
+            </div>
+
           </div>
 
           <div className="lg:col-span-1">
@@ -516,40 +731,40 @@ export default function Checkout() {
                     {selectedRooms.map(r => (
                       <div key={r.id} className="mt-1 flex justify-between text-xs text-gray-500">
                         <span className="truncate mr-2">{r.name} × {r.quantity}</span>
-                        <span className="shrink-0">{formatCurrency((r.price + r.taxesAndFees) * r.quantity)}</span>
+                        <span className="shrink-0">{formatINR(getRoomOnlinePayable(r, r.quantity))}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
                 <div className="flex justify-between text-gray-600">
-                  <span>Room charges</span>
-                  <span>{formatCurrency(confirmedPrice)}</span>
+                  <span>Base Fare</span>
+                  <span>{formatINR(confirmedPrice)}</span>
                 </div>
                 {confirmedTaxes > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Taxes & fees</span>
-                    <span>{formatCurrency(confirmedTaxes)}</span>
+                    <span>{formatINR(confirmedTaxes)}</span>
                   </div>
                 )}
-                {confirmedTaxes === 0 && preBookNet > 0 && (
+                {confirmedTaxes === 0 && confirmedBreakdown.fromPreBook && (
                   <div className="text-xs text-gray-400">Taxes & fees included in total</div>
                 )}
                 {addOnsTotal > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Add-ons</span>
-                    <span>{formatCurrency(addOnsTotal)}</span>
+                    <span>{formatINR(addOnsTotal)}</span>
                   </div>
                 )}
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Promo ({promoCode})</span>
-                    <span>- {formatCurrency(discountAmount)}</span>
+                    <span>- {formatINR(discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-gray-200 pt-3 font-bold text-gray-900">
-                  <span>Total</span>
-                  <span className="text-xl text-[#003580]">{formatCurrency(payNow)}</span>
+                  <span>Total Payable</span>
+                  <span className="text-xl text-[#003580]">{formatINR(payNow)}</span>
                 </div>
               </div>
 
@@ -561,13 +776,13 @@ export default function Checkout() {
 
               <button
                 onClick={handlePayment}
-                disabled={processing || paymentSubmitted || preBooking || timeLeft <= 0}
+                disabled={processing || paymentSubmitted || preBooking || timeLeft <= 0 || (supplierPriceChanged && !priceChangeAcknowledged)}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#003580] py-3.5 text-base font-bold text-white transition-colors hover:bg-[#00224f] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {processing || paymentSubmitted ? (
                   <><Loader2 className="h-5 w-5 animate-spin" /> Processing…</>
                 ) : (
-                  `Pay ${formatCurrency(payNow)} Securely`
+                  `Pay ${formatINR(payNow)} Securely`
                 )}
               </button>
 
@@ -597,3 +812,4 @@ export default function Checkout() {
     </HotelBookingShell>
   );
 }
+

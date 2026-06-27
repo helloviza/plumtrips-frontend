@@ -11,6 +11,7 @@ interface GuestsRoomsSelectorProps {
   rooms: number;
   adults: number;
   children: number;
+  roomGuests: number;
   childrenAges: number[];
   onRoomsChange: (rooms: number) => void;
   onAdultsChange: (adults: number) => void;
@@ -74,6 +75,7 @@ export default function GuestsRoomsSelector({
   adults,
   children,
   childrenAges,
+  roomGuests,
   onRoomsChange,
   onAdultsChange,
   onChildrenChange,
@@ -211,7 +213,7 @@ export default function GuestsRoomsSelector({
           'absolute z-50 w-[280px] rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl',
           isBar ? 'left-0 top-full mt-2' : 'left-0 top-full mt-2'
         )}>
-          <div className="h-[140px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+          <div className="custom-scrollbar h-[160px] overflow-y-auto pr-1">
             {roomConfigs.map((room, idx) => (
               <div key={idx} className="border-b border-gray-100 py-3 last:border-0 first:pt-0">
                 <div className="flex items-center justify-between mb-3">

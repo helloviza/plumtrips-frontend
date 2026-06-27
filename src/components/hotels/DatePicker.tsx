@@ -114,7 +114,7 @@ export default function DatePicker({
       className={cn(
         'rounded-xl border border-gray-200 bg-white p-3 shadow-2xl',
         isBar
-          ? 'fixed z-[200]'
+          ? 'fixed z-[1200]'
           : 'absolute left-0 z-[100] mt-2'
       )}
       style={

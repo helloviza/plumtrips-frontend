@@ -1,3 +1,5 @@
+// import { useCurrency } from '../../hooks/useCurrency';
+import { formatINR } from '../../lib/flights_api';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HotelFilters from '../../components/hotels/HotelFilters';
@@ -9,10 +11,12 @@ import {
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelSearch } from '../../hooks/useHotelApi';
-import { calculateNights, formatCurrency } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
+import { getHotelTotalPayable, getRoomOnlinePayable } from '../../lib/hotelPricing';
 import Button from '../../components/ui/Button';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
+// import { formatINR } from '../../lib/flights_api';
 
 // ── Musafir colour tokens ─────────────────────────────────────────────────
 const S = {
@@ -52,20 +56,13 @@ function StarRow({ count }: { count: number }) {
   );
 }
 
-function HotelCard({ 
-  hotel, 
-  nights, 
-  showTotalPrice,
-  isSelected
-}: { 
-  hotel: any; 
-  nights: number; 
-  showTotalPrice: boolean;
-  isSelected?: boolean;
-}) {
+function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; nights: number; showTotalPrice: boolean; isSelected?: boolean; }) {
+  //const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const { setSelectedHotel } = useHotelStore();
-  const price = showTotalPrice ? hotel.price : Math.round(hotel.price / nights);
+  const totalPayable = showTotalPrice
+    ? getHotelTotalPayable(hotel)
+    : Math.round(getHotelTotalPayable(hotel) / nights);
 
   // Strict API mapping for ratings.
   // If no text reviews from API, just show star rating as the metric
@@ -159,7 +156,10 @@ function HotelCard({
           <div style={{ textAlign: "right", marginTop: "auto" }}>
             <div style={{ fontSize: 11, color: S.muted, marginBottom: 4, fontWeight: 500 }}>{nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}</div>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1 }}>
-              {formatCurrency(price)}
+              {formatINR(totalPayable)}
+            </div>
+            <div style={{ fontSize: 10, color: S.muted, marginTop: 4, fontWeight: 500 }}>
+              incl. taxes & fees
             </div>
             
             <button
@@ -207,7 +207,7 @@ function HotelCard({
               <div className="text-right hidden sm:block">
                 <div className="text-sm text-gray-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
                 <div className="font-extrabold text-xl text-[#00477f] leading-none">
-                  {formatCurrency(showTotalPrice ? hotel.price : Math.round(hotel.price / nights))}
+                  {formatINR(getHotelTotalPayable(hotel))}
                 </div>
               </div>
               <button
@@ -225,12 +225,13 @@ function HotelCard({
 }
 
 export default function HotelResults() {
+  //const { formatCurrency, symbol } = useCurrency();
   const navigate = useNavigate();
   const [urlParams] = useRouterSearchParams();
   const isDefault = urlParams.get('default') === 'true';
 
   const { searchParams, filters, resetFilters, sortBy, sortDirection, setSearchResultsMap, selectedHotel, selectedRooms, setSearchParams, resetBooking } = useHotelStore();
-  const { hotels: apiHotels, rawResults, loading, error, statusMessage, search } = useHotelSearch();
+  const { hotels: apiHotels, rawResults, loading, hasSearched, error, statusMessage, search } = useHotelSearch();
 
   // Local state
   const [propertySearch, setPropertySearch] = useState('');
@@ -276,7 +277,7 @@ export default function HotelResults() {
       adults: searchParams.adults,
       children: searchParams.children || undefined,
       childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
-      nationality: 'IN',
+      nationality: searchParams.nationality || 'IN',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -296,7 +297,10 @@ export default function HotelResults() {
   // ── Dynamic derived data from actual API results ─────────────────────────
   const MAX_PRICE = useMemo(() => {
     let max = 0;
-    apiHotels.forEach(h => { if(h.price > max) max = h.price; });
+    apiHotels.forEach(h => {
+      const total = getHotelTotalPayable(h);
+      if (total > max) max = total;
+    });
     return max > 0 ? max : 5000;
   }, [apiHotels]);
 
@@ -334,7 +338,10 @@ export default function HotelResults() {
     const isDefaultMax = filters.priceRange[1] === 50000;
     if (filters.priceRange[0] > 0 || !isDefaultMax) {
       const effectiveMax = isDefaultMax ? Infinity : filters.priceRange[1];
-      r = r.filter(h => h.price >= filters.priceRange[0] && h.price <= effectiveMax);
+      r = r.filter(h => {
+        const total = getHotelTotalPayable(h);
+        return total >= filters.priceRange[0] && total <= effectiveMax;
+      });
     }
 
     if (filters.starRatings.length) {
@@ -362,7 +369,7 @@ export default function HotelResults() {
 
     const dir = sortDirection === 'asc' ? 1 : -1;
     switch (sortBy) {
-      case 'cheapest': r.sort((a, b) => (a.price - b.price) * dir); break;
+      case 'cheapest': r.sort((a, b) => (getHotelTotalPayable(a) - getHotelTotalPayable(b)) * dir); break;
       case 'rating': r.sort((a, b) => (a.starRating - b.starRating) * dir); break;
       case 'reviews': r.sort((a, b) => (a.starRating - b.starRating) * dir); break;
       case 'distance': r.sort((a, b) => (parseFloat(a.distance) - parseFloat(b.distance)) * dir); break;
@@ -380,7 +387,9 @@ export default function HotelResults() {
 
   // Sticky bottom summary bar for multiple room selections
   const totalRoomsSelected = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + r.quantity, 0) : 0;
-  const totalPrice = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + (r.price * r.quantity), 0) : 0;
+  const totalPrice = selectedRooms.length
+    ? selectedRooms.reduce((sum, r) => sum + getRoomOnlinePayable(r, r.quantity), 0)
+    : 0;
 
   return (
     <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -401,7 +410,7 @@ export default function HotelResults() {
                  adults: searchParams.adults,
                  children: searchParams.children || undefined,
                  childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
-                 nationality: 'IN',
+                 nationality: searchParams.nationality || 'IN',
                });
             }} 
           />
@@ -420,7 +429,7 @@ export default function HotelResults() {
         {/* ── Results list ── */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Skeletons */}
-          {loading && (
+          {(loading || (!hasSearched && !error)) && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {statusMessage && (
                 <div className="mb-4 flex items-center justify-center gap-2 text-sm font-bold text-[#00477f] bg-blue-50 py-3 rounded-xl border border-blue-100">
@@ -459,7 +468,7 @@ export default function HotelResults() {
           )}
 
           {/* Results */}
-          {!loading && !error && (
+          {!loading && !error && hasSearched && (
             filteredHotels.length > 0 ? (
               <>
                 <div className="mb-4 flex items-center justify-between text-sm font-semibold text-gray-700">
@@ -511,7 +520,7 @@ export default function HotelResults() {
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6">
             <div>
               <div className="flex items-end gap-3 mb-1">
-                <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatCurrency(totalPrice)}</div>
+                <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatINR(totalPrice)}</div>
               </div>
               <div className="text-xs text-slate-500 font-medium">
                 {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''}

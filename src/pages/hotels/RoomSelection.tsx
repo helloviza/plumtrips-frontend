@@ -1,24 +1,217 @@
-import { useState, useEffect } from 'react';
+//import { useCurrency } from '../../hooks/useCurrency';
+import { formatINR } from '../../lib/flights_api';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  BedDouble, Maximize2, Eye,
-  CheckCircle, XCircle, Shield, Plus, Minus, Loader2, AlertTriangle,
-  UtensilsCrossed, Sparkles, Star, MapPin, 
-  Dumbbell, Wind, ConciergeBell, MessageCircle, Navigation, ChevronRight, Images, Info, Map, X
+  BedDouble, Maximize2, 
+  CheckCircle, XCircle, Loader2, AlertTriangle,
+  Star, MapPin, 
+  MessageCircle, Navigation, ChevronRight, Images, Info, Map, X
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
-import { useHotelRooms } from '../../hooks/useHotelApi';
-import type { Room } from '../../stores/hotelStore';
+import { useHotelRooms, runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
+import type { Room, PreBookResponse } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
 import toast from 'react-hot-toast';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
+import HotelSearchSummaryBar from '../../components/hotels/HotelSearchSummaryBar';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function parsePolicyDate(dStr: string): Date | null {
+  if (!dStr) return null;
+  try {
+    // Handle DD-MM-YYYY [HH:MM:SS] format from TBO
+    const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+    const parseStr = match
+      ? `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`
+      : dStr;
+    const d = new Date(parseStr);
+    return isNaN(d.getTime()) ? null : d;
+  } catch { return null; }
+}
+
+function formatPolicyDate(dStr: string): string {
+  const d = parsePolicyDate(dStr);
+  if (!d) return dStr;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function getDayBefore(dStr: string): string {
+  const d = parsePolicyDate(dStr);
+  if (!d) return formatPolicyDate(dStr);
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ── CancellationBadge — shown on each room card ───────────────────────────────
+function CancellationBadge({
+  room,
+  preBook,
+  loading,
+}: {
+  room: Room;
+  preBook: PreBookResponse | null | undefined;
+  loading: boolean;
+}) {
+  // ── Extract cancellation data from best available source ──────────────────
+  // Priority: prebook response > search room data (room._raw / room.cancelPolicies)
+
+  // 1. Policy slabs
+  const preBookPolicies: any[] = (preBook as any)?.cancelPolicies ?? [];
+  const roomPolicies: any[] = room.cancelPolicies ?? [];
+  const policies: any[] = preBookPolicies.length > 0 ? preBookPolicies : roomPolicies;
+
+  // 2. LastCancellationDate — extract from _raw search data if not in prebook
+  const rawRoom = (room as any)._raw;
+  const lastCancelDateFromRaw: string | null =
+    rawRoom?.LastCancellationDate ?? rawRoom?.lastCancellationDate ?? null;
+
+  // 3. CancellationPolicy string — from prebook or raw search data
+  const policyString: string =
+    preBook?.cancellationPolicy ??
+    room.cancellationPolicy ??
+    '';
+
+  // 4. Is refundable?
+  const isRefundable =
+    (room as any)._isRefundable === true ||
+    policies.some((p: any) => p.charge === 0) ||
+    (policyString !== '' && !policyString.toLowerCase().includes('non-refundable')) ||
+    !!lastCancelDateFromRaw;
+
+  // 5. Penalty slabs (charge > 0), sorted by fromDate
+  const penaltySlabs = policies
+    .filter((p: any) => p.charge > 0)
+    .sort((a: any, b: any) => {
+      if (!a.fromDate) return 1;
+      if (!b.fromDate) return -1;
+      return new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime();
+    });
+
+  // 6. Determine the free-cancellation deadline date string
+  // Try in order: penalty slab fromDate → synthesized from LastCancellationDate → extract from policy string
+  const firstPenaltyFromDate: string | null = penaltySlabs[0]?.fromDate ?? null;
+
+  const extractDateFromText = (text: string): string | null => {
+    const match = text.match(/before\s+(.+)/i);
+    if (!match) return null;
+    const candidate = match[1].trim();
+    const d = new Date(candidate);
+    return isNaN(d.getTime()) ? null : candidate;
+  };
+
+  const freeCancelDeadline: string | null =
+    firstPenaltyFromDate ??
+    lastCancelDateFromRaw ??
+    extractDateFromText(policyString);
+
+  // Format helpers
+  const fmtDate = (dStr: string): string => {
+    try {
+      const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+      const parseStr = match
+        ? `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`
+        : dStr;
+      const d = new Date(parseStr);
+      if (isNaN(d.getTime())) return dStr;
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return dStr; }
+  };
+
+  const dayBefore = (dStr: string): string => {
+    try {
+      const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+      const parseStr = match
+        ? `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`
+        : dStr;
+      const d = new Date(parseStr);
+      if (isNaN(d.getTime())) return fmtDate(dStr);
+      d.setDate(d.getDate() - 1);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return fmtDate(dStr); }
+  };
+
+  // When the deadline comes from lastCancelDateFromRaw or penalty slab fromDate,
+  // we want "until the day BEFORE" that date (last free day).
+  // When it comes from a "before X" string, X is already the last free day.
+  const freeCancelDisplay = freeCancelDeadline
+    ? `until ${(firstPenaltyFromDate || lastCancelDateFromRaw) ? dayBefore(freeCancelDeadline) : fmtDate(freeCancelDeadline)}`
+    : null;
+
+  return (
+    <div className="space-y-2 mb-5 max-w-md">
+      {/* Free cancellation row */}
+      {isRefundable && (
+        <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
+          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <span className="leading-snug">
+            Free Cancellation
+            {freeCancelDisplay
+              ? ` ${freeCancelDisplay}`
+              : loading
+              ? (
+                <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-600 opacity-70">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span className="text-[10px] font-medium">confirming dates…</span>
+                </span>
+              )
+              : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Non-refundable */}
+      {!isRefundable && !loading && (
+        <div className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
+          <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <span className="leading-snug">Non-Refundable</span>
+        </div>
+      )}
+
+      {/* Placeholder while loading and nothing known yet */}
+      {loading && !isRefundable && policies.length === 0 && !lastCancelDateFromRaw && (
+        <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          <span>Loading cancellation policy…</span>
+        </div>
+      )}
+
+      {/* Penalty slabs */}
+      {penaltySlabs.map((policy: any, idx: number) => {
+        const chargeText =
+          policy.chargeType === 2
+            ? `${policy.charge}% cancellation charge`
+            : `${policy.currency || 'AED'} ${policy.charge} cancellation charge`;
+        const fromText = policy.fromDate
+          ? `From ${fmtDate(policy.fromDate)}`
+          : 'After free cancellation period';
+
+        return (
+          <div
+            key={idx}
+            className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm"
+          >
+            <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            <span className="leading-snug">{fromText} — {chargeText}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function RoomSelection() {
+  // const { formatCurrency, symbol } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { searchParams, selectedRooms, addRoom, removeRoom, updateRoomQuantity, selectedHotel, searchResultsMap, clearRooms } = useHotelStore();
+  const {
+    searchParams, selectedRooms, addRoom, removeRoom,
+    selectedHotel, searchResultsMap, clearRooms,
+    traceId, setPreBookResponses, setPreBookResponse, setBookingCode, setBookingCodes,
+  } = useHotelStore();
   const { rooms, loading, error, loadRoomsFromResult } = useHotelRooms();
 
   const [showAllPhotos, setShowAllPhotos] = useState(false);
@@ -26,6 +219,12 @@ export default function RoomSelection() {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Per-room prebook results keyed by BookingCode
+  const [roomPreBooks, setRoomPreBooks] = useState<Record<string, PreBookResponse>>({});
+  const [preBookingRoomIds, setPreBookingRoomIds] = useState<Set<string>>(new Set());
+  const [preBookErrors, setPreBookErrors] = useState<Record<string, string>>({});
+  const preBookFiredRef = useRef<string>(''); // tracks hotel id to avoid re-firing on same hotel
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
 
@@ -35,10 +234,77 @@ export default function RoomSelection() {
     if (rawResult) {
       clearRooms();
       loadRoomsFromResult(rawResult);
+      setRoomPreBooks({});
+      preBookFiredRef.current = '';
     } else {
       navigate('/hotels/results');
     }
-  }, [id, searchResultsMap, clearRooms, loadRoomsFromResult, navigate]);
+  }, [id]);
+
+  // Fire prebook for ALL rooms in parallel once rooms are loaded.
+  // Sequentially staggered by 200ms between each call to avoid hammering TBO.
+  useEffect(() => {
+    if (rooms.length === 0 || !traceId?.trim()) return;
+    if (preBookFiredRef.current === id) return; // already fired for this hotel
+    preBookFiredRef.current = id ?? '';
+
+    const ids = new Set(rooms.map(r => (r as any)._bookingCode ?? r.id));
+    setPreBookingRoomIds(ids);
+
+    rooms.forEach((room, index) => {
+      const code = (room as any)._bookingCode ?? room.id ?? '';
+      if (!code) return;
+
+      // Stagger by 200ms per room to avoid rate limiting
+      setTimeout(async () => {
+        try {
+          const result = await runHotelPreBook(code, traceId);
+          setRoomPreBooks(prev => ({ ...prev, [code]: result }));
+        } catch (err) {
+          console.warn('[RoomSelection] prebook failed for room', index, code, ':', formatHotelTraceApiError(err, ''));
+        } finally {
+          setPreBookingRoomIds(prev => {
+            const next = new Set(prev);
+            next.delete(code);
+            return next;
+          });
+        }
+      }, index * 200);
+    });
+  }, [rooms, traceId, id]);
+
+  // Fetch prebook for a single room on-demand (called on select)
+  const fetchPreBookForRoom = async (room: Room) => {
+    const code = (room as any)._bookingCode ?? room.id ?? '';
+    if (!code || !traceId?.trim() || roomPreBooks[code]) return;
+    setPreBookingRoomIds(prev => new Set(prev).add(code));
+    try {
+      const result = await runHotelPreBook(code, traceId);
+      setRoomPreBooks(prev => ({ ...prev, [code]: result }));
+    } catch (err) {
+      console.warn('[RoomSelection] on-demand prebook failed for', code);
+    } finally {
+      setPreBookingRoomIds(prev => { const n = new Set(prev); n.delete(code); return n; });
+    }
+  };
+
+  // Persist selected rooms' prebook results to store so GuestDetails skips re-fetching
+  useEffect(() => {
+    if (selectedRooms.length === 0) return;
+    const responses = selectedRooms.map(room => {
+      const code = (room as any)._bookingCode ?? room.id ?? '';
+      return roomPreBooks[code] ?? null;
+    });
+    if (responses.some(r => r !== null)) {
+      setPreBookResponses(responses);
+      const first = responses.find(r => r !== null);
+      if (first) {
+        setPreBookResponse(first);
+        setBookingCode(first.bookingCode);
+      }
+      setBookingCodes(responses.map((r, i) => r?.bookingCode ?? ((selectedRooms[i] as any)._bookingCode ?? selectedRooms[i]?.id ?? '')));
+    }
+  }, [roomPreBooks, selectedRooms]);
 
   const hotel = selectedHotel;
 
@@ -48,11 +314,13 @@ export default function RoomSelection() {
     </div>
   );
 
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
-      <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
-    </div>
-  );
+  if (loading && rooms.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f7f4]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#003580]" />
+      </div>
+    );
+  }
 
   if (error) return (
     <div className="flex min-h-screen items-center justify-center px-4 bg-[#f8f7f4]">
@@ -63,7 +331,14 @@ export default function RoomSelection() {
     </div>
   );
 
-  const lowestRoomTotal = rooms.reduce((min, room) => room.price < min ? room.price : min, Infinity);
+  // Full payable (base + taxes) — same as results card and subsequent steps
+  const lowestRoomTotal = rooms.reduce(
+    (min, room) => {
+      const total = room.price + (room.taxesAndFees ?? 0);
+      return total < min ? total : min;
+    },
+    Infinity
+  );
 
   const scrollToRooms = () => {
     document.getElementById('rooms-list')?.scrollIntoView({ behavior: 'smooth' });
@@ -71,21 +346,36 @@ export default function RoomSelection() {
 
   const getSelectedRoom = (roomId: string) => selectedRooms.find(r => r.id === roomId);
   const totalRoomsSelected = selectedRooms.reduce((sum, r) => sum + r.quantity, 0);
-  const totalPrice = selectedRooms.reduce((sum, r) => sum + (r.price * r.quantity), 0);
+  // Include taxes in the bottom bar total — matches Results card and subsequent steps
+  const totalPrice = selectedRooms.reduce((sum, r) => sum + ((r.price + (r.taxesAndFees ?? 0)) * r.quantity), 0);
 
   const handleAddRoom = (room: Room) => {
-    clearRooms();
-    addRoom(room);
+    const totalSelected = selectedRooms.reduce((sum, r) => sum + r.quantity, 0);
+    const roomsNeeded = searchParams.rooms;
+
+    if (totalSelected >= roomsNeeded) {
+      clearRooms();
+      addRoom(room);
+      if (roomsNeeded > 1) {
+        toast(`Room replaced. Select ${roomsNeeded} room type${roomsNeeded !== 1 ? 's' : ''} total.`, { icon: 'ℹ️' });
+      }
+    } else {
+      addRoom(room);
+      const newTotal = totalSelected + 1;
+      if (newTotal < roomsNeeded) {
+        toast(`Room added. Select ${roomsNeeded - newTotal} more room${roomsNeeded - newTotal !== 1 ? 's' : ''}.`, { icon: 'ℹ️' });
+      }
+    }
+    // Trigger prebook for this room immediately on selection
+    void fetchPreBookForRoom(room);
   };
-  
-  const cancelDateMatch = rooms[0]?.cancellationPolicy.match(/until (\d+ [a-zA-Z]+ \d+)/i);
-  const cancelDateStr = cancelDateMatch ? cancelDateMatch[1] : "8 Jun 2026";
 
   const totalGuests = searchParams.adults + searchParams.children;
 
   return (
     <HotelBookingShell activeStep={1} maxWidth="7xl">
       <div className="font-sans pb-24 w-full">
+        <HotelSearchSummaryBar />
         {/* Top Gallery Section */}
         <div className="mb-6 rounded-2xl overflow-hidden bg-white p-2 shadow-sm border border-slate-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[400px]">
@@ -202,8 +492,13 @@ export default function RoomSelection() {
               <div className="flex flex-col gap-6">
                 {rooms.map((room, index) => {
                   const selected = getSelectedRoom(room.id);
-                  const totalStay = room.price;
+                  // Always show the full payable total (base + taxes) — same formula
+                  // used by the hotel card on results page and every subsequent step.
+                  const totalStay = room.price + (room.taxesAndFees ?? 0);
                   const roomImage = room.images?.[0] || hotel.images?.[(index + 1) % (hotel.images.length || 1)];
+                  const bookingCode = (room as any)._bookingCode ?? room.id ?? '';
+                  const preBook = roomPreBooks[bookingCode];
+                  const isPreBookLoading = preBookingRoomIds.has(bookingCode);
                   
                   return (
                     <article
@@ -235,8 +530,7 @@ export default function RoomSelection() {
                         <div className="flex justify-between items-start gap-4 mb-2">
                           <h3 className="text-xl font-extrabold text-slate-900 tracking-tight leading-tight">{room.name}</h3>
                           <div className="flex flex-col items-end gap-1.5 shrink-0 relative z-10">
-                            <span className="bg-blue-50 text-[#00477f] text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-blue-100 shadow-sm">Top Pick</span>
-                            <span className="bg-rose-50 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-rose-100 shadow-sm">Non-Refundable</span>
+                            {index === 0 && <span className="bg-blue-50 text-[#00477f] text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-blue-100 shadow-sm">Top Pick</span>}
                           </div>
                         </div>
                         
@@ -246,17 +540,12 @@ export default function RoomSelection() {
                           </span>
                         </div>
 
-                        {/* Cancellation Policy Boxes */}
-                        <div className="space-y-2.5 mb-5 max-w-md">
-                          <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
-                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            <span className="leading-snug">Free cancellation until {cancelDateStr} 23:59</span>
-                          </div>
-                          <div className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
-                            <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                            <span className="leading-snug">100% cancellation charge from {cancelDateStr.replace(/\d+/, (d) => String(Number(d)+1))}</span>
-                          </div>
-                        </div>
+                        {/* Cancellation Policy — enriched with prebook data in background */}
+                        <CancellationBadge
+                          room={room}
+                          preBook={preBook}
+                          loading={isPreBookLoading}
+                        />
 
                         {/* Mandatory Tax Box */}
                         {room.additionalCharges ? (
@@ -277,8 +566,10 @@ export default function RoomSelection() {
                         {/* Card Footer */}
                         <div className="mt-auto pt-5 border-t border-slate-100 flex items-end justify-between">
                           <div>
-                            <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">{formatCurrency(totalStay)}</div>
-                            <div className="text-xs text-slate-500 font-medium tracking-wide uppercase">Total • {nights} Night{nights !== 1 ? 's' : ''}</div>
+                            <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">{formatINR(totalStay)}</div>
+                            <div className="text-xs text-slate-500 font-medium tracking-wide uppercase">
+                              {nights} Night{nights !== 1 ? 's' : ''} · incl. taxes &amp; fees
+                            </div>
                           </div>
                           
                           {selected ? (
@@ -310,9 +601,11 @@ export default function RoomSelection() {
                 <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white">
                   <div className="text-xs font-bold text-slate-500 tracking-wide uppercase mb-1">Starting from</div>
                   <div className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter mb-1">
-                    {formatCurrency(lowestRoomTotal)}
+                    {formatINR(lowestRoomTotal)}
                   </div>
-                  <div className="text-xs font-medium text-slate-500 mb-4">per night / estimated</div>
+                  <div className="text-xs font-medium text-slate-500 mb-4">
+                    {nights > 1 ? `for ${nights} nights · incl. taxes` : 'incl. taxes & fees'}
+                  </div>
                   <Button fullWidth size="lg" className="bg-orange-600 hover:bg-orange-700 font-bold rounded-xl text-base shadow-lg shadow-orange-600/20" onClick={scrollToRooms}>
                     View Rooms &rarr;
                   </Button>
@@ -403,18 +696,32 @@ export default function RoomSelection() {
             <div>
               <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Your Selection</div>
               <div className="flex items-end gap-3">
-                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{formatCurrency(totalPrice)}</div>
+                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{formatINR(totalPrice)}</div>
                 <div className="text-sm font-medium text-slate-500 mb-0.5">
                   {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} • {nights} night{nights !== 1 ? 's' : ''}
                 </div>
               </div>
+              {searchParams.rooms > 1 && totalRoomsSelected < searchParams.rooms && (
+                <div className="text-xs text-amber-600 font-medium mt-1">
+                  Select {searchParams.rooms - totalRoomsSelected} more room{searchParams.rooms - totalRoomsSelected !== 1 ? 's' : ''} to proceed
+                </div>
+              )}
             </div>
             <Button
               size="lg"
-              onClick={() => navigate('/hotels/guest-details')}
-              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-10 shadow-lg shadow-emerald-600/20 text-lg"
+              onClick={() => {
+                if (totalRoomsSelected < searchParams.rooms) {
+                  toast.error(`Please select ${searchParams.rooms} room${searchParams.rooms !== 1 ? 's' : ''}. You have selected ${totalRoomsSelected}.`);
+                  return;
+                }
+                navigate('/hotels/guest-details');
+              }}
+              disabled={totalRoomsSelected < searchParams.rooms}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl px-10 shadow-lg shadow-emerald-600/20 text-lg"
             >
-              Book Now
+              {totalRoomsSelected < searchParams.rooms
+                ? `Select ${searchParams.rooms - totalRoomsSelected} More Room${searchParams.rooms - totalRoomsSelected !== 1 ? 's' : ''}`
+                : 'Book Now'}
             </Button>
           </div>
         </div>
@@ -449,3 +756,4 @@ export default function RoomSelection() {
     </HotelBookingShell>
   );
 }
+

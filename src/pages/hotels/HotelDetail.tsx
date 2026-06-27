@@ -1,3 +1,6 @@
+// import { useCurrency } from '../../hooks/useCurrency';
+
+import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +12,8 @@ import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelDetail, useHotelRooms } from '../../hooks/useHotelApi';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { formatCurrency, calculateNights } from '../../lib/utils';
+import { calculateNights } from '../../lib/utils';
+import { getHotelTotalPayable } from '../../lib/hotelPricing';
 import toast from 'react-hot-toast';
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -29,6 +33,7 @@ const MOCK_REVIEWS = [
 ];
 
 export default function HotelDetail() {
+  //const { formatCurrency, symbol } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { searchParams, setSelectedHotel, searchResultsMap, selectedHotel: storeHotel, clearRooms } = useHotelStore();
@@ -402,19 +407,19 @@ export default function HotelDetail() {
               <div className="mb-4">
                 {hotel.originalPrice && (
                   <div className="text-sm text-gray-500 line-through">
-                    {formatCurrency(hotel.originalPrice)}
+                    {formatINR(hotel.originalPrice)}
                   </div>
                 )}
                 <div className="flex flex-col text-right">
                   <span className="text-3xl font-black text-[#00477f] tabular-nums leading-none">
-                    {formatCurrency(hotel.price)}
+                    {formatINR(getHotelTotalPayable(hotel))}
                   </span>
                 </div>
                 <div className="text-sm text-gray-500">
-                  Total for {nights} night{nights !== 1 ? 's' : ''}
-                  {nights > 0 && hotel.price > 0 && (
+                  Total for {nights} night{nights !== 1 ? 's' : ''} (incl. taxes & fees)
+                  {nights > 0 && getHotelTotalPayable(hotel) > 0 && (
                     <span className="ml-1 text-gray-400">
-                      (≈ {formatCurrency(Math.round(hotel.price / nights))}/night)
+                      (≈ {formatINR(Math.round(getHotelTotalPayable(hotel) / nights))}/night)
                     </span>
                   )}
                 </div>
@@ -457,8 +462,8 @@ export default function HotelDetail() {
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-200 bg-white p-4 lg:hidden">
         <div className="flex items-center justify-between">
           <div className="text-right">
-            <div className="text-2xl font-bold text-[#003580]">{formatCurrency(hotel.price)}</div>
-            <div className="text-xs text-gray-500">{nights} night{nights !== 1 ? 's' : ''}</div>
+            <div className="text-2xl font-bold text-[#003580]">{formatINR(getHotelTotalPayable(hotel))}</div>
+            <div className="text-xs text-gray-500">{nights} night{nights !== 1 ? 's' : ''} · incl. taxes</div>
           </div>
           <Button onClick={handleSelectRooms} size="lg">
             Select Rooms

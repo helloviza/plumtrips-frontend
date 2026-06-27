@@ -5,7 +5,7 @@ import DatePicker from './DatePicker';
 import GuestsRoomsSelector from './GuestsRoomsSelector';
 import { useHotelStore } from '../../stores/hotelStore';
 import { getCountries, type TboCountry } from '../../services/hotelApi';
-// import NationalitySelector from './NationalitySelector';
+import NationalitySelector from './NationalitySelector';
 import { calculateNights, cn } from '../../lib/utils';
 import { HOTEL_NAVY, HOTEL_NAVY_HOVER, HOTEL_SEARCH_SHADOW } from './hotelTheme';
 
@@ -64,12 +64,12 @@ export default function HotelSearchBar({
           borderRadius: variant === 'results' ? 0 : 14,
           boxShadow: variant === 'results' ? "none" : "0 8px 30px rgba(0,0,0,0.12)",
           position: "relative",
-          zIndex: 2,
+          zIndex: 50,
           minHeight: 64
         }}
       >
         {/* Destination */}
-        <div style={{ flexShrink: 0, minWidth: 240, maxWidth: 320, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 50, flexShrink: 0, minWidth: 240, maxWidth: 320, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Destination</FieldLabel>
           <LocationAutocomplete
             variant="bar"
@@ -83,7 +83,7 @@ export default function HotelSearchBar({
         </div>
 
         {/* Check-in */}
-        <div style={{ flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 40, flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Check In</FieldLabel>
           <DatePicker
             variant="bar"
@@ -103,7 +103,7 @@ export default function HotelSearchBar({
         </div>
 
         {/* Check-out */}
-        <div style={{ flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 30, flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>
             Check Out
             {nights > 0 && (
@@ -128,7 +128,7 @@ export default function HotelSearchBar({
         </div>
 
         {/* Guests */}
-        <div style={{ flexShrink: 0, minWidth: 200, maxWidth: 280, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 20, flexShrink: 0, minWidth: 200, maxWidth: 280, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
           <FieldLabel>Guest</FieldLabel>
           <GuestsRoomsSelector
             variant="bar"
@@ -143,6 +143,17 @@ export default function HotelSearchBar({
             onChildrenAgesChange={(childrenAges) => setSearchParams({ childrenAges })}
             onRoomGuestsChange={(roomGuests) => setSearchParams({ roomGuests })}
             error={errors.guests}
+          />
+        </div>
+
+        {/* Nationality */}
+        <div style={{ zIndex: 10, flexShrink: 0, minWidth: 150, maxWidth: 200, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+          <FieldLabel>Nationality</FieldLabel>
+          <NationalitySelector
+            variant="bar"
+            value={searchParams.nationality || 'IN'}
+            onChange={(nationality) => setSearchParams({ nationality })}
+            error={errors.nationality}
           />
         </div>
 
