@@ -115,6 +115,7 @@ fareBreakdown?: Array<{
   fareVariants?: DisplayFlight[]; // all fare options for same physical flight
   cancellationPolicies?: TBOCancellationPolicy[]; // TBO policies for cancellation & reschedule
   itineraryLegs?: DisplayFlight[]; // multi-city display legs from one combined TBO ResultIndex
+  fareTiers?: FareTier[]; 
 }
 
 export interface FareTier {
@@ -276,6 +277,25 @@ export interface TBOFlightSegment {
   Status: string;
   Baggage?: string;
   CabinBaggage?: string;
+    SupplierFareClass?: string;
+  CabinClass?: number;
+  TripIndicator?: number;
+  SegmentIndicator?: number;
+  FlightInfoIndex?: string;
+  Remark?: string | null;
+  FareClassification?: { Color?: string; Type?: string };
+}
+
+export interface TBOMiniFareRule {
+  CFARExcludedDetails: null | unknown;
+  JourneyPoints: string;
+  Type: "Cancellation" | "Reissue" | string;
+  From: string;
+  To: string;
+  Unit: string;
+  Details: string;
+  OnlineReissueAllowed: boolean;
+  OnlineRefundAllowed: boolean;
 }
 
 export interface TBOFlightResult {
@@ -305,6 +325,24 @@ export interface TBOFlightResult {
   Availability: number;
   FlightStatus: string;
   Status: string;
+
+  MiniFareRules?: TBOMiniFareRule[][];
+  FareInclusions?: string[];
+  FareInclusionsList?: { Key: string; Value: string }[];
+  AirlineCode?: string;
+  ValidatingAirline?: string;
+  LastTicketDate?: string | null;
+  GSTAllowed?: boolean;
+  IsCouponAppilcable?: boolean;
+  IsGSTMandatory?: boolean;
+  IsPassportFullDetailRequiredAtBook?: boolean;
+  IsBookableIfSeatNotAvailable?: boolean;
+  IsExclusiveFare?: boolean;
+  IsFreeMealAvailable?: boolean;
+  IsHoldAllowedWithSSR?: boolean;
+  IsHoldMandatoryWithSSR?: boolean;
+  SmartChoiceRanking?: number;
+  NonStopFirstRanking?: number;
 }
 
 export interface TBOSearchResponse {

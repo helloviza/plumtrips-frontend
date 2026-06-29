@@ -18,6 +18,8 @@ interface Step1Props {
   fareChanged: boolean;
   updatedFare: number | null;
   fareChangeMessage?: string | null;
+  /** True when fareQuote was already run on the Results page — skip the spinner */
+  fareAlreadyConfirmed?: boolean;
   onLockFare: () => void;
   onAcceptNewFare: () => void;
   onAbort: () => void;
@@ -27,6 +29,7 @@ export default function BookingStep1FareReview({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   isInternational, loading, error,
   fareChanged, updatedFare, fareChangeMessage,
+  fareAlreadyConfirmed = false,
   onLockFare, onAcceptNewFare, onAbort,
 }: Step1Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
@@ -130,17 +133,36 @@ export default function BookingStep1FareReview({
 
       {/* CTA */}
       {!fareChanged && (
-        <button
-          onClick={onLockFare}
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black text-base py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 mt-2"
-        >
-          {loading ? (
-            <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Confirming fare with airline…</>
-          ) : (
-            <>Lock Fare & Enter Details →</>
-          )}
-        </button>
+        fareAlreadyConfirmed ? (
+          /* Fare was already verified when user picked this flight — show
+             a confirmed badge + instant continue button (no spinner). */
+          <div>
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3 mb-3">
+              <span className="text-emerald-600 text-lg">✓</span>
+              <span className="text-sm font-bold text-emerald-700">
+                Fare verified with airline — price is locked in.
+              </span>
+            </div>
+            <button
+              onClick={onLockFare}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-base py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 mt-2"
+            >
+              Continue to Passenger Details →
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onLockFare}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black text-base py-4 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-3 mt-2"
+          >
+            {loading ? (
+              <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Confirming fare with airline…</>
+            ) : (
+              <>Lock Fare & Enter Details →</>
+            )}
+          </button>
+        )
       )}
       <p className="text-xs text-slate-400 text-center mt-3">
         Price confirmed with the airline in real time. No surprise charges at checkout.
@@ -254,4 +276,3 @@ function FlightDetailCard({
     </div>
   );
 }
-

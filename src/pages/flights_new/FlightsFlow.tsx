@@ -18,6 +18,8 @@ import ResultsPage from "./ResultsPage";
 import BookingPage from "./BookingPage";
 import ConfirmationPage from "./ConfirmationPage";
 import type { SearchForm, DisplayFlight, FareTier, Airport } from "../../lib/types_t";
+import { apiFareQuote, apiGetSSRForLegs } from "../../lib/flights_api";
+import type { SSRResult, FareQuoteResult } from "../../lib/flights_api";
 
 export type CityLeg = { from: Airport; to: Airport; departDate: string };
 
@@ -58,6 +60,10 @@ interface FlightState {
   passengerNames?: string[];
   contactEmail?: string;
   totalPaid?: number;
+
+  // Pre-fetched on fare selection — available immediately when BookingPage mounts
+  prefetchedFareQuote?: FareQuoteResult | null;
+  prefetchedSSR?: (SSRResult | null)[] | null;
 }
 
 const DEFAULT_STATE: FlightState = {
@@ -183,6 +189,77 @@ function deriveSearchKey(form: SearchForm | null, legs?: CityLeg[]): string {
   return legsKey ? `${base}__${legsKey}` : base;
 }
 
+// ── Prefetch helper — fires fareQuote then SSR sequentially on fare selection ──
+//
+// WHY SEQUENTIAL (not parallel):
+//   TBO requires the fare-quoted ResultIndex for SSR. Sending the original
+//   search ResultIndex to SSR returns ErrorCode 27 "No SSR details found."
+//   The correct order is: FareQuote → get updated ResultIndex → SSR.
+//
+// WHY pinnedFlight (no fareVariants):
+//   apiFareQuote iterates flight.fareVariants and quotes ALL of them.
+//   We strip fareVariants so it only quotes the ONE tier the user selected.
+function _triggerPrefetch(
+  allFlights: DisplayFlight[],
+  selectedTiers: FareTier[],
+  setState: React.Dispatch<React.SetStateAction<FlightState>>,
+  persist: (s: FlightState) => void,
+) {
+  // Build a "pinned" flight for each leg — locked to the user's chosen resultIndex only.
+  // Stripping fareVariants prevents apiFareQuote from quoting all other variants.
+  const pinnedFlights: DisplayFlight[] = allFlights.map((f, i) => ({
+    ...f,
+    resultIndex:  selectedTiers[i]?.resultIndex ?? f.resultIndex,
+    fareVariants: undefined,
+    fareTiers:    undefined,
+  }));
+
+  // Step 1: FareQuote the primary (outbound) flight first.
+  // Step 2: Use the resultIndex returned by FareQuote for SSR — NOT the original one.
+  //         TBO ErrorCode 27 occurs when SSR receives a non-fare-quoted resultIndex.
+  apiFareQuote(pinnedFlights[0])
+    .then((fqResult) => {
+      // Store fareQuote result immediately so Step 1 can render without waiting for SSR
+      setState((prev) => {
+        const next: FlightState = { ...prev, prefetchedFareQuote: fqResult, prefetchedSSR: null };
+        persist(next);
+        return next;
+      });
+
+      // Build SSR flights using the fare-quoted resultIndex from each leg.
+      // For the primary leg: use the resultIndex TBO returned from fareQuote.
+      // For additional legs (round-trip return, multi-city): use their pinned resultIndex
+      // as-is — they'll be fare-quoted separately at booking time if needed.
+      const quotedResultIndex = fqResult.tiers[0]?.resultIndex ?? pinnedFlights[0].resultIndex;
+      const ssrFlights: DisplayFlight[] = pinnedFlights.map((f, i) => ({
+        ...f,
+        resultIndex: i === 0 ? quotedResultIndex : f.resultIndex,
+      }));
+
+      return apiGetSSRForLegs(ssrFlights);
+    })
+    .then((ssrResult) => {
+      setState((prev) => {
+        const next: FlightState = { ...prev, prefetchedSSR: ssrResult };
+        persist(next);
+        return next;
+      });
+    })
+    .catch((err) => {
+      // Swallow prefetch errors — BookingPage will fetch live as fallback
+      console.warn("[prefetch] fareQuote/SSR prefetch failed:", err?.message ?? err);
+      setState((prev) => {
+        const next: FlightState = {
+          ...prev,
+          prefetchedFareQuote: prev.prefetchedFareQuote ?? null,
+          prefetchedSSR: null,
+        };
+        persist(next);
+        return next;
+      });
+    });
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function FlightsFlow() {
   const navigate = useNavigate();
@@ -256,7 +333,10 @@ export default function FlightsFlow() {
     window.scrollTo({ top: 0 });
   }
 
-  // [F3] handleBook uses functional setState for the same stale-closure reason
+  // [F3] handleBook uses functional setState for the same stale-closure reason.
+  // For the final booking leg (one-way, second round-trip leg, last multi-city leg),
+  // we fire apiFareQuote + apiGetSSRForLegs in parallel RIGHT HERE so BookingPage
+  // receives pre-fetched data and skips the Step-1 spinner and Step-3 SSR wait.
   const handleBook = useCallback((flight: DisplayFlight, tier: FareTier, legIndex?: number) => {
     setState((prevState) => {
       const tripType = prevState.searchForm?.tripType;
@@ -266,8 +346,8 @@ export default function FlightsFlow() {
       // ── Round-Trip ──────────────────────────────────────────────────────────
       if (tripType === "roundTrip") {
         if (!prevState.selectedFlight) {
-          // First leg — stay on results
-          const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier };
+          // First leg — stay on results, no prefetch yet
+          const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuote: null, prefetchedSSR: null };
           persistState(next);
 
           const existing = Object.fromEntries(new URLSearchParams(location.search));
@@ -282,13 +362,19 @@ export default function FlightsFlow() {
 
           return next;
         } else {
-          // Second leg — go to booking
+          // Second leg — go to booking, prefetch now
           const next: FlightState = {
             ...prevState,
             selectedReturnFlight: flight,
             selectedReturnTier: tier,
+            prefetchedFareQuote: null,
+            prefetchedSSR: null,
           };
           persistState(next);
+
+          // Fire prefetch for outbound + return flights
+          const outbound = prevState.selectedFlight;
+          _triggerPrefetch([outbound, flight], [tier], setState, persistState);
 
           goTo("booking", {
             ...baseParams,
@@ -314,8 +400,14 @@ export default function FlightsFlow() {
             selectedFlight: newLegs[0]!.flight,
             selectedTier:   newLegs[0]!.tier,
             selectedLegs:   newLegs,
+            prefetchedFareQuote: null,
+            prefetchedSSR: null,
           };
           persistState(next);
+
+          // Fire prefetch for all multi-city legs
+          const allFlights = (newLegs as { flight: DisplayFlight; tier: FareTier }[]).map(l => l.flight);
+          _triggerPrefetch(allFlights, (newLegs as { flight: DisplayFlight; tier: FareTier }[]).map(l => l.tier), setState, persistState);
 
           const legParams = newLegs.reduce<Record<string, string>>((acc, leg, i) => {
             if (leg) {
@@ -328,7 +420,7 @@ export default function FlightsFlow() {
           goTo("booking", { ...baseParams, ...legParams });
           return next;
         } else {
-          const next: FlightState = { ...prevState, selectedLegs: newLegs };
+          const next: FlightState = { ...prevState, selectedLegs: newLegs, prefetchedFareQuote: null, prefetchedSSR: null };
           persistState(next);
 
           const existing = Object.fromEntries(new URLSearchParams(location.search));
@@ -346,8 +438,11 @@ export default function FlightsFlow() {
       }
 
       // ── One-Way ─────────────────────────────────────────────────────────────
-      const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier };
+      const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuote: null, prefetchedSSR: null };
       persistState(next);
+
+      // Fire prefetch for the single flight
+      _triggerPrefetch([flight], [tier], setState, persistState);
 
       goTo("booking", {
         ...baseParams,
@@ -445,6 +540,8 @@ export default function FlightsFlow() {
           infants={state.searchForm.infants}
           forcePassport={isIntl}
           isInternational={isIntl}
+          prefetchedFareQuote={state.prefetchedFareQuote}
+          prefetchedSSR={state.prefetchedSSR}
           onBack={() => goTo("results", state.searchForm ? searchFormToParams(state.searchForm) : undefined)}
           onConfirm={handleConfirm}
         />

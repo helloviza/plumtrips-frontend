@@ -212,34 +212,15 @@ function FareModal({
   onClose: () => void;
   onBook: (tier: FareTier) => void;
 }) {
-  const [selected, setSelected] = useState(1);
-  const [tiers, setTiers] = useState<FareTier[]>([]);
-  const [quoteLoading, setQuoteLoading] = useState(true);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [fareChanged, setFareChanged] = useState(false);
   const isMultiLeg = totalLegs && totalLegs > 1;
+  const tiers: FareTier[] = flight.fareTiers ?? [];
+  const recIdx = tiers.findIndex(t => t.recommended);
+  const [selected, setSelected] = useState(recIdx >= 0 ? recIdx : 0);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
-
-  useEffect(() => {
-    setQuoteLoading(true);
-    setQuoteError(null);
-    apiFareQuote(flight)
-      .then((result: FareQuoteResult) => {
-        setTiers(result.tiers);
-        setFareChanged(result.fareChanged);
-        const recIdx = result.tiers.findIndex(t => t.recommended);
-        setSelected(recIdx >= 0 ? recIdx : Math.min(1, result.tiers.length - 1));
-        setQuoteLoading(false);
-      })
-      .catch((e: unknown) => {
-        setQuoteError(e instanceof Error ? e.message : "Failed to fetch fare details");
-        setQuoteLoading(false);
-      });
-  }, [flight.resultIndex]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
@@ -248,12 +229,13 @@ function FareModal({
         onClick={onClose}
       />
       <div style={{
-  position: "relative", width: "100%", maxWidth: 780,
-  background: "#fff", borderRadius: 20, maxHeight: "92dvh",
-  display: "flex", flexDirection: "column", overflow: "hidden",
-  boxShadow: "0 24px 80px rgba(0,48,95,0.30)",
-}}>
-        {/* Modal header */}
+        position: "relative", width: "100%", maxWidth: 780,
+        background: "#fff", borderRadius: 20, maxHeight: "92dvh",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        boxShadow: "0 24px 80px rgba(0,48,95,0.30)",
+      }}>
+
+        {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "14px 20px", borderBottom: `1px solid ${S.border}`, flexShrink: 0,
@@ -263,10 +245,7 @@ function FareModal({
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {flight.airline} · {flight.flightNumber}
               {isMultiLeg && (
-                <span style={{
-                  marginLeft: 8, fontSize: 10, fontWeight: 700, color: "#7c3aed",
-                  background: "#ede9fe", padding: "2px 7px", borderRadius: 20,
-                }}>
+                <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#ede9fe", padding: "2px 7px", borderRadius: 20 }}>
                   Leg {(legIndex ?? 0) + 1} of {totalLegs}
                 </span>
               )}
@@ -275,65 +254,36 @@ function FareModal({
               {flight.departTime} → {flight.arriveTime} · {flight.durationLabel} · {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop`}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 32, height: 32, borderRadius: "50%", border: `1px solid ${S.border}`,
-              background: S.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
+          <button onClick={onClose} style={{
+            width: 32, height: 32, borderRadius: "50%", border: `1px solid ${S.border}`,
+            background: S.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
             <svg width={14} height={14} fill="none" stroke={S.navyDeep} strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {fareChanged && (
-          <div style={{
-            padding: "10px 20px", background: "#fffbeb", borderBottom: "1px solid #fef3c7",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-            <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600 }}>
-              The fare has changed since your search. The updated price is shown below.
-            </div>
-          </div>
-        )}
-
+        {/* Body */}
         <div style={{ overflowY: "auto", flex: 1, padding: "20px" }}>
-          {quoteLoading ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{ borderRadius: 16, border: `1px solid ${S.border}`, padding: 16 }}>
-                  {[60, 80, 40, 40, 40].map((w, j) => (
-                    <div key={j} style={{ height: j === 0 ? 16 : j === 1 ? 22 : 12, background: "#e2ecf7", borderRadius: 6, width: `${w}%`, marginBottom: 8 }} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          ) : quoteError ? (
+          {tiers.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 15, color: S.navyDeep, marginBottom: 4 }}>Could not load fares</div>
-              <div style={{ fontSize: 12, color: S.muted, marginBottom: 20 }}>{quoteError}</div>
-              <button
-                onClick={() => {
-                  setQuoteLoading(true); setQuoteError(null);
-                  apiFareQuote(flight)
-                    .then((r: FareQuoteResult) => { setTiers(r.tiers); setFareChanged(r.fareChanged); setQuoteLoading(false); })
-                    .catch((e: unknown) => { setQuoteError(e instanceof Error ? e.message : "Failed"); setQuoteLoading(false); });
-                }}
-                style={{ background: S.accent, color: "#fff", border: "none", borderRadius: 10, padding: "10px 24px", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "'Sora',sans-serif" }}
-              >
-                Retry
-              </button>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>✈️</div>
+              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 15, color: S.navyDeep, marginBottom: 4 }}>
+                No fare options available
+              </div>
+              <div style={{ fontSize: 12, color: S.muted }}>This flight has no selectable fare tiers.</div>
             </div>
           ) : (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
                 {tiers.map((tier, idx) => (
-                  <FareTierCard key={tier.name} tier={tier} selected={selected === idx} onSelect={() => setSelected(idx)} />
+                  <FareTierCard
+                    key={tier.resultIndex + idx}
+                    tier={tier}
+                    selected={selected === idx}
+                    onSelect={() => setSelected(idx)}
+                  />
                 ))}
               </div>
               <p style={{ fontSize: 10, color: S.muted, marginTop: 14, lineHeight: 1.6 }}>
@@ -344,16 +294,23 @@ function FareModal({
           )}
         </div>
 
-        {!quoteLoading && !quoteError && tiers.length > 0 && (
+        {/* Footer */}
+        {tiers.length > 0 && (
           <div style={{
             padding: "14px 20px", borderTop: `1px solid ${S.border}`,
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: S.surface, flexShrink: 0, gap: 16,
           }}>
             <div>
-              <div style={{ fontSize: 10, color: S.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{tiers[selected]?.name}</div>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>{formatINR(tiers[selected]?.price ?? 0)}</div>
-              <div style={{ fontSize: 11, color: S.muted }}>per adult · {tiers[selected]?.cancellationFee}</div>
+              <div style={{ fontSize: 10, color: S.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {tiers[selected]?.name}
+              </div>
+              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>
+                {formatINR(tiers[selected]?.price ?? 0)}
+              </div>
+              <div style={{ fontSize: 11, color: S.muted }}>
+                per adult · {tiers[selected]?.cancellationFee}
+              </div>
             </div>
             <button
               onClick={() => onBook(tiers[selected])}

@@ -1,5 +1,3 @@
-
-
 import type {  BookTicketInput,
   TicketLCCPassenger,
   TicketPassengerFare,
@@ -28,7 +26,7 @@ import type {  BookTicketInput,
 //     is unchanged.
 // ============================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import {
   MOCK_MODE,
@@ -41,7 +39,7 @@ import {
 import type {
   BookPassenger,
   SSRResult,
-
+  FareQuoteResult,
 } from "../../lib/flights_api";
 import { createFlightPaymentOrder, verifyFlightPayment } from "../../services/paymentApi";
 import { calcFares, BookingShell, emptyPassenger } from "./BookingShared";
@@ -74,6 +72,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 type FlightBookPassenger = BookPassenger & {
   MealDynamic?: Array<Record<string, unknown>>;
+    GSTCompanyAddress:       string;
+  GSTCompanyContactNumber: string;
+  GSTCompanyName:          string;
+  GSTNumber:               string;
+  GSTCompanyEmail:         string;
 };
 
 interface BookingPageProps {
@@ -87,6 +90,10 @@ interface BookingPageProps {
   infants: number;
   forcePassport?: boolean;
   isInternational?: boolean;
+  /** Pre-fetched fare-quote result from ResultsPage fare selection */
+  prefetchedFareQuote?: FareQuoteResult | null;
+  /** Pre-fetched SSR (seats/meals/baggage) per leg from ResultsPage fare selection */
+  prefetchedSSR?: (SSRResult | null)[] | null;
   onBack: () => void;
   onConfirm: (
     bookingId?: number,
@@ -104,6 +111,8 @@ export default function BookingPage({
   adults, children, infants,
   forcePassport = false,
   isInternational = false,
+  prefetchedFareQuote,
+  prefetchedSSR,
   onBack, onConfirm,
 }: BookingPageProps) {
   const isRoundTrip   = !!returnFlight && !!returnTier;
@@ -113,15 +122,34 @@ export default function BookingPage({
 
   // ── STATE ─────────────────────────────────────────────────
 
+  // If fare was pre-fetched on the results page, we skip Step 1's loading
+  // and go straight to displaying the confirmed fare. SSR is also pre-loaded.
+  const hasPrefetchedFare = !!prefetchedFareQuote && !prefetchedFareQuote.fareChanged;
+  const hasPrefetchedFareChange = !!prefetchedFareQuote && prefetchedFareQuote.fareChanged;
+
   const [step, setStep]     = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState<string | null>(null);
 
-  // Fare-change state
-  const [fareChanged, setFareChanged]               = useState(false);
-  const [updatedFare, setUpdatedFare]               = useState<number | null>(null);
+  // Fare-change state — seed from prefetch if available
+  const [fareChanged, setFareChanged]               = useState(hasPrefetchedFareChange);
+  const [updatedFare, setUpdatedFare]               = useState<number | null>(
+    hasPrefetchedFareChange ? (prefetchedFareQuote!.tiers[0]?.price ?? null) : null
+  );
   const [fareChangeMessage, setFareChangeMessage]   = useState<string | null>(null);
-  const [lockedFareTiers, setLockedFareTiers]       = useState<Record<number, FareTier>>({});
+  const [lockedFareTiers, setLockedFareTiers]       = useState<Record<number, FareTier>>(() => {
+    // If we have a clean (no-change) prefetched quote, seed the locked tiers immediately
+    if (!prefetchedFareQuote || prefetchedFareQuote.fareChanged) return {};
+    const quotedTiers = prefetchedFareQuote.tiers;
+    const locked: Record<number, FareTier> = {};
+    // Leg 0 — primary flight
+    const t0 = quotedTiers.find(q => q.resultIndex === tier.resultIndex)
+            ?? quotedTiers.find(q => q.name === tier.name)
+            ?? quotedTiers[0];
+    if (t0) locked[0] = t0;
+    // Leg 1 — return tier (fare-quote is per-flight; keep original returnTier)
+    return locked;
+  });
   const [pendingFareTiers, setPendingFareTiers]     = useState<Record<number, FareTier>>({});
 
   // Price-change-at-ticket state (ticketStatus === 8)
@@ -131,8 +159,8 @@ export default function BookingPage({
   const [pendingTicketInputs, setPendingTicketInputs] =
     useState<BookTicketInput[] | null>(null);
 
-  // SSR
-  const [ssrDataPerLeg, setSsrDataPerLeg] = useState<(SSRResult | null)[]>([]);
+  // SSR — seed from prefetch when available so Step 3 is instant
+  const [ssrDataPerLeg, setSsrDataPerLeg] = useState<(SSRResult | null)[]>(prefetchedSSR ?? []);
   const [ssrLoading, setSsrLoading]       = useState(false);
   const [seatMaps, setSeatMaps]           = useState<Record<number, SeatMap>>({});
 
@@ -158,6 +186,8 @@ export default function BookingPage({
   const [confirmedBookingId, setConfirmedBookingId] = useState<number | undefined>();
   const [confirmedPnr, setConfirmedPnr]             = useState<string | undefined>();
   const [confirmedNames, setConfirmedNames]         = useState<string[]>([]);
+
+
 
   // ── HELPERS ───────────────────────────────────────────────
 
@@ -225,8 +255,17 @@ export default function BookingPage({
   const totalPayable = Math.round(subtotal + extrasTotal + taxes - form.promoDiscount);
 
   // ── STEP 1: FARE QUOTE ────────────────────────────────────
+  // If fareQuote was pre-fetched when the user selected this flight on the
+  // Results page, we skip the API call entirely and go straight to Step 2.
 
     async function handleFareQuote() {
+    // Already have a clean pre-fetched result — advance immediately.
+    // lockedFareTiers was already seeded from the prefetch in useState initializer.
+    if (prefetchedFareQuote && !prefetchedFareQuote.fareChanged) {
+      setStep(2);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -234,7 +273,16 @@ export default function BookingPage({
       if (result.fareChanged) {
         setFareChanged(true);
         setUpdatedFare(result.tiers[0]?.price ?? null);
+        // Store the new tiers as pending — user must accept before we lock them
+        const pending: Record<number, FareTier> = {};
+        if (result.tiers[0]) pending[0] = result.tiers[0];
+        setPendingFareTiers(pending);
       } else {
+        // Lock the fare-quoted tiers so SSR fallback (handlePassengersNext) gets
+        // the fare-quoted resultIndex — TBO ErrorCode 27 if we send the original one.
+        const locked: Record<number, FareTier> = {};
+        if (result.tiers[0]) locked[0] = result.tiers[0];
+        setLockedFareTiers(locked);
         setFareChanged(false);
         setStep(2);
       }
@@ -278,34 +326,42 @@ export default function BookingPage({
     return null;
   }
 
-  function handlePassengersNext() {
-    const err = validatePassengers();
-    if (err) { setError(err); return; }
-    setError(null);
 
-    // FIX #2: Always fetch SSR when entering Step 3 for the first time.
-    // Use legs array directly so indices are guaranteed aligned.
-    if (ssrDataPerLeg.length !== legs.length) {
-      setSsrLoading(true);
-setSsrDataPerLeg([]); // clear stale data so UI shows loading
-const allFlights = legs.map((l) => ({
-  ...l.flight,
-  resultIndex: l.tier.resultIndex || l.flight.resultIndex,
-}));
-const ssrFn = apiGetSSRForLegs(allFlights);
+// Add this ref at the top of the component with other state:
+const ssrFetchingRef = useRef(false);
+// Then in handlePassengersNext:
+function handlePassengersNext() {
+  const err = validatePassengers();
+  if (err) { setError(err); return; }
+  setError(null);
 
+  const ssrAlreadyLoaded = ssrDataPerLeg.length === legs.length;
 
-  ssrFn
-    .then(results => setSsrDataPerLeg(results))
-    .catch((e: any) => {
-      setError(e?.message ?? "Could not load seat, meal, and baggage options for this flight.");
-      setSsrDataPerLeg(legs.map(() => null));
-    })
-    .finally(() => setSsrLoading(false));
-    }
-  setStep(3);
+  // ── KEY FIX: prevent duplicate SSR fetches ──
+  if (!ssrAlreadyLoaded && !ssrFetchingRef.current) {
+    ssrFetchingRef.current = true;   // lock
+    setSsrLoading(true);
+    setSsrDataPerLeg([]);
 
+    const allFlights = legs.map((l) => ({
+      ...l.flight,
+      resultIndex:  l.tier.resultIndex || l.flight.resultIndex,
+      fareVariants: undefined,
+    }));
+
+    apiGetSSRForLegs(allFlights)
+      .then(results => setSsrDataPerLeg(results))
+      .catch((e: any) => {
+        setError(e?.message ?? "Could not load seat/meal options.");
+        setSsrDataPerLeg(legs.map(() => null));
+      })
+      .finally(() => {
+        setSsrLoading(false);
+        ssrFetchingRef.current = false;  // unlock
+      });
   }
+  setStep(3);
+}
 
   // ── SAVE BOOKING TO DB ────────────────────────────────────
 
@@ -418,8 +474,11 @@ const ssrFn = apiGetSSRForLegs(allFlights);
 
     const normalizeFlightNo = (raw: string) => String(raw).replace(/[^0-9]/g, "");
 
+
     return form.passengers.map((p, i) => {
       const paxType = (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3;
+      // Replace your GST block with this:
+const hasGST = !!form.gstNumber?.trim();
       const base: FlightBookPassenger = {
         Title:       p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
         FirstName:   p.firstName.trim(),
@@ -438,15 +497,23 @@ const ssrFn = apiGetSSRForLegs(allFlights);
         CountryCode: "IN",
         CountryName: "India",
         Nationality: p.nationality || "IN",
-             Fare: {
-        BaseFare:             paxType === 3 ? 0 : (legTier.adultFare ?? legTier.price ?? 0),
-        Tax:                  paxType === 3 ? 0 : ((legTier.totalOfferedFare ?? 0) - (legTier.adultFare ?? legTier.price ?? 0)),
-        TransactionFee:       0,
-        YQTax:                0,
-        AdditionalTxnFeeOfrd: 0,
-        AdditionalTxnFeePub:  0,
-        AirTransFee:          0,
-      },
+
+
+// Then in the base passenger object:
+GSTCompanyAddress:       hasGST ? (form.gstCompanyAddress || "")                    : "",
+GSTCompanyContactNumber: hasGST ? (form.contactPhone      || "")                    : "",
+GSTCompanyName:          hasGST ? (form.gstCompanyName    || "")                    : "",
+GSTNumber:               hasGST ? (form.gstNumber         || "")                    : "",
+GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail || "") : "",
+        Fare: {
+  BaseFare:             paxType === 3 ? 0 : Math.round(legTier.totalOfferedFare ?? legTier.price ?? 0),
+  Tax:                  0,
+  TransactionFee:       0,
+  YQTax:                0,
+  AdditionalTxnFeeOfrd: 0,
+  AdditionalTxnFeePub:  0,
+  AirTransFee:          0,
+},
       };
 
       // Infants don't get meal selections
@@ -993,6 +1060,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           fareChanged={fareChanged}
           updatedFare={updatedFare}
           fareChangeMessage={fareChangeMessage}
+          fareAlreadyConfirmed={hasPrefetchedFare}
           onLockFare={handleFareQuote}
           onAcceptNewFare={() => {
             setLockedFareTiers(pendingFareTiers);
