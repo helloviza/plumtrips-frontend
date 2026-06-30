@@ -786,6 +786,7 @@ export async function apiSearchFlights(
 
   if (form.tripType === "roundTrip") {
     if (results[1] && results[1].length > 0) {
+      // Domestic-style: TBO already gave us two separate result arrays
       const returnRaws = results[1];
       const returnMapped = returnRaws.map((r) => tboResultToDisplay(r, traceId));
       return {
@@ -793,7 +794,33 @@ export async function apiSearchFlights(
         returnFlights: groupByFlight(returnMapped, returnRaws),
       };
     }
+
+    // ── International / combined-itinerary style ────────────
+    // A single result can carry BOTH legs: Segments[0] = outbound,
+    // Segments[1] = return. The whole pair shares one ResultIndex
+    // (it's one bookable fare), so we must NOT invent separate
+    // ResultIndex values — both display objects below keep the
+    // same resultIndex/raw so booking still uses the combined fare.
+    const isCombinedItinerary = outboundRaws.some(r => (r.Segments?.length ?? 0) > 1);
+
+    if (isCombinedItinerary) {
+      const outboundLegDisplays = outboundRaws.map(r => ({
+        ...tboResultToDisplay(r, traceId, 0),
+        isCombinedRoundTrip: true,
+      }));
+      const returnLegDisplays = outboundRaws.map(r => ({
+        ...tboResultToDisplay(r, traceId, 1),
+        isCombinedRoundTrip: true,
+      }));
+
+      return {
+        outbound:      groupByFlight(outboundLegDisplays, outboundRaws),
+        returnFlights: groupByFlight(returnLegDisplays, outboundRaws),
+      };
+    }
+
     // Fallback: split a single results[0] into outbound + return by origin code
+    // (covers suppliers that return separate single-leg results in one array)
     const returnCode = form.to.code.toUpperCase();
     const returnRaws = outboundRaws.filter(
       r => r.Segments?.[0]?.[0]?.Origin?.Airport?.AirportCode === returnCode
@@ -1286,6 +1313,104 @@ export async function apiGetSSR(flight: DisplayFlight): Promise<SSRResult> {
   return fetchSSRForFlight(flight);
 }
 
+// One leg's SSR failure must not erase a leg that succeeded.
+// fetchSSRForFlight throws on any non-2xx / ok:false response with no
+// internal fallback (unlike apiFareQuote, which catches per-variant).
+// Using Promise.all here meant ANY leg failing rejected the WHOLE array,
+// so callers (FlightsFlow's prefetch) had no choice but to discard
+// every leg's result — including legs that had already succeeded —
+// forcing BookingPage to re-fetch SSR for all legs on Step 2 → 3 even
+// though most of them were fine the first time.
+// Promise.allSettled + a per-leg unavailableSSR fallback means a single
+// bad leg degrades gracefully (that leg shows "not available", same as
+// the existing MOCK_MODE / airline-unsupported path) instead of wiping
+// out legs that already came back fine.
+//
+// [SSR-COMBINED-FIX v2] Originally tried deduping only when traceId AND
+// resultIndex were both identical (true "combined fare" itineraries).
+// That wasn't enough: TraceId is shared by EVERY leg of a round-trip
+// search regardless of style (it comes from one shared search session —
+// responseData.Response.TraceId) — including suppliers like ATG that DO
+// hand back distinct ResultIndex values per leg. Firing two concurrent
+// SSR requests against the same TraceId (even with different
+// ResultIndex) still races against TBO's per-session lock: the first
+// request wins fast, the second hangs against the same locked session
+// until it times out and fails. That's the "leg 0 instant, leg 1 hangs
+// then fails" pattern on ATG round-trips specifically.
+//
+// Fix: group legs by traceId. Legs in DIFFERENT traceId groups (e.g.
+// unrelated multi-city searches) still fetch in parallel. Legs that
+// SHARE a traceId are fetched SEQUENTIALLY (await one before starting
+// the next) so we never have two in-flight SSR requests against the same
+// TBO session. Within a traceId group, if two legs ALSO share the exact
+// same resultIndex (true combined-fare case), we still only make ONE
+// network call and split the response via parseTBOSSRForLeg.
+async function ssrForLegsSettled(legs: DisplayFlight[]): Promise<SSRResult[]> {
+  const results: SSRResult[] = new Array(legs.length);
+
+  // Group leg indexes by traceId — these MUST be fetched sequentially.
+  const byTraceId = new Map<string, number[]>();
+  legs.forEach((f, i) => {
+    const arr = byTraceId.get(f.traceId);
+    if (arr) arr.push(i);
+    else byTraceId.set(f.traceId, [i]);
+  });
+
+  async function fetchOne(flight: DisplayFlight): Promise<any> {
+    const res = await fetch(`${API_BASE}/api/v1/flights/tbo/ssr`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ traceId: flight.traceId, resultIndex: flight.resultIndex }),
+    });
+    if (!res.ok) {
+      let errMsg = `SSR failed (HTTP ${res.status})`;
+      try { const j = await res.json(); errMsg = j?.message || j?.error || errMsg; } catch { /* ignore */ }
+      throw new Error(errMsg);
+    }
+    const json = await res.json();
+    if (json?.ok === false) throw new Error(json?.message || "SSR failed");
+    return json?.data ?? json;
+  }
+
+  // Different traceId groups can run concurrently against each other.
+  await Promise.allSettled(
+    [...byTraceId.entries()].map(async ([, legIndexes]) => {
+      // Within ONE traceId, dedupe by exact resultIndex (true combined
+      // fares), then walk the unique resultIndexes SEQUENTIALLY.
+      const byResultIndex = new Map<string, number[]>();
+      legIndexes.forEach((i) => {
+        const ri = legs[i].resultIndex;
+        const arr = byResultIndex.get(ri);
+        if (arr) arr.push(i);
+        else byResultIndex.set(ri, [i]);
+      });
+
+      for (const [, sameResultLegIdxs] of byResultIndex) {
+        const flight = legs[sameResultLegIdxs[0]];
+        const isCombined = sameResultLegIdxs.length > 1;
+        try {
+          const raw = await fetchOne(flight);
+          if (isCombined) {
+            sameResultLegIdxs.forEach((legIdx, n) => {
+              results[legIdx] = parseTBOSSRForLeg(raw, n);
+            });
+          } else {
+            results[sameResultLegIdxs[0]] = parseTBOSSR(raw, flight.airline);
+          }
+        } catch {
+          sameResultLegIdxs.forEach((legIdx) => {
+            results[legIdx] = unavailableSSR(legs[legIdx].airline);
+          });
+        }
+        // Sequential by design — do not start the next resultIndex's
+        // request for this traceId until this one has fully settled.
+      }
+    })
+  );
+
+  return results;
+}
+
 export async function apiGetSSRForLegs(
   legs: DisplayFlight[],
   _isMultiCity = false,
@@ -1294,7 +1419,7 @@ export async function apiGetSSRForLegs(
     await new Promise((r) => setTimeout(r, 700));
     return legs.map((leg) => unavailableSSR(leg.airline));
   }
-  return Promise.all(legs.map((f) => fetchSSRForFlight(f)));
+  return ssrForLegsSettled(legs);
 }
 
 export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRResult[]> {
@@ -1302,7 +1427,7 @@ export async function apiGetSSRForMultiCity(legs: DisplayFlight[]): Promise<SSRR
     await new Promise(r => setTimeout(r, 700));
     return legs.map((leg) => unavailableSSR(leg.airline));
   }
-  return Promise.all(legs.map((legFlight) => fetchSSRForFlight(legFlight)));
+  return ssrForLegsSettled(legs);
 }
 
 // ─── BOOK ──────────────────────────────────────────────────

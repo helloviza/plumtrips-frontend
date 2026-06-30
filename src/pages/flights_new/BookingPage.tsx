@@ -10,8 +10,19 @@ import type {  BookTicketInput,
 //  LCC  → apiBookTicket directly (no book step)
 //  Non-LCC → apiBookFlight (hold) → apiBookTicket (issue)
 //
-//  Key changes from previous version:
-//  1. handlePayment now branches on isLCC:
+//  [FQ-FIX] Fare-quote now applies PER LEG, not just outbound:
+//    - prefetchedFareQuotes is now an ARRAY (one entry per leg) instead
+//      of a single object. Previously only leg 0 (outbound) was ever
+//      fare-quoted/locked, so round-trip return always used the raw,
+//      unconfirmed search-time tier in activeReturnTier.
+//    - lockedFareTiers is now seeded from prefetchedFareQuotes[i] for
+//      EVERY leg (0 = outbound, 1 = return, 2+ = multi-city legs).
+//    - handleFareQuote() now fare-quotes ALL legs in parallel when a
+//      clean prefetch isn't available for all of them, instead of only
+//      ever calling apiFareQuote(flight) for the outbound leg.
+//
+//  Other behavior unchanged:
+//  1. handlePayment branches on isLCC:
 //       LCC  → ticketFlight directly with full passenger payload
 //       Non-LCC → bookFlight first → ticketFlight with PNR + BookingId
 //  2. buildLCCPassengers() builds the richer TicketLCCPassenger
@@ -22,8 +33,6 @@ import type {  BookTicketInput,
 //  4. Price-change guard: if apiBookTicket returns ticketStatus=8,
 //     we surface the new fare to the user and re-call with
 //     isPriceChangeAccepted:true on confirmation.
-//  5. All other logic (SSR, fare-quote, seat/meal/extras, Razorpay)
-//     is unchanged.
 // ============================================================
 
 import { useState, useMemo, useRef } from "react";
@@ -72,7 +81,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 type FlightBookPassenger = BookPassenger & {
   MealDynamic?: Array<Record<string, unknown>>;
-    GSTCompanyAddress:       string;
+  GSTCompanyAddress:       string;
   GSTCompanyContactNumber: string;
   GSTCompanyName:          string;
   GSTNumber:               string;
@@ -90,8 +99,9 @@ interface BookingPageProps {
   infants: number;
   forcePassport?: boolean;
   isInternational?: boolean;
-  /** Pre-fetched fare-quote result from ResultsPage fare selection */
-  prefetchedFareQuote?: FareQuoteResult | null;
+  /** Pre-fetched fare-quote results from ResultsPage fare selection — ONE PER LEG.
+   *  Index 0 = outbound/leg0, index 1 = return/leg1, index 2+ = further multi-city legs. */
+  prefetchedFareQuotes?: (FareQuoteResult | null)[] | null;
   /** Pre-fetched SSR (seats/meals/baggage) per leg from ResultsPage fare selection */
   prefetchedSSR?: (SSRResult | null)[] | null;
   onBack: () => void;
@@ -111,7 +121,7 @@ export default function BookingPage({
   adults, children, infants,
   forcePassport = false,
   isInternational = false,
-  prefetchedFareQuote,
+  prefetchedFareQuotes,
   prefetchedSSR,
   onBack, onConfirm,
 }: BookingPageProps) {
@@ -120,34 +130,66 @@ export default function BookingPage({
   const needsPassport = flight.isPassportRequired || forcePassport || isInternational;
   const needsPan      = flight.isPanRequired;
 
+  // How many legs this booking actually has (1 for one-way, 2 for round-trip,
+  // N for multi-city) — used to know how many fare-quotes we need.
+  const legCount = isMultiCity
+    ? (multiCityLegs?.length ?? 1)
+    : isRoundTrip ? 2 : 1;
+
   // ── STATE ─────────────────────────────────────────────────
 
-  // If fare was pre-fetched on the results page, we skip Step 1's loading
-  // and go straight to displaying the confirmed fare. SSR is also pre-loaded.
-  const hasPrefetchedFare = !!prefetchedFareQuote && !prefetchedFareQuote.fareChanged;
-  const hasPrefetchedFareChange = !!prefetchedFareQuote && prefetchedFareQuote.fareChanged;
+  // A leg's prefetch is "clean" if it exists and didn't report a fare change.
+  // We need EVERY leg to be clean to skip Step 1's loading entirely.
+  const allLegsPrefetchedClean =
+    !!prefetchedFareQuotes &&
+    prefetchedFareQuotes.length >= legCount &&
+    prefetchedFareQuotes.slice(0, legCount).every(q => q && !q.fareChanged);
+
+  // True if ANY leg's prefetch came back with a fare change — surfaced on Step 1.
+  const anyLegPrefetchedChanged =
+    !!prefetchedFareQuotes &&
+    prefetchedFareQuotes.slice(0, legCount).some(q => q && q.fareChanged);
+
+  const hasPrefetchedFare       = allLegsPrefetchedClean;
+  const hasPrefetchedFareChange = anyLegPrefetchedChanged;
 
   const [step, setStep]     = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState<string | null>(null);
 
-  // Fare-change state — seed from prefetch if available
+  // Fare-change state — seed from prefetch if available.
+  // updatedFare shows the FIRST changed leg's new price as a representative figure.
   const [fareChanged, setFareChanged]               = useState(hasPrefetchedFareChange);
-  const [updatedFare, setUpdatedFare]               = useState<number | null>(
-    hasPrefetchedFareChange ? (prefetchedFareQuote!.tiers[0]?.price ?? null) : null
-  );
+  const [updatedFare, setUpdatedFare]               = useState<number | null>(() => {
+    if (!hasPrefetchedFareChange || !prefetchedFareQuotes) return null;
+    const changedLeg = prefetchedFareQuotes.find(q => q && q.fareChanged);
+    return changedLeg?.tiers[0]?.price ?? null;
+  });
   const [fareChangeMessage, setFareChangeMessage]   = useState<string | null>(null);
+
+  // lockedFareTiers seeded from prefetchedFareQuotes — ONE ENTRY PER LEG.
+  // Previously this only ever populated index 0 (outbound), so return/later
+  // legs silently fell back to the raw, unconfirmed search-time tier.
   const [lockedFareTiers, setLockedFareTiers]       = useState<Record<number, FareTier>>(() => {
-    // If we have a clean (no-change) prefetched quote, seed the locked tiers immediately
-    if (!prefetchedFareQuote || prefetchedFareQuote.fareChanged) return {};
-    const quotedTiers = prefetchedFareQuote.tiers;
+    if (!prefetchedFareQuotes) return {};
     const locked: Record<number, FareTier> = {};
-    // Leg 0 — primary flight
-    const t0 = quotedTiers.find(q => q.resultIndex === tier.resultIndex)
-            ?? quotedTiers.find(q => q.name === tier.name)
-            ?? quotedTiers[0];
-    if (t0) locked[0] = t0;
-    // Leg 1 — return tier (fare-quote is per-flight; keep original returnTier)
+    const legTiers: FareTier[] = isMultiCity && multiCityLegs
+      ? multiCityLegs.map(l => l.tier)
+      : isRoundTrip && returnTier
+        ? [tier, returnTier]
+        : [tier];
+
+    legTiers.forEach((originalTier, i) => {
+      const fq = prefetchedFareQuotes[i];
+      if (!fq || fq.fareChanged) return; // only lock CLEAN (no-change) quotes upfront
+      const quotedTiers = fq.tiers;
+      const matched =
+        quotedTiers.find(q => q.resultIndex === originalTier.resultIndex) ??
+        quotedTiers.find(q => q.name === originalTier.name) ??
+        quotedTiers[0];
+      if (matched) locked[i] = matched;
+    });
+
     return locked;
   });
   const [pendingFareTiers, setPendingFareTiers]     = useState<Record<number, FareTier>>({});
@@ -255,13 +297,13 @@ export default function BookingPage({
   const totalPayable = Math.round(subtotal + extrasTotal + taxes - form.promoDiscount);
 
   // ── STEP 1: FARE QUOTE ────────────────────────────────────
-  // If fareQuote was pre-fetched when the user selected this flight on the
-  // Results page, we skip the API call entirely and go straight to Step 2.
+  // Fare-quotes EVERY leg, not just outbound. If a leg already has a clean
+  // (no fare-change) prefetched quote, we reuse it instead of re-fetching.
 
     async function handleFareQuote() {
-    // Already have a clean pre-fetched result — advance immediately.
-    // lockedFareTiers was already seeded from the prefetch in useState initializer.
-    if (prefetchedFareQuote && !prefetchedFareQuote.fareChanged) {
+    // All legs already cleanly prefetched — lockedFareTiers was already
+    // seeded for every leg in the useState initializer. Advance immediately.
+    if (hasPrefetchedFare) {
       setStep(2);
       return;
     }
@@ -269,19 +311,80 @@ export default function BookingPage({
     setLoading(true);
     setError(null);
     try {
-      const result = await apiFareQuote(flight);
-      if (result.fareChanged) {
+      // Build the list of flights to quote, in leg order.
+      const flightsToQuote: DisplayFlight[] = isMultiCity && multiCityLegs
+        ? multiCityLegs.map(l => l.flight)
+        : isRoundTrip && returnFlight
+          ? [flight, returnFlight]
+          : [flight];
+
+      // [FQ-COMBINED-FIX v2] TraceId is shared by EVERY leg of a round-trip
+      // search session (not just true "combined fare" itineraries where
+      // resultIndex also matches). Firing apiFareQuote() concurrently for
+      // legs that share a traceId — even with different resultIndex, as
+      // ATG round-trips do — races against TBO's per-session lock the same
+      // way SSR does. Group by traceId; within a group, dedupe identical
+      // resultIndex (one network call, reused for every leg that shares
+      // it) and walk distinct resultIndexes SEQUENTIALLY. Different
+      // traceId groups (e.g. unrelated multi-city legs) still run in
+      // parallel against each other.
+      const byTraceId = new Map<string, number[]>();
+      flightsToQuote.forEach((f, i) => {
+        const arr = byTraceId.get(f.traceId);
+        if (arr) arr.push(i); else byTraceId.set(f.traceId, [i]);
+      });
+
+      const results: (FareQuoteResult | null)[] = new Array(flightsToQuote.length).fill(null);
+
+      await Promise.allSettled(
+        [...byTraceId.values()].map(async (legIndexes) => {
+          const byResultIndex = new Map<string, number[]>();
+          legIndexes.forEach((i) => {
+            const ri = flightsToQuote[i].resultIndex;
+            const arr = byResultIndex.get(ri);
+            if (arr) arr.push(i); else byResultIndex.set(ri, [i]);
+          });
+
+          for (const [, sameResultLegIdxs] of byResultIndex) {
+            try {
+              const r = await apiFareQuote(flightsToQuote[sameResultLegIdxs[0]]);
+              sameResultLegIdxs.forEach((legIdx) => { results[legIdx] = r; });
+            } catch {
+              sameResultLegIdxs.forEach((legIdx) => { results[legIdx] = null; });
+            }
+            // Sequential by design — don't start the next resultIndex's
+            // fare-quote for this traceId until this one has settled.
+          }
+        })
+      );
+
+      const anyFailed = results.some(r => r === null);
+      if (anyFailed && results.every(r => r === null)) {
+        throw new Error("Could not confirm fare. Please try again.");
+      }
+
+      const anyChanged = results.some(r => r?.fareChanged);
+
+      if (anyChanged) {
+        // Surface the first changed leg's new price to the user.
+        const changedLeg = results.find(r => r?.fareChanged);
         setFareChanged(true);
-        setUpdatedFare(result.tiers[0]?.price ?? null);
-        // Store the new tiers as pending — user must accept before we lock them
+        setUpdatedFare(changedLeg?.tiers[0]?.price ?? null);
+
+        // Store ALL legs' new tiers as pending — user must accept before we lock them.
         const pending: Record<number, FareTier> = {};
-        if (result.tiers[0]) pending[0] = result.tiers[0];
+        results.forEach((r, i) => {
+          if (r?.tiers[0]) pending[i] = r.tiers[0];
+        });
         setPendingFareTiers(pending);
       } else {
-        // Lock the fare-quoted tiers so SSR fallback (handlePassengersNext) gets
-        // the fare-quoted resultIndex — TBO ErrorCode 27 if we send the original one.
+        // Lock the fare-quoted tiers for EVERY leg so SSR fallback
+        // (handlePassengersNext) gets the fare-quoted resultIndex for each —
+        // TBO ErrorCode 27 if we send the original one for ANY leg.
         const locked: Record<number, FareTier> = {};
-        if (result.tiers[0]) locked[0] = result.tiers[0];
+        results.forEach((r, i) => {
+          if (r?.tiers[0]) locked[i] = r.tiers[0];
+        });
         setLockedFareTiers(locked);
         setFareChanged(false);
         setStep(2);
@@ -655,8 +758,8 @@ const gstCompanyEmail           = hasGST ? (form.gstCompanyEmail || form.contact
                 Quantity:           "1",
                 Price:              extra.mealPrice ?? 0,
                 Currency:           "INR",
-                Origin:             leg.flight.fromCode,
-                Destination:        leg.flight.toCode,
+                Origin:             extra.origin ?? leg.flight.fromCode,
+                Destination:        extra.destination ?? leg.flight.toCode,
                 Nationality:        p.nationality || "IN",
               };
             })
@@ -839,8 +942,12 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
 
     // ── ROUND-TRIP ─────────────────────────────────────────
     if (isRoundTrip && returnFlight && activeReturnTier) {
-      // For LCC or mixed, always book separately
-      const shouldBookSeparately = flight.isLCC || returnFlight.isLCC;
+      // International combined-itinerary fares share ONE ResultIndex for
+      // both legs — never book them separately, regardless of LCC status.
+      const isCombined = !!(flight as any).isCombinedRoundTrip;
+
+      // For LCC or mixed (and not a combined single-fare itinerary), book separately
+      const shouldBookSeparately = !isCombined && (flight.isLCC || returnFlight.isLCC);
 
       if (shouldBookSeparately) {
         // In runFullBooking — LCC round-trip block
@@ -850,6 +957,15 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           bookingId: out.bookingId,
           pnr: [out.pnr, ret.pnr].filter(Boolean).join(" / "),
         };
+      }
+
+      if (isCombined) {
+        // One combined fare — book once with the shared resultIndex, no comma-joining.
+        return bookAndTicketSingleLeg(
+          flight, activeTier, [0, 1],
+          isPriceChangeAccepted,
+          overridePendingInputs?.[0],
+        );
       }
 
       // Non-LCC: try combined ResultIndex first, fall back to separate

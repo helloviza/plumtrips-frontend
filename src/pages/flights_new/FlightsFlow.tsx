@@ -61,8 +61,9 @@ interface FlightState {
   contactEmail?: string;
   totalPaid?: number;
 
-  // Pre-fetched on fare selection — available immediately when BookingPage mounts
-  prefetchedFareQuote?: FareQuoteResult | null;
+  // Pre-fetched on fare selection — available immediately when BookingPage mounts.
+  // One entry per leg: index 0 = outbound/leg0, index 1 = return/leg1, etc.
+  prefetchedFareQuotes?: (FareQuoteResult | null)[] | null;
   prefetchedSSR?: (SSRResult | null)[] | null;
 }
 
@@ -189,12 +190,19 @@ function deriveSearchKey(form: SearchForm | null, legs?: CityLeg[]): string {
   return legsKey ? `${base}__${legsKey}` : base;
 }
 
-// ── Prefetch helper — fires fareQuote then SSR sequentially on fare selection ──
+// ── Prefetch helper — fares-quotes EVERY leg in parallel, then SSR ─────────────
 //
-// WHY SEQUENTIAL (not parallel):
+// WHY EVERY LEG (not just outbound):
+//   For round-trips and multi-city, each leg has its own ResultIndex and its
+//   own fare. Quoting only leg 0 left return/later legs using the raw,
+//   un-confirmed search-time tier — which is wrong once on BookingPage,
+//   since the locked/quoted tier should win for every leg, not just leg 0.
+//
+// WHY fareQuote MUST happen before SSR, per leg:
 //   TBO requires the fare-quoted ResultIndex for SSR. Sending the original
 //   search ResultIndex to SSR returns ErrorCode 27 "No SSR details found."
-//   The correct order is: FareQuote → get updated ResultIndex → SSR.
+//   The correct order is: FareQuote(leg) → get updated ResultIndex(leg) → SSR(leg).
+//   This applies independently to EACH leg, not just the first.
 //
 // WHY pinnedFlight (no fareVariants):
 //   apiFareQuote iterates flight.fareVariants and quotes ALL of them.
@@ -214,27 +222,26 @@ function _triggerPrefetch(
     fareTiers:    undefined,
   }));
 
-  // Step 1: FareQuote the primary (outbound) flight first.
-  // Step 2: Use the resultIndex returned by FareQuote for SSR — NOT the original one.
-  //         TBO ErrorCode 27 occurs when SSR receives a non-fare-quoted resultIndex.
-  apiFareQuote(pinnedFlights[0])
-    .then((fqResult) => {
-      // Store fareQuote result immediately so Step 1 can render without waiting for SSR
+  // Fare-quote every leg in parallel. Each settles independently so one
+  // leg failing doesn't block the other's result from being used.
+  Promise.allSettled(pinnedFlights.map((f) => apiFareQuote(f)))
+    .then((fqResults) => {
+      const quotes: (FareQuoteResult | null)[] = fqResults.map((r) =>
+        r.status === "fulfilled" ? r.value : null
+      );
+
+      // Store fareQuote results immediately so Step 1 can render without waiting for SSR
       setState((prev) => {
-        const next: FlightState = { ...prev, prefetchedFareQuote: fqResult, prefetchedSSR: null };
+        const next: FlightState = { ...prev, prefetchedFareQuotes: quotes, prefetchedSSR: null };
         persist(next);
         return next;
       });
 
-      // Build SSR flights using the fare-quoted resultIndex from each leg.
-      // For the primary leg: use the resultIndex TBO returned from fareQuote.
-      // For additional legs (round-trip return, multi-city): use their pinned resultIndex
-      // as-is — they'll be fare-quoted separately at booking time if needed.
-      const quotedResultIndex = fqResult.tiers[0]?.resultIndex ?? pinnedFlights[0].resultIndex;
-      const ssrFlights: DisplayFlight[] = pinnedFlights.map((f, i) => ({
-        ...f,
-        resultIndex: i === 0 ? quotedResultIndex : f.resultIndex,
-      }));
+      // Build SSR flights using EACH leg's own fare-quoted resultIndex.
+      const ssrFlights: DisplayFlight[] = pinnedFlights.map((f, i) => {
+        const quotedResultIndex = quotes[i]?.tiers[0]?.resultIndex ?? f.resultIndex;
+        return { ...f, resultIndex: quotedResultIndex };
+      });
 
       return apiGetSSRForLegs(ssrFlights);
     })
@@ -246,12 +253,18 @@ function _triggerPrefetch(
       });
     })
     .catch((err) => {
-      // Swallow prefetch errors — BookingPage will fetch live as fallback
+      // With apiGetSSRForLegs now using Promise.allSettled internally
+      // (per-leg unavailableSSR fallback instead of rejecting the whole
+      // array), this catch is a last-resort safety net — it should only
+      // fire on something more fundamental (e.g. a thrown error before
+      // the per-leg calls even start), not on a single leg's SSR failing.
+      // BookingPage still fetches live as a fallback if prefetchedSSR
+      // ends up null here.
       console.warn("[prefetch] fareQuote/SSR prefetch failed:", err?.message ?? err);
       setState((prev) => {
         const next: FlightState = {
           ...prev,
-          prefetchedFareQuote: prev.prefetchedFareQuote ?? null,
+          prefetchedFareQuotes: prev.prefetchedFareQuotes ?? null,
           prefetchedSSR: null,
         };
         persist(next);
@@ -347,7 +360,7 @@ export default function FlightsFlow() {
       if (tripType === "roundTrip") {
         if (!prevState.selectedFlight) {
           // First leg — stay on results, no prefetch yet
-          const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuote: null, prefetchedSSR: null };
+          const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuotes: null, prefetchedSSR: null };
           persistState(next);
 
           const existing = Object.fromEntries(new URLSearchParams(location.search));
@@ -367,14 +380,17 @@ export default function FlightsFlow() {
             ...prevState,
             selectedReturnFlight: flight,
             selectedReturnTier: tier,
-            prefetchedFareQuote: null,
+            prefetchedFareQuotes: null,
             prefetchedSSR: null,
           };
           persistState(next);
 
-          // Fire prefetch for outbound + return flights
+          // Fire prefetch for outbound + return flights — pass BOTH tiers in the
+          // same order as the flights array, or selectedTiers[0] (outbound's pin)
+          // ends up using the return tier's resultIndex by mistake.
           const outbound = prevState.selectedFlight;
-          _triggerPrefetch([outbound, flight], [tier], setState, persistState);
+          const outboundTier = prevState.selectedTier!;
+          _triggerPrefetch([outbound, flight], [outboundTier, tier], setState, persistState);
 
           goTo("booking", {
             ...baseParams,
@@ -400,7 +416,7 @@ export default function FlightsFlow() {
             selectedFlight: newLegs[0]!.flight,
             selectedTier:   newLegs[0]!.tier,
             selectedLegs:   newLegs,
-            prefetchedFareQuote: null,
+            prefetchedFareQuotes: null,
             prefetchedSSR: null,
           };
           persistState(next);
@@ -420,7 +436,7 @@ export default function FlightsFlow() {
           goTo("booking", { ...baseParams, ...legParams });
           return next;
         } else {
-          const next: FlightState = { ...prevState, selectedLegs: newLegs, prefetchedFareQuote: null, prefetchedSSR: null };
+          const next: FlightState = { ...prevState, selectedLegs: newLegs, prefetchedFareQuotes: null, prefetchedSSR: null };
           persistState(next);
 
           const existing = Object.fromEntries(new URLSearchParams(location.search));
@@ -438,7 +454,7 @@ export default function FlightsFlow() {
       }
 
       // ── One-Way ─────────────────────────────────────────────────────────────
-      const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuote: null, prefetchedSSR: null };
+      const next: FlightState = { ...prevState, selectedFlight: flight, selectedTier: tier, prefetchedFareQuotes: null, prefetchedSSR: null };
       persistState(next);
 
       // Fire prefetch for the single flight
@@ -540,7 +556,7 @@ export default function FlightsFlow() {
           infants={state.searchForm.infants}
           forcePassport={isIntl}
           isInternational={isIntl}
-          prefetchedFareQuote={state.prefetchedFareQuote}
+          prefetchedFareQuotes={state.prefetchedFareQuotes}
           prefetchedSSR={state.prefetchedSSR}
           onBack={() => goTo("results", state.searchForm ? searchFormToParams(state.searchForm) : undefined)}
           onConfirm={handleConfirm}
