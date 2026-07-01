@@ -253,7 +253,25 @@ export function calcFares({
     ),
   };
 
-  const subtotal = Object.values(baseFares).reduce((a, b) => a + b, 0);
+  //const subtotal = Object.values(baseFares).reduce((a, b) => a + b, 0);
+  
+  const fallbackSubtotal = Object.values(baseFares).reduce((a, b) => a + b, 0);
+
+  const outboundOffered = tier.totalOfferedFare;
+  const returnOffered   = returnTier?.totalOfferedFare;
+  const multiCityOffered = (multiCityLegs ?? []).slice(1)
+    .reduce<number | undefined>((sum, leg) => {
+      if (sum === undefined || leg.tier.totalOfferedFare === undefined) return undefined;
+      return sum + leg.tier.totalOfferedFare;
+    }, 0);
+
+  const subtotal =
+    outboundOffered !== undefined
+    && (returnTier === undefined || returnOffered !== undefined)
+    && (!(multiCityLegs && multiCityLegs.length > 1) || multiCityOffered !== undefined)
+      ? outboundOffered + (returnOffered ?? 0) + (multiCityOffered ?? 0)
+      : fallbackSubtotal;
+   
   const extrasTotal = extras.reduce((sum, e) => sum + e.mealPrice + e.baggagePrice, 0);
 
   // ── Live seat total: always derived from current passenger seat selections ──

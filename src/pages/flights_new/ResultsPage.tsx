@@ -159,7 +159,7 @@ function FareTierCard({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep }}>{tier.name}</div>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{formatINR(tier.price)}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{formatINR(tier.totalOfferedFare)}</div>
             <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>per adult</div>
           </div>
           <div style={{
@@ -306,7 +306,7 @@ function FareModal({
                 {tiers[selected]?.name}
               </div>
               <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>
-                {formatINR(tiers[selected]?.price ?? 0)}
+                {formatINR(tiers[selected]?.totalOfferedFare ?? 0)}
               </div>
               <div style={{ fontSize: 11, color: S.muted }}>
                 per adult · {tiers[selected]?.cancellationFee}

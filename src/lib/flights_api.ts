@@ -201,10 +201,19 @@ function variantToFareTier(
 
   // Per-adult fare from FareBreakdown
   const fareBreakdown: any[] = raw.FareBreakdown ?? [];
-  const adultBD = fareBreakdown.find((b: any) => b.PassengerType === 1);
+  const adultBD  = fareBreakdown.find((b: any) => b.PassengerType === 1);
+  const childBD  = fareBreakdown.find((b: any) => b.PassengerType === 2);
+  const infantBD = fareBreakdown.find((b: any) => b.PassengerType === 3);
+
   const adultFare = adultBD
     ? Math.round((adultBD.BaseFare + adultBD.Tax) / Math.max(adultBD.PassengerCount ?? 1, 1))
     : Math.round(raw.Fare.OfferedFare);
+  const childFare = childBD
+    ? Math.round((childBD.BaseFare + childBD.Tax) / Math.max(childBD.PassengerCount ?? 1, 1))
+    : undefined;
+  const infantFare = infantBD
+    ? Math.round((infantBD.BaseFare + infantBD.Tax) / Math.max(infantBD.PassengerCount ?? 1, 1))
+    : undefined;
 
   return {
     name,
@@ -219,6 +228,9 @@ function variantToFareTier(
     isRefundable:     raw.IsRefundable,
     recommended:      isRecommended,
     taxesIncluded:    true,
+    adultFare,
+    childFare,
+    infantFare,
     totalOfferedFare: raw.Fare.OfferedFare,
     seatCharges:      raw.Fare.TotalSeatCharges,
     mealCharges:      raw.Fare.TotalMealCharges,
@@ -409,7 +421,7 @@ export function cabinClassCode(c: SearchForm["cabinClass"]): number {
 }
 
 export function formatINR(n: number): string {
-  return `₹${n.toLocaleString("en-IN")}`;
+  return `₹${Math.ceil(n).toLocaleString("en-IN")}`;
 }
 
 function normalizeTboResults(rawResults: unknown): TBOFlightResult[] {
@@ -554,6 +566,7 @@ export function getMockFareTiers(flight: DisplayFlight): FareTier[] {
     {
       name:            "Saver",
       price:           flight.price,
+      totalOfferedFare: flight.price,
       cabinBag:        flight.cabinBaggage,
       checkinBag:      flight.checkinBaggage,
       cancellationFee: "₹4,999 (3h – 3 days before)",
@@ -566,6 +579,7 @@ export function getMockFareTiers(flight: DisplayFlight): FareTier[] {
       name:            "Flexi",
       tag:             "Best Value",
       price:           flight.price + 544,
+      totalOfferedFare: flight.price + 544,
       cabinBag:        flight.cabinBaggage,
       checkinBag:      flight.checkinBaggage,
       cancellationFee: "₹3,499 (3h – 24h)",
@@ -578,6 +592,7 @@ export function getMockFareTiers(flight: DisplayFlight): FareTier[] {
     {
       name:            "Premium",
       price:           flight.price + 3150,
+      totalOfferedFare: flight.price + 3150,
       cabinBag:        flight.cabinBaggage,
       checkinBag:      "20 Kg",
       cancellationFee: "₹799 (3 days+)",
@@ -964,6 +979,7 @@ export async function apiFareQuote(flight: DisplayFlight): Promise<FareQuoteResu
       tiers.push({
         name:            resolveFareName(variants[i].fareClass, variants[i].fareType, i),
         price:           variants[i].price,
+        totalOfferedFare: variants[i].price,
         cabinBag:        variants[i].cabinBaggage,
         checkinBag:      variants[i].checkinBaggage,
         cancellationFee: "As per airline",
@@ -1057,7 +1073,7 @@ export async function apiFareQuote(flight: DisplayFlight): Promise<FareQuoteResu
       adultFare,
       childFare,
       infantFare,
-      totalOfferedFare: fare?.OfferedFare ?? variants[i].price,
+      totalOfferedFare: fare?.PublishedFare ?? variants[i].price,
     });
   });
 
@@ -1065,6 +1081,7 @@ export async function apiFareQuote(flight: DisplayFlight): Promise<FareQuoteResu
     tiers.push({
       name:            resolveFareName(flight.fareClass, flight.fareType, 0),
       price:           flight.price,
+      totalOfferedFare: flight.price,
       cabinBag:        flight.cabinBaggage,
       checkinBag:      flight.checkinBaggage,
       cancellationFee: policyLabel(flight.cancellationPolicies, 1),

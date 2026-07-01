@@ -2,9 +2,10 @@
 //  BookingStep2Passengers.tsx — Step 2: Passenger Details
 // ============================================================
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import type { PassengerData, BookingFormState } from "./BookingShared";
 import { FieldLabel, TextInput, SelectInput, SectionHeading, ErrorBanner } from "./BookingShared";
+import { useAuth } from "../../context/AuthContext";
 
 interface Step2Props {
   form: BookingFormState;
@@ -22,6 +23,31 @@ export default function BookingStep2Passengers({
   form, paxTypes, adults, needsPan, needsPassport,
   error, onChange, onNext, onBack,
 }: Step2Props) {
+
+  const { user } = useAuth();
+
+    useEffect(() => {
+    if (!user) return;
+ 
+    let updated = { ...form };
+    let dirty = false;
+ 
+    if (!updated.contactEmail && user.email) {
+      updated = { ...updated, contactEmail: user.email };
+      dirty = true;
+    }
+    if (!updated.contactPhone && user.phone) {
+      // Strip leading "+91" / "91" so it fits the bare-number field
+      const bare = user.phone.replace(/^\+?91/, "").trim();
+      updated = { ...updated, contactPhone: bare };
+      dirty = true;
+    }
+ 
+    if (dirty) onChange(updated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+
 
   function updatePassenger(i: number, data: PassengerData) {
     const arr = [...form.passengers];
@@ -184,7 +210,12 @@ function PassengerCard({ index, paxType, data, needsPan, needsPassport, onChange
               <FieldLabel required>Title</FieldLabel>
               <SelectInput
                 value={data.title}
-                onChange={(v) => onChange({ ...data, title: v as PassengerData["title"] })}
+                onChange={(v) => {
+                  const title = v as PassengerData["title"];
+                  const gender: "Male" | "Female" =
+                    title === "Mrs" || title === "Ms" || title === "Miss" ? "Female" : "Male";
+                  onChange({ ...data, title, gender });
+                }}
                 options={titles}
               />
             </div>
@@ -209,9 +240,9 @@ function PassengerCard({ index, paxType, data, needsPan, needsPassport, onChange
           {/* DOB / Nationality / PAN */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div>
-              <FieldLabel required={paxType !== "Adult"}>Date of Birth</FieldLabel>
+              <FieldLabel required={true} >Date of Birth</FieldLabel>
               <TextInput type="date" value={data.dob} onChange={(v) => onChange({ ...data, dob: v })} />
-            </div>
+            </div> 
             <div>
               <FieldLabel required>Nationality</FieldLabel>
               <TextInput

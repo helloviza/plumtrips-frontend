@@ -314,10 +314,11 @@ export default function BookingPage({
 
   // ── FARE CALC ─────────────────────────────────────────────
 
-  const { subtotal, extrasTotal, taxes } = calcFares({
+  const { subtotal, extrasTotal, seatsTotal, taxes } = calcFares({
     tier: activeTier, returnTier: activeReturnTier, multiCityLegs: activeMultiCityLegs,
     adults, children, infants,
     extras: form.extras,
+    
   });
   const totalPayable = Math.round(subtotal + extrasTotal + taxes - form.promoDiscount);
 

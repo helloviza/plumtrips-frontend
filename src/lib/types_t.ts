@@ -145,7 +145,7 @@ infantFare?: number;     // from FareBreakdown[PaxType=3]
 seatCharges?: number;    // from Fare.TotalSeatCharges (live API value)
 mealCharges?: number;    // from Fare.TotalMealCharges
 baggageCharges?: number; // from Fare.TotalBaggageCharges
-totalOfferedFare?: number; // Fare.OfferedFare — the final total from TBO
+totalOfferedFare: number; // Fare.OfferedFare — the final total from TBO
   
 }
 

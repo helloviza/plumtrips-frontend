@@ -59,10 +59,10 @@ export default function BookingStep5Review({
   }
   // ─────────────────────────────────────────────────────────
 
-  const { baseFares, subtotal, extrasTotal, taxes } = calcFares({
-    tier, returnTier, multiCityLegs, adults, children, infants, extras,
+  const { baseFares, subtotal, seatsTotal, extrasTotal, taxes } = calcFares({
+    tier, returnTier, multiCityLegs, adults, children, infants, extras, 
   });
-  const total = Math.round(subtotal + extrasTotal + taxes - discount);
+  const total = Math.round(subtotal+ seatsTotal + extrasTotal + taxes - discount);
 
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
@@ -225,7 +225,7 @@ export default function BookingStep5Review({
           {baseFares.return > 0 && <FareRow label="Return Fare" value={baseFares.return} />}
           {baseFares.multiCity > 0 && <FareRow label="Multi-city Fares" value={baseFares.multiCity} />}
           {extrasTotal > 0 && <FareRow label="Meals & Baggage" value={extrasTotal} accent="violet" />}
-          <FareRow label="Taxes & Fees (5%)" value={taxes} />
+          {/* <FareRow label="Taxes & Fees (5%)" value={taxes} /> */}
           {discount > 0 && <FareRow label="Promo Discount" value={-discount} accent="emerald" />}
 
           <div className="flex justify-between items-center border-t-2 border-slate-200 pt-3 mt-2">
