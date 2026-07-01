@@ -804,19 +804,38 @@ export async function apiSearchFlights(
     const isCombinedItinerary = outboundRaws.some(r => (r.Segments?.length ?? 0) > 1);
 
     if (isCombinedItinerary) {
-      const outboundLegDisplays = outboundRaws.map(r => ({
-        ...tboResultToDisplay(r, traceId, 0),
-        isCombinedRoundTrip: true,
-      }));
-      const returnLegDisplays = outboundRaws.map(r => ({
-        ...tboResultToDisplay(r, traceId, 1),
-        isCombinedRoundTrip: true,
-      }));
+      // [COMBINED-DIRECTION-FIX] `.some()` above only checks that AT LEAST
+      // ONE raw is a true 2-leg combined fare — but outboundRaws can be a
+      // MIX of true combined fares (Segments.length === 2) and one-way-only
+      // results that happened to land in the same array (Segments.length
+      // === 1). tboResultToDisplay(r, traceId, 1) falls back to
+      // result.Segments[0] whenever Segments[1] doesn't exist (see its `??`
+      // fallback), so mapping EVERY raw through legIndex=1 silently cloned
+      // the outbound leg into the "return" slot for any raw that wasn't
+      // actually a combined fare — showing BOM→DXB as the "return" for a
+      // BOM→DXB outbound instead of DXB→BOM.
+      // Fix: only raws that genuinely carry both segment-groups are used to
+      // build the outbound/return pair. Raws with just one segment-group
+      // aren't valid combined round-trip fares and are dropped here (they
+      // fall through to the origin-code-split fallback below when none of
+      // the raws qualify, same as before this branch existed).
+      const trueCombinedRaws = outboundRaws.filter(r => (r.Segments?.length ?? 0) > 1);
 
-      return {
-        outbound:      groupByFlight(outboundLegDisplays, outboundRaws),
-        returnFlights: groupByFlight(returnLegDisplays, outboundRaws),
-      };
+      if (trueCombinedRaws.length > 0) {
+        const outboundLegDisplays = trueCombinedRaws.map(r => ({
+          ...tboResultToDisplay(r, traceId, 0),
+          isCombinedRoundTrip: true,
+        }));
+        const returnLegDisplays = trueCombinedRaws.map(r => ({
+          ...tboResultToDisplay(r, traceId, 1),
+          isCombinedRoundTrip: true,
+        }));
+
+        return {
+          outbound:      groupByFlight(outboundLegDisplays, trueCombinedRaws),
+          returnFlights: groupByFlight(returnLegDisplays, trueCombinedRaws),
+        };
+      }
     }
 
     // Fallback: split a single results[0] into outbound + return by origin code

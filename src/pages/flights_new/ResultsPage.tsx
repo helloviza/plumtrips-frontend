@@ -853,6 +853,32 @@ function SortChip({ label, active, onClick }: { label: string; active: boolean; 
   );
 }
 
+// ─── COMBINED-FARE HELPERS ──────────────────────────────────
+//
+// International "combined" round-trip fares (see flights_api.ts
+// isCombinedItinerary) share ONE TBO ResultIndex for BOTH the outbound
+// and return legs — it's a single bookable fare, not two independent
+// legs. Given the ResultIndex the user just picked on the outbound side,
+// find the return-flight/tier pair built from that exact same raw so we
+// can auto-select it instead of letting the user pick an unrelated
+// return option (picking two different ResultIndex values for one
+// combined itinerary causes the return leg's FareQuote/SSR calls to fail
+// against TBO — see BookingPage/flights_api SSR comments).
+function findMatchingReturnLeg(
+  returnFlights: DisplayFlight[],
+  resultIndex: string,
+): { flight: DisplayFlight; tier: FareTier } | null {
+  for (const rf of returnFlights) {
+    if (rf.resultIndex === resultIndex) {
+      const tier = rf.fareTiers?.find(t => t.resultIndex === resultIndex) ?? rf.fareTiers?.[0];
+      if (tier) return { flight: rf, tier };
+    }
+    const tier = rf.fareTiers?.find(t => t.resultIndex === resultIndex);
+    if (tier) return { flight: rf, tier };
+  }
+  return null;
+}
+
 // ─── MAIN RESULTS PAGE ─────────────────────────────────────
 
 interface ResultsPageProps {
@@ -862,6 +888,10 @@ interface ResultsPageProps {
   onBook: (flight: DisplayFlight, tier: FareTier, legIndex?: number) => void;
   onNewSearch?: (form: SearchForm, legs?: CityLeg[]) => void;
   selectedOutboundFlight?: DisplayFlight | null;
+  /** The actual FareTier chosen for the outbound leg (not just the flight's
+   *  base/cheapest ResultIndex). Needed to correctly restrict return-leg
+   *  options for combined-itinerary international round trips. */
+  selectedOutboundTier?: FareTier | null;
   selectedLegs?: Array<{ flight: DisplayFlight; tier: FareTier } | null>;
   searchKey?: string;
 }
@@ -889,6 +919,7 @@ export default function ResultsPage({
   onBook,
   onNewSearch,
   selectedOutboundFlight,
+  selectedOutboundTier,
   selectedLegs,
   searchKey,
 }: ResultsPageProps) {
@@ -1026,7 +1057,19 @@ const sourceFlights = useMemo(() => {
   };
 
   const filtered = useMemo(() => applyFiltersAndSort(sourceFlights), [sourceFlights, filters, sortKey, form.nonStopOnly]);
-  const filteredReturn = useMemo(() => applyFiltersAndSort(returnFlightsList), [returnFlightsList, filters, sortKey, form.nonStopOnly]);
+
+  // Second line of defense: once a combined-itinerary outbound is locked
+  // in, the return list must only ever offer the ONE return leg that
+  // shares its ResultIndex — anything else is a different, incompatible
+  // combined fare and will fail SSR/FareQuote against TBO for that leg.
+  const filteredReturn = useMemo(() => {
+    const base = applyFiltersAndSort(returnFlightsList);
+    if (!isRoundTrip || !selectedOutboundFlight?.isCombinedRoundTrip) return base;
+    const pinnedResultIndex = selectedOutboundTier?.resultIndex ?? selectedOutboundFlight.resultIndex;
+    const matched = findMatchingReturnLeg(returnFlightsList, pinnedResultIndex);
+    if (!matched) return base; // no match found — fall back rather than showing nothing
+    return base.filter(f => f.resultIndex === matched.flight.resultIndex);
+  }, [returnFlightsList, filters, sortKey, form.nonStopOnly, isRoundTrip, selectedOutboundFlight, selectedOutboundTier]);
 
   const activeFilterCount = [
     filters.stops !== null, filters.maxPrice !== null, filters.airlines.length > 0,
@@ -1351,6 +1394,27 @@ const sourceFlights = useMemo(() => {
           onClose={() => setSelectedFlight(null)}
           onBook={tier => {
             setSelectedFlight(null);
+
+            // ── COMBINED-FARE AUTO-PAIR ─────────────────────────────
+            // For international combined-itinerary round trips, the tier
+            // just picked pins ONE ResultIndex that covers BOTH legs.
+            // Auto-select the matching return leg instead of sending the
+            // user through an independent "pick your return flight" step
+            // that could land on an unrelated (and TBO-incompatible)
+            // ResultIndex for the return.
+            if (isRoundTrip && !selectedOutboundFlight && selectedFlight.isCombinedRoundTrip) {
+              const matchedReturn = findMatchingReturnLeg(returnFlightsList, tier.resultIndex);
+              if (matchedReturn) {
+                onBook(selectedFlight, tier, 0);
+                onBook(matchedReturn.flight, matchedReturn.tier, 1);
+                return;
+              }
+              console.warn(
+                "[combined-fare] No matching return leg found for ResultIndex — falling back to manual return selection.",
+                tier.resultIndex,
+              );
+            }
+
             onBook(selectedFlight, tier, activeTab /* legIndex */);
               const nextUnselected = (selectedLegs ?? []).findIndex((l, i) => i > activeTab && !l);
   if (nextUnselected !== -1) setActiveTab(nextUnselected);

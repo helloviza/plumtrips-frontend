@@ -244,7 +244,32 @@ export default function BookingPage({
   };
 
   const activeTier          = lockedFareTiers[0] ?? tier;
-  const activeReturnTier    = returnTier ? (lockedFareTiers[1] ?? returnTier) : undefined;
+
+  // ── COMBINED-FARE GUARD ─────────────────────────────────────
+  // International combined-itinerary round trips (flight.isCombinedRoundTrip,
+  // see flights_api.ts) share ONE TBO ResultIndex for BOTH legs — it's a
+  // single bookable fare. If outbound and return ever arrive here pinned to
+  // DIFFERENT ResultIndex values (stale prefetch, restored session state,
+  // a future selection path that bypasses ResultsPage's pairing), every
+  // downstream FareQuote/SSR call for the return leg will fail against
+  // TBO's shared TraceId session even though the outbound succeeds. Force
+  // the return tier onto the outbound's ResultIndex so both legs stay
+  // consistent with the single fare TBO actually returned.
+  const rawReturnTier    = returnTier ? (lockedFareTiers[1] ?? returnTier) : undefined;
+  const isCombinedFlight = !!flight.isCombinedRoundTrip;
+  const isCombinedMismatch =
+    isCombinedFlight && !!rawReturnTier && rawReturnTier.resultIndex !== activeTier.resultIndex;
+
+  if (isCombinedMismatch) {
+    console.warn(
+      "[combined-fare] Outbound/return ResultIndex mismatch on a combined-itinerary flight — forcing return onto outbound's ResultIndex.",
+      { outbound: activeTier.resultIndex, return: rawReturnTier!.resultIndex },
+    );
+  }
+
+  const activeReturnTier    = isCombinedMismatch
+    ? { ...rawReturnTier!, resultIndex: activeTier.resultIndex }
+    : rawReturnTier;
   const activeMultiCityLegs = multiCityLegs?.map((leg, index) => ({
     flight: leg.flight,
     tier:   lockedFareTiers[index] ?? leg.tier,
@@ -944,7 +969,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
     if (isRoundTrip && returnFlight && activeReturnTier) {
       // International combined-itinerary fares share ONE ResultIndex for
       // both legs — never book them separately, regardless of LCC status.
-      const isCombined = !!(flight as any).isCombinedRoundTrip;
+      const isCombined = isCombinedFlight;
 
       // For LCC or mixed (and not a combined single-fare itinerary), book separately
       const shouldBookSeparately = !isCombined && (flight.isLCC || returnFlight.isLCC);

@@ -116,6 +116,12 @@ fareBreakdown?: Array<{
   cancellationPolicies?: TBOCancellationPolicy[]; // TBO policies for cancellation & reschedule
   itineraryLegs?: DisplayFlight[]; // multi-city display legs from one combined TBO ResultIndex
   fareTiers?: FareTier[]; 
+  /** International "combined" round-trip fare — outbound AND return share ONE
+   *  TBO ResultIndex (see flights_api.ts isCombinedItinerary). When true, the
+   *  outbound and return legs must NOT be selected independently: whichever
+   *  ResultIndex is chosen governs BOTH legs. Set on both leg-0 and leg-1
+   *  display objects derived from the same combined raw. */
+  isCombinedRoundTrip?: boolean;
 }
 
 export interface FareTier {

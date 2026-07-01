@@ -223,7 +223,20 @@ function _triggerPrefetch(
   }));
 
   // Fare-quote every leg in parallel. Each settles independently so one
-  // leg failing doesn't block the other's result from being used.
+  // leg failing doesn't block the OTHER legs' fareQuote results from being
+  // stored/used by Step 1 — but it must NOT silently let SSR proceed on a
+  // leg whose fareQuote failed.
+  //
+  // [SSR-GATE] SSR must only fire once EVERY leg's apiFareQuote has
+  // SUCCEEDED — not merely "settled" (settled also covers rejections).
+  // Previously, a rejected leg fell back to `f.resultIndex` (the raw,
+  // un-confirmed search-time index) and SSR was called anyway, which is
+  // wrong: TBO requires the FARE-QUOTED resultIndex for SSR on every leg.
+  // This is most consequential on round-trips, where the return leg's
+  // fareQuote can fail independently of the outbound's. If any leg failed,
+  // we skip the SSR prefetch entirely and leave prefetchedSSR null —
+  // BookingPage's own SSR fetch (gated behind "all legs fare-locked", see
+  // handlePassengersNext) becomes the fallback once the user re-confirms.
   Promise.allSettled(pinnedFlights.map((f) => apiFareQuote(f)))
     .then((fqResults) => {
       const quotes: (FareQuoteResult | null)[] = fqResults.map((r) =>
@@ -237,6 +250,16 @@ function _triggerPrefetch(
         return next;
       });
 
+      // ── SSR GATE: require every leg's fareQuote to have succeeded ──────
+      const allLegsQuoted = quotes.every((q) => q !== null);
+      if (!allLegsQuoted) {
+        console.warn(
+          "[prefetch] Skipping SSR — not all legs fare-quoted successfully:",
+          quotes.map((q, i) => (q === null ? `leg${i}:FAILED` : `leg${i}:ok`)).join(", ")
+        );
+        return null; // short-circuit — no SSR call
+      }
+
       // Build SSR flights using EACH leg's own fare-quoted resultIndex.
       const ssrFlights: DisplayFlight[] = pinnedFlights.map((f, i) => {
         const quotedResultIndex = quotes[i]?.tiers[0]?.resultIndex ?? f.resultIndex;
@@ -246,6 +269,7 @@ function _triggerPrefetch(
       return apiGetSSRForLegs(ssrFlights);
     })
     .then((ssrResult) => {
+      if (!ssrResult) return; // SSR gate skipped the call above — nothing to store
       setState((prev) => {
         const next: FlightState = { ...prev, prefetchedSSR: ssrResult };
         persist(next);
@@ -524,6 +548,7 @@ export default function FlightsFlow() {
           onBook={handleBook}
           onNewSearch={handleSearch}
           selectedOutboundFlight={state.selectedFlight}
+          selectedOutboundTier={state.selectedTier}
           selectedLegs={state.selectedLegs}
         />
       );
