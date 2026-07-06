@@ -113,11 +113,13 @@ export const aiPlannerProps: AIPlannerProps = {
   title: "Not sure where to go?",
   subtitle: "Let AI plan the perfect trip for you — based on your budget, vibe and dates.",
   fields: [
-    { label: "Where do you want to go?", placeholder: "e.g. Switzerland", fullWidth: true },
-    { label: "Budget (₹)",               placeholder: "₹75,000" },
-    { label: "Duration",                 placeholder: "7 days" },
-    { label: "Travelers",                placeholder: "2 adults" },
-    { label: "Trip vibe",                placeholder: "Relaxing / Adventure" },
+    { name: "destination", label: "Where do you want to go?", placeholder: "e.g. Switzerland", fullWidth: true },
+    { name: "departureCity", label: "Departure city", placeholder: "e.g. Mumbai" },
+    { name: "budget", label: "Budget (₹)", placeholder: "₹75,000" },
+    { name: "duration", label: "Duration", placeholder: "7 days" },
+    { name: "travelers", label: "Travelers", placeholder: "2 adults" },
+    { name: "tripVibe", label: "Trip vibe", placeholder: "Relaxing / Adventure" },
+    { name: "specialRequests", label: "Special requests", placeholder: "Any extra requirements?", fullWidth: true },
   ],
   ctaLabel: "Generate My Trip",
   suggestion: {
