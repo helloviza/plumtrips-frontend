@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 function Field({ label, placeholder, fullWidth, value, onChange }: PlannerField & { value: string; onChange: (value: string) => void }) {
   return (
-    <div style={{ gridColumn: fullWidth ? "1 / -1" : "auto" }}>
+    <div style={{ gridColumn: "auto" }}>
       <label
         style={{
           display: "block",
@@ -281,7 +281,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
           <h2 style={{ fontFamily: FONT, fontWeight: 700, fontSize: "1.9rem", lineHeight: 1.2, color: "#fff", margin: "0 0 8px" }}>
             {title}
           </h2>
-          <p style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "0 0 26px" }}>
+          <p style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "0 0 20px" }}>
             {subtitle}
           </p>
           <div className="ai-planner-fields">
@@ -297,7 +297,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
               );
             })}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginTop: 14 }}>
+          {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginTop: 14 }}>
             <input
               value={customFieldLabel}
               onChange={(event) => setCustomFieldLabel(event.target.value)}
@@ -332,7 +332,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
             >
               Add field
             </button>
-          </div>
+          </div> */}
           <button
             onClick={handleGenerate}
             style={{
