@@ -1118,35 +1118,64 @@ export type ApiSeatMap = {
 };
 
 export type SSRMeal = {
-  code:        string;
-  label:       string;
-  description: string;
-  origin:      string;
-  destination: string;
-  price:       number;
-  emoji:       string;
+  code:         string;
+  label:        string;
+  description:  string;
+  origin:       string;
+  destination:  string;
+  flightNumber?: string;
+  price:        number;
+  emoji:        string;
 };
 
 export type SSRBaggage = {
-  code:        string;
-  kg:          number;
-  label:       string;
-  description: string;
-  price:       number;
+  code:         string;
+  kg:           number;
+  label:        string;
+  description:  string;
+  origin?:      string;
+  destination?: string;
+  flightNumber?: string;
+  price:        number;
+};
+
+type SSRAvailability = {
+  seatMap:          boolean;
+  meals:            boolean;
+  baggage:          boolean;
+  seatMapMessage?:  string;
+  mealsMessage?:    string;
+  baggageMessage?:  string;
+};
+
+// One entry per PHYSICAL flight segment (i.e. per stop). A direct flight
+// has exactly one segment; a 1-stop flight has two; a 2-stop flight has
+// three. TBO returns seat/meal/baggage options per segment (each keyed by
+// its own Origin/Destination/FlightNumber) — they must be selected and
+// booked independently, since a passenger can pick a different seat and
+// meal on each physical flight of a connecting itinerary.
+export type SSRSegment = {
+  origin:       string;
+  destination:  string;
+  flightNumber: string;
+  airlineCode:  string;
+  seatMap:      ApiSeatMap;
+  meals:        SSRMeal[];
+  baggage:      SSRBaggage[];
+  availability: SSRAvailability;
 };
 
 export type SSRResult = {
+  // Backward-compatible aggregate fields — mirror segments[0] so existing
+  // single-segment (direct-flight) call sites keep working untouched.
   seatMap:  ApiSeatMap;
   meals:    SSRMeal[];
   baggage:  SSRBaggage[];
-  availability?: {
-    seatMap:          boolean;
-    meals:            boolean;
-    baggage:          boolean;
-    seatMapMessage?:  string;
-    mealsMessage?:    string;
-    baggageMessage?:  string;
-  };
+  // Authoritative per-segment breakdown. ALWAYS use this for connecting
+  // (1-stop/2-stop) flights — seatMap/meals/baggage above only reflect the
+  // FIRST physical segment.
+  segments: SSRSegment[];
+  availability?: SSRAvailability;
 };
 
 const MEAL_META: Record<string, { label: string; desc: string; emoji: string }> = {
@@ -1174,6 +1203,7 @@ function unavailableSSR(airlineName?: string): SSRResult {
     seatMap: emptySeatMap(),
     meals:   [],
     baggage: [],
+    segments: [],
     availability: {
       seatMap:          false,
       meals:            false,
@@ -1185,89 +1215,69 @@ function unavailableSSR(airlineName?: string): SSRResult {
   };
 }
 
-function parseTBOSSR(raw: any, airlineName?: string): SSRResult {
-  const response = raw?.Response;
-
-  const allSegmentSeats: any[] = [];
-  const seatDynArr: any[] = response?.SeatDynamic ?? [];
-  for (const sd of seatDynArr) {
-    const segSeats: any[] = sd?.SegmentSeat ?? [];
-    for (const ss of segSeats) {
-      if (ss?.RowSeats?.length > 0) { allSegmentSeats.push(ss); break; }
-    }
-  }
-  const segSeat  = allSegmentSeats[0] ?? null;
-  const rowSeats: any[] = segSeat?.RowSeats ?? [];
-
+// Builds one segment's seat map from its RowSeats array. Extracted so it
+// can be called once per physical flight segment instead of only ever
+// being applied to the first one.
+function buildSeatMapFromRowSeats(rowSeats: any[]): ApiSeatMap | null {
   const validRows = rowSeats.filter((rowObj: any) => {
     const first = rowObj?.Seats?.[0];
     return first && String(first.RowNo).trim() !== "0" && first.Code !== "NoSeat";
   });
+  if (validRows.length === 0) return null;
 
-  let seatMap: ApiSeatMap;
-  let hasSeatMap = false;
-  if (validRows.length > 0) {
-    const colSet = new Set<string>();
-    validRows.forEach((rowObj: any) => {
-      (rowObj.Seats ?? []).forEach((s: any) => { if (s.SeatNo) colSet.add(String(s.SeatNo)); });
-    });
-    const cols = [...colSet].sort();
-    const rows: ApiSeatRow[] = validRows.map((rowObj: any) => {
-      const seats: any[] = rowObj.Seats ?? [];
-      const rowNo = String(seats[0]?.RowNo ?? "0").trim();
-      return {
-        rowNumber: Number(rowNo),
-        seats: seats.map((s: any) => ({
-          code:       s.Code,
-          isOccupied: s.AvailablityType === 3 || s.AvailablityType === 2,
-          isPremium:  s.SeatType === 1 || Number(rowNo) <= 3,
-          price:      Number(s.Price ?? 0),
-          type:
-            s.SeatNo === "A" || s.SeatNo === "F" ? "Window"
-            : s.SeatNo === "C" || s.SeatNo === "D" ? "Aisle"
-            : "Middle",
-        })),
-      };
-    });
-    seatMap    = { rows, cols, totalRows: rows.length };
-    hasSeatMap = true;
-  } else {
-    seatMap = emptySeatMap();
-  }
+  const colSet = new Set<string>();
+  validRows.forEach((rowObj: any) => {
+    (rowObj.Seats ?? []).forEach((s: any) => { if (s.SeatNo) colSet.add(String(s.SeatNo)); });
+  });
+  const cols = [...colSet].sort();
+  const rows: ApiSeatRow[] = validRows.map((rowObj: any) => {
+    const seats: any[] = rowObj.Seats ?? [];
+    const rowNo = String(seats[0]?.RowNo ?? "0").trim();
+    return {
+      rowNumber: Number(rowNo),
+      seats: seats.map((s: any) => ({
+        code:       s.Code,
+        isOccupied: s.AvailablityType === 3 || s.AvailablityType === 2,
+        isPremium:  s.SeatType === 1 || Number(rowNo) <= 3,
+        price:      Number(s.Price ?? 0),
+        type:
+          s.SeatNo === "A" || s.SeatNo === "F" ? "Window"
+          : s.SeatNo === "C" || s.SeatNo === "D" ? "Aisle"
+          : "Middle",
+      })),
+    };
+  });
+  return { rows, cols, totalRows: rows.length };
+}
 
-  const mealOuter: any = response?.MealDynamic?.[0] ?? [];
-  const rawMeals: any[] = Array.isArray(mealOuter?.[0])
-    ? mealOuter[0]
-    : Array.isArray(mealOuter) ? mealOuter : [];
+function buildMealsFromRaw(rawMeals: any[]): SSRMeal[] {
   const realMeals = rawMeals.filter(
     (m: any) => m && m.Code && m.Code !== "NoMeal" && m.Code !== "NOML"
   );
+  if (realMeals.length === 0) return [];
+  return [
+    { code: "NoMeal", label: "No meal", description: "Skip meal selection", price: 0, origin: "", destination: "", emoji: "🚫" },
+    ...realMeals.map((m: any) => {
+      const meta = MEAL_META[m.Code];
+      return {
+        code:         m.Code,
+        label:        meta?.label ?? m.AirlineDescription ?? m.Code,
+        description:  meta?.desc  ?? m.AirlineDescription ?? "",
+        origin:       m.Origin,
+        destination:  m.Destination,
+        flightNumber: m.FlightNumber != null ? String(m.FlightNumber) : undefined,
+        price:        Number(m.Price ?? 0),
+        emoji:        meta?.emoji ?? "🍽️",
+      };
+    }),
+  ];
+}
 
-  const meals: SSRMeal[] = realMeals.length > 0
-    ? [
-        { code: "NoMeal", label: "No meal", description: "Skip meal selection", price: 0, origin: "", destination: "", emoji: "🚫" },
-        ...realMeals.map((m: any) => {
-          const meta = MEAL_META[m.Code];
-          return {
-            code:        m.Code,
-            label:       meta?.label ?? m.AirlineDescription ?? m.Code,
-            description: meta?.desc  ?? m.AirlineDescription ?? "",
-            origin:      m.Origin,
-            destination: m.Destination,
-            price:       Number(m.Price ?? 0),
-            emoji:       meta?.emoji ?? "🍽️",
-          };
-        }),
-      ]
-    : [];
-
-  const bagOuter: any = response?.Baggage?.[0] ?? [];
-  const rawBaggage: any[] = Array.isArray(bagOuter?.[0])
-    ? bagOuter[0]
-    : Array.isArray(bagOuter) ? bagOuter : [];
+function buildBaggageFromRaw(rawBaggage: any[]): SSRBaggage[] {
   const realBaggage = rawBaggage.filter(
     (b: any) => b.Code !== "NoBaggage" && Number(b.Weight ?? 0) > 0
   );
+  if (realBaggage.length === 0) return [];
 
   const bagByWeight = new Map<number, any>();
   realBaggage.forEach((b: any) => {
@@ -1276,32 +1286,153 @@ function parseTBOSSR(raw: any, airlineName?: string): SSRResult {
     if (!existing || Number(b.Price) < Number(existing.Price)) bagByWeight.set(kg, b);
   });
 
-  const baggage: SSRBaggage[] = bagByWeight.size > 0
-    ? [
-        { code: "NoBaggage", kg: 0, label: "Included only", description: "Use fare allowance", price: 0 },
-        ...[...bagByWeight.values()]
-          .sort((a, b) => Number(a.Weight) - Number(b.Weight))
-          .map((b: any) => ({
-            code:        String(b.Code ?? ""),
-            kg:          Number(b.Weight),
-            label:       `+ ${b.Weight} kg`,
-            description: b.Text ?? `Extra ${b.Weight}kg check-in`,
-            price:       Number(b.Price),
-          })),
-      ]
-    : [];
+  const sample = realBaggage[0];
+  return [
+    { code: "NoBaggage", kg: 0, label: "Included only", description: "Use fare allowance", price: 0, origin: sample?.Origin, destination: sample?.Destination },
+    ...[...bagByWeight.values()]
+      .sort((a, b) => Number(a.Weight) - Number(b.Weight))
+      .map((b: any) => ({
+        code:         String(b.Code ?? ""),
+        kg:           Number(b.Weight),
+        label:        `+ ${b.Weight} kg`,
+        description:  b.Text ?? `Extra ${b.Weight}kg check-in`,
+        origin:       b.Origin,
+        destination:  b.Destination,
+        flightNumber: b.FlightNumber != null ? String(b.FlightNumber) : undefined,
+        price:        Number(b.Price),
+      })),
+  ];
+}
 
+// ─── parseTBOSSR ─────────────────────────────────────────────
+//
+// FIXED: previously this only ever read allSegmentSeats[0] — the FIRST
+// physical flight segment with row data — and silently discarded every
+// other segment. For a direct flight that's harmless (there's only one
+// segment), but for a 1-stop or 2-stop flight, TBO's SeatDynamic response
+// contains one `SegmentSeat` entry PER physical segment (e.g. DEL→IXB and
+// IXB→BOM), and this function threw all but the first away. That's why
+// seats never rendered past the first hop, and meals/baggage — which were
+// naively flattened across every segment into one undifferentiated list —
+// couldn't be matched back to a specific flight number for booking.
+//
+// Now every SegmentSeat / meal / baggage item is grouped into its own
+// `SSRSegment`, keyed by Origin|Destination|FlightNumber, and returned in
+// `segments[]`. The old top-level seatMap/meals/baggage fields are kept
+// for backward compatibility and simply mirror segments[0].
+function parseTBOSSR(raw: any, airlineName?: string): SSRResult {
+  const response = raw?.Response ?? raw;
+
+  type PartialSeg = {
+    origin: string; destination: string; flightNumber: string; airlineCode: string;
+    seatMap: ApiSeatMap; meals: SSRMeal[]; baggage: SSRBaggage[];
+    availability: SSRAvailability;
+  };
+  const orderedKeys: string[] = [];
+  const segByKey = new Map<string, PartialSeg>();
+
+  function ensureSegment(key: string, origin: string, destination: string, flightNumber: string, airlineCode: string): PartialSeg {
+    let seg = segByKey.get(key);
+    if (!seg) {
+      seg = {
+        origin, destination, flightNumber, airlineCode,
+        seatMap: emptySeatMap(), meals: [], baggage: [],
+        availability: { seatMap: false, meals: false, baggage: false },
+      };
+      segByKey.set(key, seg);
+      orderedKeys.push(key);
+    }
+    return seg;
+  }
+
+  // ── 1. Seats — one SegmentSeat entry per physical flight segment ──
+  const seatDynArr: any[] = response?.SeatDynamic ?? [];
+  for (const sd of seatDynArr) {
+    const segSeats: any[] = sd?.SegmentSeat ?? [];
+    for (const ss of segSeats) {
+      const rowSeats: any[] = ss?.RowSeats ?? [];
+      const sampleSeat = rowSeats
+        .flatMap((r: any) => r?.Seats ?? [])
+        .find((s: any) => s && s.Code !== "NoSeat");
+      if (!sampleSeat) continue; // this segment has no bookable seats at all
+      const origin       = sampleSeat.Origin ?? "";
+      const destination   = sampleSeat.Destination ?? "";
+      const flightNumber = sampleSeat.FlightNumber != null ? String(sampleSeat.FlightNumber) : "";
+      const airlineCode  = sampleSeat.AirlineCode ?? "";
+      const key = `${origin}|${destination}|${flightNumber}`;
+      const seg = ensureSegment(key, origin, destination, flightNumber, airlineCode);
+      const map = buildSeatMapFromRowSeats(rowSeats);
+      if (map) { seg.seatMap = map; seg.availability.seatMap = true; }
+    }
+  }
+
+  // ── 2. Meals — grouped by Origin|Destination|FlightNumber ──
+  const mealOuter: any = response?.MealDynamic?.[0] ?? [];
+  const rawMealsFlat: any[] = Array.isArray(mealOuter?.[0])
+    ? mealOuter.flat()
+    : Array.isArray(mealOuter) ? mealOuter : [];
+  const mealsByKey = new Map<string, any[]>();
+  rawMealsFlat.forEach((m: any) => {
+    const key = `${m?.Origin ?? ""}|${m?.Destination ?? ""}|${m?.FlightNumber != null ? String(m.FlightNumber) : ""}`;
+    (mealsByKey.get(key) ?? mealsByKey.set(key, []).get(key)!).push(m);
+  });
+  mealsByKey.forEach((raws, key) => {
+    const sample = raws[0] ?? {};
+    const seg = ensureSegment(
+      key,
+      sample.Origin ?? "",
+      sample.Destination ?? "",
+      sample.FlightNumber != null ? String(sample.FlightNumber) : "",
+      sample.AirlineCode ?? "",
+    );
+    const meals = buildMealsFromRaw(raws);
+    seg.meals = meals;
+    seg.availability.meals = meals.length > 0;
+  });
+
+  // ── 3. Baggage — grouped the same way ──
+  const bagOuter: any = response?.Baggage?.[0] ?? [];
+  const rawBaggageFlat: any[] = Array.isArray(bagOuter?.[0])
+    ? bagOuter.flat()
+    : Array.isArray(bagOuter) ? bagOuter : [];
+  const baggageByKey = new Map<string, any[]>();
+  rawBaggageFlat.forEach((b: any) => {
+    const key = `${b?.Origin ?? ""}|${b?.Destination ?? ""}|${b?.FlightNumber != null ? String(b.FlightNumber) : ""}`;
+    (baggageByKey.get(key) ?? baggageByKey.set(key, []).get(key)!).push(b);
+  });
+  baggageByKey.forEach((raws, key) => {
+    const sample = raws[0] ?? {};
+    const seg = ensureSegment(
+      key,
+      sample.Origin ?? "",
+      sample.Destination ?? "",
+      sample.FlightNumber != null ? String(sample.FlightNumber) : "",
+      sample.AirlineCode ?? "",
+    );
+    const baggage = buildBaggageFromRaw(raws);
+    seg.baggage = baggage;
+    seg.availability.baggage = baggage.length > 0;
+  });
+
+  const segments: SSRSegment[] = orderedKeys.map((key) => {
+    const seg = segByKey.get(key)!;
+    seg.availability.seatMapMessage = seg.availability.seatMap ? undefined : airlineUnavailableMessage("Seat map", airlineName);
+    seg.availability.mealsMessage   = seg.availability.meals   ? undefined : airlineUnavailableMessage("Meals", airlineName);
+    seg.availability.baggageMessage = seg.availability.baggage ? undefined : airlineUnavailableMessage("Extra baggage", airlineName);
+    return seg;
+  });
+
+  const first = segments[0];
   return {
-    seatMap,
-    meals,
-    baggage,
-    availability: {
-      seatMap:         hasSeatMap,
-      meals:           meals.length > 0,
-      baggage:         baggage.length > 0,
-      seatMapMessage:  hasSeatMap      ? undefined : airlineUnavailableMessage("Seat map",       airlineName),
-      mealsMessage:    meals.length > 0   ? undefined : airlineUnavailableMessage("Meals",        airlineName),
-      baggageMessage:  baggage.length > 0 ? undefined : airlineUnavailableMessage("Extra baggage", airlineName),
+    seatMap:  first?.seatMap ?? emptySeatMap(),
+    meals:    first?.meals   ?? [],
+    baggage:  first?.baggage ?? [],
+    segments,
+    availability: first?.availability ?? {
+      seatMap: false, meals: false, baggage: false,
+      seatMapMessage: airlineUnavailableMessage("Seat map", airlineName),
+      mealsMessage:   airlineUnavailableMessage("Meals", airlineName),
+      baggageMessage: airlineUnavailableMessage("Extra baggage", airlineName),
     },
   };
 }
@@ -1315,6 +1446,10 @@ function parseTBOSSRForLeg(raw: any, legIndex: number): SSRResult {
   const legMealDynamic = mealDynamic[legIndex];
   const legBaggage     = baggage[legIndex];
   if (!legSeatDynamic && !legMealDynamic && !legBaggage) return unavailableSSR();
+  // NOTE: legSeatDynamic/legMealDynamic/legBaggage can each still contain
+  // MULTIPLE physical segments (SegmentSeat entries) when this leg itself
+  // is a 1-stop/2-stop flight — parseTBOSSR (below) now correctly expands
+  // all of them into `segments[]` instead of collapsing to the first.
   const miniRaw = {
     Response: {
       SeatDynamic: legSeatDynamic ? [legSeatDynamic] : [],

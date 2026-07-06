@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import type { PassengerData, ExtraSelection } from "./BookingShared";
+import type { PassengerData, ExtraSelection, SeatMap } from "./BookingShared";
 import { SectionHeading, AIRLINE_COLORS, calcFares } from "./BookingShared";
 import { formatINR } from "../../lib/flights_api";
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +15,7 @@ interface Step5Props {
   returnFlight?: DisplayFlight; returnTier?: FareTier;
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   passengers: PassengerData[];
+  seatMaps?: Record<number, SeatMap>;
   paxTypes: ("Adult" | "Child" | "Infant")[];
   contactEmail: string; contactPhone: string;
   adults: number; children: number; infants: number;
@@ -25,9 +26,59 @@ interface Step5Props {
   onBack: () => void;
 }
 
+
+function AirlineLogo({
+  code,
+  size = "md",
+}: {
+  code: string;
+  size?: "sm" | "md" | "lg";
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const color =
+    AIRLINE_COLORS[code] ?? { bg: "#475569", text: "#fff" };
+
+  const dims: Record<string, React.CSSProperties> = {
+    sm: { width: 32, height: 32, fontSize: 9, borderRadius: 8 },
+    md: { width: 40, height: 40, fontSize: 10, borderRadius: 11 },
+    lg: { width: 48, height: 48, fontSize: 11, borderRadius: 13 },
+  };
+
+  return (
+    <div
+      style={{
+        ...dims[size],
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 900,
+        fontFamily: "'Sora', sans-serif",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
+    >
+      {imgFailed ? (
+        code
+      ) : (
+        <img
+          src={`/airlines/${code}.gif`}
+          alt={code}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+          onError={() => setImgFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function BookingStep5Review({
   flight, tier, returnFlight, returnTier, multiCityLegs,
-  passengers, paxTypes, contactEmail, contactPhone,
+  passengers, seatMaps, paxTypes, contactEmail, contactPhone,
   adults, children, infants, extras, discount, isInternational,
   onConfirm, onBack,
 }: Step5Props) {
@@ -59,8 +110,12 @@ export default function BookingStep5Review({
   }
   // ─────────────────────────────────────────────────────────
 
+
+
+
   const { baseFares, subtotal, seatsTotal, extrasTotal, taxes } = calcFares({
-    tier, returnTier, multiCityLegs, adults, children, infants, extras, 
+    tier, returnTier, multiCityLegs, adults, children, infants, extras,
+    passengers, seatMaps,
   });
   const total = Math.round(subtotal+ seatsTotal + extrasTotal + taxes - discount);
 
@@ -105,7 +160,7 @@ export default function BookingStep5Review({
               ? [{ label: allLegs[0]?.label ?? "Leg 1", seat: p.selectedSeat }]
               : [];
             const seatLabel = seatRows.length
-              ? seatRows.map((entry) => `${entry.label}: ${entry.seat}`).join(" · ")
+              ? seatRows.map((entry) => `Seat No: ${entry.seat}`).join(" · ")
               : null;
 
             return (
@@ -134,7 +189,8 @@ export default function BookingStep5Review({
                         <div className="space-y-1 mt-0.5">
                           {passengerExtras.map((extra) => (
                             <div key={`${extra.legIndex}-${extra.passengerId}`} className="text-xs text-violet-600 font-medium">
-                              {allLegs[extra.legIndex]?.label ?? `Leg ${extra.legIndex + 1}`}: 
+                              {/* {allLegs[extra.legIndex]?.label ?? `Leg ${extra.legIndex + 1}`}:  */}
+                              Meals & Baggage:
                               {extra.mealCode !== "NONE" ? `🍽️ ${extra.mealLabel}` : "No meal"}
                               {extra.mealCode !== "NONE" && extra.baggageKg > 0 && " · "}
                               {extra.baggageKg > 0 ? `🧳 +${extra.baggageKg}kg` : ""}
@@ -225,6 +281,7 @@ export default function BookingStep5Review({
           {baseFares.return > 0 && <FareRow label="Return Fare" value={baseFares.return} />}
           {baseFares.multiCity > 0 && <FareRow label="Multi-city Fares" value={baseFares.multiCity} />}
           {extrasTotal > 0 && <FareRow label="Meals & Baggage" value={extrasTotal} accent="violet" />}
+          {seatsTotal > 0 && <FareRow label="Seats" value={seatsTotal} accent="violet" />}
           {/* <FareRow label="Taxes & Fees (5%)" value={taxes} /> */}
           {discount > 0 && <FareRow label="Promo Discount" value={-discount} accent="emerald" />}
 
@@ -320,12 +377,13 @@ function LegRow({ flight, tier, label }: { flight: DisplayFlight; tier: FareTier
     <div className="py-4 first:pt-0 last:pb-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
-          <div
+          {/* <div
             className="w-7 h-7 rounded-xl flex items-center justify-center text-white text-[9px] font-black"
             style={{ background: AIRLINE_COLORS[flight.airlineCode] ?? "#64748b" }}
           >
             {flight.airlineCode}
-          </div>
+          </div> */}
+          <AirlineLogo code={flight.airlineCode} size="lg" />
           <div>
             <span className="font-bold text-slate-900 text-sm">{flight.airline} · {flight.flightNumber}</span>
             {label && (

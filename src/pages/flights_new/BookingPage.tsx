@@ -81,6 +81,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 type FlightBookPassenger = BookPassenger & {
   MealDynamic?: Array<Record<string, unknown>>;
+  Baggage?: Array<Record<string, unknown>>;
+  SeatDynamic?: Array<Record<string, unknown>>;
   GSTCompanyAddress:       string;
   GSTCompanyContactNumber: string;
   GSTCompanyName:          string;
@@ -204,7 +206,7 @@ export default function BookingPage({
   // SSR — seed from prefetch when available so Step 3 is instant
   const [ssrDataPerLeg, setSsrDataPerLeg] = useState<(SSRResult | null)[]>(prefetchedSSR ?? []);
   const [ssrLoading, setSsrLoading]       = useState(false);
-  const [seatMaps, setSeatMaps]           = useState<Record<number, SeatMap>>({});
+  const [seatMaps, setSeatMaps]           = useState<Record<string, SeatMap>>({});
 
   const [form, setForm] = useState<BookingFormState>({
     passengers: [
@@ -310,17 +312,44 @@ export default function BookingPage({
     isRoundTrip,
     isMultiCity,
     activeMultiCityLegs?.length,
-  ]);
+  ]); 
+ 
+  // ── SEGMENTS — per physical flight within a leg ────────────
+  // A leg with stops (1-stop/2-stop) is actually multiple physical
+  // flight segments. ssrDataPerLeg[i].segments carries the real
+  // breakdown (see flights_api.ts); this falls back to one pseudo-
+  // segment built from the leg's own from/to/flightNumber when SSR
+  // hasn't resolved yet, so callers always have at least one entry.
+  function legSegments(legIndex: number) {
+    const ssr = ssrDataPerLeg[legIndex];
+    const leg = legs[legIndex];
+    if (ssr?.segments && ssr.segments.length > 0) return ssr.segments;
+    if (leg) {
+      return [{
+        origin: leg.flight.fromCode,
+        destination: leg.flight.toCode,
+        flightNumber: leg.flight.flightNumber,
+        airlineCode: leg.flight.airlineCode,
+        seatMap: ssr?.seatMap ?? { rows: [], cols: [], totalRows: 0 },
+        meals: ssr?.meals ?? [],
+        baggage: ssr?.baggage ?? [],
+        availability: ssr?.availability ?? { seatMap: false, meals: false, baggage: false },
+      }];
+    }
+    return [];
+  }
 
   // ── FARE CALC ─────────────────────────────────────────────
-
+   
   const { subtotal, extrasTotal, seatsTotal, taxes } = calcFares({
     tier: activeTier, returnTier: activeReturnTier, multiCityLegs: activeMultiCityLegs,
     adults, children, infants,
     extras: form.extras,
+    passengers: form.passengers,
+    seatMaps
     
   });
-  const totalPayable = Math.round(subtotal + extrasTotal + taxes - form.promoDiscount);
+  const totalPayable = Math.round(subtotal + extrasTotal+ seatsTotal + taxes - form.promoDiscount);
 
   // ── STEP 1: FARE QUOTE ────────────────────────────────────
   // Fare-quotes EVERY leg, not just outbound. If a leg already has a clean
@@ -560,7 +589,7 @@ function handlePassengersNext() {
               }))
             : null,
           adults, children, infants,
-          subtotal, taxes, extrasTotal,
+          subtotal, taxes, extrasTotal, seatsTotal,
           discount:     form.promoDiscount,
           totalPayable,
           gst: form.gstNumber ? {
@@ -585,23 +614,24 @@ function handlePassengersNext() {
    * Fare breakdown is NOT required here — TBO pulls it from the ResultIndex.
    */
   function buildNonLCCPassengers(legIndexes: number[] , legTier: FareTier, ): FlightBookPassenger[] {
-    const mealExtrasByPaxAndLeg: Record<number, Record<number, typeof form.extras[number]>> = {};
+    // FIX: previously keyed only by [passengerId][legIndex], so on a
+    // 1-stop/2-stop leg (multiple segments sharing the same legIndex)
+    // every segment but the last silently overwrote the ones before it —
+    // meal selections for earlier segments never made it into the payload.
+    const mealExtrasByPaxLegSeg: Record<number, Record<string, typeof form.extras[number]>> = {};
     form.extras.forEach((extra) => {
-      if (!mealExtrasByPaxAndLeg[extra.passengerId])
-        mealExtrasByPaxAndLeg[extra.passengerId] = {};
-      mealExtrasByPaxAndLeg[extra.passengerId][extra.legIndex] = extra;
+      const key = `${extra.legIndex}:${extra.segmentIndex ?? 0}`;
+      if (!mealExtrasByPaxLegSeg[extra.passengerId])
+        mealExtrasByPaxLegSeg[extra.passengerId] = {};
+      mealExtrasByPaxLegSeg[extra.passengerId][key] = extra;
     });
-
-    const ssrAvailablePerLeg = ssrDataPerLeg.map(
-      (ssr) => ssr !== null && (ssr.meals?.length ?? 0) > 0
-    );
 
     const isNoMealCode = (code?: string) => {
       const n = String(code || "").trim().toLowerCase();
       return !n || ["none", "no_meal", "nomeal", "no meal", "no meal preference"].includes(n);
     };
 
-    const normalizeFlightNo = (raw: string) => String(raw).replace(/[^0-9]/g, "");
+    const normalizeFlightNo = (raw?: string) => String(raw ?? "").replace(/[^0-9]/g, "");
 
 
     return form.passengers.map((p, i) => {
@@ -645,7 +675,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
 },
       };
 
-      // Infants don't get meal selections
+      // Infants don't get meal/baggage/seat selections
       if (paxTypes[i] === "Infant") return base;
 
       type NonLCCMeal = {
@@ -654,31 +684,84 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
         Quantity: number; Currency: string; Price: number;
         Origin: string; Destination: string;
       };
+      type NonLCCBaggage = {
+        WayType: number; Code: string; Description: number; Weight: string;
+        Currency: string; Price: number; Origin: string; Destination: string;
+      };
+      type NonLCCSeat = {
+        WayType: number; Code: string; Description: number;
+        Origin: string; Destination: string; Currency: string; Price: number;
+      };
 
-      const meals = legIndexes
-        .map((legIndex): NonLCCMeal | null => {
-          const extra = mealExtrasByPaxAndLeg[i]?.[legIndex];
-          if (!extra || isNoMealCode(extra.mealCode)) return null;
-          if (!ssrAvailablePerLeg[legIndex]) return null;
-          const leg = legs[legIndex] ?? { flight };
-          return {
-            AirlineCode:        leg.flight.airlineCode,
-            FlightNumber:       normalizeFlightNo(leg.flight.flightNumber),
-            WayType:            2,
-            Code:               extra.mealCode!,
-            Description:        2,
-            AirlineDescription: extra.mealLabel,
-            Quantity:           1,
-            Currency:           "INR",
-            Price:              extra.mealPrice ?? 0,
-            Origin:             extra.origin,
-            Destination:       extra.destination,
-          };
-        })
-        .filter((m): m is NonLCCMeal => m !== null);
+      const meals: NonLCCMeal[] = [];
+      const baggage: NonLCCBaggage[] = [];
+      const seats: NonLCCSeat[] = [];
 
-      const mealsAsRecord: Record<string, unknown>[] = meals;
-      return meals.length > 0 ? { ...base, MealDynamic: mealsAsRecord } : base;
+      // FIX: iterate every PHYSICAL SEGMENT of every leg being booked,
+      // not just once per leg — a 1-stop/2-stop leg has more than one.
+      legIndexes.forEach((legIndex) => {
+        const segs = legSegments(legIndex);
+        segs.forEach((seg, segIndex) => {
+          const key = `${legIndex}:${segIndex}`;
+          const extra = mealExtrasByPaxLegSeg[i]?.[key];
+          const segOrigin      = extra?.origin      || seg.origin;
+          const segDestination = extra?.destination || seg.destination;
+          const segFlightNo    = normalizeFlightNo(extra?.flightNumber ?? seg.flightNumber);
+          const segAirlineCode = seg.airlineCode || legs[legIndex]?.flight.airlineCode || "";
+
+          if (extra && !isNoMealCode(extra.mealCode) && seg.availability.meals) {
+            meals.push({
+              AirlineCode:        segAirlineCode,
+              FlightNumber:       segFlightNo,
+              WayType:            2,
+              Code:               extra.mealCode!,
+              Description:        2,
+              AirlineDescription: extra.mealLabel,
+              Quantity:           1,
+              Currency:           "INR",
+              Price:              extra.mealPrice ?? 0,
+              Origin:             segOrigin,
+              Destination:        segDestination,
+            });
+          }
+
+          if (extra && extra.baggageCode && extra.baggageCode !== "NoBaggage" && seg.availability.baggage) {
+            baggage.push({
+              WayType:     2,
+              Code:        extra.baggageCode,
+              Description: 2,
+              Weight:      String(extra.baggageKg ?? ""),
+              Currency:    "INR",
+              Price:       extra.baggagePrice ?? 0,
+              Origin:      segOrigin,
+              Destination: segDestination,
+            });
+          }
+
+          // ── Seats ── FIX: previously never sent at all.
+          const seatCode = p.selectedSeats?.[key];
+          if (seatCode) {
+            const map = seatMaps[key];
+            const price = map?.prices?.[seatCode] ?? 0;
+            seats.push({
+              WayType:     2,
+              Code:        seatCode,
+              Description: 2,
+              Origin:      segOrigin,
+              Destination: segDestination,
+              Currency:    "INR",
+              Price:       price,
+            });
+          }
+        });
+      });
+
+      return {
+        ...base,
+        ...(meals.length   > 0 ? { MealDynamic: meals   as unknown as Record<string, unknown>[] } : {}),
+        ...(baggage.length > 0 ? { Baggage:     baggage as unknown as Record<string, unknown>[] } : {}),
+        ...(seats.length   > 0 ? { SeatDynamic: seats   as unknown as Record<string, unknown>[] } : {}),
+      };
     });
   }
 
@@ -692,24 +775,26 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
     legFlight: DisplayFlight,
     legTier: FareTier,
   ): TicketLCCPassenger[] {
-    const mealExtrasByPaxAndLeg: Record<number, Record<number, typeof form.extras[number]>> = {};
-    const baggageExtrasByPaxAndLeg: Record<number, Record<number, typeof form.extras[number]>> = {};
+    // FIX: grouped by [passengerId][legIndex] before, so a 1-stop/2-stop
+    // leg's second (and third) segment extras collided with — and
+    // silently replaced — the first segment's, and vice versa depending
+    // on iteration order. Keying by "legIndex:segmentIndex" keeps every
+    // physical segment's pick intact.
+    const mealExtrasByPaxLegSeg: Record<number, Record<string, typeof form.extras[number]>> = {};
+    const baggageExtrasByPaxLegSeg: Record<number, Record<string, typeof form.extras[number]>> = {};
     form.extras.forEach((extra) => {
+      const key = `${extra.legIndex}:${extra.segmentIndex ?? 0}`;
       if (extra.mealCode) {
-        if (!mealExtrasByPaxAndLeg[extra.passengerId])
-          mealExtrasByPaxAndLeg[extra.passengerId] = {};
-        mealExtrasByPaxAndLeg[extra.passengerId][extra.legIndex] = extra;
+        if (!mealExtrasByPaxLegSeg[extra.passengerId])
+          mealExtrasByPaxLegSeg[extra.passengerId] = {};
+        mealExtrasByPaxLegSeg[extra.passengerId][key] = extra;
       }
       if (extra.baggageCode) {
-        if (!baggageExtrasByPaxAndLeg[extra.passengerId])
-          baggageExtrasByPaxAndLeg[extra.passengerId] = {};
-        baggageExtrasByPaxAndLeg[extra.passengerId][extra.legIndex] = extra;
+        if (!baggageExtrasByPaxLegSeg[extra.passengerId])
+          baggageExtrasByPaxLegSeg[extra.passengerId] = {};
+        baggageExtrasByPaxLegSeg[extra.passengerId][key] = extra;
       }
     });
-
-    const ssrAvailablePerLeg = ssrDataPerLeg.map(
-      (ssr) => ssr !== null && (ssr.meals?.length ?? 0) > 0
-    );
 
     const isNoMealCode = (code?: string) => {
       const n = String(code || "").trim().toLowerCase();
@@ -768,50 +853,69 @@ const gstCompanyEmail           = hasGST ? (form.gstCompanyEmail || form.contact
     return form.passengers.map((p, i): TicketLCCPassenger => {
       const paxType = (i < adults ? 1 : i < adults + children ? 2 : 3) as 1 | 2 | 3;
 
-      // ── Meals ─────────────────────────────────────────────
-      const mealDynamic: TicketMealDynamic[] = paxTypes[i] !== "Infant"
-        ? legIndexes
-            .map((legIndex): TicketMealDynamic | null => {
-              const extra = mealExtrasByPaxAndLeg[i]?.[legIndex];
-              if (!extra || isNoMealCode(extra.mealCode)) return null;
-              if (!ssrAvailablePerLeg[legIndex]) return null;
-              const leg = legs[legIndex] ?? { flight: legFlight };
-              return {
-                WayType:            2 as const,
-                Code:               extra.mealCode!,
-                Description:        2,
-                AirlineDescription: extra.mealLabel,
-                Quantity:           "1",
-                Price:              extra.mealPrice ?? 0,
-                Currency:           "INR",
-                Origin:             extra.origin ?? leg.flight.fromCode,
-                Destination:        extra.destination ?? leg.flight.toCode,
-                Nationality:        p.nationality || "IN",
-              };
-            })
-            .filter((m): m is TicketMealDynamic => m !== null)
-        : [];
+      const mealDynamic: TicketMealDynamic[] = [];
+      const baggage: TicketBaggage[] = [];
+      const seatDynamic: NonNullable<TicketLCCPassenger["SeatDynamic"]> = [];
 
-      // ── Baggage ───────────────────────────────────────────
-      const baggage: TicketBaggage[] = paxTypes[i] !== "Infant"
-        ? legIndexes
-            .map((legIndex): TicketBaggage | null => {
-              const extra = baggageExtrasByPaxAndLeg[i]?.[legIndex];
-              if (!extra?.baggageCode || extra.baggageCode === "NoBaggage") return null;
-              const leg = legs[legIndex] ?? { flight: legFlight };
-              return {
+      if (paxTypes[i] !== "Infant") {
+        // FIX: walk every PHYSICAL SEGMENT of every leg being booked
+        // (previously only ever considered one entry per leg, so a
+        // connecting flight's later segments never got a meal/baggage
+        // line — and seats were never sent at all).
+        legIndexes.forEach((legIndex) => {
+          const segs = legSegments(legIndex);
+          segs.forEach((seg, segIndex) => {
+            const key = `${legIndex}:${segIndex}`;
+
+            const mealExtra = mealExtrasByPaxLegSeg[i]?.[key];
+            if (mealExtra && !isNoMealCode(mealExtra.mealCode) && seg.availability.meals) {
+              mealDynamic.push({
+                WayType:            2 as const,
+                Code:               mealExtra.mealCode!,
+                Description:        2,
+                AirlineDescription: mealExtra.mealLabel,
+                Quantity:           "1",
+                Price:              mealExtra.mealPrice ?? 0,
+                Currency:           "INR",
+                Origin:             mealExtra.origin      || seg.origin,
+                Destination:        mealExtra.destination || seg.destination,
+                Nationality:        p.nationality || "IN",
+              });
+            }
+
+            const bagExtra = baggageExtrasByPaxLegSeg[i]?.[key];
+            if (bagExtra?.baggageCode && bagExtra.baggageCode !== "NoBaggage" && seg.availability.baggage) {
+              baggage.push({
                 WayType:     2 as const,
-                Code:        extra.baggageCode,
-                Description: extra.baggageLabel ?? "",
-                Weight:      String(extra.baggageKg ?? ""),
+                Code:        bagExtra.baggageCode,
+                Description: 2,
+                Weight:      String(bagExtra.baggageKg ?? ""),
                 Currency:    "INR",
-                Price:       extra.baggagePrice ?? 0,
-                Origin:      leg.flight.fromCode,
-                Destination: leg.flight.toCode,
-              };
-            })
-            .filter((b): b is TicketBaggage => b !== null)
-        : [];
+                Price:       bagExtra.baggagePrice ?? 0,
+                Origin:      bagExtra.origin      || seg.origin,
+                Destination: bagExtra.destination || seg.destination,
+              });
+            }
+
+            // ── Seats ── FIX: SeatDynamic was declared on the type but
+            // never populated — picked seats were never actually booked.
+            const seatCode = p.selectedSeats?.[key];
+            if (seatCode) {
+              const map = seatMaps[key];
+              const price = map?.prices?.[seatCode] ?? 0;
+              seatDynamic.push({
+                WayType: 2,
+                Code:    seatCode,
+                Description: 2,
+                Origin:      seg.origin,
+                Destination: seg.destination,
+                Currency:    "INR",
+                Price:       price,
+              });
+            }
+          });
+        });
+      }
 
       return {
         Title:       p.title as "Mr" | "Ms" | "Mrs" | "Mstr" | "Miss",
@@ -837,6 +941,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
         Fare:        perPaxFare(paxType),
         ...(baggage.length     > 0 ? { Baggage:     baggage     } : {}),
         ...(mealDynamic.length > 0 ? { MealDynamic: mealDynamic } : {}),
+        ...(seatDynamic.length > 0 ? { SeatDynamic: seatDynamic } : {}),
       };
     });
   }
@@ -1234,6 +1339,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           flight={flight}
           tier={activeTier}
           passengers={form.passengers}
+          paxTypes={paxTypes}
           multiCityLegs={activeMultiCityLegs}
           returnFlight={returnFlight}
           isRoundTrip={isRoundTrip}
@@ -1267,6 +1373,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           returnFlight={returnFlight} returnTier={activeReturnTier}
           multiCityLegs={activeMultiCityLegs}
           passengers={form.passengers}
+          seatMaps={seatMaps}
           paxTypes={paxTypes}
           contactEmail={form.contactEmail}
           contactPhone={form.contactPhone}
@@ -1332,6 +1439,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
             flight={flight} tier={activeTier}
             returnFlight={returnFlight} returnTier={activeReturnTier}
             multiCityLegs={activeMultiCityLegs}
+             passengers={form.passengers}
+            seatMaps={seatMaps}
             form={form}
             adults={adults} children={children} infants={infants}
             loading={loading} error={error}

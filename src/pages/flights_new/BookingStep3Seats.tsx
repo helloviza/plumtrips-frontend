@@ -12,11 +12,11 @@
 //  6. Aircraft-style seat map UI preserved from previous version.
 // ============================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import type { PassengerData, SeatMap } from "./BookingShared";
 import { SectionHeading, AIRLINE_COLORS } from "./BookingShared";
-import type { SSRResult } from "../../lib/flights_api";
+import type { SSRResult, SSRSegment } from "../../lib/flights_api";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
@@ -24,6 +24,7 @@ interface Step3Props {
   flight: DisplayFlight;
   tier: FareTier;
   passengers: PassengerData[];
+  paxTypes: ("Adult" | "Child" | "Infant")[];
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   returnFlight?: DisplayFlight;
   isRoundTrip: boolean;
@@ -39,9 +40,7 @@ interface Step3Props {
 
 // ─── HELPERS ────────────────────────────────────────────────
 
-function ssrToSeatMap(ssr: SSRResult | null): SeatMap | null {
-  if (!ssr) return null;
-  const apiMap = ssr.seatMap;
+function ssrToSeatMap(apiMap: SSRResult["seatMap"] | null | undefined): SeatMap | null {
   if (!apiMap || !apiMap.rows || apiMap.rows.length === 0) return null;
 
   const occupied = apiMap.rows.flatMap((r) =>
@@ -85,6 +84,7 @@ export default function BookingStep3Seats({
   flight,
   tier,
   passengers,
+  paxTypes,
   multiCityLegs,
   returnFlight,
   isRoundTrip,
@@ -98,6 +98,7 @@ export default function BookingStep3Seats({
   returnTier,
 }: Step3Props) {
   const [activeLeg, setActiveLeg] = useState(0);
+  const [activeSegment, setActiveSegment] = useState(0);
   const [activePax, setActivePax] = useState(0);
 
   // ── Leg definitions (memoized) ─────────────────────────────
@@ -131,43 +132,120 @@ export default function BookingStep3Seats({
     ]
   );
 
-  // ── One SeatMap entry per leg ──────────────────────────────
-  const seatMaps: (SeatMap | null)[] = useMemo(
-    () => legs.map((_, i) => ssrToSeatMap(ssrDataPerLeg[i] ?? null)),
-    [legs, ssrDataPerLeg]
-  );
+  // ── Physical segments per leg ───────────────────────────────
+  // A leg with stops (1-stop/2-stop) has MULTIPLE physical flight
+  // segments, each with its own seat map. ssrDataPerLeg[i].segments now
+  // carries all of them (see flights_api.ts parseTBOSSR fix); fall back
+  // to a single pseudo-segment built from the top-level fields so a leg
+  // whose SSR hasn't resolved yet (or a direct flight with the old
+  // shape) still renders one tab instead of zero.
+  function legSegments(legIdx: number): SSRSegment[] {
+    const ssr = ssrDataPerLeg[legIdx];
+    if (ssr?.segments && ssr.segments.length > 0) return ssr.segments;
+    if (ssr) {
+      return [{
+        origin: legs[legIdx]?.flight.fromCode ?? "",
+        destination: legs[legIdx]?.flight.toCode ?? "",
+        flightNumber: legs[legIdx]?.flight.flightNumber ?? "",
+        airlineCode: legs[legIdx]?.flight.airlineCode ?? "",
+        seatMap: ssr.seatMap,
+        meals: ssr.meals,
+        baggage: ssr.baggage,
+        availability: ssr.availability ?? { seatMap: false, meals: false, baggage: false },
+      }];
+    }
+    return [];
+  }
 
-  // ── Seat selections keyed as "legIdx-paxIdx" ──────────────
+  // Reset the segment tab whenever the leg tab changes.
+  function selectLeg(i: number) {
+    setActiveLeg(i);
+    setActiveSegment(0);
+    setActivePax(0);
+  }
+
+  // ── One SeatMap entry per (leg, segment) ────────────────────
+  const seatMapsByKey: Record<string, SeatMap | null> = useMemo(() => {
+    const out: Record<string, SeatMap | null> = {};
+    legs.forEach((_, legIdx) => {
+      const segs = legSegments(legIdx);
+      const segCount = Math.max(segs.length, 1);
+      for (let segIdx = 0; segIdx < segCount; segIdx++) {
+        out[`${legIdx}:${segIdx}`] = ssrToSeatMap(segs[segIdx]?.seatMap ?? null);
+      }
+    });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legs, ssrDataPerLeg]);
+
+  // ── Seat selections keyed as "legIdx:segIdx-paxIdx" ──────────
   // Pre-populate from existing passenger.selectedSeats if available
   const [selections, setSelections] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     passengers.forEach((p, paxIdx) => {
-      // Restore from selectedSeats (multi-leg) map
+      // Restore from selectedSeats (multi-leg, multi-segment) map
       if (p.selectedSeats) {
-        Object.entries(p.selectedSeats).forEach(([legIdx, seat]) => {
-          if (seat) initial[`${legIdx}-${paxIdx}`] = seat;
+        Object.entries(p.selectedSeats).forEach(([legSegKey, seat]) => {
+          if (seat) initial[`${legSegKey}-${paxIdx}`] = seat;
         });
       } else if (p.selectedSeat) {
-        // Fallback: selectedSeat is leg-0 only
-        initial[`0-${paxIdx}`] = p.selectedSeat;
+        // Fallback: selectedSeat is leg-0/segment-0 only
+        initial[`0:0-${paxIdx}`] = p.selectedSeat;
       }
     });
     return initial;
   });
 
-  function seatKey(legIdx: number, paxIdx: number) {
-    return `${legIdx}-${paxIdx}`;
+  function seatKey(legIdx: number, segIdx: number, paxIdx: number) {
+    return `${legIdx}:${segIdx}-${paxIdx}`;
   }
 
+  // ── LIVE SYNC TO PARENT (for PriceSidebar) ─────────────────
+  // Previously these only fired inside handleContinue, so the
+  // sidebar total only updated after tapping "Continue" and moving
+  // to Step 4. Now both are pushed up as soon as they change, so
+  // the price updates on every seat tap.
+
+  // Push resolved seat maps (prices/occupancy) up as soon as SSR
+  // data is available — the sidebar needs this to price selections.
+  useEffect(() => {
+    const mapsRecord: Record<string, SeatMap> = {};
+    Object.entries(seatMapsByKey).forEach(([key, map]) => { if (map) mapsRecord[key] = map; });
+    onSeatMapsResolved?.(mapsRecord);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seatMapsByKey]);
+
+  // Push current seat selections into passenger data on every tap,
+  // instead of only when handleContinue runs.
+  useEffect(() => {
+    const updated = passengers.map((p, paxIdx) => {
+      const selectedSeats: Record<string, string> = {};
+      Object.keys(seatMapsByKey).forEach((legSegKey) => {
+        const [legIdxStr, segIdxStr] = legSegKey.split(":");
+        const seat = selections[seatKey(Number(legIdxStr), Number(segIdxStr), paxIdx)];
+        if (seat) selectedSeats[legSegKey] = seat;
+      });
+
+      return {
+        ...p,
+        selectedSeat: selectedSeats["0:0"] ?? p.selectedSeat,
+        selectedSeats:
+          Object.keys(selectedSeats).length > 0 ? selectedSeats : p.selectedSeats,
+      };
+    });
+    onChange(updated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selections, seatMapsByKey]);
+
   function selectSeat(seat: string) {
-    const key = seatKey(activeLeg, activePax);
-    const currentMap = seatMaps[activeLeg];
+    const key = seatKey(activeLeg, activeSegment, activePax);
+    const currentMap = seatMapsByKey[`${activeLeg}:${activeSegment}`];
     if (!currentMap) return;
     if (currentMap.occupied.includes(seat)) return;
 
-    // Don't allow another pax's already-selected seat on this leg
+    // Don't allow another pax's already-selected seat on this segment
     const takenByOther = Object.entries(selections).some(
-      ([k, v]) => v === seat && k.startsWith(`${activeLeg}-`) && k !== key
+      ([k, v]) => v === seat && k.startsWith(`${activeLeg}:${activeSegment}-`) && k !== key
     );
     if (takenByOther) return;
 
@@ -186,42 +264,25 @@ export default function BookingStep3Seats({
 
   
 
-  // FIX: Write ALL leg seat selections back into passenger data.
-  // selectedSeat = leg-0 seat (backwards compat)
-  // selectedSeats = { legIdx: seatCode } for all legs
+  // FIX: Write ALL leg+segment seat selections back into passenger data.
+  // selectedSeat = leg-0/segment-0 seat (backwards compat)
+  // selectedSeats = { "legIdx:segIdx": seatCode } for every physical segment
   function handleContinue() {
-    
-    const updated = passengers.map((p, paxIdx) => {
-      // Build per-leg seat map for this passenger
-      const selectedSeats: Record<number, string> = {};
-      legs.forEach((_, legIdx) => {
-        const seat = selections[seatKey(legIdx, paxIdx)];
-        if (seat) selectedSeats[legIdx] = seat;
-      });
-
-      return {
-        ...p,
-        // Leg 0 seat for backwards compatibility with Step 5 Review
-        selectedSeat: selectedSeats[0] ?? p.selectedSeat,
-        // All leg seats for Step 5 and booking payload
-        selectedSeats:
-          Object.keys(selectedSeats).length > 0 ? selectedSeats : p.selectedSeats,
-      };
-    });
-    onChange(updated);
-  const mapsRecord: Record<number, SeatMap> = {};
-  seatMaps.forEach((map, i) => { if (map) mapsRecord[i] = map; });
-  onSeatMapsResolved?.(mapsRecord);
-  onNext();
+    // Passenger seat selections and seat maps are now pushed to the
+    // parent live (see the useEffects above) on every tap, so all
+    // that's left here is advancing to the next step.
+    onNext();
   }
 
-  const currentMap = seatMaps[activeLeg];
+  const activeSegments = legSegments(activeLeg);
+  const currentMap = seatMapsByKey[`${activeLeg}:${activeSegment}`] ?? null;
   const activeLegSSR = ssrDataPerLeg[activeLeg] ?? null;
+  const activeSegmentSSR = activeSegments[activeSegment] ?? null;
 
-  // Price of cheapest premium seat on this leg
-  const premiumPrice = activeLegSSR
+  // Price of cheapest premium seat on this segment
+  const premiumPrice = activeSegmentSSR
     ? (() => {
-        const prices = activeLegSSR.seatMap.rows
+        const prices = activeSegmentSSR.seatMap.rows
           .flatMap((r) => r.seats)
           .filter((s) => s.isPremium && s.price > 0)
           .map((s) => s.price);
@@ -242,14 +303,11 @@ export default function BookingStep3Seats({
 
       {/* ── Leg tabs ────────────────────────────────────────── */}
       {legs.length > 1 && (
-        <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-none">
           {legs.map((leg, i) => (
             <button
               key={i}
-              onClick={() => {
-                setActiveLeg(i);
-                setActivePax(0);
-              }}
+              onClick={() => selectLeg(i)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all border ${
                 activeLeg === i
                   ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
@@ -269,7 +327,31 @@ export default function BookingStep3Seats({
                 {leg.flight.airlineCode.slice(0, 2)}
               </div>
               {leg.label}: {leg.flight.fromCode} → {leg.flight.toCode}
-              {seatMaps[i] === null && !ssrLoading && (
+              {legSegments(i).every((seg) => !seg.availability.seatMap) && !ssrLoading && (
+                <span className="ml-1 text-[9px] text-amber-500 font-normal">
+                  unavailable
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Segment tabs — only shown when the active leg has a stop ─── */}
+      {activeSegments.length > 1 && (
+        <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-none">
+          {activeSegments.map((seg, i) => (
+            <button
+              key={i}
+              onClick={() => { setActiveSegment(i); setActivePax(0); }}
+              className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border ${
+                activeSegment === i
+                  ? "bg-violet-600 text-white border-violet-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-violet-300"
+              }`}
+            >
+              Flight {i + 1}: {seg.origin} → {seg.destination}
+              {!seg.availability.seatMap && !ssrLoading && (
                 <span className="ml-1 text-[9px] text-amber-500 font-normal">
                   unavailable
                 </span>
@@ -282,8 +364,9 @@ export default function BookingStep3Seats({
       {/* ── Passenger selector ──────────────────────────────── */}
       <div className="flex gap-2 mb-5 flex-wrap">
         {passengers.map((p, i) => {
-          const hasSeat = !!selections[seatKey(activeLeg, i)];
-          const seatCode = selections[seatKey(activeLeg, i)];
+          if (paxTypes[i] === "Infant") return null;
+          const hasSeat = !!selections[seatKey(activeLeg, activeSegment, i)];
+          const seatCode = selections[seatKey(activeLeg, activeSegment, i)];
           const isPremiumSeat =
             seatCode && currentMap?.premium.includes(seatCode);
           return (
@@ -329,6 +412,7 @@ export default function BookingStep3Seats({
         <AircraftSeatMap
           map={currentMap}
           activeLeg={activeLeg}
+          activeSegment={activeSegment}
           activePax={activePax}
           passengers={passengers}
           selections={selections}
@@ -338,6 +422,7 @@ export default function BookingStep3Seats({
       ) : (
         <UnavailableState
           message={
+            activeSegmentSSR?.availability?.seatMapMessage ??
             activeLegSSR?.availability?.seatMapMessage ??
             `Seat map is not available for this ${legs[activeLeg]?.flight.airline ?? "airline"} flight.`
           }
@@ -352,28 +437,35 @@ export default function BookingStep3Seats({
           </div>
           <div className="flex flex-wrap gap-2">
             {legs.map((leg, legIdx) =>
-              passengers.map((p, paxIdx) => {
-                const seat = selections[seatKey(legIdx, paxIdx)];
-                if (!seat) return null;
-                return (
-                  <div
-                    key={`${legIdx}-${paxIdx}`}
-                    className="flex items-center gap-1.5 bg-white rounded-xl px-3 py-1.5 border border-blue-200"
-                  >
-                    {legs.length > 1 && (
-                      <span className="text-[9px] font-black text-slate-400 uppercase">
-                        {leg.label}
+              legSegments(legIdx).map((seg, segIdx) =>
+                passengers.map((p, paxIdx) => {
+                  if (paxTypes[paxIdx] === "Infant") return null;
+                  const seat = selections[seatKey(legIdx, segIdx, paxIdx)];
+                  if (!seat) return null;
+                  const segLabel =
+                    legSegments(legIdx).length > 1
+                      ? `${leg.label} · ${seg.origin}→${seg.destination}`
+                      : leg.label;
+                  return (
+                    <div
+                      key={`${legIdx}-${segIdx}-${paxIdx}`}
+                      className="flex items-center gap-1.5 bg-white rounded-xl px-3 py-1.5 border border-blue-200"
+                    >
+                      {(legs.length > 1 || legSegments(legIdx).length > 1) && (
+                        <span className="text-[9px] font-black text-slate-400 uppercase">
+                          {segLabel}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold text-slate-700">
+                        {p.firstName || `Pax ${paxIdx + 1}`}
                       </span>
-                    )}
-                    <span className="text-xs font-bold text-slate-700">
-                      {p.firstName || `Pax ${paxIdx + 1}`}
-                    </span>
-                    <span className="text-xs font-mono font-black text-blue-600">
-                      {seat}
-                    </span>
-                  </div>
-                );
-              })
+                      <span className="text-xs font-mono font-black text-blue-600">
+                        {seat}
+                      </span>
+                    </div>
+                  );
+                })
+              )
             )}
           </div>
         </div>
@@ -409,6 +501,7 @@ export default function BookingStep3Seats({
 interface AircraftSeatMapProps {
   map: SeatMap;
   activeLeg: number;
+  activeSegment: number;
   activePax: number;
   passengers: PassengerData[];
   selections: Record<string, string>;
@@ -419,14 +512,15 @@ interface AircraftSeatMapProps {
 function AircraftSeatMap({
   map,
   activeLeg,
+  activeSegment,
   activePax,
   passengers,
   selections,
   onSelectSeat,
   premiumPrice,
 }: AircraftSeatMapProps) {
-  function seatKey(legIdx: number, paxIdx: number) {
-    return `${legIdx}-${paxIdx}`;
+  function seatKey(legIdx: number, segIdx: number, paxIdx: number) {
+    return `${legIdx}:${segIdx}-${paxIdx}`;
   }
 
   const aisleAfterIndex =
@@ -505,12 +599,12 @@ function AircraftSeatMap({
                     const isPremium = map.premium.includes(seat);
                     const price = map.prices?.[seat] ?? 0;
 
-                    const myKey = seatKey(activeLeg, activePax);
+                    const myKey = seatKey(activeLeg, activeSegment, activePax);
                     const isSelectedByMe = selections[myKey] === seat;
                     const otherEntry = Object.entries(selections).find(
                       ([k, v]) =>
                         v === seat &&
-                        k.startsWith(`${activeLeg}-`) &&
+                        k.startsWith(`${activeLeg}:${activeSegment}-`) &&
                         k !== myKey
                     );
                     const otherPaxIdx = otherEntry?.[0]?.split("-")[1];
