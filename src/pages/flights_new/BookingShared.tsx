@@ -6,6 +6,7 @@
 
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
+import { useState } from "react";
 
 // ─── RE-EXPORT TYPES ────────────────────────────────────────
 
@@ -22,7 +23,10 @@ export interface PassengerData {
   ffAirlineCode: string;
   ffNumber: string;
   selectedSeat?: string;
-  selectedSeats?: Record<number, string>;
+  /** Keyed by `${legIndex}:${segmentIndex}` — a leg with stops has one
+   *  physical flight segment per stop, and each needs its own seat pick.
+   *  For a direct leg, segmentIndex is always 0 (key looks like "0:0"). */
+  selectedSeats?: Record<string, string>;
 }
 
 export interface SeatMap {
@@ -37,6 +41,12 @@ export interface SeatMap {
 export interface ExtraSelection {
   baggageLabel: string;
   legIndex: number;
+  /** Index into ssrDataPerLeg[legIndex].segments — 0 for a direct leg,
+   *  0/1/(2) for a leg with one/two stops. Meals and baggage are sold
+   *  per PHYSICAL flight segment, not per leg, so this must be tracked
+   *  alongside legIndex to know which segment a pick belongs to. */
+  segmentIndex: number;
+  flightNumber?: string;
   passengerId: number;
   mealCode: string;
   mealLabel: string;
@@ -78,6 +88,57 @@ export const AIRLINE_COLORS: Record<string, string> = {
   "6E": "#1b4b9e", AI: "#c8102e", SG: "#d03f2f",
   UK: "#5c1c81", QP: "#e87722", IX: "#c8102e",
 };
+
+
+export const AirlineLogo = ({
+  code,
+  size = "md",
+}: {
+  code: string;
+  size?: "sm" | "md" | "lg";
+}) =>{
+  
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const color =
+    AIRLINE_COLORS[code] ?? { bg: "#475569", text: "#fff" };
+
+  const dims: Record<string, React.CSSProperties> = {
+    sm: { width: 32, height: 32, fontSize: 9, borderRadius: 8 },
+    md: { width: 40, height: 40, fontSize: 10, borderRadius: 11 },
+    lg: { width: 48, height: 48, fontSize: 11, borderRadius: 13 },
+  };
+
+  return (
+    <div
+      style={{
+        ...dims[size],
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 900,
+        fontFamily: "'Sora', sans-serif",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
+    >
+      {imgFailed ? (
+        code
+      ) : (
+        <img
+          src={`/airlines/${code}.gif`}
+          alt={code}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+          onError={() => setImgFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
 
 // ─── STEP LABELS ────────────────────────────────────────────
 
@@ -199,18 +260,17 @@ export function ErrorBanner({ message }: { message: string }) {
 
 export function calcSeatTotal(
   passengers: PassengerData[],
-  seatMaps: Record<number, SeatMap>,
+  seatMaps: Record<string, SeatMap>,
 ): number {
   let total = 0;
   for (const pax of passengers) {
     if (pax.selectedSeats) {
-      for (const [legIdxStr, seat] of Object.entries(pax.selectedSeats)) {
-        const legIdx = Number(legIdxStr);
-        const map = seatMaps[legIdx];
+      for (const [key, seat] of Object.entries(pax.selectedSeats)) {
+        const map = seatMaps[key];
         if (map && seat) total += map.prices[seat] ?? 0;
       }
     } else if (pax.selectedSeat) {
-      const map = seatMaps[0];
+      const map = seatMaps["0:0"];
       if (map) total += map.prices[pax.selectedSeat] ?? 0;
     }
   }
@@ -229,7 +289,7 @@ export function calcFares({
   adults: number; children: number; infants: number;
   extras: ExtraSelection[];
   passengers?: PassengerData[];
-  seatMaps?: Record<number, SeatMap>;
+  seatMaps?: Record<string, SeatMap>;
 }) {
   const adultUnit  = tier.adultFare  ?? tier.price;
   const childUnit  = tier.childFare  ?? Math.round(tier.price * 0.75);
@@ -303,7 +363,7 @@ export function PriceSidebar({
   adults: number; children: number; infants: number;
   discount: number; extras: ExtraSelection[];
   passengers?: PassengerData[];
-  seatMaps?: Record<number, SeatMap>;
+  seatMaps?: Record<string, SeatMap>;
   currentStep: number;
 }) {
   const { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded, convenienceFeeDisplay } =
@@ -350,13 +410,12 @@ export function PriceSidebar({
           <FlightRoutePill
             flight={flight}
             label={isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : undefined}
-            color={AIRLINE_COLORS[flight.airlineCode] ?? "#64748b"}
           />
           {isRoundTrip && returnFlight && (
-            <FlightRoutePill flight={returnFlight} label="Return" color={AIRLINE_COLORS[returnFlight.airlineCode] ?? "#64748b"} />
+            <FlightRoutePill flight={returnFlight} label="Return" />
           )}
           {isMultiCity && multiCityLegs!.slice(1).map((leg, i) => (
-            <FlightRoutePill key={i} flight={leg.flight} label={`Leg ${i + 2}`} color={AIRLINE_COLORS[leg.flight.airlineCode] ?? "#64748b"} />
+            <FlightRoutePill key={i} flight={leg.flight} label={`Leg ${i + 2}`} />
           ))}
         </div>
 
@@ -463,15 +522,12 @@ export function PriceSidebar({
   );
 }
 
-function FlightRoutePill({ flight, label, color }: { flight: DisplayFlight; label?: string; color: string }) {
+function FlightRoutePill({ flight, label }: { flight: DisplayFlight; label?: string }) {
   return (
     <div className="flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100/80
       rounded-xl px-3 py-2.5 transition-colors duration-150 border border-slate-100/80">
-      <div
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[9px] font-black shrink-0 shadow-sm"
-        style={{ background: color }}
-      >
-        {flight.airlineCode}
+      <div className="shrink-0">
+        <AirlineLogo code={flight.airlineCode} size="sm" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[11px] font-bold text-slate-700 truncate tracking-wide">
@@ -520,7 +576,7 @@ export function MobilePriceBar({
   adults: number; children: number; infants: number;
   discount: number; extras: ExtraSelection[];
   passengers?: PassengerData[];
-  seatMaps?: Record<number, SeatMap>;
+  seatMaps?: Record<string, SeatMap>;
   currentStep: number;
 }) {
   const { subtotal, extrasTotal, seatsTotal, taxes } = calcFares({
@@ -573,7 +629,7 @@ export function BookingShell({
   adults: number; childcount: number; infants: number;
   discount: number; extras: ExtraSelection[];
   passengers?: PassengerData[];
-  seatMaps?: Record<number, SeatMap>;
+  seatMaps?: Record<string, SeatMap>;
   currentStep: number;
   onBack: () => void;
   children: React.ReactNode;

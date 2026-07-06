@@ -2,7 +2,7 @@
 //  BookingStep6Payment.tsx — Step 6: Payment
 // ============================================================
 
-import type { BookingFormState } from "./BookingShared";
+import type { BookingFormState, PassengerData, SeatMap } from "./BookingShared";
 import { SectionHeading, ErrorBanner, calcFares } from "./BookingShared";
 import { formatINR, MOCK_MODE } from "../../lib/flights_api";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
@@ -12,6 +12,8 @@ interface Step6Props {
   returnFlight?: DisplayFlight; returnTier?: FareTier;
   multiCityLegs?: { flight: DisplayFlight; tier: FareTier }[];
   form: BookingFormState;
+  passengers: PassengerData[];
+  seatMaps?: Record<number, SeatMap>;
   adults: number; children: number; infants: number;
   loading: boolean;
   error: string | null;
@@ -23,14 +25,15 @@ interface Step6Props {
 
 export default function BookingStep6Payment({
   flight, tier, returnFlight, returnTier, multiCityLegs,
-  form, adults, children, infants,
+  form, passengers, seatMaps, adults, children, infants,
   loading, error, onPay, onBack,
 }: Step6Props) {
-  const { subtotal, extrasTotal, taxes } = calcFares({
-    tier, returnTier, multiCityLegs, adults, children, infants, extras: form.extras,
+  const { subtotal, extrasTotal, seatsTotal, taxes } = calcFares({
+    tier, returnTier, multiCityLegs, adults, children, infants,
+    extras: form.extras, passengers, seatMaps,
   });
 
-  const totalPayable = Math.round(subtotal + extrasTotal + taxes - form.promoDiscount);
+  const totalPayable = Math.round(subtotal + extrasTotal + seatsTotal + taxes - form.promoDiscount);
 
   return (
     <div>

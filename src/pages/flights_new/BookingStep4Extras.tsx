@@ -1,22 +1,33 @@
 // ============================================================
-//  BookingStep4Extras.tsx — FIXED
+//  BookingStep4Extras.tsx — FIXED (v2: connecting-flight segments)
 //
-//  Fixes:
-//  1. totalExtras now iterates ssrDataPerLeg.length (not a fixed
-//     count) so it correctly sums all legs even for multi-city.
-//  2. getExtra default object is memoized inline to avoid
-//     reference identity issues on re-renders.
-//  3. Meal/baggage arrays fall back gracefully when ssrData is
-//     null for a leg (shows empty state, not crash).
-//  4. Leg tabs only render when legs.length > 1 (unchanged, but
-//     now correctly driven by the shared legs prop from parent).
-//  5. Removed duplicate formatINR import (_fmt alias).
+//  Previous fixes (kept):
+//  1. totalExtras iterates ssrDataPerLeg.length so it sums all legs.
+//  2. getExtra default object avoids reference identity issues.
+//  4. Leg tabs only render when legs.length > 1.
+//  5. No duplicate formatINR import.
+//
+//  NEW fixes (this pass):
+//  6. Meals & baggage are now sourced from
+//     ssrDataPerLeg[activeLeg].segments[activeSegment] instead of the
+//     leg's flattened top-level ssrData.meals/.baggage. Any leg with a
+//     stop (1-stop/2-stop) is actually MULTIPLE physical flight segments
+//     — each sold with its own meal/baggage menu — and the old flat
+//     lists silently mixed them together (or, after a prior fix
+//     upstream, just showed the first segment). A segment sub-tab now
+//     appears whenever the active leg has more than one segment.
+//  7. Every meal/baggage pick now records segmentIndex, origin,
+//     destination and flightNumber on the ExtraSelection, so the
+//     booking payload builder (BookingPage.tsx) can send the correct
+//     Origin/Destination/FlightNumber for TBO's MealDynamic/Baggage
+//     arrays instead of guessing from the leg's overall from/to codes
+//     (which don't match a connecting segment's own O&D).
 // ============================================================
 
 import type { PassengerData, ExtraSelection, BookingFormState } from "./BookingShared";
 import { SectionHeading } from "./BookingShared";
 import { formatINR } from "../../lib/flights_api";
-import type { SSRResult } from "../../lib/flights_api";
+import type { SSRResult, SSRSegment } from "../../lib/flights_api";
 import type { DisplayFlight } from "../../lib/types_t";
 import { useState } from "react";
 
@@ -47,34 +58,70 @@ export default function BookingStep4Extras({
 }: Step4Props) {
   // Active leg tab — defaults to 0 (outbound)
   const [activeLeg, setActiveLeg] = useState(0);
+  // Active PHYSICAL SEGMENT within the leg — a 1-stop/2-stop leg has more
+  // than one, each sold with its own meal/baggage menu.
+  const [activeSegment, setActiveSegment] = useState(0);
 
-  // FIX #1: Derive meals/baggage from the ACTIVE leg's SSR.
-  // If ssrDataPerLeg[activeLeg] is null (unavailable), fall back
-  // to leg 0's data, then to empty arrays.
-  const ssrData = ssrDataPerLeg?.[activeLeg] ?? null;
-  const meals   = ssrData?.meals   ?? [];
-  const baggage = ssrData?.baggage ?? [];
+  // Segments for any leg. Falls back to a single pseudo-segment built
+  // from the top-level ssrData fields when `segments` isn't populated
+  // (e.g. still loading), so the UI always has at least one tab to draw.
+  function legSegments(legIdx: number): SSRSegment[] {
+    const ssr = ssrDataPerLeg?.[legIdx] ?? null;
+    if (ssr?.segments && ssr.segments.length > 0) return ssr.segments;
+    if (ssr) {
+      return [{
+        origin: legs[legIdx]?.flight.fromCode ?? "",
+        destination: legs[legIdx]?.flight.toCode ?? "",
+        flightNumber: legs[legIdx]?.flight.flightNumber ?? "",
+        airlineCode: legs[legIdx]?.flight.airlineCode ?? "",
+        seatMap: ssr.seatMap,
+        meals: ssr.meals,
+        baggage: ssr.baggage,
+        availability: ssr.availability ?? { seatMap: false, meals: false, baggage: false },
+      }];
+    }
+    return [];
+  }
+
+  function selectLeg(i: number) {
+    setActiveLeg(i);
+    setActiveSegment(0);
+  }
+
+  // FIX #1: Derive meals/baggage from the ACTIVE leg's ACTIVE SEGMENT.
+  // Previously this read ssrData.meals/.baggage directly, which for a
+  // 1-stop/2-stop leg silently collapsed to (at best) a mixed, undeduped
+  // list across every physical flight — there was no way to pick meals/
+  // baggage per segment, and no segment identity was kept to send back
+  // to TBO. Now each physical segment (flight) gets its own tab & menu.
+  const activeSegments = legSegments(activeLeg);
+  const activeSeg = activeSegments[activeSegment] ?? null;
+  const meals   = activeSeg?.meals   ?? [];
+  const baggage = activeSeg?.baggage ?? [];
   const activeAirline = legs[activeLeg]?.flight.airline ?? flight.airline ?? "this airline";
   const mealsUnavailableMessage =
-    ssrData?.availability?.mealsMessage ??
+    activeSeg?.availability?.mealsMessage ??
     `Meals are not available for this ${activeAirline} flight.`;
   const baggageUnavailableMessage =
-    ssrData?.availability?.baggageMessage ??
+    activeSeg?.availability?.baggageMessage ??
     `Extra baggage is not available for this ${activeAirline} flight.`;
 
   // ── Extras helpers ─────────────────────────────────────────
 
-  function getExtra(paxIdx: number, legIdx = activeLeg): ExtraSelection {
+  function getExtra(paxIdx: number, legIdx = activeLeg, segIdx = activeSegment): ExtraSelection {
+    const seg = legSegments(legIdx)[segIdx] ?? null;
     return (
       form.extras.find(
-        (e) => e.legIndex === legIdx && e.passengerId === paxIdx
+        (e) => e.legIndex === legIdx && e.segmentIndex === segIdx && e.passengerId === paxIdx
       ) ?? {
         legIndex: legIdx,
+        segmentIndex: segIdx,
+        flightNumber: seg?.flightNumber,
         passengerId: paxIdx,
         mealCode: "NoMeal",
         mealLabel: "No meal",
-        origin:"",
-        destination:"",
+        origin: seg?.origin ?? "",
+        destination: seg?.destination ?? "",
         baggageLabel:"",
         mealPrice: 0,
         baggageCode: "NoBaggage",
@@ -87,27 +134,30 @@ export default function BookingStep4Extras({
   function updateExtra(
     paxIdx: number,
     partial: Partial<ExtraSelection>,
-    legIdx = activeLeg
+    legIdx = activeLeg,
+    segIdx = activeSegment,
   ) {
-    const current = getExtra(paxIdx, legIdx);
+    const current = getExtra(paxIdx, legIdx, segIdx);
     const updated = form.extras.filter(
-      (e) => !(e.legIndex === legIdx && e.passengerId === paxIdx)
+      (e) => !(e.legIndex === legIdx && e.segmentIndex === segIdx && e.passengerId === paxIdx)
     );
     updated.push({ ...current, ...partial });
     onChange({ ...form, extras: updated });
   }
 
-  // FIX #2: Total extras sums across ALL legs (uses ssrDataPerLeg.length
-  // instead of a hardcoded count, so multi-city works correctly).
+  // FIX #2: Total extras sums across ALL legs AND ALL physical segments
+  // within each leg (a 1-stop/2-stop leg has more than one).
   const legCount = Math.max(legs.length, ssrDataPerLeg.length, 1);
   const totalExtras = form.passengers.reduce((sum, _, paxIdx) => {
-    return (
-      sum +
-      Array.from({ length: legCount }, (_, legIdx) => {
-        const e = getExtra(paxIdx, legIdx);
-        return e.mealPrice + e.baggagePrice;
-      }).reduce((a, b) => a + b, 0)
-    );
+    let legTotal = 0;
+    for (let legIdx = 0; legIdx < legCount; legIdx++) {
+      const segCount = Math.max(legSegments(legIdx).length, 1);
+      for (let segIdx = 0; segIdx < segCount; segIdx++) {
+        const e = getExtra(paxIdx, legIdx, segIdx);
+        legTotal += e.mealPrice + e.baggagePrice;
+      }
+    }
+    return sum + legTotal;
   }, 0);
 
   // ── RENDER ─────────────────────────────────────────────────
@@ -123,11 +173,11 @@ export default function BookingStep4Extras({
 
       {/* Leg tabs — only shown for multi-leg trips */}
       {legs.length > 1 && (
-        <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-none">
           {legs.map((leg, i) => (
             <button
               key={i}
-              onClick={() => setActiveLeg(i)}
+              onClick={() => selectLeg(i)}
               className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
                 activeLeg === i
                   ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
@@ -135,8 +185,8 @@ export default function BookingStep4Extras({
               }`}
             >
               {leg.label}: {leg.flight.fromCode} → {leg.flight.toCode}
-              {/* FIX #3: show unavailable badge when SSR is null for this leg */}
-              {ssrDataPerLeg[i] === null && (
+              {/* FIX #3: show unavailable badge when EVERY segment of this leg lacks meals+baggage */}
+              {legSegments(i).every((seg) => !seg.availability.meals && !seg.availability.baggage) && (
                 <span className="ml-1.5 text-[9px] text-amber-500 font-normal">
                   unavailable
                 </span>
@@ -146,8 +196,34 @@ export default function BookingStep4Extras({
         </div>
       )}
 
-      {/* No SSR data for this leg — show friendly notice */}
-      {ssrDataPerLeg[activeLeg] === null && legs.length > 1 && (
+      {/* Segment tabs — only shown when the active leg has a stop.
+          Meals/baggage are sold PER PHYSICAL FLIGHT, so a 1-stop/2-stop
+          leg needs its own tab (and its own selection) per segment. */}
+      {activeSegments.length > 1 && (
+        <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-none">
+          {activeSegments.map((seg, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveSegment(i)}
+              className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border ${
+                activeSegment === i
+                  ? "bg-amber-500 text-white border-amber-500"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-300"
+              }`}
+            >
+              Flight {i + 1}: {seg.origin} → {seg.destination}
+              {!seg.availability.meals && !seg.availability.baggage && (
+                <span className="ml-1 text-[9px] text-amber-600 font-normal">
+                  unavailable
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* No SSR data for this leg/segment — show friendly notice */}
+      {activeSegments.length === 0 && legs.length > 1 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-5 flex items-start gap-3">
           <span className="text-lg shrink-0">ℹ️</span>
           <div>
@@ -166,7 +242,7 @@ export default function BookingStep4Extras({
         // Infants don't get meal/baggage options
         if (paxTypes[i] === "Infant") return null;
 
-        const extra = getExtra(i, activeLeg);
+        const extra = getExtra(i, activeLeg, activeSegment);
         const hasExtras = extra.mealPrice + extra.baggagePrice > 0;
 
         return (
@@ -214,8 +290,13 @@ export default function BookingStep4Extras({
                                 mealCode: meal.code,
                                 mealLabel: meal.label,
                                 mealPrice: meal.price,
+                                origin: meal.origin || activeSeg?.origin || "",
+                                destination: meal.destination || activeSeg?.destination || "",
+                                segmentIndex: activeSegment,
+                                flightNumber: meal.flightNumber ?? activeSeg?.flightNumber,
                               },
-                              activeLeg
+                              activeLeg,
+                              activeSegment,
                             )
                           }
                           className={`flex flex-col items-start p-3 rounded-2xl border-2 text-left transition-all ${
@@ -264,8 +345,18 @@ export default function BookingStep4Extras({
                           onClick={() =>
                             updateExtra(
                               i,
-                              { baggageCode: opt.code, baggageKg: opt.kg, baggagePrice: opt.price },
-                              activeLeg
+                              {
+                                baggageCode: opt.code,
+                                baggageKg: opt.kg,
+                                baggagePrice: opt.price,
+                                baggageLabel: opt.label,
+                                origin: opt.origin || activeSeg?.origin || "",
+                                destination: opt.destination || activeSeg?.destination || "",
+                                segmentIndex: activeSegment,
+                                flightNumber: opt.flightNumber ?? activeSeg?.flightNumber,
+                              },
+                              activeLeg,
+                              activeSegment,
                             )
                           }
                           className={`flex flex-col items-center px-4 py-3 rounded-2xl border-2 transition-all min-w-[90px] ${
@@ -306,7 +397,7 @@ export default function BookingStep4Extras({
           <div>
             <div className="text-xs font-bold text-violet-700 uppercase tracking-widest">Total Extras</div>
             <div className="text-[10px] text-violet-500 mt-0.5">
-              Meals + additional baggage for all passengers · all legs
+              Meals + additional baggage for all passengers · all legs & flights
             </div>
           </div>
           <div className="font-black text-violet-700 text-xl">{formatINR(totalExtras)}</div>

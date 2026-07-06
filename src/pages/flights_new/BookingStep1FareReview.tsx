@@ -5,6 +5,7 @@
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
 import { AIRLINE_COLORS, SectionHeading, ErrorBanner } from "./BookingShared";
+import { useState } from "react";
 
 interface Step1Props {
   flight: DisplayFlight;
@@ -23,6 +24,56 @@ interface Step1Props {
   onLockFare: () => void;
   onAcceptNewFare: () => void;
   onAbort: () => void;
+}
+
+
+function AirlineLogo({
+  code,
+  size = "md",
+}: {
+  code: string;
+  size?: "sm" | "md" | "lg";
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const color =
+    AIRLINE_COLORS[code] ?? { bg: "#475569", text: "#fff" };
+
+  const dims: Record<string, React.CSSProperties> = {
+    sm: { width: 32, height: 32, fontSize: 9, borderRadius: 8 },
+    md: { width: 40, height: 40, fontSize: 10, borderRadius: 11 },
+    lg: { width: 48, height: 48, fontSize: 11, borderRadius: 13 },
+  };
+
+  return (
+    <div
+      style={{
+        ...dims[size],
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 900,
+        fontFamily: "'Sora', sans-serif",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
+    >
+      {imgFailed ? (
+        code
+      ) : (
+        <img
+          src={`/airlines/${code}.gif`}
+          alt={code}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+          onError={() => setImgFailed(true)}
+        />
+      )}
+    </div>
+  );
 }
 
 export default function BookingStep1FareReview({
@@ -193,12 +244,13 @@ function FlightDetailCard({
       {/* Airline bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div
+          {/* <div
             className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xs font-black shadow-md"
             style={{ background: AIRLINE_COLORS[flight.airlineCode] ?? "#64748b" }}
           >
             {flight.airlineCode}
-          </div>
+          </div> */}
+          <AirlineLogo code={flight.airlineCode} size="lg" />
           <div>
             <div className="font-black text-slate-900 text-sm">{flight.airline}</div>
             <div className="text-[10px] text-slate-400 font-medium">{flight.flightNumber}{flight.craft ? ` · ${flight.craft}` : ""}</div>

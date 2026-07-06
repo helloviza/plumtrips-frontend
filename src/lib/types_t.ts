@@ -467,7 +467,7 @@ export type TicketPassportDetail = {
 export type TicketBaggage = {
   WayType: 0 | 1 | 2;   // 0=NotSet, 1=Segment, 2=FullJourney
   Code: string;
-  Description: string;
+  Description: number;
   Weight: string;
   Currency: string;
   Price: number;
@@ -531,7 +531,7 @@ export type TicketLCCPassenger = {
   SeatDynamic?: Array<{
   WayType: 2;
   Code: string;       // e.g. "12A"
-  Description: string;
+  Description: number;
   Origin: string;
   Destination: string;
   Currency: string;
