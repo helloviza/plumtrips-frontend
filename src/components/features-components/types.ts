@@ -75,6 +75,7 @@ export interface TrendingDestinationProps {
 export interface PlannerField {
   label: string;
   placeholder: string;
+  name?: string;
   fullWidth?: boolean;
 }
 
