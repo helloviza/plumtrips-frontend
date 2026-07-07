@@ -32,7 +32,7 @@ export default function HotelBookingShell({
   return (
     <div className="min-h-screen" style={{ background: "#f8f7f4", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* Top nav */}
-      <header className="bg-white border-b border-slate-100 sticky top-[88px] md:top-[124px] z-40 shadow-sm">
+      <header className="bg-white border-b border-slate-100 sticky top-[52px] md:top-[88px] z-40 shadow-sm">
         <div className={`mx-auto px-4 sm:px-6 h-16 flex items-center gap-6 ${maxWClass[maxWidth]}`}>
           <button
             onClick={onBack ?? (() => navigate(-1))}

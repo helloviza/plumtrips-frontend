@@ -394,11 +394,39 @@ export function PriceSidebar({
               Live Price Summary
             </span>
           </div>
-          <div className="font-black text-[28px] text-white leading-none tracking-tight">
+          <span className="font-black text-[28px] text-white leading-none tracking-tight">
             {formatINR(total)}
-          </div>
+          </span>
           <div className="text-[11px] text-blue-200/60 mt-1.5 font-medium">
             {travellers} traveller{travellers !== 1 ? "s" : ""} · all taxes included
+          </div>
+
+          {/* ── Fare breakdown: Base + Tax per traveller type — always visible, display only ── */}
+          <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
+            {adults > 0 && (
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-blue-200/70 font-medium">Adult (base + tax)</span>
+                <span className="text-white font-semibold">
+                  {formatINR(tier.adultBase ?? 0)} + {formatINR(tier.adultTax ?? 0)}
+                </span>
+              </div>
+            )}
+            {children > 0 && (
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-blue-200/70 font-medium">Child (base + tax)</span>
+                <span className="text-white font-semibold">
+                  {formatINR(tier.childBase ?? 0)} + {formatINR(tier.childTax ?? 0)}
+                </span>
+              </div>
+            )}
+            {infants > 0 && (
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-blue-200/70 font-medium">Infant (base + tax)</span>
+                <span className="text-white font-semibold">
+                  {formatINR(tier.infantBase ?? 0)} + {formatINR(tier.infantTax ?? 0)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

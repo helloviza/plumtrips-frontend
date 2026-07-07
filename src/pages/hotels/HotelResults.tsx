@@ -421,10 +421,10 @@ export default function HotelResults() {
     <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* ── Top Search Bar ── */}
       <div 
-        className="sticky top-[88px] md:top-[124px] z-40 border-b border-gray-200 bg-white/90 backdrop-blur-sm shadow-sm"
+        className="sticky top-[52px] md:top-[88px] z-40 border-b border-gray-200 backdrop-blur-sm shadow-sm"
         style={{ boxShadow: "0 8px 28px rgba(15,23,42,0.08)" }}
       >
-        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
+        <div className="mx-auto max-w-7xl ">
           <HotelSearchBar 
             onSearch={() => {
                const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
