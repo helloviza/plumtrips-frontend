@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Clock } from 'lucide-react';
 import LocationAutocomplete from './LocationAutocomplete';
-import DatePicker from './DatePicker';
+import { HotelRangePickerTriggers } from './HotelRangePicker';
 import GuestsRoomsSelector from './GuestsRoomsSelector';
 import { useHotelStore } from '../../stores/hotelStore';
 import { getCountries, type TboCountry } from '../../services/hotelApi';
@@ -82,50 +82,23 @@ export default function HotelSearchBar({
           />
         </div>
 
-        {/* Check-in */}
-        <div style={{ zIndex: 40, flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
-          <FieldLabel>Check In</FieldLabel>
-          <DatePicker
-            variant="bar"
-            popoverAlign="start"
-            selected={checkIn}
-            onSelect={(date) => {
-              setSearchParams({ checkIn: date });
-              if (date && checkOut && date >= checkOut) {
-                const next = new Date(date);
-                next.setDate(next.getDate() + 1);
-                setSearchParams({ checkOut: next });
-              }
-            }}
-            placeholder="Add date"
-            error={errors.checkIn}
-          />
-        </div>
-
-        {/* Check-out */}
-        <div style={{ zIndex: 30, flexShrink: 0, minWidth: 150, maxWidth: 180, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
-          <FieldLabel>
-            Check Out
-            {nights > 0 && (
-              <span className="ml-1.5 normal-case font-normal text-[#003580]">
-                · {nights} night{nights !== 1 ? 's' : ''}
-              </span>
-            )}
-          </FieldLabel>
-          <DatePicker
-            variant="bar"
-            popoverAlign="end"
-            selected={checkOut}
-            onSelect={(date) => setSearchParams({ checkOut: date })}
-            placeholder="Add date"
-            minDate={
-              checkIn
-                ? new Date(checkIn.getTime() + 86400000)
-                : new Date()
+        {/* Check-in + Check-out — unified range picker */}
+        <HotelRangePickerTriggers
+          checkIn={checkIn}
+          checkOut={checkOut}
+          onCheckInChange={(date) => {
+            setSearchParams({ checkIn: date });
+            if (date && checkOut && date >= checkOut) {
+              const next = new Date(date);
+              next.setDate(next.getDate() + 1);
+              setSearchParams({ checkOut: next });
             }
-            error={errors.checkOut}
-          />
-        </div>
+          }}
+          onCheckOutChange={(date) => setSearchParams({ checkOut: date })}
+          minDate={new Date()}
+          checkInError={errors.checkIn}
+          checkOutError={errors.checkOut}
+        />
 
         {/* Guests */}
         <div style={{ zIndex: 20, flexShrink: 0, minWidth: 200, maxWidth: 280, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">

@@ -74,7 +74,7 @@ function buildImages(staticDetail?: StaticHotelDetail): string[] {
       if (url) imgs.push(url);
     }
   }
-  if (imgs.length === 0) imgs.push('/assets/hotel-bg.jpg');
+  if (imgs.length === 0) return [];
   return imgs;
 }
 

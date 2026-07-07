@@ -1,4 +1,3 @@
-// import { useCurrency } from '../../hooks/useCurrency';
 import { formatINR } from '../../lib/flights_api';
 import { Star, MapPin, Shield, Wifi, Coffee, Dumbbell, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -143,7 +142,7 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
               <div className="text-xs text-gray-500">
                 incl. taxes & fees
                 {nights > 1 && (
-                  <span> · ≈ {formatINR(Math.round(totalPrice / nights))}/night</span>
+                  <span> · ≈ {formatINR(Math.ceil(totalPrice / nights))}/night</span>
                 )}
               </div>
             </div>

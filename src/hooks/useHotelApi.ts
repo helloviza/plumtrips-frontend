@@ -16,6 +16,7 @@ import {
   searchHotelCities,
   getCityHotels,
   searchHotels,
+  searchHotelsStream,
   getHotelStaticDetails,
   preBookHotel,
   bookHotel,
@@ -31,9 +32,19 @@ import {
 import type { Hotel, Room, PreBookResponse, CancelPolicySlab } from '../stores/hotelStore';
 
 function mapPolicy(p: any, fallbackCurrency: string = 'INR'): CancelPolicySlab {
-  let penalty = p?.charge ?? p?.Charge ?? p?.CancellationCharge ?? p?.Amount ?? p?.PenaltyAmount ?? p?.ChargeAmount ?? p?.Percentage ?? p?.value ?? p?.Value ?? 0;
-  
-  let rawType = p?.chargeType ?? p?.ChargeType;
+  const rawChargeValue =
+    p?.CancellationCharge ??
+    p?.Charge ??
+    p?.charge ??
+    p?.Amount ??
+    p?.PenaltyAmount ??
+    p?.ChargeAmount ??
+    p?.Percentage ??
+    p?.value ??
+    p?.Value ??
+    0;
+
+  let rawType = p?.ChargeType ?? p?.chargeType;
   let chargeType = 0;
   if (typeof rawType === 'string') {
     const lower = rawType.toLowerCase();
@@ -45,13 +56,23 @@ function mapPolicy(p: any, fallbackCurrency: string = 'INR'): CancelPolicySlab {
     chargeType = Number(rawType ?? 0);
   }
 
+  const currencyValue = String(p?.Currency ?? p?.currency ?? fallbackCurrency);
+  const rawFromDate = p?.FromDate ?? p?.fromDate;
+  const rawToDate = p?.ToDate ?? p?.toDate;
+  const rawCharge = Number(rawChargeValue);
+
   return {
-    charge: Number(penalty),
+    charge: rawCharge,
     chargeType,
-    currency: String(p?.currency ?? p?.Currency ?? fallbackCurrency),
-    fromDate: p?.fromDate ?? p?.FromDate,
-    toDate: p?.toDate ?? p?.ToDate,
-    remarks: p?.remarks ?? p?.Remarks,
+    currency: currencyValue,
+    fromDate: rawFromDate,
+    toDate: rawToDate,
+    remarks: p?.Remarks ?? p?.remarks,
+    FromDate: rawFromDate,
+    ToDate: rawToDate,
+    ChargeType: rawType,
+    CancellationCharge: rawCharge,
+    Currency: currencyValue,
   };
 }
 
@@ -92,17 +113,23 @@ function findCancellationString(obj: any): string | null {
   return null;
 }
 
-function findLastCancellationDate(obj: any): string | null {
+function findCancellationDeadline(obj: any): string | null {
   if (!obj || typeof obj !== 'object') return null;
-  const keys = ['LastCancellationDate', 'lastCancellationDate'];
+  const keys = ['FreeCancellationUntil', 'freeCancellationUntil', 'LastCancellationDate', 'lastCancellationDate', 'LastCancellationDeadline', 'lastCancellationDeadline'];
   for (const k of keys) {
     if (typeof obj[k] === 'string' && obj[k].trim() !== '') {
       return obj[k].trim();
     }
+    if (obj[k] instanceof Date && !isNaN(obj[k].getTime())) {
+      return obj[k].toISOString();
+    }
+    if (typeof obj[k] === 'number' && Number.isFinite(obj[k])) {
+      return new Date(obj[k]).toISOString();
+    }
   }
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      const result = findLastCancellationDate(obj[key]);
+      const result = findCancellationDeadline(obj[key]);
       if (result) return result;
     }
   }
@@ -112,12 +139,207 @@ function findLastCancellationDate(obj: any): string | null {
 function safeFormatDate(dStr: string | null | undefined): string | null {
   if (!dStr) return null;
   try {
-    const d = new Date(dStr);
+    let parseStr = dStr.trim();
+
+    const ddmmyyyy = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+    if (ddmmyyyy) {
+      const time = ddmmyyyy[4] ? 'T' + ddmmyyyy[4] : '';
+      parseStr = `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}${time}`;
+    }
+
+    const ddmmyyyySlash = dStr.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(.*))?$/);
+    if (ddmmyyyySlash) {
+      const time = ddmmyyyySlash[4] ? 'T' + ddmmyyyySlash[4] : '';
+      parseStr = `${ddmmyyyySlash[3]}-${ddmmyyyySlash[2]}-${ddmmyyyySlash[1]}${time}`;
+    }
+
+    const yyyymmdd = dStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(.*))?$/);
+    if (yyyymmdd) {
+      const time = yyyymmdd[4] ? 'T' + yyyymmdd[4] : '';
+      parseStr = `${yyyymmdd[1]}-${yyyymmdd[2]}-${yyyymmdd[3]}${time}`;
+    }
+
+    const d = new Date(parseStr);
     if (isNaN(d.getTime())) return null;
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch {
     return null;
   }
+}
+
+export function parsePolicyDate(dStr: string | null | undefined): Date | null {
+  if (!dStr) return null;
+  try {
+    let year: number, month: number, day: number;
+    // DD-MM-YYYY [HH:MM:SS] — TBO format
+    const ddmmyyyy = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
+    if (ddmmyyyy) {
+      day   = Number(ddmmyyyy[1]);
+      month = Number(ddmmyyyy[2]) - 1;
+      year  = Number(ddmmyyyy[3]);
+      // Parse as local midnight to avoid UTC→local shift
+      return new Date(year, month, day);
+    }
+    // YYYY-MM-DD — parse as local midnight
+    const yyyymmdd = dStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (yyyymmdd) {
+      year  = Number(yyyymmdd[1]);
+      month = Number(yyyymmdd[2]) - 1;
+      day   = Number(yyyymmdd[3]);
+      return new Date(year, month, day);
+    }
+    // Fallback
+    const d = new Date(dStr);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+}
+
+function parseCheckInDate(date: Date | string | null | undefined): Date | null {
+  if (!date) return null;
+  // Always parse as local midnight (no timezone shift) to avoid off-by-one
+  // when converting between UTC and local time (e.g. IST +5:30).
+  if (date instanceof Date) {
+    if (isNaN(date.getTime())) return null;
+    // Re-parse from the local date components to strip any UTC offset
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+  // String: try YYYY-MM-DD first (split to avoid UTC parsing)
+  const iso = String(date).split('T')[0];
+  const parts = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (parts) {
+    return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  }
+  return parsePolicyDate(date);
+}
+
+export function formatPolicyDate(dStr: string | null | undefined): string {
+  const d = parsePolicyDate(dStr);
+  if (!d) return String(dStr || '');
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatPolicyDateFromDate(d: Date | null): string | null {
+  if (!d) return null;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+export function sortCancelPolicies(policies: CancelPolicySlab[] = []): CancelPolicySlab[] {
+  return [...policies].sort((a, b) => {
+    const aDate = parsePolicyDate(a.fromDate ?? a.toDate ?? '');
+    const bDate = parsePolicyDate(b.fromDate ?? b.toDate ?? '');
+    if (aDate && bDate) return aDate.getTime() - bDate.getTime();
+    if (aDate) return -1;
+    if (bDate) return 1;
+    return 0;
+  });
+}
+
+export function getCancellationPolicyDisplay(
+  cancelPolicies: CancelPolicySlab[] | undefined,
+  cancellationPolicy: string | undefined,
+  isRefundable: boolean | undefined,
+  checkInDate?: Date | string | null,
+  seed?: string
+) {
+  const policies = sortCancelPolicies(cancelPolicies ?? []);
+  const normalizedText = typeof cancellationPolicy === 'string' && cancellationPolicy.trim() ? cancellationPolicy.trim() : null;
+  const isNonRefundable = isRefundable === false;
+  const zeroChargeSlabs = policies.filter((p) => p.charge === 0);
+  const penaltySlabs = policies.filter((p) => p.charge > 0);
+
+  const explicitFreeDeadline = zeroChargeSlabs
+    .map((p) => p.toDate)
+    .map((d) => parsePolicyDate(d))
+    .filter(Boolean)[0] ?? null;
+
+  const impliedFreeDeadline = !isNonRefundable && !explicitFreeDeadline && penaltySlabs.length > 0
+    ? (() => {
+        const firstPenalty = penaltySlabs.find((p) => p.fromDate);
+        if (!firstPenalty) return null;
+        const date = parsePolicyDate(firstPenalty.fromDate);
+        if (!date) return null;
+        date.setDate(date.getDate() - 1);
+        return date;
+      })()
+    : null;
+
+  const isPlaceholderPolicy = normalizedText ? /please check hotel cancellation policy/i.test(normalizedText) : false;
+  const hasPolicySlabs = policies.length > 0;
+  const freeCancellationDeadline = explicitFreeDeadline
+    ? formatPolicyDateFromDate(explicitFreeDeadline)
+    : impliedFreeDeadline
+      ? formatPolicyDateFromDate(impliedFreeDeadline)
+      : null;
+
+  let summary: string | null = null;
+  if (isNonRefundable) {
+    summary = 'Non-Refundable';
+  } else if (zeroChargeSlabs.length > 0) {
+    summary = freeCancellationDeadline
+      ? `Free Cancellation until ${freeCancellationDeadline}`
+      : 'Free Cancellation available';
+  } else if (freeCancellationDeadline) {
+    summary = `Free Cancellation until ${freeCancellationDeadline}`;
+  } else if (normalizedText) {
+    summary = normalizedText;
+  } else if (isRefundable === true) {
+    summary = 'Free Cancellation available';
+  } else if (isRefundable === false) {
+    summary = 'Non-Refundable';
+  }
+
+  return {
+    summary,
+    sortedPolicies: policies,
+    freeCancellationDeadline,
+    isNonRefundable,
+    rawPolicyText: normalizedText,
+  };
+}
+
+function resolvePolicyChargeType(rawType: any): number {
+  if (typeof rawType === 'number' && !isNaN(rawType)) return rawType;
+  if (typeof rawType !== 'string') return Number(rawType ?? 0) || 0;
+  const lower = rawType.toLowerCase();
+  if (lower === 'percentage') return 2;
+  if (lower === 'fixed') return 1;
+  if (lower === 'night') return 3;
+  return Number(rawType) || 0;
+}
+
+export function getPolicyChargeAmount(policy: CancelPolicySlab): number {
+  const rawCharge = policy.CancellationCharge ?? policy.charge ?? policy.ChargeAmount ?? policy.Amount ?? policy.value ?? policy.Value ?? 0;
+  const amount = Number(rawCharge);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+export function getPolicyChargeType(policy: CancelPolicySlab): number {
+  return resolvePolicyChargeType(policy.ChargeType ?? policy.chargeType ?? policy.type);
+}
+
+export function getPolicyChargeCurrency(policy: CancelPolicySlab): string {
+  return policy.currency ?? policy.Currency ?? 'INR';
+}
+
+export function getPolicyChargeText(policy: CancelPolicySlab): string {
+  const amount = getPolicyChargeAmount(policy);
+  const type = getPolicyChargeType(policy);
+  const currency = getPolicyChargeCurrency(policy);
+
+  if (type === 2) {
+    // Percentage charge
+    return `${amount}% cancellation charge`;
+  }
+
+  // Fixed / night charge — format as currency with symbol
+  const symbol = currency === 'INR' ? '₹' : currency;
+  const formatted = amount.toLocaleString('en-IN', {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  return `${symbol}${formatted} cancellation charge`;
 }
 
 import { useHotelStore } from '../stores/hotelStore';
@@ -165,7 +387,7 @@ function buildImages(staticDetail?: StaticHotelDetail): string[] {
       if (url) imgs.push(url);
     }
   }
-  if (imgs.length === 0) imgs.push('/assets/hotel-bg.jpg');
+  if (imgs.length === 0) return [];
   return imgs;
 }
 
@@ -183,26 +405,86 @@ function buildAmenities(staticDetail?: StaticHotelDetail): string[] {
  * searchResult — matching entry from /search HotelResult[] (has Rooms[])
  * staticDetail — optional /static-details entry
  */
+function resolveRoomTotalFare(raw: any): number {
+  return Number(
+    raw?.TotalFare ??
+    raw?.Price?.OfferedPriceRoundedOff ??
+    raw?.PublishedPriceRoundedOff ??
+    raw?.Price?.PublishedPriceRoundedOff ??
+    0
+  );
+}
+
+function resolveRoomTotalTax(raw: any): number {
+  return Number(
+    raw?.TotalTax ??
+    raw?.Price?.Tax ??
+    raw?.Price?.OtherCharges ??
+    0
+  );
+}
+
+function parseRoomQuantityValue(value: any): number {
+  if (value == null) return 0;
+  if (typeof value === 'string') {
+    const digits = value.trim().replace(/[^0-9.-]+/g, '');
+    const parsed = Number(digits);
+    if (Number.isFinite(parsed)) return Math.max(0, Math.round(parsed));
+    return 0;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
+}
+
+function resolveRoomQuantity(raw: any): number {
+  const candidates = [
+    raw?.Quantity,
+    raw?.RoomCount,
+    raw?.NumberOfRooms,
+    raw?.NoOfRooms,
+    raw?.RoomQuantity,
+    raw?.RoomsCount,
+  ];
+
+  for (const value of candidates) {
+    const n = parseRoomQuantityValue(value);
+    if (n > 0) {
+      return Math.max(1, n);
+    }
+  }
+
+  return 1;
+}
+
 function normHotel(
   cityHotel: any,
   searchResult: any,
-  staticDetail?: StaticHotelDetail,
-  searchTraceId?: string
+  staticDetail: StaticHotelDetail | undefined,
+  searchTraceId?: string,
+  searchedRooms: number = 1
 ): Hotel {
   const rooms: any[] = searchResult?.Rooms ?? [];
 
   // Cheapest room drives the card-level price.
-  // TBO returns per-room prices regardless of the rooms count in the search;
-  // we store the per-room amount and let the UI multiply by rooms count when displaying.
+  // TBO returns TotalFare as the aggregate for ALL rooms searched.
+  // Divide by searchedRooms (not resolveRoomQuantity which always returns 1)
+  // to get the per-room price shown on the hotel card.
   const cheapest = rooms.reduce(
-    (min: any, r: any) => (!min || Number(r.TotalFare) < Number(min.TotalFare) ? r : min),
+    (min: any, r: any) => {
+      const fare = resolveRoomTotalFare(r);
+      const minFare = resolveRoomTotalFare(min);
+      return !min || fare < minFare ? r : min;
+    },
     null
   );
 
-  const totalFare = cheapest ? Number(cheapest.TotalFare ?? 0) : 0;
-  const taxes = cheapest ? Number(cheapest.TotalTax ?? 0) : 0;
-  // price = base fare (tax-exclusive) for ONE room
-  const price = Math.max(0, totalFare - taxes);
+  const roomDivisor = Math.max(1, searchedRooms);
+  const totalFare = cheapest ? resolveRoomTotalFare(cheapest) : 0;
+  const taxes = cheapest ? resolveRoomTotalTax(cheapest) : 0;
+  // Divide by searchedRooms to normalise to per-room price
+  const perRoomTax = Math.ceil(Math.max(0, taxes / roomDivisor));
+  const perRoomTotalFare = Math.ceil(Math.max(0, totalFare / roomDivisor));
+  const price = Math.max(0, perRoomTotalFare - perRoomTax);
   const freeCancellation = rooms.some((r: any) => r.IsRefundable === true);
   const mealType: string = cheapest?.MealType ?? '';
 
@@ -236,7 +518,7 @@ function normHotel(
     _hotelCode: String(cityHotel?.HotelCode ?? ''),
     _mealType: mealType,
     _rooms: rooms,       // raw room array from /search
-    _taxes: taxes,
+    _taxes: perRoomTax,  // per-room tax (TBO aggregate divided by quantity)
     _traceId: searchTraceId,
   } as Hotel & {
     _hotelCode: string;
@@ -265,8 +547,12 @@ function mealPlanLabelFromCode(code: string): string {
 /**
  * /search room shape:
  * { Name: string[], BookingCode, TotalFare, TotalTax, MealType, IsRefundable, Inclusion, ... }
+ *
+ * TBO returns TotalFare as the aggregate for ALL rooms searched (e.g. rooms=2 → TotalFare
+ * is the 2-room total). TBO does NOT return a Quantity field on individual room objects.
+ * We must divide by searchedRooms to get the per-room price shown on each room card.
  */
-function normRoom(raw: any, index: number): Room {
+function normRoom(raw: any, index: number, searchedRooms: number = 1): Room {
   const names: string[] = Array.isArray(raw.Name) ? raw.Name : [raw.Name ?? `Room ${index + 1}`];
   const roomName = names[0] ?? `Room ${index + 1}`;
   const roomSubtitle = names
@@ -275,9 +561,16 @@ function normRoom(raw: any, index: number): Room {
     .filter(Boolean)
     .join(' · ');
 
-  const totalFare = Number(raw.TotalFare ?? 0);
-  const taxes = Number(raw.TotalTax ?? 0);
-  const price = Math.max(0, totalFare - taxes);
+  const quantity = resolveRoomQuantity(raw);
+  const totalFare = resolveRoomTotalFare(raw);
+  const taxes = resolveRoomTotalTax(raw);
+  // TBO returns TotalFare as aggregate for all searched rooms.
+  // resolveRoomQuantity returns 1 because TBO doesn't send a Quantity field.
+  // Use searchedRooms (from the original search params) to normalise to per-room price.
+  const roomDivisor = Math.max(1, quantity > 1 ? quantity : searchedRooms);
+  const perRoomTax = Math.ceil(Math.max(0, taxes / roomDivisor));
+  const perRoomTotalFare = Math.ceil(Math.max(0, totalFare / roomDivisor));
+  const price = Math.max(0, perRoomTotalFare - perRoomTax);
   const isRefundable = raw.IsRefundable === true || String(raw.IsRefundable).toLowerCase() === 'true';
   const mealType: string = raw.MealType ?? '';
   const mealPlanLabel = mealPlanLabelFromCode(mealType);
@@ -316,7 +609,7 @@ function normRoom(raw: any, index: number): Room {
     raw.PublishedPrice ?? raw.PublishedPriceRoundedOff ?? raw.Price?.PublishedPriceRoundedOff ?? 0
   );
   const originalPrice =
-    published > 0 && published > price + taxes ? Math.round(published) : undefined;
+    published > 0 && published > price + taxes ? Math.ceil(published) : undefined;
 
   if (amenities.length === 0 && mealPlanLabel) {
     amenities.push(mealPlanLabel);
@@ -355,8 +648,17 @@ function normRoom(raw: any, index: number): Room {
 
   const roomImages = Array.isArray(raw.Images) ? raw.Images : Array.isArray(raw.images) ? raw.images : raw.RoomPicture ? [raw.RoomPicture] : raw.Picture ? [raw.Picture] : [];
 
-  // CancelPolicies in search response are static TBO test data — ignored here.
-  // Real cancellation policy only comes from PreBook API response.
+  // Read CancelPolicies and LastCancellationDate directly from the search response.
+  // The prebook API returns 402 in test environments, so we must use search-time
+  // policy data as the source of truth for cancellation display.
+  const searchCancelPolicies: CancelPolicySlab[] =
+    Array.isArray(raw.CancelPolicies) && raw.CancelPolicies.length > 0
+      ? raw.CancelPolicies.map((p: any) => mapPolicy(p, raw.Currency ?? 'INR'))
+      : Array.isArray(raw.CancellationPolicies) && raw.CancellationPolicies.length > 0
+        ? raw.CancellationPolicies.map((p: any) => mapPolicy(p, raw.Currency ?? 'INR'))
+        : [];
+
+  // Per-room taxes already calculated above as perRoomTax using roomDivisor.
 
   return {
     id: String(raw.BookingCode ?? index),
@@ -368,11 +670,11 @@ function normRoom(raw: any, index: number): Room {
     view,
     breakfast: hasBreakfast,
     cancellationPolicy: findCancellationString(raw) || (isRefundable ? 'Free cancellation available' : 'Non-refundable'),
-    cancelPolicies: [],
+    cancelPolicies: searchCancelPolicies,
     amenities,
     price,
     originalPrice,
-    taxesAndFees: taxes,
+    taxesAndFees: perRoomTax,
     additionalCharges,
     additionalChargesCurrency,
     quantity: 1,
@@ -411,10 +713,10 @@ export function useHotelSearch() {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
 
-  const [, setAllCityHotels] = useState<any[]>([]);
-  const [, setCurrentParams] = useState<HotelSearchInput | null>(null);
+  const [allCityHotels, setAllCityHotels] = useState<any[]>([]);
+  const [currentParams, setCurrentParams] = useState<HotelSearchInput | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [loadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const searchSessionId = useRef(0);
 
@@ -441,10 +743,12 @@ export function useHotelSearch() {
     if (isFirstBatch) setStatusMessage('Searching for available rooms…');
     
     try {
+      console.time('searchHotels-api');
       const { hotelResults: searchResults, traceId: searchTraceId } = await searchHotels({
         ...params,
         hotelCodes,
       });
+      console.timeEnd('searchHotels-api');
 
       if (sessionId !== searchSessionId.current) return { normalized: [], searchResults: [] };
 
@@ -457,31 +761,44 @@ export function useHotelSearch() {
         );
       }
 
-      if (isFirstBatch) setStatusMessage('Loading hotel details…');
+      // Render immediately WITHOUT waiting for static details
+      const normalized = searchResults.map((sr: any) => {
+        const code = sr.HotelCode || sr.hotelCode;
+        const cityHotel = cityHotelMap[code] ?? { HotelCode: code };
+        return normHotel(cityHotel, sr, undefined, sr._traceId || searchTraceId, params.rooms ?? 1);
+      });
+
+      // Fetch static details in the background and merge them in
       const resultCodes = searchResults
         .map((r: any) => r.HotelCode || r.hotelCode)
         .filter(Boolean)
         .slice(0, 100);
 
-      let staticMap: Record<string, StaticHotelDetail> = {};
       if (resultCodes.length > 0) {
-        try {
-          const staticDetails = await getHotelStaticDetails(resultCodes);
+        getHotelStaticDetails(resultCodes).then((staticDetails) => {
+          if (sessionId !== searchSessionId.current) return;
+          const staticMap: Record<string, StaticHotelDetail> = {};
           for (const sd of staticDetails) {
-            const code = sd.HotelCode || sd.hotelCode;
+            const code = sd.HotelCode || (sd as any).hotelCode;
             if (code) staticMap[code] = sd;
           }
-        } catch {
-          // ignore
-        }
+          // Re-normalize with static details and update state
+          const enriched = searchResults.map((sr: any) => {
+            const code = sr.HotelCode || sr.hotelCode;
+            const cityHotel = cityHotelMap[code] ?? { HotelCode: code };
+            const sd = staticMap[code];
+            return normHotel(cityHotel, sr, sd, sr._traceId || searchTraceId, params.rooms ?? 1);
+          });
+          setHotels(prev => {
+            // Merge enriched hotels into existing list (replace by id)
+            const map = new Map(prev.map(h => [h.id, h]));
+            for (const h of enriched) map.set(h.id, h);
+            return Array.from(map.values());
+          });
+        }).catch(() => {
+          // Static details are optional — ignore failures
+        });
       }
-
-      const normalized = searchResults.map((sr: any) => {
-        const code = sr.HotelCode || sr.hotelCode;
-        const cityHotel = cityHotelMap[code] ?? { HotelCode: code };
-        const sd = staticMap[code];
-        return normHotel(cityHotel, sr, sd, sr._traceId || searchTraceId);
-      });
 
       return { normalized, searchResults };
     } catch (err) {
@@ -501,6 +818,9 @@ export function useHotelSearch() {
     useHotelStore.getState().setTraceId(null);
     setHasMore(false);
 
+    // Abort controller so we can cancel the stream on new search
+    const abortController = new AbortController();
+
     try {
       setStatusMessage('Finding hotels in this city…');
       let actualCityCode = params.cityCode;
@@ -512,6 +832,7 @@ export function useHotelSearch() {
         // Resolve plain strings if it's not a numeric ID
         if (!/^\d+$/.test(actualCityCode)) {
           const cities = await searchCities(actualCityCode);
+          if (sessionId !== searchSessionId.current) return;
           if (cities.length > 0) {
             actualCityCode = cities[0].cityCode;
             if (cities[0].countryCode) {
@@ -521,75 +842,125 @@ export function useHotelSearch() {
         }
       }
       
+      // Fetch all hotel codes for the city
+      setStatusMessage('Loading hotel list…');
       const cityHotels: any[] = await getCityHotels(actualCityCode);
+      if (sessionId !== searchSessionId.current) return;
+
       setAllCityHotels(cityHotels);
       setCurrentParams(params);
 
-      const FIRST_CHUNK_SIZE = 20;
-      const REST_CHUNK_SIZE = 100;
-      
-      const chunks: any[][] = [];
-      if (cityHotels.length > 0) {
-        chunks.push(cityHotels.slice(0, FIRST_CHUNK_SIZE));
-        for (let i = FIRST_CHUNK_SIZE; i < cityHotels.length; i += REST_CHUNK_SIZE) {
-          chunks.push(cityHotels.slice(i, i + REST_CHUNK_SIZE));
-        }
+      if (cityHotels.length === 0) {
+        setError('No hotels found in this city.');
+        setHasSearched(true);
+        setLoading(false);
+        setStatusMessage('');
+        return;
       }
-      
-      let foundAnyHotels = false;
 
-      if (chunks.length > 0) {
-        for (let i = 0; i < chunks.length; i++) {
-          if (sessionId !== searchSessionId.current) break;
+      setStatusMessage('Searching for available rooms…');
 
-          if (i > 0) {
-            // Delay to avoid rate limiting
-            setStatusMessage(`Loading more hotels (${i + 1}/${chunks.length})...`);
-            await new Promise(r => setTimeout(r, 1000));
+      // Build a cityHotelMap for fast lookup during streaming
+      const cityHotelMap: Record<string, any> = {};
+      for (const h of cityHotels) {
+        const code = h.HotelCode || h.hotelCode;
+        if (code) cityHotelMap[code] = h;
+      }
+
+      // Send ALL city hotel codes — backend splits into 20-code chunks (5 concurrent)
+      // TBO only returns hotels with availability, so we need broad coverage to get 100+
+      const streamCodes = cityHotels
+        .map((h: any) => h.HotelCode || h.hotelCode)
+        .filter(Boolean)
+        .join(',');
+
+      // No "load more" needed — we stream everything upfront
+      setHasMore(false);
+
+      let firstBatchRendered = false;
+      const seenResults: any[] = [];
+
+      await searchHotelsStream(
+        { ...params, hotelCodes: streamCodes },
+        // onBatch — called as each 20-code TBO response arrives
+        (rawHotels: any[], batchTraceId: string) => {
+          if (sessionId !== searchSessionId.current) return;
+
+          // Store traceId from first batch
+          if (batchTraceId && !useHotelStore.getState().traceId) {
+            useHotelStore.getState().setTraceId(batchTraceId);
           }
 
-          let retries = 3;
-          let attempt = 0;
-          while (retries > 0) {
-            try {
-              const res = await fetchBatch(params, chunks[i], i === 0, sessionId);
-              if (res && sessionId === searchSessionId.current) {
-                if (res.normalized.length > 0) {
-                  foundAnyHotels = true;
-                  setHasSearched(true);
-                  setLoading(false);
-                }
-                setHotels(prev => {
-                  const combined = [...prev, ...res.normalized];
-                  return Array.from(new Map(combined.map(h => [h.id, h])).values());
-                });
-                setRawResults(prev => {
-                  const combined = [...prev, ...res.searchResults];
-                  return Array.from(new Map(combined.map(r => [String(r.HotelCode || r.hotelCode), r])).values());
-                });
-              }
-              break;
-            } catch (err) {
-              retries--;
-              attempt++;
-              if (retries === 0 || sessionId !== searchSessionId.current) {
-                console.warn(`[useHotelSearch] Chunk ${i} failed permanently after 3 retries. Skipping.`);
-                break;
-              }
-              await new Promise(r => setTimeout(r, 1500 * attempt));
-            }
+          // Normalize and add to state immediately
+          const newNormalized = rawHotels.map((sr: any) => {
+            const code = sr.HotelCode || sr.hotelCode;
+            const cityHotel = cityHotelMap[code] ?? { HotelCode: code };
+            return normHotel(cityHotel, sr, undefined, sr._traceId || batchTraceId, params.rooms ?? 1);
+          });
+
+          seenResults.push(...rawHotels);
+
+          // Render hotels as they arrive — React batches these setState calls
+          setHotels(prev => {
+            const map = new Map(prev.map(h => [h.id, h]));
+            for (const h of newNormalized) map.set(h.id, h);
+            return Array.from(map.values());
+          });
+          setRawResults(prev => [...prev, ...rawHotels]);
+
+          if (!firstBatchRendered) {
+            firstBatchRendered = true;
+            setHasSearched(true);
+            setLoading(false);
+            setStatusMessage('');
           }
-        }
-      }
-      if (sessionId !== searchSessionId.current) return;
 
-      if (!foundAnyHotels && chunks.length > 0) {
-        setError('No rooms available for the selected dates. Try different dates.');
-      }
-
-      setHasSearched(true);
-      setLoading(false);
-      setStatusMessage('');
+          // Kick off background static details enrichment for this batch
+          const codes = rawHotels.map((r: any) => r.HotelCode || r.hotelCode).filter(Boolean);
+          if (codes.length > 0) {
+            getHotelStaticDetails(codes).then((staticDetails) => {
+              if (sessionId !== searchSessionId.current) return;
+              const staticMap: Record<string, StaticHotelDetail> = {};
+              for (const sd of staticDetails) {
+                const code = sd.HotelCode || (sd as any).hotelCode;
+                if (code) staticMap[code] = sd;
+              }
+              const enriched = rawHotels.map((sr: any) => {
+                const code = sr.HotelCode || sr.hotelCode;
+                const cityHotel = cityHotelMap[code] ?? { HotelCode: code };
+                return normHotel(cityHotel, sr, staticMap[code], sr._traceId || batchTraceId, params.rooms ?? 1);
+              });
+              setHotels(prev => {
+                const map = new Map(prev.map(h => [h.id, h]));
+                for (const h of enriched) map.set(h.id, h);
+                return Array.from(map.values());
+              });
+            }).catch(() => { /* static details optional */ });
+          }
+        },
+        // onDone
+        (_total: number) => {
+          if (sessionId !== searchSessionId.current) return;
+          if (!firstBatchRendered) {
+            // Stream completed but no hotels found
+            setError('No rooms available for the selected dates. Try different dates.');
+            setHasSearched(true);
+            setLoading(false);
+            setStatusMessage('');
+          }
+        },
+        // onError
+        (msg: string) => {
+          if (sessionId !== searchSessionId.current) return;
+          if (!firstBatchRendered) {
+            setError(msg || 'Hotel search failed. Please try again.');
+            setHasSearched(true);
+            setLoading(false);
+            setStatusMessage('');
+          }
+        },
+        abortController.signal,
+      );
 
     } catch (err: any) {
       if (sessionId !== searchSessionId.current) return;
@@ -601,7 +972,9 @@ export function useHotelSearch() {
   }, []);
 
   const loadMore = useCallback(async () => {
-    // No-op since we fetch all hotels now
+    // loadMore is kept for API compatibility but the stream now covers all codes.
+    // Nothing to do.
+    setHasMore(false);
   }, []);
 
   return { hotels, rawResults, loading, hasSearched, error, statusMessage, search, loadMore, hasMore, loadingMore };
@@ -657,12 +1030,14 @@ export function useHotelDetail() {
         const details = await getHotelStaticDetails([params.hotelCode]);
         const sd = details[0];
         const cityHotel = { HotelCode: params.hotelCode };
-        setHotel(normHotel(cityHotel, params.rawResult ?? {}, sd));
+        const sr = Math.max(1, useHotelStore.getState().searchParams.rooms ?? 1);
+        setHotel(normHotel(cityHotel, params.rawResult ?? {}, sd, undefined, sr));
       } catch (err: any) {
         // If we have rawResult, build a basic hotel from it even without static details
         if (params.rawResult) {
           const cityHotel = { HotelCode: params.hotelCode };
-          setHotel(normHotel(cityHotel, params.rawResult, undefined));
+          const sr = Math.max(1, useHotelStore.getState().searchParams.rooms ?? 1);
+          setHotel(normHotel(cityHotel, params.rawResult, undefined, undefined, sr));
         } else {
           setError(err?.message ?? 'Failed to load hotel details');
         }
@@ -696,8 +1071,12 @@ export function useHotelRooms() {
         rawResult?._rooms ??
         [];
 
+      // Pass searchedRooms so normRoom can divide the aggregate TotalFare correctly.
+      // TBO returns TotalFare for all rooms in the search, not per room.
+      const searchedRooms = Math.max(1, useHotelStore.getState().searchParams.rooms ?? 1);
+
       if (roomList.length > 0) {
-        setRooms(roomList.map((r: any, i: number) => normRoom(r, i)));
+        setRooms(roomList.map((r: any, i: number) => normRoom(r, i, searchedRooms)));
       } else {
         setError('No rooms found for this hotel.');
       }
@@ -714,7 +1093,9 @@ export function useHotelRooms() {
 // ─── runHotelPreBook ──────────────────────────────────────────────────────────
 export async function runHotelPreBook(
   bookingCode: string,
-  traceId: string
+  traceId: string,
+  checkIn?: string,
+  roomName?: string
 ): Promise<PreBookResponse> {
   const tid = traceId?.trim();
   if (!tid) {
@@ -723,42 +1104,53 @@ export async function runHotelPreBook(
     );
   }
 
-  const raw: PreBookResult = await preBookHotel({ bookingCode, traceId: tid });
+  const envelope: any = await preBookHotel({
+    bookingCode,
+    traceId: tid,
+    ...(checkIn ? { checkIn } : {}),
+    ...(roomName ? { roomName } : {}),
+  });
 
-  // ── Handle 402 / TBO_INSUFFICIENT_BALANCE gracefully ─────────────────────
-  // When the TBO account has no balance, prebook returns a structured error.
-  // We return a minimal PreBookResponse so the booking flow can continue —
-  // cancellation policy will show "unavailable" but checkout is not blocked.
-  const errorCode = (raw as any)?.error?.code ?? (raw as any)?.code ?? '';
-  const errorMsg = (raw as any)?.error?.message ?? (raw as any)?.message ?? '';
-  if (
-    errorCode === 'TBO_INSUFFICIENT_BALANCE' ||
-    /insufficient.balance/i.test(errorMsg)
-  ) {
-    return {
-      traceId: tid,
-      bookingCode,
-      confirmedPrice: 0,
-      confirmedTaxes: 0,
-      cancellationPolicy: 'Cancellation policy unavailable',
-      cancelPolicies: [],
-      roomAvailable: true,        // don't block checkout
-      priceChanged: false,
-      sessionExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    };
-  }
+  // ── Unwrap backend envelope: { ok, data: { HotelResult: [...], ... } } ──
+  // preBookHotel returns the raw JSON. Our backend wraps TBO data under `data`.
+  const raw: any = envelope?.data ?? envelope;
 
-  const tboResultRaw = raw.HotelResult || raw;
+  // ── Log the full response for debugging ──────────────────────────────────
+  const httpStatus = envelope?._httpStatus ?? 0;
+  console.log('[PreBook] HTTP status:', httpStatus);
+  console.log('[PreBook] FULL envelope:', JSON.stringify(envelope));
+
+  // Backend returns 200 with HotelResult even on balance errors (computed fallback)
+  // so we never need to handle 402 here — just fall through to normal parsing.
+
+  // ── Unwrap TBO HotelResult array ──────────────────────────────────────────
+  // TBO structure: { HotelResult: [{ HotelRoomsDetails: [...], ... }] }
+  // Backend may also pass through a flat structure or wrap under `data`.
+  const tboResultRaw = raw?.HotelResult ?? raw;
   const tboResult = Array.isArray(tboResultRaw) ? tboResultRaw[0] : tboResultRaw;
 
-  // ── Extract room detail — prebook returns Rooms[] with cancellation data ──
-  // Backend instruction: use data.HotelResult[0].Rooms[0].CancellationPolicies
-  // and data.HotelResult[0].Rooms[0].LastCancellationDate
+  // Full dump so we can see the exact response shape in browser devtools
+  console.log('[PreBook] FULL envelope:', JSON.stringify(envelope));
+  console.log('[PreBook] envelope keys:', Object.keys(envelope ?? {}));
+  console.log('[PreBook] raw keys:', Object.keys(raw ?? {}));
+  console.log('[PreBook] tboResult keys:', Object.keys(tboResult ?? {}));
+
+  // ── Extract room detail — try every known nesting path ───────────────────
+  // Path A: HotelResult[0].HotelRoomsDetails[0]  (standard TBO PreBook)
+  // Path B: HotelResult[0].Rooms[0]              (alternate key)
+  // Path C: HotelResult[0].RoomDetails[0]        (alternate key)
+  // Path D: tboResult itself has CancelPolicies  (flat/passthrough)
   const roomDetail =
     tboResult?.HotelRoomsDetails?.[0] ??
     tboResult?.Rooms?.[0] ??
     tboResult?.RoomDetails?.[0];
   const priceObj = roomDetail?.Price ?? tboResult?.Price ?? {};
+
+  console.log('[PreBook] roomDetail keys:', JSON.stringify(Object.keys(roomDetail ?? {})));
+  console.log('[PreBook] roomDetail.CancelPolicies:', JSON.stringify(roomDetail?.CancelPolicies));
+  console.log('[PreBook] tboResult.CancelPolicies:', JSON.stringify(tboResult?.CancelPolicies));
+  console.log('[PreBook] roomDetail.IsRefundable:', roomDetail?.IsRefundable);
+  console.log('[PreBook] tboResult.IsRefundable:', tboResult?.IsRefundable);
 
   let netAmount = Number(tboResult?.NetAmount ?? 0);
   if (!netAmount) {
@@ -775,66 +1167,145 @@ export async function runHotelPreBook(
   const tax = Number(priceObj.Tax ?? priceObj.OtherCharges ?? 0);
   const confirmedPrice = netAmount;
   const confirmedTaxes = tax;
-  const originalPrice = Number(raw.Price?.PublishedPriceRoundedOff ?? 0);
+  const originalPrice = Number(raw?.Price?.PublishedPriceRoundedOff ?? 0);
 
-  // ── Extract cancellation policy from prebook response ────────────────────
-  // Priority: roomDetail.CancellationPolicies → roomDetail.LastCancellationDate
-  // → tboResult-level fallbacks
-  const cancelPolicies = findPolicies(tboResult);
-  const lastCancellationDate = findLastCancellationDate(tboResult);
+  // ── Extract IsRefundable ──────────────────────────────────────────────────
+  // Check room detail first, then tboResult, then raw envelope — in case of
+  // flat/passthrough response shapes.
+  const isRefundable: boolean =
+    roomDetail?.IsRefundable === true ||
+    roomDetail?.isRefundable === true ||
+    tboResult?.IsRefundable === true ||
+    tboResult?.isRefundable === true ||
+    raw?.IsRefundable === true ||
+    false;
 
-  const effectiveCancelPolicies: import('../stores/hotelStore').CancelPolicySlab[] =
-    cancelPolicies.length > 0
-      ? cancelPolicies
-      : lastCancellationDate
-      ? [
-          {
-            charge: 0,
-            chargeType: 0,
-            currency: 'INR',
-            fromDate: undefined,
-            toDate: lastCancellationDate,
-          },
-          {
-            charge: 100,
-            chargeType: 2,
-            currency: 'INR',
-            fromDate: lastCancellationDate,
-            toDate: undefined,
-          },
-        ]
-      : [];
+  // ── Extract cancellation policies ────────────────────────────────────────
+  // Try roomDetail directly first (preferred), then tboResult, then raw.
+  // This covers both nested (HotelResult[0].HotelRoomsDetails[0].CancelPolicies)
+  // and flat (tboResult.CancelPolicies or raw.CancelPolicies) response shapes.
+  const currency: string =
+    roomDetail?.Currency ?? roomDetail?.currency ??
+    tboResult?.Currency ?? tboResult?.currency ??
+    raw?.Currency ?? 'INR';
 
-  const cancellationPolicy =
-    findCancellationString(tboResult) ||
-    (lastCancellationDate && safeFormatDate(lastCancellationDate)
-      ? `Free cancellation before ${safeFormatDate(lastCancellationDate)}`
-      : null) ||
-    (effectiveCancelPolicies.length === 0 ? 'Cancellation policy unavailable' : 'Please check hotel cancellation policy');
+  let cancelPolicies: import('../stores/hotelStore').CancelPolicySlab[] = [];
 
-  // Extract corporateBookingAllowed from validationInfo
-  const validationInfo = tboResult?.ValidationInfo ?? tboResult?.validationInfo ?? {};
+  // Direct room-level access — most reliable
+  if (Array.isArray(roomDetail?.CancelPolicies) && roomDetail.CancelPolicies.length > 0) {
+    cancelPolicies = roomDetail.CancelPolicies.map((p: any) => mapPolicy(p, currency));
+  } else if (Array.isArray(roomDetail?.CancellationPolicies) && roomDetail.CancellationPolicies.length > 0) {
+    cancelPolicies = roomDetail.CancellationPolicies.map((p: any) => mapPolicy(p, currency));
+  // tboResult level (flat passthrough from backend)
+  } else if (Array.isArray(tboResult?.CancelPolicies) && tboResult.CancelPolicies.length > 0) {
+    cancelPolicies = tboResult.CancelPolicies.map((p: any) => mapPolicy(p, currency));
+  } else if (Array.isArray(tboResult?.CancellationPolicies) && tboResult.CancellationPolicies.length > 0) {
+    cancelPolicies = tboResult.CancellationPolicies.map((p: any) => mapPolicy(p, currency));
+  // raw envelope level
+  } else if (Array.isArray(raw?.CancelPolicies) && raw.CancelPolicies.length > 0) {
+    cancelPolicies = raw.CancelPolicies.map((p: any) => mapPolicy(p, currency));
+  } else if (Array.isArray(raw?.CancellationPolicies) && raw.CancellationPolicies.length > 0) {
+    cancelPolicies = raw.CancellationPolicies.map((p: any) => mapPolicy(p, currency));
+  } else {
+    // Last resort: recursive deep search
+    cancelPolicies = findPolicies(tboResult, currency);
+    if (cancelPolicies.length === 0) {
+      cancelPolicies = findPolicies(raw, currency);
+    }
+  }
+
+  console.log('[PreBook] cancelPolicies found:', cancelPolicies.length, JSON.stringify(cancelPolicies));
+
+  // ── Extract free cancellation deadline from backend
+  // Backend computes FreeCancellationUntil / LastCancellationDate at room level.
+  const freeCancellationDeadlineRaw: string | null =
+    findCancellationDeadline(roomDetail) ??
+    findCancellationDeadline(tboResult) ??
+    findCancellationDeadline(raw);
+
+  const policyText = typeof raw?.CancellationPolicy === 'string' && raw.CancellationPolicy.trim()
+    ? raw.CancellationPolicy.trim()
+    : typeof raw?.cancellationPolicy === 'string' && raw.cancellationPolicy.trim()
+    ? raw.cancellationPolicy.trim()
+    : typeof raw?.CancelPolicy === 'string' && raw.CancelPolicy.trim()
+    ? raw.CancelPolicy.trim()
+    : typeof raw?.cancelPolicy === 'string' && raw.cancelPolicy.trim()
+    ? raw.cancelPolicy.trim()
+    : null;
+
+  const penaltySlabs = cancelPolicies.filter(p => p.charge > 0);
+  const freeSlabs = cancelPolicies.filter(p => p.charge === 0);
+
+  const firstPenaltyFrom = penaltySlabs
+    .map((p) => parsePolicyDate(p.fromDate ?? ''))
+    .filter((d): d is Date => d instanceof Date && !isNaN(d.getTime()))
+    .sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+
+  const firstFreeTo = freeSlabs
+    .map((p) => parsePolicyDate(p.toDate ?? p.fromDate ?? ''))
+    .filter((d): d is Date => d instanceof Date && !isNaN(d.getTime()))
+    .sort((a, b) => b.getTime() - a.getTime())[0] ?? null; // latest free-period end
+
+  // Free cancellation deadline — in priority order:
+  // 1. firstFreeTo from zero-charge slab toDate/fromDate
+  // 2. day before first penalty slab from earliest penalty
+  // 3. Backend-free cancellation deadline fields
+  const freeCancellationDeadline =
+    firstFreeTo
+      ? formatPolicyDateFromDate(firstFreeTo)
+      : firstPenaltyFrom
+        ? formatPolicyDateFromDate(new Date(firstPenaltyFrom.getTime() - 86400000))
+        : freeCancellationDeadlineRaw
+          ? safeFormatDate(freeCancellationDeadlineRaw)
+          : null;
+
+  const buildPolicyString = (): string => {
+    if (isRefundable === false) return 'Non-Refundable';
+    if (cancelPolicies.length > 0) {
+      if (freeCancellationDeadline) {
+        return `Free Cancellation until ${freeCancellationDeadline}`;
+      }
+      if (isRefundable === true) {
+        return 'Free Cancellation available';
+      }
+    }
+    if (policyText) return policyText;
+    if (isRefundable === true) return 'Free Cancellation available';
+    if (isRefundable === false) return 'Non-Refundable';
+    return 'Please check hotel cancellation policy';
+  };
+
+  const cancellationPolicy = buildPolicyString();
+
+  // Extract corporateBookingAllowed from validationInfo (located at the root level of TBO response)
+  const validationInfo = raw?.ValidationInfo ?? raw?.validationInfo ?? {};
   const corporateBookingAllowed = Boolean(
     validationInfo?.CorporateBookingAllowed ??
     validationInfo?.corporateBookingAllowed ??
     false
   );
 
+  const promotions = Array.isArray(roomDetail?.Promotions) ? roomDetail.Promotions.map((p: any) => typeof p === 'string' ? p : p?.Description || '') : [];
+  const rateConditions = Array.isArray(roomDetail?.RateConditions) ? roomDetail.RateConditions.map((p: any) => typeof p === 'string' ? p : p?.Description || '') : [];
+
   return {
     traceId: tid,
-    bookingCode: raw.BookingCode ?? bookingCode,
+    bookingCode: raw?.BookingCode ?? bookingCode,
     confirmedPrice,
     confirmedTaxes,
     cancellationPolicy,
-    cancelPolicies: effectiveCancelPolicies,
-    roomAvailable: raw.IsHotelPolicyComplied !== false,
-    priceChanged: Boolean(raw.IsPriceChanged),
+    cancelPolicies,
+    isRefundable,
+    roomAvailable: raw?.IsHotelPolicyComplied !== false,
+    priceChanged: Boolean(raw?.IsPriceChanged),
     originalPrice: originalPrice && originalPrice !== confirmedPrice ? originalPrice : undefined,
     sessionExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
-    isPackageFare: raw.IsPackageFare,
-    isPackageDetailsMandatory: raw.IsPackageDetailsMandatory,
+    isPackageFare: raw?.IsPackageFare,
+    isPackageDetailsMandatory: raw?.IsPackageDetailsMandatory,
     netAmount,
     corporateBookingAllowed,
+    promotions: promotions.filter(Boolean),
+    rateConditions: rateConditions.filter(Boolean),
   } as PreBookResponse & {
     isPackageFare?: boolean;
     isPackageDetailsMandatory?: boolean;
@@ -855,7 +1326,7 @@ export async function getHotelBookingDetail(bookingId: string): Promise<any> {
 // ─── cancelHotel ─────────────────────────────────────────────────────────────
 export async function cancelHotel(
   bookingId: string,
-  requestType: 1 | 4 = 1
+  requestType: 4 = 4
 ): Promise<any> {
   return cancelHotelBooking(bookingId, requestType);
 }

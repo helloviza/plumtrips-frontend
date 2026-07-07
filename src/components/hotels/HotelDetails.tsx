@@ -22,7 +22,7 @@ export default function HotelDetails({ hotel }: { hotel: Hotel }) {
   const [showImageModal, setShowImageModal] = useState(false);
 
   // Safe defaults
-  const images = hotel.images?.length > 0 ? hotel.images : ['/assets/hotel-bg.jpg'];
+  const images = hotel.images?.length > 0 ? hotel.images : [];
   const displayRating = hotel.reviewCount > 0 ? hotel.rating : hotel.starRating;
 
   return (

@@ -1,4 +1,4 @@
-//import { useCurrency } from '../../hooks/useCurrency';
+// import { useCurrency } from '../../hooks/useCurrency';
 import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -6,11 +6,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   BedDouble, Maximize2, 
   CheckCircle, XCircle, Loader2, AlertTriangle,
-  Star, MapPin, 
+  Star, MapPin, Plus, Minus,
   MessageCircle, Navigation, ChevronRight, Images, Info, Map, X
 } from 'lucide-react';
+import { CancellationPolicyPanel } from '../../components/hotels/CancellationPolicyPanel';
+import { getAmenityIcon } from '../../components/hotels/amenityIcons';
 import { useHotelStore } from '../../stores/hotelStore';
-import { useHotelRooms, runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
+import { useHotelRooms, runHotelPreBook, formatHotelTraceApiError, getCancellationPolicyDisplay, getPolicyChargeText, formatPolicyDate } from '../../hooks/useHotelApi';
+import { hasSupplierPriceChange } from '../../lib/hotelPricing';
 import type { Room, PreBookResponse } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
 import { calculateNights } from '../../lib/utils';
@@ -33,12 +36,6 @@ function parsePolicyDate(dStr: string): Date | null {
   } catch { return null; }
 }
 
-function formatPolicyDate(dStr: string): string {
-  const d = parsePolicyDate(dStr);
-  if (!d) return dStr;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 function getDayBefore(dStr: string): string {
   const d = parsePolicyDate(dStr);
   if (!d) return formatPolicyDate(dStr);
@@ -56,159 +53,29 @@ function CancellationBadge({
   preBook: PreBookResponse | null | undefined;
   loading: boolean;
 }) {
-  // ── Extract cancellation data from best available source ──────────────────
-  // Priority: prebook response > search room data (room._raw / room.cancelPolicies)
-
-  // 1. Policy slabs
-  const preBookPolicies: any[] = (preBook as any)?.cancelPolicies ?? [];
-  const roomPolicies: any[] = room.cancelPolicies ?? [];
-  const policies: any[] = preBookPolicies.length > 0 ? preBookPolicies : roomPolicies;
-
-  // 2. LastCancellationDate — extract from _raw search data if not in prebook
-  const rawRoom = (room as any)._raw;
-  const lastCancelDateFromRaw: string | null =
-    rawRoom?.LastCancellationDate ?? rawRoom?.lastCancellationDate ?? null;
-
-  // 3. CancellationPolicy string — from prebook or raw search data
-  const policyString: string =
-    preBook?.cancellationPolicy ??
-    room.cancellationPolicy ??
-    '';
-
-  // 4. Is refundable?
-  const isRefundable =
-    (room as any)._isRefundable === true ||
-    policies.some((p: any) => p.charge === 0) ||
-    (policyString !== '' && !policyString.toLowerCase().includes('non-refundable')) ||
-    !!lastCancelDateFromRaw;
-
-  // 5. Penalty slabs (charge > 0), sorted by fromDate
-  const penaltySlabs = policies
-    .filter((p: any) => p.charge > 0)
-    .sort((a: any, b: any) => {
-      if (!a.fromDate) return 1;
-      if (!b.fromDate) return -1;
-      return new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime();
-    });
-
-  // 6. Determine the free-cancellation deadline date string
-  // Try in order: penalty slab fromDate → synthesized from LastCancellationDate → extract from policy string
-  const firstPenaltyFromDate: string | null = penaltySlabs[0]?.fromDate ?? null;
-
-  const extractDateFromText = (text: string): string | null => {
-    const match = text.match(/before\s+(.+)/i);
-    if (!match) return null;
-    const candidate = match[1].trim();
-    const d = new Date(candidate);
-    return isNaN(d.getTime()) ? null : candidate;
-  };
-
-  const freeCancelDeadline: string | null =
-    firstPenaltyFromDate ??
-    lastCancelDateFromRaw ??
-    extractDateFromText(policyString);
-
-  // Format helpers
-  const fmtDate = (dStr: string): string => {
-    try {
-      const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
-      const parseStr = match
-        ? `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`
-        : dStr;
-      const d = new Date(parseStr);
-      if (isNaN(d.getTime())) return dStr;
-      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return dStr; }
-  };
-
-  const dayBefore = (dStr: string): string => {
-    try {
-      const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
-      const parseStr = match
-        ? `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`
-        : dStr;
-      const d = new Date(parseStr);
-      if (isNaN(d.getTime())) return fmtDate(dStr);
-      d.setDate(d.getDate() - 1);
-      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return fmtDate(dStr); }
-  };
-
-  // When the deadline comes from lastCancelDateFromRaw or penalty slab fromDate,
-  // we want "until the day BEFORE" that date (last free day).
-  // When it comes from a "before X" string, X is already the last free day.
-  const freeCancelDisplay = freeCancelDeadline
-    ? `until ${(firstPenaltyFromDate || lastCancelDateFromRaw) ? dayBefore(freeCancelDeadline) : fmtDate(freeCancelDeadline)}`
-    : null;
+  const { searchParams } = useHotelStore();
 
   return (
-    <div className="space-y-2 mb-5 max-w-md">
-      {/* Free cancellation row */}
-      {isRefundable && (
-        <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
-          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-          <span className="leading-snug">
-            Free Cancellation
-            {freeCancelDisplay
-              ? ` ${freeCancelDisplay}`
-              : loading
-              ? (
-                <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-600 opacity-70">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span className="text-[10px] font-medium">confirming dates…</span>
-                </span>
-              )
-              : ''}
-          </span>
-        </div>
-      )}
-
-      {/* Non-refundable */}
-      {!isRefundable && !loading && (
-        <div className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm">
-          <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-          <span className="leading-snug">Non-Refundable</span>
-        </div>
-      )}
-
-      {/* Placeholder while loading and nothing known yet */}
-      {loading && !isRefundable && policies.length === 0 && !lastCancelDateFromRaw && (
-        <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          <span>Loading cancellation policy…</span>
-        </div>
-      )}
-
-      {/* Penalty slabs */}
-      {penaltySlabs.map((policy: any, idx: number) => {
-        const chargeText =
-          policy.chargeType === 2
-            ? `${policy.charge}% cancellation charge`
-            : `${policy.currency || 'AED'} ${policy.charge} cancellation charge`;
-        const fromText = policy.fromDate
-          ? `From ${fmtDate(policy.fromDate)}`
-          : 'After free cancellation period';
-
-        return (
-          <div
-            key={idx}
-            className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 text-rose-800 text-xs font-semibold px-3 py-2.5 rounded-xl shadow-sm"
-          >
-            <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-            <span className="leading-snug">{fromText} — {chargeText}</span>
-          </div>
-        );
-      })}
+    <div className="mb-5 max-w-md">
+      <CancellationPolicyPanel
+        cancelPolicies={preBook?.cancelPolicies ?? room.cancelPolicies}
+        cancellationPolicy={preBook?.cancellationPolicy ?? room.cancellationPolicy}
+        isRefundable={preBook?.isRefundable ?? room._isRefundable}
+        checkInDate={searchParams.checkIn}
+        roomName={room.name}
+        loading={loading}
+        size="compact"
+      />
     </div>
   );
 }
 
 export default function RoomSelection() {
-  // const { formatCurrency, symbol } = useCurrency();
+  //const { formatCurrency, symbol, currencyCode } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
-    searchParams, selectedRooms, addRoom, removeRoom,
+    searchParams, selectedRooms, addRoom, removeRoom, updateRoomQuantity,
     selectedHotel, searchResultsMap, clearRooms,
     traceId, setPreBookResponses, setPreBookResponse, setBookingCode, setBookingCodes,
   } = useHotelStore();
@@ -220,10 +87,15 @@ export default function RoomSelection() {
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
-  // Per-room prebook results keyed by BookingCode
   const [roomPreBooks, setRoomPreBooks] = useState<Record<string, PreBookResponse>>({});
   const [preBookingRoomIds, setPreBookingRoomIds] = useState<Set<string>>(new Set());
   const [preBookErrors, setPreBookErrors] = useState<Record<string, string>>({});
+  
+  // New PreBook flow states
+  const [preBookingSubmit, setPreBookingSubmit] = useState(false);
+  const [supplierPriceChanged, setSupplierPriceChanged] = useState(false);
+  const [priceChangeAcknowledged, setPriceChangeAcknowledged] = useState(false);
+
   const preBookFiredRef = useRef<string>(''); // tracks hotel id to avoid re-firing on same hotel
 
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
@@ -254,11 +126,16 @@ export default function RoomSelection() {
     rooms.forEach((room, index) => {
       const code = (room as any)._bookingCode ?? room.id ?? '';
       if (!code) return;
+      const checkInStr = searchParams.checkIn
+        ? (searchParams.checkIn instanceof Date
+            ? searchParams.checkIn.toISOString().split('T')[0]
+            : String(searchParams.checkIn).split('T')[0])
+        : '';
 
       // Stagger by 200ms per room to avoid rate limiting
       setTimeout(async () => {
         try {
-          const result = await runHotelPreBook(code, traceId);
+          const result = await runHotelPreBook(code, traceId, checkInStr);
           setRoomPreBooks(prev => ({ ...prev, [code]: result }));
         } catch (err) {
           console.warn('[RoomSelection] prebook failed for room', index, code, ':', formatHotelTraceApiError(err, ''));
@@ -278,13 +155,111 @@ export default function RoomSelection() {
     const code = (room as any)._bookingCode ?? room.id ?? '';
     if (!code || !traceId?.trim() || roomPreBooks[code]) return;
     setPreBookingRoomIds(prev => new Set(prev).add(code));
+    const checkInStr = searchParams.checkIn
+      ? (searchParams.checkIn instanceof Date
+          ? searchParams.checkIn.toISOString().split('T')[0]
+          : String(searchParams.checkIn).split('T')[0])
+      : '';
     try {
-      const result = await runHotelPreBook(code, traceId);
+      const result = await runHotelPreBook(code, traceId, checkInStr);
       setRoomPreBooks(prev => ({ ...prev, [code]: result }));
     } catch (err) {
       console.warn('[RoomSelection] on-demand prebook failed for', code);
     } finally {
       setPreBookingRoomIds(prev => { const n = new Set(prev); n.delete(code); return n; });
+    }
+  };
+
+  const handleBookNow = async () => {
+    if (totalRoomsSelected < searchParams.rooms) {
+      toast.error(`Please select ${searchParams.rooms} room${searchParams.rooms !== 1 ? 's' : ''}. You have selected ${totalRoomsSelected}.`);
+      return;
+    }
+
+    setPreBookingSubmit(true);
+    setSupplierPriceChanged(false);
+
+    try {
+      const tid = traceId;
+      if (!tid?.trim()) {
+        toast.error('Missing hotel search session (traceId). Please search again.');
+        setPreBookingSubmit(false);
+        return;
+      }
+
+      // Fetch fresh PreBook for all selected rooms
+      const results = await Promise.all(
+        selectedRooms.map((room, idx) => {
+          const code = (room as any)._bookingCode ?? room.id ?? '';
+          if (!code) return Promise.resolve({ idx, result: null as PreBookResponse | null, error: 'No booking code' });
+          const checkInStr = searchParams.checkIn
+            ? (searchParams.checkIn instanceof Date
+                ? searchParams.checkIn.toISOString().split('T')[0]
+                : String(searchParams.checkIn).split('T')[0])
+            : '';
+          return runHotelPreBook(code, tid, checkInStr)
+            .then(res => ({ idx, result: res, error: null }))
+            .catch(err => ({ idx, result: null, error: err }));
+        })
+      );
+
+      const responses: (PreBookResponse | null)[] = new Array(selectedRooms.length).fill(null);
+      let anyUnavailable = false;
+
+      for (const { idx, result, error } of results) {
+        if (error) {
+          console.error(`❌ PreBook failed for room ${idx}:`, error);
+          toast.error(formatHotelTraceApiError(error, `Could not verify room ${idx + 1}. Please try again.`));
+          setPreBookingSubmit(false);
+          return;
+        }
+        if (!result) {
+          setPreBookingSubmit(false);
+          return;
+        }
+        if (!result.roomAvailable) {
+          anyUnavailable = true;
+        }
+        responses[idx] = result;
+      }
+
+      if (anyUnavailable) {
+        toast.error('Sorry, one or more selected rooms are no longer available. Please select different rooms.');
+        setPreBookingSubmit(false);
+        return;
+      }
+
+      // Update store with fresh results
+      setPreBookResponses(responses);
+      if (responses[0]) {
+        setPreBookResponse(responses[0]);
+        setBookingCode(responses[0].bookingCode);
+      }
+      const codes = responses.map((r, idx) => r?.bookingCode ?? ((selectedRooms[idx] as any)._bookingCode ?? selectedRooms[idx]?.id ?? ''));
+      setBookingCodes(codes);
+
+      // Check if price changed
+      const priceChanged = hasSupplierPriceChange(
+        responses[0]!,
+        selectedRooms,
+        responses.length > 1 ? responses : undefined
+      );
+
+      if (priceChanged) {
+        setSupplierPriceChanged(true);
+        setPriceChangeAcknowledged(false);
+        setPreBookingSubmit(false);
+        toast.error('The hotel has updated their rates. Please review and acknowledge the new price.');
+        return;
+      }
+
+      // Success, no price change
+      navigate('/hotels/guest-details');
+
+    } catch (err) {
+      console.error('❌ PreBook Flow error', err);
+      toast.error(formatHotelTraceApiError(err, 'Availability check failed. Please try again.'));
+      setPreBookingSubmit(false);
     }
   };
 
@@ -349,25 +324,25 @@ export default function RoomSelection() {
   // Include taxes in the bottom bar total — matches Results card and subsequent steps
   const totalPrice = selectedRooms.reduce((sum, r) => sum + ((r.price + (r.taxesAndFees ?? 0)) * r.quantity), 0);
 
-  const handleAddRoom = (room: Room) => {
-    const totalSelected = selectedRooms.reduce((sum, r) => sum + r.quantity, 0);
-    const roomsNeeded = searchParams.rooms;
+  const roomsNeeded = searchParams.rooms;
 
-    if (totalSelected >= roomsNeeded) {
-      clearRooms();
-      addRoom(room);
-      if (roomsNeeded > 1) {
-        toast(`Room replaced. Select ${roomsNeeded} room type${roomsNeeded !== 1 ? 's' : ''} total.`, { icon: 'ℹ️' });
-      }
-    } else {
-      addRoom(room);
-      const newTotal = totalSelected + 1;
-      if (newTotal < roomsNeeded) {
-        toast(`Room added. Select ${roomsNeeded - newTotal} more room${roomsNeeded - newTotal !== 1 ? 's' : ''}.`, { icon: 'ℹ️' });
-      }
-    }
-    // Trigger prebook for this room immediately on selection
+  // Increment quantity for a room (or add it if not yet selected)
+  const handleIncrement = (room: Room) => {
+    const totalSelected = selectedRooms.reduce((sum, r) => sum + r.quantity, 0);
+    if (totalSelected >= roomsNeeded) return; // already at the cap
+    addRoom(room); // addRoom increments quantity if already in cart
     void fetchPreBookForRoom(room);
+  };
+
+  // Decrement quantity for a room (removes it from cart if it hits 0)
+  const handleDecrement = (room: Room) => {
+    const selected = selectedRooms.find(r => r.id === room.id);
+    if (!selected) return;
+    if (selected.quantity <= 1) {
+      removeRoom(room.id);
+    } else {
+      updateRoomQuantity(room.id, selected.quantity - 1);
+    }
   };
 
   const totalGuests = searchParams.adults + searchParams.children;
@@ -469,8 +444,10 @@ export default function RoomSelection() {
               <h2 className="text-xl font-bold text-slate-900 mb-6">Experience & Amenities</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6">
                 {hotel.amenities.slice(0, showAllAmenities ? hotel.amenities.length : 8).map((am, i) => (
-                  <div key={i} className="flex items-start gap-3 text-slate-700 text-sm font-medium">
-                    <CheckCircle className="w-5 h-5 text-[#00477f] shrink-0" />
+                  <div key={i} className="flex items-center gap-3 text-slate-700 text-sm font-medium">
+                    <span className="text-[#00477f] shrink-0 flex items-center">
+                      {getAmenityIcon(am, 'lg')}
+                    </span>
                     <span className="leading-tight pt-0.5">{am}</span>
                   </div>
                 ))}
@@ -558,7 +535,7 @@ export default function RoomSelection() {
                             </div>
                             <div className="flex justify-between items-center text-xs font-bold text-amber-800 ml-6 bg-white px-3 py-2 rounded-lg border border-amber-100">
                               <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/> Mandatory Tax</span>
-                              <span>{room.additionalChargesCurrency || 'AED'} {room.additionalCharges}</span>
+                              <span>{room.additionalChargesCurrency || currencyCode} {room.additionalCharges}</span>
                             </div>
                           </div>
                         ) : null}
@@ -571,14 +548,44 @@ export default function RoomSelection() {
                               {nights} Night{nights !== 1 ? 's' : ''} · incl. taxes &amp; fees
                             </div>
                           </div>
-                          
+
+                          {/* Counter / Select button */}
                           {selected ? (
-                            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold px-8 shadow-lg shadow-emerald-900/20 flex items-center gap-2" onClick={() => removeRoom(room.id)}>
-                              <CheckCircle className="w-5 h-5" />
-                              Selected
-                            </Button>
+                            <div className="flex items-center gap-3">
+                              {/* Decrement */}
+                              <button
+                                type="button"
+                                onClick={() => handleDecrement(room)}
+                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-300 bg-white text-slate-600 hover:border-[#003580] hover:text-[#003580] transition-colors"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+
+                              {/* Count + label */}
+                              <div className="text-center min-w-[40px]">
+                                <div className="text-xl font-black text-[#003580] leading-none">{selected.quantity}</div>
+                                <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
+                                  {selected.quantity === 1 ? 'room' : 'rooms'}
+                                </div>
+                              </div>
+
+                              {/* Increment */}
+                              <button
+                                type="button"
+                                onClick={() => handleIncrement(room)}
+                                disabled={totalRoomsSelected >= roomsNeeded}
+                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#003580] bg-[#003580] text-white hover:bg-[#002766] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
                           ) : (
-                            <Button size="lg" className="bg-[#00477f] hover:bg-[#003580] rounded-xl font-bold px-8 shadow-lg shadow-blue-900/20" onClick={() => handleAddRoom(room)}>
+                            <Button
+                              size="lg"
+                              disabled={totalRoomsSelected >= roomsNeeded}
+                              className="bg-[#00477f] hover:bg-[#003580] rounded-xl font-bold px-8 shadow-lg shadow-blue-900/20 disabled:opacity-40"
+                              onClick={() => handleIncrement(room)}
+                            >
                               Select Room &rarr;
                             </Button>
                           )}
@@ -698,31 +705,70 @@ export default function RoomSelection() {
               <div className="flex items-end gap-3">
                 <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{formatINR(totalPrice)}</div>
                 <div className="text-sm font-medium text-slate-500 mb-0.5">
-                  {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} • {nights} night{nights !== 1 ? 's' : ''}
+                  {roomsNeeded > 1
+                    ? `${totalRoomsSelected} of ${roomsNeeded} rooms • ${nights} night${nights !== 1 ? 's' : ''}`
+                    : `${totalRoomsSelected} room${totalRoomsSelected !== 1 ? 's' : ''} • ${nights} night${nights !== 1 ? 's' : ''}`
+                  }
                 </div>
               </div>
-              {searchParams.rooms > 1 && totalRoomsSelected < searchParams.rooms && (
+              {totalRoomsSelected < roomsNeeded && (
                 <div className="text-xs text-amber-600 font-medium mt-1">
-                  Select {searchParams.rooms - totalRoomsSelected} more room{searchParams.rooms - totalRoomsSelected !== 1 ? 's' : ''} to proceed
+                  Select {roomsNeeded - totalRoomsSelected} more room{roomsNeeded - totalRoomsSelected !== 1 ? 's' : ''} to proceed
                 </div>
               )}
             </div>
-            <Button
-              size="lg"
-              onClick={() => {
-                if (totalRoomsSelected < searchParams.rooms) {
-                  toast.error(`Please select ${searchParams.rooms} room${searchParams.rooms !== 1 ? 's' : ''}. You have selected ${totalRoomsSelected}.`);
-                  return;
-                }
-                navigate('/hotels/guest-details');
-              }}
-              disabled={totalRoomsSelected < searchParams.rooms}
-              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl px-10 shadow-lg shadow-emerald-600/20 text-lg"
-            >
-              {totalRoomsSelected < searchParams.rooms
-                ? `Select ${searchParams.rooms - totalRoomsSelected} More Room${searchParams.rooms - totalRoomsSelected !== 1 ? 's' : ''}`
-                : 'Book Now'}
-            </Button>
+            
+            <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+              {supplierPriceChanged && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm w-full sm:w-[350px] mb-2 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-amber-900">Price Updated by Hotel</div>
+                      <div className="text-xs text-amber-800 mt-1">
+                        The hotel has updated their rates since you started your search. Please acknowledge the new price to continue.
+                      </div>
+                      <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-amber-900 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={priceChangeAcknowledged}
+                          onChange={(e) => setPriceChangeAcknowledged(e.target.checked)}
+                          className="mt-0.5 rounded border-amber-400 text-amber-600 focus:ring-amber-500 bg-white"
+                        />
+                        I accept the updated price
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                size="lg"
+                onClick={() => {
+                  if (supplierPriceChanged) {
+                    if (!priceChangeAcknowledged) {
+                      toast.error('Please acknowledge the price change to continue.');
+                      return;
+                    }
+                    navigate('/hotels/guest-details');
+                  } else {
+                    handleBookNow();
+                  }
+                }}
+                disabled={totalRoomsSelected < searchParams.rooms || preBookingSubmit}
+                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl px-10 shadow-lg shadow-emerald-600/20 text-lg"
+              >
+                {preBookingSubmit ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
+                ) : totalRoomsSelected < searchParams.rooms ? (
+                  `Select ${searchParams.rooms - totalRoomsSelected} More Room${searchParams.rooms - totalRoomsSelected !== 1 ? 's' : ''}`
+                ) : supplierPriceChanged ? (
+                  'Continue with New Price'
+                ) : (
+                  'Book Now'
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}

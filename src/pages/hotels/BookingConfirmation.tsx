@@ -123,7 +123,7 @@ export default function BookingConfirmation() {
     setCancelLoading(true);
     try {
       console.log('🚫 Cancelling booking:', bookingId);
-      const result = await cancelHotel(bookingId, 1);
+      const result = await cancelHotel(bookingId, 4);
       console.log('✅ Cancel response:', result);
       
       setCancelled(true);

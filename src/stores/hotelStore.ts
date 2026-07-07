@@ -25,6 +25,11 @@ export interface CancelPolicySlab {
   fromDate?: string;
   toDate?: string;
   remarks?: string;
+  FromDate?: string;
+  ToDate?: string;
+  ChargeType?: string | number;
+  CancellationCharge?: number;
+  Currency?: string;
 }
 
 export interface Room {
@@ -94,6 +99,12 @@ export interface Hotel {
   _traceId?: string;
 }
 
+export interface RoomGuestConfig {
+  adults: number;
+  children: number;
+  childrenAges: number[];
+}
+
 export interface SearchParams {
   location: string;
   locationId?: string;
@@ -108,6 +119,8 @@ export interface SearchParams {
   hourlyDuration?: 3 | 6 | 12;
   travelStyle?: 'Friends' | 'Family' | 'Couple' | 'Solo';
   destinationCountryCode?: string;
+  /** Per-room guest breakdown — mirrors GuestsRoomsSelector's roomConfigs */
+  roomGuests?: RoomGuestConfig[];
 }
 
 export interface Filters {
@@ -152,6 +165,8 @@ export interface PreBookResponse {
   confirmedTaxes: number;
   cancellationPolicy: string;
   cancelPolicies?: CancelPolicySlab[];
+  /** IsRefundable from the Prebook API response (room level) */
+  isRefundable?: boolean;
   roomAvailable: boolean;
   priceChanged: boolean;
   originalPrice?: number;
@@ -443,10 +458,7 @@ export const useHotelStore = create<HotelBookingState>()(
       setSpecialRequests: (specialRequests) => set({ specialRequests }),
 
       applyPromoCode: (code) => {
-        const discounts: Record<string, number> = {
-          SAVE10: 10, SAVE20: 20, WELCOME: 15, FIRST: 25,
-        };
-        set({ promoCode: code, promoDiscount: discounts[code.toUpperCase()] || 0 });
+        set({ promoCode: code, promoDiscount: 0 });
       },
 
       setViewMode: (mode) => set({ viewMode: mode }),

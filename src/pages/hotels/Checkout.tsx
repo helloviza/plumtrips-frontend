@@ -1,12 +1,12 @@
-// import { useCurrency } from '../../hooks/useCurrency';
 import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield, Tag, ChevronDown, ChevronUp,
-  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw, Clock, XCircle
+  CheckCircle, Loader2, Star, Gift, AlertTriangle, RefreshCw, Clock, XCircle, Info
 } from 'lucide-react';
 import { runHotelBook, runHotelPreBook, formatHotelTraceApiError } from '../../hooks/useHotelApi';
+import { CancellationPolicyPanel } from '../../components/hotels/CancellationPolicyPanel';
 import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 import { createHotelPaymentOrder } from '../../services/paymentApi';
 import type { BookGuest } from '../../services/hotelApi';
@@ -29,7 +29,7 @@ const ADD_ON_PRICES: Record<string, number> = {
 };
 
 export default function Checkout() {
-  //const { formatINR: formatCurrency, symbol } = useCurrency();
+  //const { formatINR: formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const {
     selectedRooms, selectedHotel, guests, addOns, searchParams,
@@ -38,6 +38,7 @@ export default function Checkout() {
     paymentSubmitted, setPaymentSubmitted, traceId,
     setCurrentStep, setPreBookResponse, setPreBookResponses, setBookingCode, setBookingCodes,
     setConfirmationNo, setPnr, setConfirmedPaidAmount, setTboReferenceNo, setVoucherUrl,
+    specialRequests
   } = useHotelStore();
 
   const [promoInput, setPromoInput] = useState('');
@@ -106,10 +107,16 @@ export default function Checkout() {
       setCurrentStep('checkout');
       
       const pbr = useHotelStore.getState().preBookResponse;
+      const selectedRoomsCount = useHotelStore.getState().selectedRooms.length;
+      const completeMultiRoomPrebook =
+        selectedRoomsCount <= 1 ||
+        (useHotelStore.getState().preBookResponses.length === selectedRoomsCount &&
+          useHotelStore.getState().preBookResponses.every(Boolean));
       console.log('🚀 Checkout: kickoff() preBookResponse:', pbr ? pbr.bookingCode : 'null');
+      console.log('🚀 Checkout: completeMultiRoomPrebook:', completeMultiRoomPrebook);
       
-      if (!pbr) {
-        console.log('🚀 Checkout: no preBookResponse found in store, running inline prebook');
+      if (!pbr || !completeMultiRoomPrebook) {
+        console.log('🚀 Checkout: running inline prebook; prebook state incomplete for all rooms');
         void runInlinePreBook();
       }
     };
@@ -147,7 +154,13 @@ export default function Checkout() {
         selectedRooms.map((room, idx) => {
           const code = (room as any)._bookingCode ?? room.id ?? '';
           if (!code) return Promise.resolve({ idx, result: null as any, error: 'No booking code' });
-          return runHotelPreBook(code, traceId)
+          const checkInStr = searchParams.checkIn
+            ? (searchParams.checkIn instanceof Date
+                ? searchParams.checkIn.toISOString().split('T')[0]
+                : String(searchParams.checkIn).split('T')[0])
+            : '';
+          const roomNameStr = selectedRooms[idx]?.name ?? '';
+          return runHotelPreBook(code, traceId, checkInStr, roomNameStr)
             .then(res => ({ idx, result: res, error: null }))
             .catch(err => ({ idx, result: null, error: err }));
         })
@@ -191,6 +204,7 @@ export default function Checkout() {
     }
   };
 
+  const currentBookingCode = preBookResponse?.bookingCode ?? selectedRooms[0]?._bookingCode ?? selectedRooms[0]?.id ?? '';
   const nights = calculateNights(searchParams.checkIn, searchParams.checkOut) || 1;
 
   const listingTotal = getRoomsListingTotal(selectedRooms);
@@ -214,6 +228,10 @@ export default function Checkout() {
     selectedRooms,
     preBookResponses.length > 1 ? preBookResponses : undefined
   );
+
+  const allRoomsPrebooked =
+    selectedRooms.length <= 1 ||
+    (preBookResponses.length === selectedRooms.length && preBookResponses.every(Boolean));
   const originalListingPrice = listingTotal;
 
   const razorpayPrefill = {
@@ -423,6 +441,131 @@ export default function Checkout() {
     }
   };
 
+  const handleHoldBooking = async () => {
+    if (processing || paymentSubmitted) return;
+    if (supplierPriceChanged && !priceChangeAcknowledged) {
+      toast.error('Please confirm the updated price before holding.');
+      return;
+    }
+    
+    setProcessing(true);
+    setPaymentSubmitted(true);
+    
+    const confirmToast = toast.loading('Holding your booking...');
+    
+    try {
+      const bookGuests = guests.map(g => ({
+        ...g,
+        age: g.paxType === 2 ? (g.age || 8) : undefined
+      }));
+
+      const formatDateStr = (d: Date | string | null): string => {
+        if (!d) return '';
+        const date = d instanceof Date ? d : new Date(d);
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+      };
+
+      const primaryBookingCode = preBookResponses[0]?.bookingCode ?? selectedRooms[0]?._bookingCode ?? selectedRooms[0]?.id ?? '';
+      const allCodes = preBookResponses.map((r, i) => r?.bookingCode ?? ((selectedRooms[i] as any)._bookingCode ?? selectedRooms[i]?.id ?? ''));
+      const primaryPreBook = preBookResponses[0] || preBookResponse;
+
+      const bookPayload = {
+        bookingCode: primaryBookingCode,
+        bookingCodes: allCodes.length > 1 ? allCodes : undefined,
+        traceId: primaryPreBook?.traceId || traceId,
+        guestNationality: 'IN',
+        isVoucherBooking: false as const, // Hold booking flag
+        rooms: searchParams.rooms,
+        adults: searchParams.adults,
+        children: searchParams.children,
+        guests: bookGuests,
+        specialRequests: specialRequests,
+        contact: {
+          email: user.email || 'guest@plumtrips.com',
+          mobile: user.mobile || '9999999999',
+        },
+        hotelId: selectedHotel?.id,
+        hotelName: selectedHotel?.name,
+        location: selectedHotel?.location,
+        checkIn: formatDateStr(searchParams.checkIn),
+        checkOut: formatDateStr(searchParams.checkOut),
+        priceDetails: {
+          total: totalPrice,
+          taxes: confirmedTaxes,
+          additionalCharges: addOnsTotal
+        },
+        isPackageFare: (primaryPreBook as { isPackageFare?: boolean })?.isPackageFare,
+        isPackageDetailsMandatory: (primaryPreBook as { isPackageDetailsMandatory?: boolean })?.isPackageDetailsMandatory,
+      };
+
+      const bookResult = await runHotelBook(bookPayload);
+
+      const inner: Record<string, unknown> =
+        (bookResult as { BookResult?: Record<string, unknown> }).BookResult ??
+        (bookResult as unknown as Record<string, unknown>);
+
+      const bookingId = (inner?.BookingId ?? inner?.bookingId ?? '') as string;
+      const pnr = (inner?.pnr ?? inner?.Pnr ?? inner?.PNR ?? '') as string;
+      const invoiceNumber = (inner?.InvoiceNumber ?? inner?.invoiceNumber ?? '') as string;
+      const tboReferenceNo = (
+        inner?.TBOReferenceNo ??
+        inner?.tboReferenceNo ??
+        inner?.BookingRefNo ??
+        inner?.bookingRefNo ??
+        ''
+      ) as string;
+      const confirmationNo = (
+        inner?.ConfirmationNo ??
+        inner?.confirmationNo ??
+        inner?.BookingRefNo ??
+        inner?.bookingRefNo ??
+        inner?.TBOReferenceNo ??
+        inner?.tboReferenceNo ??
+        (invoiceNumber || bookingId)
+      ) as string;
+      const status = (
+        inner?.Status ??
+        inner?.status ??
+        (bookResult as { status?: number }).status
+      ) as number;
+      
+      const canonicalId = bookingId || pnr || confirmationNo || '';
+      setBookingId(canonicalId);
+      setConfirmationNo(confirmationNo || canonicalId);
+      if (pnr) setPnr(pnr);
+      if (tboReferenceNo) setTboReferenceNo(tboReferenceNo);
+      setConfirmedPaidAmount(0);
+      setCurrentStep('confirmed');
+
+      try {
+        const raw = localStorage.getItem('hotel-booking-storage');
+        const stored = raw ? JSON.parse(raw) : {};
+        stored.state = {
+          ...(stored.state ?? {}),
+          bookingId: canonicalId,
+          confirmationNo: confirmationNo || canonicalId,
+          pnr,
+          tboReferenceNo,
+          confirmedPaidAmount: 0,
+        };
+        localStorage.setItem('hotel-booking-storage', JSON.stringify(stored));
+      } catch { /* ignore */ }
+
+      toast.dismiss(confirmToast);
+      toast.success('Booking held successfully! 🎉');
+      navigate('/hotels/confirmation');
+    } catch (err: unknown) {
+      const errMsg = formatHotelTraceApiError(err, 'Failed to hold booking. Please try again.');
+      console.error('[Hold] error:', errMsg, err);
+      setBookError(errMsg);
+      setPaymentSubmitted(false);
+      setProcessing(false);
+      toast.dismiss(confirmToast);
+      toast.error(errMsg);
+    }
+  };
+
   const handlePayment = async () => {
     if (paymentSubmitted) {
       toast.error('Payment already submitted. Please wait.');
@@ -542,99 +685,27 @@ export default function Checkout() {
           </div>
         )}
 
-        {preBookResponse && (
+        {preBookResponse && allRoomsPrebooked && (
           <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-start gap-2.5">
-              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">Cancellation policy</h3>
-                <div className="text-xs text-gray-600 mt-1">
-                  {preBookResponse.cancellationPolicy && preBookResponse.cancellationPolicy !== 'Please check hotel cancellation policy' ? preBookResponse.cancellationPolicy : 'Review the cancellation policy details below.'}
-                </div>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <RefreshCw className="h-4 w-4 text-gray-500 shrink-0" />
+              <h3 className="font-semibold text-gray-900 text-sm">Cancellation Policy</h3>
             </div>
-            
-            {/* Show policies for all rooms */}
             {selectedRooms.map((room, roomIdx) => {
               const roomPreBook = preBookResponses[roomIdx] ?? (roomIdx === 0 ? preBookResponse : null);
-              const policies: any[] = (roomPreBook as any)?.cancelPolicies?.length ? (roomPreBook as any).cancelPolicies : [];
-              if (policies.length === 0) return null;
-
               return (
-                <div key={room.id} className="mt-4 pt-4 border-t border-gray-100">
+                <div key={room.id} className={roomIdx > 0 ? 'mt-3 pt-3 border-t border-gray-100' : ''}>
                   {selectedRooms.length > 1 && (
-                    <div className="text-xs font-semibold text-gray-600 mb-2">{room.name}</div>
+                    <p className="text-xs font-semibold text-gray-600 mb-2">{room.name}</p>
                   )}
-                  {(() => {
-                    const formatDate = (dStr: string) => {
-                      if (!dStr) return '';
-                      try {
-                        let parseStr = dStr;
-                        const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
-                        if (match) {
-                          parseStr = `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`;
-                        }
-                        const d = new Date(parseStr);
-                        if (isNaN(d.getTime())) return dStr;
-                        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                      } catch { return dStr; }
-                    };
-
-                    const getDayBefore = (dStr: string) => {
-                      if (!dStr) return '';
-                      try {
-                        let parseStr = dStr;
-                        const match = dStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(.*))?$/);
-                        if (match) {
-                          parseStr = `${match[3]}-${match[2]}-${match[1]}${match[4] ? 'T' + match[4] : ''}`;
-                        }
-                        const d = new Date(parseStr);
-                        if (isNaN(d.getTime())) return formatDate(dStr);
-                        d.setDate(d.getDate() - 1);
-                        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                      } catch { return formatDate(dStr); }
-                    };
-
-                    const penaltySlabs = policies.filter((p: any) => p.charge > 0);
-                    const policyText = roomPreBook?.cancellationPolicy ?? room.cancellationPolicy;
-                    const isRefundable = policyText && !policyText.toLowerCase().includes('non-refundable');
-
-                    return (
-                      <div className="flex flex-col gap-2">
-                        {isRefundable && penaltySlabs.length > 0 && penaltySlabs[0].fromDate && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span className="font-medium text-gray-900">Free Cancellation</span>
-                            <span className="text-gray-500">until {getDayBefore(penaltySlabs[0].fromDate)}</span>
-                          </div>
-                        )}
-
-                        {isRefundable && penaltySlabs.length === 0 && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span className="font-medium text-gray-900">Free Cancellation</span>
-                          </div>
-                        )}
-
-                        {penaltySlabs.map((policy: any, idx: number) => {
-                          const chargeText = policy.chargeType === 2 
-                            ? `${policy.charge}% Cancellation Charges`
-                            : `₹${policy.charge} Cancellation Charges`;
-                          const fromText = policy.fromDate ? `${formatDate(policy.fromDate)} onwards` : '';
-
-                          return (
-                            <div key={idx} className="flex items-start gap-2 text-sm mt-1">
-                              <XCircle className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-                              <div>
-                                <div className="font-medium text-gray-900">{fromText}</div>
-                                <div className="text-gray-500 text-xs">{chargeText}</div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
+                  <CancellationPolicyPanel
+                    cancelPolicies={roomPreBook?.cancelPolicies ?? room.cancelPolicies}
+                    cancellationPolicy={roomPreBook?.cancellationPolicy ?? room.cancellationPolicy}
+                    isRefundable={roomPreBook?.isRefundable ?? room._isRefundable}
+                    checkInDate={searchParams.checkIn}
+                    roomName={room.name}
+                    size="full"
+                  />
                 </div>
               );
             })}
@@ -643,6 +714,31 @@ export default function Checkout() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
+            {preBookResponse?.promotions && preBookResponse.promotions.length > 0 && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                <h2 className="mb-3 flex items-center gap-2 font-bold text-emerald-900">
+                  <Gift className="h-5 w-5 text-emerald-600" /> Applicable Promotions
+                </h2>
+                <ul className="list-inside list-disc space-y-1 text-sm text-emerald-800">
+                  {preBookResponse.promotions.map((promo, idx) => (
+                    <li key={idx} dangerouslySetInnerHTML={{ __html: promo }} />
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {preBookResponse?.rateConditions && preBookResponse.rateConditions.length > 0 && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+                <h2 className="mb-3 flex items-center gap-2 font-bold text-blue-900">
+                  <Info className="h-5 w-5 text-blue-600" /> Rate Conditions
+                </h2>
+                <ul className="list-inside list-disc space-y-1 text-sm text-blue-800">
+                  {preBookResponse.rateConditions.map((cond, idx) => (
+                    <li key={idx} dangerouslySetInnerHTML={{ __html: cond }} />
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
               <Shield className="h-6 w-6 shrink-0 text-green-600" />
               <div>
@@ -660,7 +756,7 @@ export default function Checkout() {
                   type="text"
                   value={promoInput}
                   onChange={e => setPromoInput(e.target.value.toUpperCase())}
-                  placeholder="Enter code (try SAVE10)"
+                  placeholder="Enter promo code"
                   className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/20"
                 />
                 <Button variant="outline" onClick={handleApplyPromo} size="sm">Apply</Button>
@@ -671,14 +767,6 @@ export default function Checkout() {
                   {promoDiscount}% off applied — saving {formatINR(discountAmount)}
                 </div>
               )}
-              <div className="mt-2 flex flex-wrap gap-2">
-                {['SAVE10', 'SAVE20', 'WELCOME'].map(c => (
-                  <button key={c} onClick={() => setPromoInput(c)}
-                    className="rounded-full border border-dashed border-[#003580]/40 px-2 py-0.5 text-xs text-[#003580] hover:bg-blue-50">
-                    {c}
-                  </button>
-                ))}
-              </div>
               {user.isLoggedIn && (
               <div className="mt-4 mb-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2.5">
@@ -724,8 +812,8 @@ export default function Checkout() {
                       ))}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {searchParams.rooms} Room{searchParams.rooms !== 1 ? 's' : ''} · {searchParams.adults} Adult{searchParams.adults !== 1 ? 's' : ''} per room
-                      {searchParams.children > 0 && ` · ${searchParams.children} Child${searchParams.children !== 1 ? 'ren' : ''} per room`}
+                      {searchParams.rooms} Room{searchParams.rooms !== 1 ? 's' : ''} · {searchParams.adults} Adult{searchParams.adults !== 1 ? 's' : ''} total
+                      {searchParams.children > 0 && ` · ${searchParams.children} Child${searchParams.children !== 1 ? 'ren' : ''} total`}
                       <br/>Total Nights: {nights}
                     </div>
                     {selectedRooms.map(r => (
@@ -785,7 +873,13 @@ export default function Checkout() {
                   `Pay ${formatINR(payNow)} Securely`
                 )}
               </button>
-
+              {/* <button
+                onClick={handleHoldBooking}
+                disabled={processing || paymentSubmitted || preBooking || timeLeft <= 0 || (supplierPriceChanged && !priceChangeAcknowledged)}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-[#003580] bg-white py-3.5 text-base font-bold text-[#003580] transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Hold Booking Without Payment
+              </button> */}
               <div className="mt-3 flex items-center justify-center gap-1 text-xs text-gray-400">
                 <Shield className="h-3 w-3" /> 256-bit SSL encrypted
               </div>
