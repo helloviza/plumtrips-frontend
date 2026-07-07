@@ -142,6 +142,12 @@ taxesIncluded?: boolean;
 adultFare?: number;      // from FareBreakdown[PaxType=1].BaseFare + Tax
 childFare?: number;      // from FareBreakdown[PaxType=2]
 infantFare?: number;     // from FareBreakdown[PaxType=3]
+adultBase?: number;      // from FareBreakdown[PaxType=1].BaseFare
+childBase?: number;      // from FareBreakdown[PaxType=2].BaseFare
+infantBase?: number;     // from FareBreakdown[PaxType=3].BaseFare
+adultTax?: number;       // from FareBreakdown[PaxType=1].Tax
+childTax?: number;       // from FareBreakdown[PaxType=2].Tax
+infantTax?: number;      // from FareBreakdown[PaxType=3].Tax
 seatCharges?: number;    // from Fare.TotalSeatCharges (live API value)
 mealCharges?: number;    // from Fare.TotalMealCharges
 baggageCharges?: number; // from Fare.TotalBaggageCharges

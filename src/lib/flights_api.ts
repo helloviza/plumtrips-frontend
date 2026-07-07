@@ -215,6 +215,12 @@ function variantToFareTier(
     ? Math.round((infantBD.BaseFare + infantBD.Tax) / Math.max(infantBD.PassengerCount ?? 1, 1))
     : undefined;
 
+  const adultBase= adultBD?.BaseFare ?? 0;
+  const childBase= childBD?.BaseFare ?? 0;
+  const infantBase= infantBD?.BaseFare ?? 0;
+  const adultTax= adultBD?.Tax ?? 0;
+  const childTax= childBD?.Tax ?? 0;
+  const infantTax= infantBD?.Tax ?? 0;
   return {
     name,
     resultIndex:      v.resultIndex,
@@ -231,6 +237,12 @@ function variantToFareTier(
     adultFare,
     childFare,
     infantFare,
+    adultBase,
+    childBase,
+    infantBase,
+    adultTax,
+    childTax,
+    infantTax,
     totalOfferedFare: raw.Fare.OfferedFare,
     seatCharges:      raw.Fare.TotalSeatCharges,
     mealCharges:      raw.Fare.TotalMealCharges,
