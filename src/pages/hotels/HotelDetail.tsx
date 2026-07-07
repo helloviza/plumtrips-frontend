@@ -1,5 +1,4 @@
 // import { useCurrency } from '../../hooks/useCurrency';
-
 import { formatINR } from '../../lib/flights_api';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import {
   Car, Coffee, Waves, Shield, ChevronLeft, ChevronRight, Clock,
   CheckCircle, XCircle, Users, Heart, Loader2, AlertTriangle
 } from 'lucide-react';
+import { getAmenityIcon } from '../../components/hotels/amenityIcons';
 import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelDetail, useHotelRooms } from '../../hooks/useHotelApi';
 import Button from '../../components/ui/Button';
@@ -15,15 +15,6 @@ import Badge from '../../components/ui/Badge';
 import { calculateNights } from '../../lib/utils';
 import { getHotelTotalPayable } from '../../lib/hotelPricing';
 import toast from 'react-hot-toast';
-
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  'Free WiFi': <Wifi className="h-5 w-5" />,
-  'Gym': <Dumbbell className="h-5 w-5" />,
-  'Restaurant': <UtensilsCrossed className="h-5 w-5" />,
-  'Parking': <Car className="h-5 w-5" />,
-  'Coffee': <Coffee className="h-5 w-5" />,
-  'Pool': <Waves className="h-5 w-5" />,
-};
 
 const MOCK_REVIEWS = [
   { id: 1, name: 'Rahul M.', type: 'Business', rating: 5, comment: 'Excellent service and great location. The room was spotless and the staff was very helpful.', date: 'Apr 2026' },
@@ -125,7 +116,7 @@ export default function HotelDetail() {
   return (
     <div className="min-h-screen bg-[#f5f7fa] pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-30 border-b border-gray-200 bg-white shadow-sm">
+      <div className="sticky top-[88px] md:top-[124px] z-30 border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
           <button
             onClick={() => navigate('/hotels/results')}
@@ -278,9 +269,9 @@ export default function HotelDetail() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {hotel.amenities.map((amenity, i) => (
                   <div key={i} className="flex items-center gap-2 text-gray-700">
-                    <div className="text-orange-500">
-                      {AMENITY_ICONS[amenity] || <CheckCircle className="h-5 w-5" />}
-                    </div>
+                    <span className="text-orange-500 flex items-center">
+                      {getAmenityIcon(amenity, 'lg')}
+                    </span>
                     <span className="text-sm">{amenity}</span>
                   </div>
                 ))}
@@ -419,7 +410,7 @@ export default function HotelDetail() {
                   Total for {nights} night{nights !== 1 ? 's' : ''} (incl. taxes & fees)
                   {nights > 0 && getHotelTotalPayable(hotel) > 0 && (
                     <span className="ml-1 text-gray-400">
-                      (≈ {formatINR(Math.round(getHotelTotalPayable(hotel) / nights))}/night)
+                      (≈ {formatINR(Math.ceil(getHotelTotalPayable(hotel) / nights))}/night)
                     </span>
                   )}
                 </div>

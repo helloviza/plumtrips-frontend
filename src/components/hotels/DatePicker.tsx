@@ -36,7 +36,7 @@ export default function DatePicker({
 }: DatePickerProps) {
   const isBar = variant === 'bar';
   const [isOpen, setIsOpen] = useState(false);
-  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, width: CALENDAR_WIDTH });
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -45,13 +45,14 @@ export default function DatePicker({
     (rect: DOMRect, measuredHeight?: number) => {
       const viewportPad = 16;
       const estimatedHeight = measuredHeight ?? popoverRef.current?.offsetHeight ?? 340;
+      const maxWidth = Math.min(CALENDAR_WIDTH, window.innerWidth - viewportPad * 2);
 
       let left =
-        popoverAlign === 'end' ? rect.right - CALENDAR_WIDTH : rect.left;
+        popoverAlign === 'end' ? rect.right - maxWidth : rect.left;
 
       left = Math.min(
         Math.max(viewportPad, left),
-        window.innerWidth - CALENDAR_WIDTH - viewportPad
+        window.innerWidth - maxWidth - viewportPad
       );
 
       let top = rect.bottom + CALENDAR_GAP;
@@ -60,7 +61,7 @@ export default function DatePicker({
       }
       top = Math.max(viewportPad, top);
 
-      return { top, left };
+      return { top, left, width: maxWidth };
     },
     [popoverAlign]
   );
@@ -114,12 +115,12 @@ export default function DatePicker({
       className={cn(
         'rounded-xl border border-gray-200 bg-white p-3 shadow-2xl',
         isBar
-          ? 'fixed z-[1200]'
+          ? 'fixed z-[1200] shadow-2xl overflow-hidden'
           : 'absolute left-0 z-[100] mt-2'
       )}
       style={
         isBar
-          ? { top: popoverPos.top, left: popoverPos.left, width: CALENDAR_WIDTH }
+          ? { top: popoverPos.top, left: popoverPos.left, width: popoverPos.width, maxWidth: 'calc(100vw - 2rem)' }
           : { width: CALENDAR_WIDTH, maxWidth: 'calc(100vw - 2rem)' }
       }
       role="dialog"
@@ -156,7 +157,7 @@ export default function DatePicker({
         onClick={() => {
           setIsOpen((open) => {
             const next = !open;
-            if (next && isBar && triggerRef.current) {
+            if (next && triggerRef.current) {
               setPopoverPos(
                 computePopoverPosition(triggerRef.current.getBoundingClientRect())
               );
@@ -165,18 +166,18 @@ export default function DatePicker({
           });
         }}
         className={cn(
-          'flex w-full items-center justify-between text-left transition-colors',
+          'flex w-full items-center justify-between text-left transition-all duration-200',
           isBar
-            ? 'border-0 bg-transparent py-0 px-0 focus:outline-none'
+            ? 'border border-slate-200 rounded-xl bg-white px-4 py-3 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#003580]/15'
             : 'rounded-lg border border-gray-300 bg-white px-4 py-3 focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/15',
-          { 'border-red-500': error && !isBar }
+          { 'border-red-500': error }
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {!isBar && <Calendar className="h-5 w-5 shrink-0 text-gray-400" />}
           {selected ? (
             isBar ? (
-              <span className="truncate text-[15px] font-black text-[#0d2d5e]">
+              <span className="truncate text-base font-semibold text-slate-900">
                 {formatDateSearchBar(selected)}
               </span>
             ) : (
@@ -186,7 +187,7 @@ export default function DatePicker({
               </div>
             )
           ) : (
-            <span className={isBar ? 'text-base text-gray-400' : 'text-gray-400'}>{placeholder}</span>
+            <span className={isBar ? 'text-sm text-slate-500' : 'text-gray-400'}>{placeholder}</span>
           )}
         </div>
         {isBar && <Calendar className="h-4 w-4 shrink-0 text-gray-400" />}

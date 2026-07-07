@@ -1,6 +1,6 @@
 // import { useCurrency } from '../../hooks/useCurrency';
 import { formatINR } from '../../lib/flights_api';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HotelFilters from '../../components/hotels/HotelFilters';
 import SortDropdown from '../../components/hotels/SortDropdown';
@@ -9,6 +9,7 @@ import {
   Wifi, Dumbbell, UtensilsCrossed, Car, Waves,
   Coffee, Loader2, AlertTriangle, Shield, CheckCircle, Building2
 } from 'lucide-react';
+import { getAmenityIcon } from '../../components/hotels/amenityIcons';
 import { useHotelStore } from '../../stores/hotelStore';
 import { useHotelSearch } from '../../hooks/useHotelApi';
 import { calculateNights } from '../../lib/utils';
@@ -16,7 +17,6 @@ import { getHotelTotalPayable, getRoomOnlinePayable } from '../../lib/hotelPrici
 import Button from '../../components/ui/Button';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
-// import { formatINR } from '../../lib/flights_api';
 
 // ── Musafir colour tokens ─────────────────────────────────────────────────
 const S = {
@@ -37,14 +37,6 @@ const S = {
 };
 
 // ── Shared UI ─────────────────────────────────────────────────────────────
-const AMENITY_ICONS: Record<string, React.ReactNode> = {
-  'Free WiFi': <Wifi className="h-3.5 w-3.5" />,
-  'Gym': <Dumbbell className="h-3.5 w-3.5" />,
-  'Restaurant': <UtensilsCrossed className="h-3.5 w-3.5" />,
-  'Parking': <Car className="h-3.5 w-3.5" />,
-  'Pool': <Waves className="h-3.5 w-3.5" />,
-  'Breakfast': <Coffee className="h-3.5 w-3.5" />,
-};
 
 function StarRow({ count }: { count: number }) {
   return (
@@ -62,7 +54,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
   const { setSelectedHotel } = useHotelStore();
   const totalPayable = showTotalPrice
     ? getHotelTotalPayable(hotel)
-    : Math.round(getHotelTotalPayable(hotel) / nights);
+    : Math.ceil(getHotelTotalPayable(hotel) / nights);
 
   // Strict API mapping for ratings.
   // If no text reviews from API, just show star rating as the metric
@@ -126,7 +118,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
           <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             {hotel.amenities.slice(0, 5).map((a: string, i: number) => (
               <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: S.navyDeep, background: S.surface, border: `1px solid ${S.border}`, padding: "4px 8px", borderRadius: 6, fontWeight: 500 }}>
-                {AMENITY_ICONS[a] ?? <div style={{ width: 6, height: 6, background: S.muted, borderRadius: "50%" }} />}
+                {getAmenityIcon(a, 'sm')}
                 {a}
               </span>
             ))}
@@ -243,7 +235,37 @@ export default function HotelResults() {
   const ci = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
   const co = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
 
-  // ── Trigger API search on mount ─────────────────────────────────────
+  // ── Hydrate store from URL params if store has no dates (e.g. direct link / refresh) ──
+  useEffect(() => {
+    const urlCheckIn  = urlParams.get('checkIn');
+    const urlCheckOut = urlParams.get('checkOut');
+    const urlLocation = urlParams.get('location');
+    const urlLocationId = urlParams.get('locationId');
+    const urlAdults   = urlParams.get('adults');
+    const urlChildren = urlParams.get('children');
+    const urlRooms    = urlParams.get('rooms');
+
+    const updates: Partial<typeof searchParams> = {};
+
+    if (urlCheckIn  && !searchParams.checkIn)  updates.checkIn  = new Date(urlCheckIn);
+    if (urlCheckOut && !searchParams.checkOut) updates.checkOut = new Date(urlCheckOut);
+    if (urlLocation && !searchParams.location) updates.location = urlLocation;
+    if (urlLocationId && !searchParams.locationId) updates.locationId = urlLocationId;
+    if (urlAdults  && !searchParams.adults)  updates.adults  = parseInt(urlAdults,  10);
+    if (urlChildren && searchParams.children === 0 && urlChildren !== '0') updates.children = parseInt(urlChildren, 10);
+    if (urlRooms   && searchParams.rooms === 1 && urlRooms   !== '1') updates.rooms   = parseInt(urlRooms,   10);
+
+    if (Object.keys(updates).length > 0) setSearchParams(updates);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Trigger API search on mount and when occupancy changes ──────────────
+  // TBO returns occupancy-specific pricing — rooms=1 gives a different rate than
+  // rooms=2. The search must re-run whenever the room/guest count changes so the
+  // displayed per-room price matches what the supplier is actually quoting.
+  const searchKey = `${searchParams.rooms}-${searchParams.adults}-${searchParams.children}-${searchParams.locationId || searchParams.location}-${searchParams.checkIn instanceof Date ? searchParams.checkIn.toISOString().split('T')[0] : searchParams.checkIn}-${searchParams.checkOut instanceof Date ? searchParams.checkOut.toISOString().split('T')[0] : searchParams.checkOut}`;
+  const lastSearchKeyRef = useRef('');
+
   useEffect(() => {
     if (isDefault) {
       resetBooking();
@@ -263,11 +285,15 @@ export default function HotelResults() {
     }
 
     if (searchParams.children > 0 && searchParams.childrenAges.length !== searchParams.children) {
-      // Just set default ages if mismatched
       setSearchParams({ childrenAges: Array(searchParams.children).fill(5) });
     }
 
     if (!finalLocation) return;
+
+    // Skip if nothing meaningful changed (avoids double-firing on mount)
+    const currentKey = `${searchParams.rooms}-${searchParams.adults}-${searchParams.children}-${finalLocation}-${finalCheckIn.toISOString().split('T')[0]}-${finalCheckOut.toISOString().split('T')[0]}`;
+    if (lastSearchKeyRef.current === currentKey) return;
+    lastSearchKeyRef.current = currentKey;
 
     search({
       cityCode: finalLocation,
@@ -280,7 +306,7 @@ export default function HotelResults() {
       nationality: searchParams.nationality || 'IN',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchKey]);
 
   useEffect(() => {
     if (rawResults.length > 0) {
@@ -394,10 +420,12 @@ export default function HotelResults() {
   return (
     <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* ── Top Search Bar ── */}
-      <div className="sticky top-[72px] z-40" style={{ background: "#fff" }}>
-        <div style={{ width: "100%", padding: 0 }}>
+      <div 
+        className="sticky top-[88px] md:top-[124px] z-40 border-b border-gray-200 bg-white/90 backdrop-blur-sm shadow-sm"
+        style={{ boxShadow: "0 8px 28px rgba(15,23,42,0.08)" }}
+      >
+        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
           <HotelSearchBar 
-            variant="results"
             onSearch={() => {
                const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
                const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
@@ -421,7 +449,7 @@ export default function HotelResults() {
       <div style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 24px", display: "flex", gap: 20 }}>
         {/* ── Left sidebar ── */}
         <aside style={{ width: 260, flexShrink: 0 }} className="hidden lg:block">
-          <div className="sticky top-24">
+          <div className="sticky top-[240px]">
              <HotelFilters maxPrice={MAX_PRICE} neighborhoods={NEIGHBOURHOODS} amenitiesList={AMENITIES_LIST} propertyTypes={PROPERTY_TYPES} propertySearch={propertySearch} setPropertySearch={setPropertySearch} />
           </div>
         </aside>

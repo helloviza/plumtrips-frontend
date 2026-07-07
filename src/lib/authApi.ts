@@ -1,5 +1,5 @@
 // apps/frontend/src/lib/authApi.ts
-const BACKEND = import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
+const BACKEND = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
 
 async function http<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BACKEND}${path}`, {

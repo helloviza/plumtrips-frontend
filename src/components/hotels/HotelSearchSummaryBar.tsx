@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Calendar, Users, MapPin, X, Search } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import LocationAutocomplete from './LocationAutocomplete';
-import DatePicker from './DatePicker';
+import { HotelRangePickerTriggers } from './HotelRangePicker';
 import GuestsRoomsSelector from './GuestsRoomsSelector';
 import { useHotelSearch } from '../../hooks/useHotelApi';
 
@@ -23,20 +23,18 @@ export default function HotelSearchSummaryBar() {
   const { search } = useHotelSearch();
   const [isEditing, setIsEditing] = useState(false);
 
-  const checkIn = searchParams.checkIn ? new Date(searchParams.checkIn) : null;
-  const checkOut = searchParams.checkOut ? new Date(searchParams.checkOut) : null;
+  const checkIn  = searchParams.checkIn  ? (searchParams.checkIn  instanceof Date ? searchParams.checkIn  : new Date(searchParams.checkIn))  : null;
+  const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
   const totalGuests = searchParams.adults + searchParams.children;
   const totalRooms = searchParams.rooms;
   const destination = searchParams.location || 'Select destination';
 
   const handleSearch = () => {
     setIsEditing(false);
-    const ci = searchParams.checkIn ? new Date(searchParams.checkIn) : null;
-    const co = searchParams.checkOut ? new Date(searchParams.checkOut) : null;
     search({
       cityCode: searchParams.locationId ?? searchParams.location,
-      checkIn: ci ? ci.toISOString().split('T')[0] : '',
-      checkOut: co ? co.toISOString().split('T')[0] : '',
+      checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
+      checkOut: checkOut ? checkOut.toISOString().split('T')[0] : '',
       rooms: searchParams.rooms,
       adults: searchParams.adults,
       children: searchParams.children || undefined,
@@ -129,15 +127,14 @@ export default function HotelSearchSummaryBar() {
                 </div>
               </div>
 
-              {/* Check-in */}
-              <div>
-                <FieldLabel>Check In</FieldLabel>
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-                  <DatePicker
-                    variant="bar"
-                    popoverAlign="start"
-                    selected={checkIn}
-                    onSelect={(date) => {
+              {/* Check-in + Check-out — trigger pair with floating picker */}
+              <div className="sm:col-span-2">
+                <FieldLabel>Dates</FieldLabel>
+                <div className="flex rounded-lg border border-slate-200 bg-white overflow-visible">
+                  <HotelRangePickerTriggers
+                    checkIn={checkIn}
+                    checkOut={checkOut}
+                    onCheckInChange={(date) => {
                       setSearchParams({ checkIn: date });
                       if (date && checkOut && date >= checkOut) {
                         const next = new Date(date);
@@ -145,22 +142,10 @@ export default function HotelSearchSummaryBar() {
                         setSearchParams({ checkOut: next });
                       }
                     }}
-                    placeholder="Select date"
-                  />
-                </div>
-              </div>
-
-              {/* Check-out */}
-              <div>
-                <FieldLabel>Check Out</FieldLabel>
-                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-                  <DatePicker
-                    variant="bar"
-                    popoverAlign="end"
-                    selected={checkOut}
-                    onSelect={(date) => setSearchParams({ checkOut: date })}
-                    placeholder="Select date"
-                    minDate={checkIn ? new Date(checkIn.getTime() + 86400000) : new Date()}
+                    onCheckOutChange={(date) => setSearchParams({ checkOut: date })}
+                    minDate={new Date()}
+                    checkInLabel="Check In"
+                    checkOutLabel="Check Out"
                   />
                 </div>
               </div>

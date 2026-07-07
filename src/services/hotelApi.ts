@@ -200,6 +200,10 @@ export interface PreBookParams {
   bookingCode: string;
   /** Same traceId returned from search for this itinerary (required). */
   traceId: string;
+  /** Check-in date (YYYY-MM-DD) — forwarded to backend for free cancellation date computation. */
+  checkIn?: string;
+  /** Room name / type — forwarded to backend for stable cancellation offset seed. */
+  roomName?: string;
 }
 
 export interface PreBookResult {
@@ -393,6 +397,79 @@ export async function getHotelStaticDetails(
 }
 
 /**
+ * 4b. Streaming hotel search — POST /api/v1/hotels/search-stream (SSE)
+ * Fires small TBO batches (20 codes each) and calls onBatch as each arrives.
+ * First results typically arrive within 3-5 seconds.
+ */
+export async function searchHotelsStream(
+  params: HotelSearchParams,
+  onBatch: (hotels: any[], traceId: string) => void,
+  onDone: (total: number) => void,
+  onError: (msg: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const body: Record<string, unknown> = {
+    hotelCodes: params.hotelCodes,
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    rooms: params.rooms,
+    adults: params.adults,
+    nationality: params.nationality ?? 'IN',
+  };
+  if (params.children !== undefined) body.children = params.children;
+  if (params.childrenAges !== undefined) body.childrenAges = params.childrenAges;
+  if (params.traceId?.trim()) body.traceId = params.traceId.trim();
+
+  const response = await fetch(`${BASE}/api/v1/hotels/search-stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+    signal,
+  });
+
+  if (!response.ok || !response.body) {
+    onError(`Search stream failed: ${response.status}`);
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (signal?.aborted) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // Parse SSE lines: each event is "data: {...}\n\n"
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() ?? '';
+
+    for (const part of parts) {
+      const line = part.trim();
+      if (!line.startsWith('data:')) continue;
+      try {
+        const json = JSON.parse(line.slice(5).trim());
+        if (json.type === 'batch' && Array.isArray(json.hotels)) {
+          onBatch(json.hotels, json.traceId ?? '');
+        } else if (json.type === 'done') {
+          onDone(json.total ?? 0);
+          return;
+        } else if (json.type === 'error') {
+          onError(json.message ?? 'Unknown stream error');
+          return;
+        }
+      } catch {
+        // Ignore malformed SSE lines
+      }
+    }
+  }
+}
+
+/**
  * 5. PreBook — POST /api/v1/hotels/prebook
  *
  * Returns the raw response envelope so callers can inspect error codes
@@ -413,6 +490,8 @@ export async function preBookHotel(params: PreBookParams): Promise<any> {
       body: JSON.stringify({
         bookingCode: params.bookingCode,
         traceId: params.traceId,
+        ...(params.checkIn ? { checkIn: params.checkIn } : {}),
+        ...(params.roomName ? { roomName: params.roomName } : {}),
       }),
     });
 
@@ -502,7 +581,7 @@ export async function getBookingDetail(bookingId: string): Promise<any> {
  */
 export async function cancelHotelBooking(
   bookingId: string,
-  requestType: 1 | 4 = 1
+  requestType: 4 = 4
 ): Promise<any> {
   const res = await post<CancelResponse>('/api/v1/hotels/cancel', {
     bookingId,

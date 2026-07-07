@@ -4,19 +4,19 @@ import { cn } from '../../lib/utils';
 import Button from '../ui/Button';
 
 const MAX_ADULTS_PER_ROOM = 4;
-const MAX_CHILDREN_PER_ROOM = 4;
+const MAX_CHILDREN_PER_ROOM = 3;
 const MAX_ROOMS = 8;
 
 interface GuestsRoomsSelectorProps {
   rooms: number;
   adults: number;
   children: number;
-  roomGuests: number;
   childrenAges: number[];
   onRoomsChange: (rooms: number) => void;
   onAdultsChange: (adults: number) => void;
   onChildrenChange: (children: number) => void;
   onChildrenAgesChange: (ages: number[]) => void;
+  onRoomGuestsChange?: (configs: Array<{ adults: number; children: number; childrenAges: number[] }>) => void;
   error?: string;
   variant?: 'default' | 'bar';
   theme?: 'light' | 'dark';
@@ -75,11 +75,11 @@ export default function GuestsRoomsSelector({
   adults,
   children,
   childrenAges,
-  roomGuests,
   onRoomsChange,
   onAdultsChange,
   onChildrenChange,
   onChildrenAgesChange,
+  onRoomGuestsChange,
   error,
   variant = 'default',
   theme = 'light',
@@ -119,6 +119,12 @@ export default function GuestsRoomsSelector({
     if (newAdults !== adults) onAdultsChange(newAdults);
     if (newChildren !== children) onChildrenChange(newChildren);
     if (JSON.stringify(newAges) !== JSON.stringify(childrenAges)) onChildrenAgesChange(newAges);
+    // Always sync per-room breakdown so GuestDetails can use it
+    onRoomGuestsChange?.(roomConfigs.map(r => ({
+      adults: r.adults,
+      children: r.children,
+      childrenAges: r.childrenAges,
+    })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomConfigs]);
 

@@ -40,18 +40,18 @@ export default function HotelSearch() {
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
-      <div className="bg-[#003580] pb-24 pt-10 md:pb-28">
+      <div className="bg-gradient-to-b from-[#003580] via-[#002a62] to-[#001d3f] pb-28 pt-16 md:pb-32 md:pt-20">
         <div className="mx-auto max-w-6xl px-4 text-center">
-          <h1 className="mb-1 text-3xl font-bold text-white md:text-4xl">
+          <h1 className="mb-3 text-3xl font-semibold text-white md:text-5xl">
             Find your perfect stay
           </h1>
-          <p className="text-sm text-blue-200">
-            Search deals on hotels, homes, and much more...
+          <p className="mx-auto max-w-2xl text-sm text-blue-200 md:text-base">
+            Search deals on hotels, homes, and much more — local favourites, handpicked stays, and flexible booking options.
           </p>
         </div>
       </div>
 
-      <div className="relative z-20 mx-auto -mt-14 max-w-6xl px-4 md:-mt-16">
+      <div className="relative z-20 mx-auto -mt-16 max-w-6xl px-4 md:-mt-20">
         <HotelSearchBar errors={errors} onSearch={handleSearch} />
       </div>
 
