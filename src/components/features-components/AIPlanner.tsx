@@ -105,6 +105,21 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
 
   const handleGenerate = async () => {
     if (isLoading) return;
+
+    const missingFields = activeFields.filter((field) => {
+      const key = field.name ?? field.label;
+      return !String(values[key] ?? "").trim();
+    });
+
+    if (missingFields.length) {
+      const missingLabels = missingFields.map((field) => field.label).join(", ");
+      setChatLog((current) => [
+        ...current,
+        { role: "assistant", text: `Please fill in all required fields before generating: ${missingLabels}.` },
+      ]);
+      return;
+    }
+
     const message = buildMessageFromFields();
     setChatLog((current) => [...current, { role: "user", text: message }]);
     setIsLoading(true);
