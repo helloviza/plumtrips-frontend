@@ -2,17 +2,18 @@ import SearchPage from "../pages/flights_new/SearchPage";
 import type { SearchForm } from "../lib/types_t";
 import type { CityLeg } from "../components/SearchTabs";
 import { useState, useEffect, useRef } from "react";
-// import { apiSearchFlights, formatINR } from "../lib/flights_api"; 
+import { apiSearchFlights, formatINR } from "../lib/flights_api";
 import { useNavigate } from "react-router-dom";
-import {  formatINR } from "../lib/flights_api"; 
 
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
   tripType?: "oneWay" | "roundTrip" | "multiCity";
   onTripTypeChange?: (t: "oneWay" | "roundTrip" | "multiCity") => void;
 }
-// At the top, add today's date
+
+// Always today's date — this is what drives the live deal fetch below
 const today = new Date().toLocaleDateString("en-CA");
+
 export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -28,58 +29,77 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
       heroImgRef.current.style.transform = "scale(1.1) translate(0,0)";
   };
 
+  // ── Live deal state (DEL → BOM, today) ─────────────────────
   const [dealPrice, setDealPrice] = useState<number | null>(null);
-const [dealAirline, setDealAirline] = useState<string>("IndiGo");
-const [dealDuration, setDealDuration] = useState<string>("2h 10m");
+  const [dealAirline, setDealAirline] = useState<string>("");
+  const [dealDuration, setDealDuration] = useState<string>("");
+  const [dealLoading, setDealLoading] = useState<boolean>(true);
+  const [dealError, setDealError] = useState<boolean>(false);
 
-// useEffect(() => {
-//   apiSearchFlights({
-//     tripType: "oneWay",
-//     from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-//     to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-//     departDate: today, returnDate: "", adults: 1, children: 0, infants: 0,
-//     cabinClass: "Economy", nonStopOnly: false, fareType: "Regular",
-//   }).then(result => {
-//     // Sort by price and pick the cheapest non-stop (or just cheapest)
-//     const sorted = [...(result.outbound ?? [])].sort((a, b) => a.price - b.price);
-//     const cheapest = sorted[0];
-//     if (cheapest) {
-//       setDealPrice(cheapest.price);
-//       setDealAirline(cheapest.airline);
-//       setDealDuration(`${Math.floor(cheapest.duration / 60)}h ${cheapest.duration % 60}m`);
-//     }
-//   }).catch(() => {}); // silently fail — card stays with fallback
-// }, []);
+  // Static/mock fallback values — kept only for reference, not used anymore
+  // const [dealAirline, setDealAirline] = useState<string>("IndiGo");
+  // const [dealDuration, setDealDuration] = useState<string>("2h 10m");
 
-const TRENDING = [
-  {
-    city: "Dubai",
-    img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80",
-    url: "/dubai-personal",
-  },
-  {
-    city: "Singapore",
-    img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80",
-    url: "/singapore-personal",
-  },
-  {
-    city: "Bali",
-    img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80",
-    url: "/bali-personal",
-  },
-  {
-    city: "Europe",
-    img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80",
-    url: "/europe-personal",
-  },
-  {
-    city: "Thailand",
-    img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80",
-    url: "/thailand-personal",
-  },
-];
+  useEffect(() => {
+    let cancelled = false;
+    setDealLoading(true);
+    setDealError(false);
 
-const navigate=useNavigate();
+    apiSearchFlights({
+      tripType: "oneWay",
+      from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+      to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+      departDate: today, returnDate: "", adults: 1, children: 0, infants: 0,
+      cabinClass: "Economy", nonStopOnly: false, fareType: "Regular",
+    })
+      .then(result => {
+        if (cancelled) return;
+        // Sort by price and pick the cheapest
+        const sorted = [...(result.outbound ?? [])].sort((a, b) => a.price - b.price);
+        const cheapest = sorted[0];
+        if (cheapest) {
+          setDealPrice(cheapest.price);
+          setDealAirline(cheapest.airline);
+          setDealDuration(`${Math.floor(cheapest.duration / 60)}h ${cheapest.duration % 60}m`);
+        } else {
+          setDealError(true);
+        }
+      })
+      .catch(() => { if (!cancelled) setDealError(true); })
+      .finally(() => { if (!cancelled) setDealLoading(false); });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const TRENDING = [
+    {
+      city: "Dubai",
+      img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=48&h=48&fit=crop&q=80",
+      url: "/dubai-personal",
+    },
+    {
+      city: "Singapore",
+      img: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=48&h=48&fit=crop&q=80",
+      url: "/singapore-personal",
+    },
+    {
+      city: "Bali",
+      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=48&h=48&fit=crop&q=80",
+      url: "/bali-personal",
+    },
+    {
+      city: "Europe",
+      img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=48&h=48&fit=crop&q=80",
+      url: "/europe-personal",
+    },
+    {
+      city: "Thailand",
+      img: "https://images.unsplash.com/photo-1528181304800-259b08848526?w=48&h=48&fit=crop&q=80",
+      url: "/thailand-personal",
+    },
+  ];
+
+  const navigate = useNavigate();
 
   return (
     <div
@@ -114,14 +134,11 @@ const navigate=useNavigate();
 
           {/* Headline + Deal Card */}
           <div
-
-  className="reveal flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-10"
-  style={{ transitionDelay: "0.04s" }}
->
-          
+            className="reveal flex flex-col md:flex-row md:items-start md:justify-between gap-6 md:gap-10"
+            style={{ transitionDelay: "0.04s" }}
+          >
             {/* Left: copy block */}
-            <div style={{ flex: "1 1 0", minWidth: 0 , width:"100%"}}>
-            
+            <div style={{ flex: "1 1 0", minWidth: 0, width: "100%" }}>
               <div className="mb-5">
                 <span
                   style={{
@@ -193,41 +210,82 @@ const navigate=useNavigate();
                 <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 14, color: "#fff", marginBottom: 6 }}>
                   Delhi → Mumbai
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
-<div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
-  {dealPrice ? formatINR(dealPrice) : "₹4,899"}
-</div>
-                  <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
-                  {dealAirline} · {dealDuration}
-                  </span>
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 600, color: "#6ee7a0", background: "rgba(110,231,160,0.12)", borderRadius: 6, padding: "2px 7px" }}>
-                    Non-stop
-                  </span>
-                </div>
 
-<button
-  // onClick={() =>
-  //   onSearch?.({
-  //     tripType: "oneWay",
-  //     from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
-  //     to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
-  //     departDate:  today,
-  //     returnDate:  "",
-  //     adults:      1,
-  //     children:    0,
-  //     infants:     0,
-  //     cabinClass:  "Economy",
-  //     nonStopOnly: false,
-  //     fareType:    "Regular",
-  //   })
-  // }
-  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
->
-  View Deals →
-</button>
+                {dealLoading ? (
+                  // ── Loading state: progress bar while we fetch today's live price ──
+                  <div style={{ minHeight: 34, marginBottom: 8, display: "flex", flexDirection: "column", justifyContent: "center", gap: 6 }}>
+                    <div
+                      style={{
+                        width: "100%",
+                        height: 6,
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,0.12)",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          height: "100%",
+                          width: "40%",
+                          borderRadius: 999,
+                          background: "#FF9A6C",
+                          animation: "dealBarSlide 1.1s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.5)" }}>
+                      Fetching today's fare…
+                    </span>
+                  </div>
+                ) : dealError || !dealPrice ? (
+                  <div style={{ minHeight: 34, marginBottom: 8, display: "flex", alignItems: "center" }}>
+                    <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                      Fares unavailable right now
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
+                      <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
+                        {formatINR(dealPrice)}
+                      </div>
+                      <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                      <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.10)", borderRadius: 6, padding: "2px 7px" }}>
+                        {dealAirline} · {dealDuration}
+                      </span>
+                      <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, fontWeight: 600, color: "#6ee7a0", background: "rgba(110,231,160,0.12)", borderRadius: 6, padding: "2px 7px" }}>
+                        Non-stop
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={() =>
+                    onSearch?.({
+                      tripType: "oneWay",
+                      from: { code: "DEL", city: "New Delhi", name: "Indira Gandhi International", cityCode: "DEL", country: "India", countryCode: "IN", label: "New Delhi (DEL)" },
+                      to:   { code: "BOM", city: "Mumbai",    name: "Chhatrapati Shivaji Maharaj International", cityCode: "BOM", country: "India", countryCode: "IN", label: "Mumbai (BOM)" },
+                      departDate:  today,
+                      returnDate:  "",
+                      adults:      1,
+                      children:    0,
+                      infants:     0,
+                      cabinClass:  "Economy",
+                      nonStopOnly: false,
+                      fareType:    "Regular",
+                    })
+                  }
+                  style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontSize: 12, fontWeight: 600, color: "#FF9A6C", padding: 0 }}
+                >
+                  View Deals →
+                </button>
               </div>
             </div>
           </div>
@@ -278,6 +336,14 @@ const navigate=useNavigate();
 
         </div>
       </div>
+
+      {/* Keyframes for the deal card progress bar */}
+      <style>{`
+        @keyframes dealBarSlide {
+          0%   { left: -40%; }
+          100% { left: 100%; }
+        }
+      `}</style>
     </div>
   );
 }
