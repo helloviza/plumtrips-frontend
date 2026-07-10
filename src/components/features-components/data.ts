@@ -115,7 +115,7 @@ export const aiPlannerProps: AIPlannerProps = {
   fields: [
     { name: "destination", label: "Where do you want to go?", placeholder: "e.g. Switzerland", fullWidth: true },
     { name: "departureCity", label: "Departure city", placeholder: "e.g. Mumbai" },
-    { name: "budget", label: "Budget (₹)", placeholder: "₹75,000" },
+    { name: "budget", label: "Budget", placeholder: "75000", isCurrency: true },
     { name: "duration", label: "Duration", placeholder: "2026-08-08 to 2026-08-15" },
     { name: "travelers", label: "Travelers", placeholder: "1 Adults with No Child" },
     { name: "tripVibe", label: "Trip vibe", placeholder: "Relaxing / Adventure" },
@@ -127,7 +127,7 @@ export const aiPlannerProps: AIPlannerProps = {
     badge: "Suggested for you",
     destination: "Italy",
     tagline: "7 Days · Rome, Florence & Venice",
-    estimatedPrice: "₹72,500",
+    estimatedPrice: 72500,
   },
 };
 
@@ -255,32 +255,38 @@ export const hotelTrendingDestinationsProps: HotelTrendingDestinationsProps = {
   items: [
     {
       name: "Dubai",
-      description: "₹7,999",
+      description: 7999,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80",
     },
     {
       name: "Bali",
-      description: "₹6,499",
+      description: 6499,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80",
     },
     {
       name: "Maldives",
-      description: "₹12,999",
+      description: 12999,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?w=400&q=80",
     },
     {
       name: "Thailand",
-      description: "₹5,999",
+      description: 5999,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=400&q=80",
     },
     {
       name: "Europe",
-      description: "₹12,999",
+      description: 12999,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400&q=80",
     },
     {
       name: "Singapore",
-      description: "₹9,499",
+      description: 9499,
+      isCurrency: true,
       imageUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400&q=80",
     },
   ],
@@ -299,7 +305,7 @@ export const aiHotelFinderProps: AIHotelFinderProps = {
   fields: [
     { label: "Where do you want to go?",  placeholder: "e.g. Switzerland" },
     { label: "Check-in – Check-out",      placeholder: "12 Jun – 14 Jun" },
-    { label: "Budget per night",          placeholder: "e.g. ₹ 15,000" },
+    { name: "budget", label: "Budget per night", placeholder: "15000", isCurrency: true },
     { label: "Guests & Rooms",            placeholder: "e.g. 2 Guests, 1 Room" },
   ],
   ctaLabel: "Find My Perfect Stay ✦",
@@ -310,7 +316,7 @@ export const aiHotelFinderProps: AIHotelFinderProps = {
     location: "Italy",
     rating: "4.8",
     ratingCount: "340",
-    pricePerNight: "₹18,999",
+    pricePerNight: 18999,
   },
 };
  
@@ -328,7 +334,7 @@ export const exclusiveHotelOffersProps: ExclusiveHotelOffersProps = {
       imageUrl: "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=400&q=80",
     },
     {
-      title: "Luxury Under ₹10K",
+      title: "Luxury Deals",
       subtitle: "Premium stays, great prices",
       ctaLabel: "Book Now →",
       imageUrl: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&q=80",

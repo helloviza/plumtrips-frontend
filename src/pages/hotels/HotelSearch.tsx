@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Shield, Clock } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
+import { searchCities } from '../../hooks/useHotelApi';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 const POPULAR_DESTINATIONS = [
   { name: 'Dubai', country: 'UAE', img: '/assets/home/holiday-dubai-stop.jpg' },
@@ -81,9 +82,20 @@ export default function HotelSearch() {
             <button
               key={dest.name}
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setSearchParams({ location: `${dest.name}, ${dest.country}` });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                try {
+                  const cities = await searchCities(dest.name);
+                  if (cities.length > 0) {
+                    setSearchParams({ 
+                      locationId: cities[0].cityCode,
+                      destinationCountryCode: cities[0].countryCode 
+                    });
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
               }}
               className="group relative overflow-hidden rounded-xl shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md"
             >

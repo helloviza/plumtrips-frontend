@@ -1,4 +1,4 @@
-import { formatINR } from '../../lib/flights_api';
+import { useCurrency } from '../../context/currencyContext';
 import { Star, MapPin, Shield, Wifi, Coffee, Dumbbell, UtensilsCrossed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Hotel } from '../../stores/hotelStore';
@@ -14,7 +14,7 @@ interface HotelCardProps {
 }
 
 export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
-  //const { formatCurrency, symbol } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
 
   const getAmenityIcon = (amenity: string) => {
@@ -128,12 +128,12 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
             <div>
               {totalOriginalPrice && (
                 <div className="text-sm text-gray-500 line-through">
-                  {formatINR(totalOriginalPrice)}
+                  {convert(totalOriginalPrice)}
                 </div>
               )}
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-gray-900">
-                  {formatINR(totalPrice)}
+                  {convert(totalPrice)}
                 </span>
                 {nights > 1 && (
                   <span className="text-sm text-gray-500">for {nights} nights</span>
@@ -142,7 +142,7 @@ export default function HotelCard({ hotel, nights = 1 }: HotelCardProps) {
               <div className="text-xs text-gray-500">
                 incl. taxes & fees
                 {nights > 1 && (
-                  <span> · ≈ {formatINR(Math.ceil(totalPrice / nights))}/night</span>
+                  <span> · ≈ {convert(Math.ceil(totalPrice / nights))}/night</span>
                 )}
               </div>
             </div>

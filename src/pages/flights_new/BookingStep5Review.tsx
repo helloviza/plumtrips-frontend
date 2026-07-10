@@ -4,8 +4,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
-import type { PassengerData, ExtraSelection, SeatMap } from "./BookingShared";
-import { SectionHeading, AIRLINE_COLORS, calcFares } from "./BookingShared";
+import type { PassengerData, ExtraSelection, SeatMap, AppliedCoupon } from "./BookingShared";
+import { SectionHeading, AIRLINE_COLORS, calcFares, CouponSection } from "./BookingShared";
 import { formatINR } from "../../lib/flights_api";
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
@@ -21,6 +21,12 @@ interface Step5Props {
   adults: number; children: number; infants: number;
   extras: ExtraSelection[];
   discount: number;
+  /** The currently-applied coupon (lifted up to whichever parent owns `discount`), or null if none. */
+  appliedCoupon?: AppliedCoupon | null;
+  /** Called when a coupon validates successfully — parent should store it and set `discount` from it. */
+  onApplyDiscount: (coupon: AppliedCoupon) => void;
+  /** Called to clear a previously-applied coupon. */
+  onRemoveDiscount: () => void;
   isInternational: boolean;
   onConfirm: () => void;
   onBack: () => void;
@@ -79,7 +85,9 @@ function AirlineLogo({
 export default function BookingStep5Review({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   passengers, seatMaps, paxTypes, contactEmail, contactPhone,
-  adults, children, infants, extras, discount, isInternational,
+  adults, children, infants, extras, discount,
+  appliedCoupon = null, onApplyDiscount, onRemoveDiscount,
+  isInternational,
   onConfirm, onBack,
 }: Step5Props) {
   const [agreed, setAgreed] = useState(false);
@@ -265,6 +273,15 @@ export default function BookingStep5Review({
           </div>
         )}
       </ReviewCard>
+
+      {/* ── COUPON / PROMO CODE ────────────────────────────── */}
+      <CouponSection
+        bookingAmount={subtotal + seatsTotal + extrasTotal + taxes}
+        category="FLIGHT"
+        applied={appliedCoupon}
+        onApply={onApplyDiscount}
+        onRemove={onRemoveDiscount}
+      />
 
       {/* ── FARE BREAKDOWN ─────────────────────────────────── */}
       <ReviewCard title="💰 Final Fare Breakdown">

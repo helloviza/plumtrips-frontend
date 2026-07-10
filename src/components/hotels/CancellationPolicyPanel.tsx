@@ -1,6 +1,7 @@
 import { CheckCircle, XCircle, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { getCancellationPolicyDisplay, getPolicyChargeText, formatPolicyDate, parsePolicyDate } from '../../hooks/useHotelApi';
 import type { CancelPolicySlab } from '../../stores/hotelStore';
+import { useCurrency } from '../../context/currencyContext';
 
 export interface CancellationPolicyPanelProps {
   cancelPolicies?: CancelPolicySlab[];
@@ -35,6 +36,7 @@ export function CancellationPolicyPanel({
   loading = false,
   size: _size = 'compact',
 }: CancellationPolicyPanelProps) {
+  const { convert } = useCurrency();
   const display = getCancellationPolicyDisplay(
     cancelPolicies,
     cancellationPolicy,
@@ -105,7 +107,7 @@ export function CancellationPolicyPanel({
       {/* Penalty slabs */}
       {penaltySlabs.length > 0 && !loading && penaltySlabs.map((slab, i) => {
         const from   = slab.fromDate ?? slab.FromDate;
-        const charge = getPolicyChargeText(slab);
+        const charge = getPolicyChargeText(slab, convert);
         const fromLabel = from
           ? `From ${formatPolicyDate(from)}`
           : displayDeadline

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, ChevronDown, ChevronUp, Star, Check, X } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { formatCurrency } from '../../lib/utils';
+import { useCurrency } from '../../context/currencyContext';
 
 const S = {
   navy:      "#00305f",
@@ -73,6 +74,7 @@ export default function HotelFilters({
   setPropertySearch
 }: HotelFiltersProps) {
   const { filters, setFilters, resetFilters } = useHotelStore();
+  const { convert } = useCurrency();
 
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showAllNeighborhoods, setShowAllNeighborhoods] = useState(false);
@@ -171,11 +173,11 @@ export default function HotelFilters({
           />
           <div className="mt-4 flex items-center justify-between gap-2">
             <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 w-full text-center">
-              {formatCurrency(filters.priceRange[0])}
+              {convert(filters.priceRange[0])}
             </div>
             <span className="text-gray-400 font-bold">-</span>
             <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 w-full text-center">
-              {filters.priceRange[1] >= 50000 ? `${formatCurrency(maxPrice)}+` : formatCurrency(filters.priceRange[1])}
+              {filters.priceRange[1] >= 50000 ? `${convert(maxPrice)}+` : convert(filters.priceRange[1])}
             </div>
           </div>
         </div>

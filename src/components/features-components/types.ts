@@ -59,8 +59,9 @@ export interface TravelYourWayProps {
 // ── TrendingDestination ──────────────────────
 export interface TrendingItem {
   name: string;
-  description: string;
+  description: string | number;
   imageUrl: string;
+  isCurrency?: boolean;
 }
 
 export interface TrendingDestinationProps {
@@ -77,6 +78,7 @@ export interface PlannerField {
   placeholder: string;
   name?: string;
   fullWidth?: boolean;
+  isCurrency?: boolean;
 }
 
 export interface AIPlannerSuggestion {
@@ -84,7 +86,7 @@ export interface AIPlannerSuggestion {
   badge: string;
   destination: string;
   tagline: string;
-  estimatedPrice: string;
+  estimatedPrice: number;
   onViewItinerary?: () => void;
 }
 
@@ -175,8 +177,9 @@ export interface HotelCollectionsProps {
   onActionClick?: () => void;
   items: {
     name: string;
-    description: string;
+    description: string | number;
     imageUrl: string;
+    isCurrency?: boolean;
   }[];
 }
  
@@ -187,8 +190,9 @@ export interface HotelTrendingDestinationsProps {
   onActionClick?: () => void;
   items: {
     name: string;
-    description: string;  // e.g. "₹7,999" (Or PricePerNight)
+    description: string | number;  // e.g. 7999
     imageUrl: string;
+    isCurrency?: boolean;
   }[];
 }
  
@@ -206,7 +210,7 @@ export interface AIHotelFinderProps {
     location: string;
     rating: string;
     ratingCount: string;
-    pricePerNight: string;
+    pricePerNight: number;
     onViewDetails?: () => void;
   };
 }

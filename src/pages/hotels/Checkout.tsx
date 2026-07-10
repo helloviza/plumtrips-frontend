@@ -1,5 +1,5 @@
-import { formatINR } from '../../lib/flights_api';
-import { useState, useEffect } from 'react';
+import { useCurrency } from '../../context/currencyContext';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield, Tag, ChevronDown, ChevronUp,
@@ -11,6 +11,7 @@ import { useRazorpayCheckout } from '../../hooks/useRazorpayCheckout';
 import { createHotelPaymentOrder } from '../../services/paymentApi';
 import type { BookGuest } from '../../services/hotelApi';
 import { loadRazorpayScript } from '../../lib/loadRazorpayScript';
+import { couponApi, type ValidateCouponResult, type CouponReasonCode } from '../../lib/couponApi';
 import { useHotelStore } from '../../stores/hotelStore';
 import Button from '../../components/ui/Button';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
@@ -28,12 +29,25 @@ const ADD_ON_PRICES: Record<string, number> = {
   breakfastUpgrade: 499, roomUpgrade: 1500, lateCheckout: 999,
 };
 
+function couponReasonMessage(reason: CouponReasonCode): string {
+  switch (reason) {
+    case 'COUPON_NOT_FOUND': return 'Invalid coupon code.';
+    case 'COUPON_INACTIVE': return 'This coupon is no longer active.';
+    case 'COUPON_NOT_YET_STARTED': return "This coupon isn't active yet.";
+    case 'COUPON_EXPIRED': return 'This coupon has expired.';
+    case 'COUPON_EXHAUSTED': return 'This coupon has reached its usage limit.';
+    case 'CATEGORY_MISMATCH': return "This coupon isn't valid for hotel bookings.";
+    case 'MIN_BOOKING_AMOUNT_NOT_MET': return 'Your booking amount is below the minimum required for this coupon.';
+    case 'USER_LIMIT_REACHED': return "You've already used this coupon.";
+    default: return "This coupon can't be applied.";
+  }
+}
+
 export default function Checkout() {
-  //const { formatINR: formatCurrency } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const {
     selectedRooms, selectedHotel, guests, addOns, searchParams,
-    promoCode, promoDiscount, applyPromoCode,
     setBookingId, user, preBookResponse, preBookResponses, sessionExpired,
     paymentSubmitted, setPaymentSubmitted, traceId,
     setCurrentStep, setPreBookResponse, setPreBookResponses, setBookingCode, setBookingCodes,
@@ -41,13 +55,23 @@ export default function Checkout() {
     specialRequests
   } = useHotelStore();
 
-  const [promoInput, setPromoInput] = useState('');
   const [showPriceSummary, setShowPriceSummary] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [preBooking, setPreBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
   const [priceChangeAcknowledged, setPriceChangeAcknowledged] = useState(false);
   const { openRazorpayCheckout } = useRazorpayCheckout();
+
+  // Coupon state (real backend-backed validate/apply flow)
+  const [couponCode, setCouponCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState<'idle' | 'validating' | 'applied' | 'error'>('idle');
+  const [couponResult, setCouponResult] = useState<ValidateCouponResult | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Guards: apply() must fire at most once per booking, and a validated
+  // discount must not survive a change in the amount it was validated against.
+  const couponRedeemedRef = useRef(false);
+  const validatedForAmountRef = useRef<number | null>(null);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
@@ -105,7 +129,7 @@ export default function Checkout() {
         return;
       }
       setCurrentStep('checkout');
-      
+
       const pbr = useHotelStore.getState().preBookResponse;
       const selectedRoomsCount = useHotelStore.getState().selectedRooms.length;
       const completeMultiRoomPrebook =
@@ -114,7 +138,7 @@ export default function Checkout() {
           useHotelStore.getState().preBookResponses.every(Boolean));
       console.log('🚀 Checkout: kickoff() preBookResponse:', pbr ? pbr.bookingCode : 'null');
       console.log('🚀 Checkout: completeMultiRoomPrebook:', completeMultiRoomPrebook);
-      
+
       if (!pbr || !completeMultiRoomPrebook) {
         console.log('🚀 Checkout: running inline prebook; prebook state incomplete for all rooms');
         void runInlinePreBook();
@@ -219,8 +243,12 @@ export default function Checkout() {
 
   const addOnsTotal = Object.entries(addOns).reduce((s, [k, v]) => s + (v ? (ADD_ON_PRICES[k] || 0) : 0), 0);
   const subtotal = confirmedRoomTotal + addOnsTotal;
-  const discountAmount = promoDiscount > 0 ? Math.round(subtotal * promoDiscount / 100) : 0;
-  const totalPrice = subtotal - discountAmount;
+
+  // Discount now comes from the backend-validated coupon result, not a
+  // hardcoded percentage. `finalAmount`/`discountAmount` are only trusted
+  // while couponStatus === 'applied' (see the invalidation effect below).
+  const discountAmount = couponStatus === 'applied' && couponResult ? couponResult.discountAmount : 0;
+  const totalPrice = couponStatus === 'applied' && couponResult ? couponResult.finalAmount : subtotal;
   const payNow = totalPrice;
 
   const supplierPriceChanged = hasSupplierPriceChange(
@@ -228,6 +256,22 @@ export default function Checkout() {
     selectedRooms,
     preBookResponses.length > 1 ? preBookResponses : undefined
   );
+
+  // If the amount the coupon was validated against changes (e.g. a supplier
+  // price change, add-ons toggled), the previously-validated discount is no
+  // longer trustworthy — clear it and ask the user to re-apply.
+  useEffect(() => {
+    if (
+      couponStatus === 'applied' &&
+      validatedForAmountRef.current !== null &&
+      validatedForAmountRef.current !== subtotal
+    ) {
+      setCouponStatus('idle');
+      setCouponResult(null);
+      setCouponError('Booking amount changed — please re-apply your coupon.');
+      toast.error('Booking amount changed. Please re-apply your coupon.');
+    }
+  }, [subtotal]);
 
   const allRoomsPrebooked =
     selectedRooms.length <= 1 ||
@@ -240,19 +284,72 @@ export default function Checkout() {
     contact: user.mobile?.replace(/\D/g, '').slice(-10) || undefined,
   };
 
-  const handleApplyPromo = () => {
-    if (!promoInput.trim()) return;
-    applyPromoCode(promoInput);
-    if (['SAVE10', 'SAVE20', 'WELCOME', 'FIRST'].includes(promoInput.toUpperCase())) {
-      toast.success('Promo code applied!');
-    } else {
-      toast.error('Invalid promo code');
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code || couponStatus === 'validating') return;
+
+    setCouponStatus('validating');
+    setCouponError(null);
+
+    try {
+      const result = await couponApi.validate({
+        code,
+        category: 'HOTEL',
+        bookingAmount: subtotal, // room total + add-ons, before discount
+      });
+
+      if (result.eligible) {
+        setCouponResult(result);
+        setCouponStatus('applied');
+        validatedForAmountRef.current = subtotal;
+        toast.success(`Coupon applied! You saved ${convert(result.discountAmount)}`);
+      } else {
+        setCouponResult(null);
+        setCouponStatus('error');
+        setCouponError(couponReasonMessage(result.reasonCode));
+      }
+    } catch (err) {
+      setCouponStatus('error');
+      setCouponError(err instanceof Error ? err.message : 'Could not validate coupon.');
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setCouponStatus('idle');
+    setCouponResult(null);
+    setCouponError(null);
+    validatedForAmountRef.current = null;
+    couponRedeemedRef.current = false;
   };
 
   const resetPaymentState = () => {
     setPaymentSubmitted(false);
     setProcessing(false);
+  };
+
+  // Actually redeems the coupon. Only called once a real bookingId exists
+  // (payment success or hold-booking success) — never on validate/apply-click.
+  // couponRedeemedRef flips synchronously so this can never fire twice for
+  // the same booking, even across re-renders or retried callbacks.
+  const redeemCouponIfNeeded = async (bookingId: string) => {
+    if (couponStatus !== 'applied' || !couponResult?.coupon || couponRedeemedRef.current) return;
+    couponRedeemedRef.current = true;
+
+    try {
+      await couponApi.apply({
+        code: couponResult.coupon.code,
+        category: 'HOTEL',
+        bookingAmount: subtotal,
+        bookingId,
+      });
+    } catch (err) {
+      console.error('[Coupon] redemption failed post-booking:', err);
+      toast.error(
+        'Your booking is confirmed, but the coupon redemption could not be finalized. Please contact support.',
+        { duration: 10000 }
+      );
+    }
   };
 
   const finalizeBooking = async (razorpayPaymentId?: string) => {
@@ -397,6 +494,10 @@ export default function Checkout() {
       setConfirmedPaidAmount(payNow);
       setCurrentStep('confirmed');
 
+      // Redeem the coupon now that a real booking exists. Guarded so it can
+      // only ever run once for this booking.
+      await redeemCouponIfNeeded(canonicalId);
+
       try {
         const raw = localStorage.getItem('hotel-booking-storage');
         const stored = raw ? JSON.parse(raw) : {};
@@ -447,12 +548,12 @@ export default function Checkout() {
       toast.error('Please confirm the updated price before holding.');
       return;
     }
-    
+
     setProcessing(true);
     setPaymentSubmitted(true);
-    
+
     const confirmToast = toast.loading('Holding your booking...');
-    
+
     try {
       const bookGuests = guests.map(g => ({
         ...g,
@@ -529,7 +630,7 @@ export default function Checkout() {
         inner?.status ??
         (bookResult as { status?: number }).status
       ) as number;
-      
+
       const canonicalId = bookingId || pnr || confirmationNo || '';
       setBookingId(canonicalId);
       setConfirmationNo(confirmationNo || canonicalId);
@@ -537,6 +638,9 @@ export default function Checkout() {
       if (tboReferenceNo) setTboReferenceNo(tboReferenceNo);
       setConfirmedPaidAmount(0);
       setCurrentStep('confirmed');
+
+      // Redeem the coupon now that a real booking exists (guarded to run once).
+      await redeemCouponIfNeeded(canonicalId);
 
       try {
         const raw = localStorage.getItem('hotel-booking-storage');
@@ -668,8 +772,8 @@ export default function Checkout() {
                 <div className="text-sm font-semibold text-gray-900">Supplier updated the price</div>
                 <div className="text-xs text-gray-600 mt-0.5">
                   Price changed from{' '}
-                  <span className="line-through">{formatINR(originalListingPrice)}</span> to{' '}
-                  <strong className="text-gray-900">{formatINR(confirmedRoomTotal)}</strong>.
+                  <span className="line-through">{convert(originalListingPrice)}</span> to{' '}
+                  <strong className="text-gray-900">{convert(confirmedRoomTotal)}</strong>.
                 </div>
                 <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-gray-700">
                   <input
@@ -726,7 +830,7 @@ export default function Checkout() {
                 </ul>
               </div>
             )}
-            
+
             {preBookResponse?.rateConditions && preBookResponse.rateConditions.length > 0 && (
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
                 <h2 className="mb-3 flex items-center gap-2 font-bold text-blue-900">
@@ -754,19 +858,40 @@ export default function Checkout() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={promoInput}
-                  onChange={e => setPromoInput(e.target.value.toUpperCase())}
-                  placeholder="Enter promo code"
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/20"
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter coupon code"
+                  disabled={couponStatus === 'applied' || couponStatus === 'validating'}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#003580] focus:outline-none focus:ring-2 focus:ring-[#003580]/20 disabled:bg-gray-50"
                 />
-                <Button variant="outline" onClick={handleApplyPromo} size="sm">Apply</Button>
+                {couponStatus === 'applied' ? (
+                  <Button variant="outline" onClick={handleRemoveCoupon} size="sm">Remove</Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleApplyCoupon}
+                    size="sm"
+                    disabled={couponStatus === 'validating' || !couponCode.trim()}
+                  >
+                    {couponStatus === 'validating' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                  </Button>
+                )}
               </div>
-              {promoDiscount > 0 && (
+
+              {couponStatus === 'applied' && couponResult && (
                 <div className="mt-2 flex items-center gap-1 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
-                  {promoDiscount}% off applied — saving {formatINR(discountAmount)}
+                  {couponResult.coupon?.code} applied — saving {convert(couponResult.discountAmount)}
                 </div>
               )}
+
+              {couponStatus === 'error' && couponError && (
+                <div className="mt-2 flex items-center gap-1 text-sm text-red-600">
+                  <XCircle className="h-4 w-4" />
+                  {couponError}
+                </div>
+              )}
+
               {user.isLoggedIn && (
               <div className="mt-4 mb-4 flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2.5">
@@ -819,7 +944,7 @@ export default function Checkout() {
                     {selectedRooms.map(r => (
                       <div key={r.id} className="mt-1 flex justify-between text-xs text-gray-500">
                         <span className="truncate mr-2">{r.name} × {r.quantity}</span>
-                        <span className="shrink-0">{formatINR(getRoomOnlinePayable(r, r.quantity))}</span>
+                        <span className="shrink-0">{convert(getRoomOnlinePayable(r, r.quantity))}</span>
                       </div>
                     ))}
                   </div>
@@ -827,12 +952,12 @@ export default function Checkout() {
 
                 <div className="flex justify-between text-gray-600">
                   <span>Base Fare</span>
-                  <span>{formatINR(confirmedPrice)}</span>
+                  <span>{convert(confirmedPrice)}</span>
                 </div>
                 {confirmedTaxes > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Taxes & fees</span>
-                    <span>{formatINR(confirmedTaxes)}</span>
+                    <span>{convert(confirmedTaxes)}</span>
                   </div>
                 )}
                 {confirmedTaxes === 0 && confirmedBreakdown.fromPreBook && (
@@ -841,18 +966,18 @@ export default function Checkout() {
                 {addOnsTotal > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Add-ons</span>
-                    <span>{formatINR(addOnsTotal)}</span>
+                    <span>{convert(addOnsTotal)}</span>
                   </div>
                 )}
-                {discountAmount > 0 && (
+                {couponStatus === 'applied' && couponResult && (
                   <div className="flex justify-between text-green-600">
-                    <span>Promo ({promoCode})</span>
-                    <span>- {formatINR(discountAmount)}</span>
+                    <span>Coupon ({couponResult.coupon?.code})</span>
+                    <span>- {convert(couponResult.discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-gray-200 pt-3 font-bold text-gray-900">
                   <span>Total Payable</span>
-                  <span className="text-xl text-[#003580]">{formatINR(payNow)}</span>
+                  <span className="text-xl text-[#003580]">{convert(payNow)}</span>
                 </div>
               </div>
 
@@ -870,7 +995,7 @@ export default function Checkout() {
                 {processing || paymentSubmitted ? (
                   <><Loader2 className="h-5 w-5 animate-spin" /> Processing…</>
                 ) : (
-                  `Pay ${formatINR(payNow)} Securely`
+                  `Pay ${convert(payNow)} Securely`
                 )}
               </button>
               {/* <button
@@ -894,7 +1019,7 @@ export default function Checkout() {
               <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-red-500" />
               <h2 className="mb-2 text-xl font-bold text-gray-900">Booking Time Over</h2>
               <p className="mb-6 text-gray-600">Your session has expired. You will be redirected to the previous page in 10 seconds.</p>
-              <button 
+              <button
                 className="w-full rounded-lg bg-[#003580] py-3 text-white font-bold"
                 onClick={() => navigate(selectedHotel ? `/hotels/${selectedHotel.id}/rooms` : '/hotels')}
               >
@@ -906,4 +1031,3 @@ export default function Checkout() {
     </HotelBookingShell>
   );
 }
-

@@ -1,11 +1,16 @@
 import React from "react";
 import { C, FONT, IconArrow } from "./token";
 import type { AIHotelFinderProps, PlannerField } from "./types";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useCurrency } from "../../context/currencyContext";
 
 // ── Sub-components ────────────────────────────────────────────────
 
-function Field({ label, placeholder, fullWidth }: PlannerField) {
+function Field({ label, placeholder, fullWidth, isCurrency }: PlannerField) {
+  const { convert, symbol } = useCurrency();
+  const displayLabel = isCurrency ? `${label} (${symbol})` : label;
+  const displayPlaceholder = isCurrency ? convert(Number(placeholder)) : placeholder;
+
   return (
     <div style={{ gridColumn: fullWidth ? "1 / -1" : "auto" }}>
       <label
@@ -20,10 +25,10 @@ function Field({ label, placeholder, fullWidth }: PlannerField) {
           marginBottom: 6,
         }}
       >
-        {label}
+        {displayLabel}
       </label>
       <input
-        placeholder={placeholder}
+        placeholder={String(displayPlaceholder)}
         aria-label={label}
         style={{
           width: "100%",
@@ -116,6 +121,9 @@ export function AIHotelFinder({
   onFind,
   suggestion,
 }: AIHotelFinderProps) {
+  const navigate = useNavigate();
+  const { convert } = useCurrency();
+
   return (
     <section className="ai-hotel-section">
       <style>{`
@@ -384,7 +392,7 @@ export function AIHotelFinder({
                     lineHeight: 1,
                   }}
                 >
-                  {suggestion.pricePerNight}
+                  {convert(suggestion.pricePerNight)}
                 </div>
               </div>
               <Link to={"/holidays"}>

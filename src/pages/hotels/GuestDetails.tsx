@@ -1,4 +1,4 @@
-import { formatINR } from '../../lib/flights_api';
+import { useCurrency } from '../../context/currencyContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
@@ -203,7 +203,7 @@ function GuestRow({ idx, control, register, errors, setValue, isInternational, i
 }
 
 export default function GuestDetails() {
-  //const { formatINR: formatCurrency } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const {
     user, setUser, setGuests, setSpecialRequests,
@@ -628,19 +628,19 @@ export default function GuestDetails() {
             <h2 className="mb-3 text-base font-bold text-gray-900">Price summary</h2>
             <div className="mb-1.5 flex justify-between text-sm text-gray-600">
               <span>Base Fare</span>
-              <span>{formatINR(totalBaseFare)}</span>
+              <span>{convert(totalBaseFare)}</span>
             </div>
             {totalTaxes > 0 ? (
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Taxes & fees</span>
-                <span>{formatINR(totalTaxes)}</span>
+                <span>{convert(totalTaxes)}</span>
               </div>
             ) : (
               <div className="text-xs text-gray-400">Taxes & fees included in total</div>
             )}
             <div className="mt-3 flex justify-between border-t border-gray-100 pt-3 font-bold text-gray-900">
               <span>Total Payable</span>
-              <span className="text-lg text-[#003580]">{formatINR(totalPayable)}</span>
+              <span className="text-lg font-bold text-[#003580]">{convert(totalPayable)}</span>
             </div>
             <p className="mt-1 text-xs text-green-600 font-medium">
               * Price and availability confirmed

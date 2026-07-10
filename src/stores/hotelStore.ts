@@ -108,6 +108,8 @@ export interface RoomGuestConfig {
 export interface SearchParams {
   location: string;
   locationId?: string;
+  destinationCountryCode?: string;
+  nationality?: string;
   checkIn: Date | null;
   checkOut: Date | null;
   rooms: number;
@@ -118,8 +120,6 @@ export interface SearchParams {
   hourlyStay: boolean;
   hourlyDuration?: 3 | 6 | 12;
   travelStyle?: 'Friends' | 'Family' | 'Couple' | 'Solo';
-  destinationCountryCode?: string;
-  /** Per-room guest breakdown — mirrors GuestsRoomsSelector's roomConfigs */
   roomGuests?: RoomGuestConfig[];
 }
 
@@ -299,6 +299,9 @@ interface HotelBookingState {
 
 const defaultSearchParams: SearchParams = {
   location: '',
+  locationId: undefined,
+  destinationCountryCode: undefined,
+  nationality: 'IN',
   checkIn: null,
   checkOut: null,
   rooms: 1,

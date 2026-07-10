@@ -2,10 +2,12 @@ import React from "react";
 import { SectionHead } from "./token";
 import type { TrendingDestinationProps } from "./types";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "../../context/currencyContext";
 
 export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick, items }: TrendingDestinationProps) {
 
   const navigate=useNavigate();
+  const { convert } = useCurrency();
   return (
     <section className="trending-section">
       <style>{`
@@ -75,7 +77,7 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
                   {item.name}
                 </div>
                 <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 11.5, color: "rgba(255,255,255,0.78)", marginTop: 2 }}>
-                  {item.description}
+                  {item.isCurrency && typeof item.description === 'number' ? convert(item.description) : item.description}
                 </div>
               </div>
             </div>

@@ -2,10 +2,11 @@
 // UI: Dark glassmorphism matching the flights hero card style
 // Logic/store/validation/navigation: identical to original HotelSearch.tsx
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useHotelStore } from "../../stores/hotelStore";
+import { searchCities } from "../../hooks/useHotelApi";
 import LocationAutocomplete from "../../components/hotels/LocationAutocomplete";
 import GuestsRoomsSelector from "../../components/hotels/GuestsRoomsSelector";
 import NationalitySelector from "../../components/hotels/NationalitySelector";
@@ -454,10 +455,25 @@ function handleSearch() {
             {POPULAR_DESTINATIONS.slice(0, 4).map((dest) => (
               <button key={dest.name} type="button"
                 // ✅ Replace with
-onClick={() => {
+onClick={async () => {
   const loc = `${dest.name}, ${dest.country}`;
   setSearchParams({ location: loc });
   clearError("location");
+  
+  let locId = "";
+  try {
+    const cities = await searchCities(dest.name);
+    if (cities.length > 0) {
+      locId = cities[0].cityCode;
+      setSearchParams({ 
+        locationId: locId,
+        destinationCountryCode: cities[0].countryCode 
+      });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
   // If dates already selected, navigate immediately with params
   if (checkIn && checkOut) {
     const params = new URLSearchParams({
@@ -469,6 +485,9 @@ onClick={() => {
       rooms:    String(rooms),
       nationality: nationality,
     });
+    if (locId) {
+      params.append("locationId", locId);
+    }
     resetBooking();
     navigate(`/hotels/results?${params.toString()}`);
   }

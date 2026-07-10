@@ -1,14 +1,12 @@
-// import { useCurrency } from '../hooks/useCurrency';
+import { useCurrency } from '../context/currencyContext';
 import { useRef, useState, useEffect } from "react";
-import { formatINR } from "../lib/flights_api";
-
 import { useNavigate } from "react-router-dom";
 import HotelSearchForm from "../pages/hotels/HotelSearchForm";
 
 
 
 export default function HeroHotel() {
-  //const { formatCurrency, symbol } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
 const today = new Date().toLocaleDateString("en-CA");
 const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString("en-CA");
@@ -145,7 +143,7 @@ const TRENDING = [
                   margin: 0,
                 }}
               >
-                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting {formatINR(999)}/night
+                Handpicked hotels &amp; stays · From budget gems to luxury escapes · Starting {convert(999)}/night
               </p>
             </div>
 
@@ -183,10 +181,10 @@ const TRENDING = [
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 6 }}>
                   <div>
                     <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 22, color: "#FF9A6C", lineHeight: 1 }}>
-                      {formatINR(8)},499
+                      {convert(8499)}
                     </div>
                     <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.35)", textDecoration: "line-through" }}>
-                      {formatINR(12)},000
+                      {convert(12000)}
                     </div>
                   </div>
                   <img

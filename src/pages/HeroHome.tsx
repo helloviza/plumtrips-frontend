@@ -4,6 +4,7 @@ import type { CityLeg } from "../components/SearchTabs";
 import { useState, useEffect, useRef } from "react";
 import { apiSearchFlights, formatINR } from "../lib/flights_api";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "../context/currencyContext";
 
 interface HeroHomeProps {
   onSearch?: (form: SearchForm, multiLegs?: CityLeg[]) => void;
@@ -15,6 +16,7 @@ interface HeroHomeProps {
 const today = new Date().toLocaleDateString("en-CA");
 
 export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChange }: HeroHomeProps) {
+  const { convert } = useCurrency();
   const heroImgRef = useRef<HTMLImageElement>(null);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
@@ -251,7 +253,7 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                   <>
                     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 8, minHeight: 34 }}>
                       <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 25, color: "#FF9A6C", lineHeight: 1 }}>
-                        {formatINR(dealPrice)}
+                        {convert(dealPrice)}
                       </div>
                       <img src="/home/flighttakeoff.png" alt="" style={{ width: 50, height: 50, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
                     </div>

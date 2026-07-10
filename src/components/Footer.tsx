@@ -17,23 +17,19 @@ function CallbackPopup({ onClose }: { onClose: () => void }) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
-
-
-// then in handleSubmit:
-const handleSubmit = async (e: React.MouseEvent) => {
-  e.preventDefault();
-  if (!form.name || !form.email || !form.phone) return;
-  try {
-    setLoading(true);
-    await createCallbackRequest(form, "footer");
-    setSubmitted(true);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const handleSubmit = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.phone) return;
+    try {
+      setLoading(true);
+      await createCallbackRequest(form, "footer");
+      setSubmitted(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     /* Backdrop */
@@ -233,42 +229,40 @@ export default function Footer() {
 
       <footer style={{ backgroundColor: BG, color: TEXT }}>
         <div className="mx-auto max-w-[95%] px-4 py-10">
-          {/* ---------- TOP ROW: 4 link columns + callback CTA on the RIGHT ---------- */}
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-12">
-            <Group title="PRODUCTS" className="md:col-span-2">
-              <FLink to="/go/visa">Visa</FLink>
-              <FLink to="/cruises">Cruises</FLink>
+          {/* ---------- TOP ROW: link columns + callback CTA (single grid, one consistent gap everywhere) ---------- */}
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-6 md:items-start">
+            <Group title="PRODUCTS">
+              <ExternalFLink href="https://helloviza.com">Visa</ExternalFLink>
               <FLink to="/hotels">Hotels</FLink>
-              {/* <FLink to="/flights-new">Flights</FLink> */}
             </Group>
 
-            <Group title="USEFUL LINKS" className="md:col-span-2">
+            <Group title="USEFUL LINKS">
               <FLink to="/about">About Us</FLink>
               <FLink to="/blogs">Blogs</FLink>
               <FLink to="/offers">Offers</FLink>
               <FLink to="/contact">Contact</FLink>
             </Group>
 
-            <Group title="FOR TEAMS" className="md:col-span-2">
-              {/* <FLink to="/auth/register">Sign Up</FLink>
-              <FLink to="/auth/login">Login</FLink> */}
+            <Group title="FOR TEAMS">
               <FLink to="/marketing-login">Marketing Login</FLink>
             </Group>
 
-            <Group title="OTHERS" className="md:col-span-2">
+            <Group title="OTHERS">
               <FLink to="/privacy-policy">Privacy Policy</FLink>
               <FLink to="/terms-and-conditions">Terms &amp; Conditions</FLink>
               <FLink to="/cancellation-and-refund">Cancellation &amp; Refund</FLink>
               <FLink to="/cookies-policy">Cookies Policy</FLink>
             </Group>
 
-            {/* Request a Callback — right aligned */}
-            <div className="md:col-span-8 lex items-start justify-end">
+            {/* Request a Callback */}
+            <div className="col-span-2 sm:col-span-3 md:col-span-2 flex md:justify-end">
               <button
                 onClick={() => setShowPopup(true)}
+                className="w-full md:w-auto"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "8px",
                   background: TEXT,
                   color: "#fff",
@@ -304,7 +298,7 @@ export default function Footer() {
           <div className="mt-10 h-px w-full" style={{ background: DIV }} />
 
           {/* ---------- Social row ---------- */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pt-6">
+          <div className="grid grid-cols-2 gap-6 pt-6 sm:grid-cols-3 md:grid-cols-5">
             <Social href="https://www.facebook.com/profile.php?id=61581639161240" label="Facebook">
               <FacebookIcon />
             </Social>
@@ -326,7 +320,7 @@ export default function Footer() {
           <div className="mt-6 h-px w-full" style={{ background: DIV }} />
 
           {/* Bottom note */}
-          <div className="flex items-center justify-between pt-6 text-xs">
+          <div className="flex flex-col items-center gap-2 pt-6 text-xs sm:flex-row sm:justify-between">
             <p>© {year} - Peachmint Trips and Planners Private Limited</p>
           </div>
         </div>
@@ -340,14 +334,12 @@ export default function Footer() {
 function Group({
   title,
   children,
-  className = "",
 }: {
   title: string;
   children: React.ReactNode;
-  className?: string;
 }) {
   return (
-    <div className={className}>
+    <div>
       <div className="mb-3 text-sm font-semibold tracking-wide">{title}</div>
       <ul className="space-y-2 text-sm">{children}</ul>
     </div>
@@ -368,6 +360,23 @@ function FLink({ to, children }: { to: string; children: React.ReactNode }) {
   );
 }
 
+/* External link (opens in a new tab) — used for Visa -> helloviza.com */
+function ExternalFLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="hover:underline underline-offset-4"
+        style={{ color: TEXT }}
+      >
+        {children}
+      </a>
+    </li>
+  );
+}
+
 function Social({
   href,
   label,
@@ -378,19 +387,22 @@ function Social({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <a
-        href={href}
-        aria-label={label}
-        className="grid h-9 w-9 place-items-center rounded-full border"
+    <a
+      href={href}
+      aria-label={label}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-3 hover:underline underline-offset-4"
+      style={{ color: TEXT }}
+    >
+      <span
+        className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border"
         style={{ borderColor: "rgba(0,71,127,0.35)", color: TEXT }}
-        target="_blank"
-        rel="noreferrer"
       >
         {children}
-      </a>
+      </span>
       <span className="text-sm">{label}</span>
-    </div>
+    </a>
   );
 }
 

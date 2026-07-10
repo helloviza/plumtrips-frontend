@@ -3,8 +3,12 @@ import { C, FONT, IconArrow } from "./token";
 import type { AIPlannerProps, PlannerField } from "./types";
 import { getBackendOrigin } from "../../lib/backendOrigin";
 import { Link, useNavigate } from "react-router-dom";
+import { useCurrency } from "../../context/currencyContext";
 
-function Field({ label, placeholder, fullWidth, value, onChange }: PlannerField & { value: string; onChange: (value: string) => void }) {
+function Field({ label, placeholder, fullWidth, isCurrency, value, onChange }: PlannerField & { value: string; onChange: (value: string) => void }) {
+  const { convert, symbol } = useCurrency();
+  const displayLabel = isCurrency ? `${label} (${symbol})` : label;
+  const displayPlaceholder = isCurrency ? convert(Number(placeholder)) : placeholder;
   return (
     <div style={{ gridColumn: "auto" }}>
       <label
@@ -19,11 +23,11 @@ function Field({ label, placeholder, fullWidth, value, onChange }: PlannerField 
           marginBottom: 6,
         }}
       >
-        {label}
+        {displayLabel}
       </label>
       <input
-        placeholder={placeholder}
-        aria-label={label}
+        placeholder={displayPlaceholder}
+        aria-label={displayLabel}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         style={{
@@ -75,6 +79,7 @@ function IconSend() {
 }
 
 export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate, suggestion }: AIPlannerProps) {
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const [activeFields, setActiveFields] = useState<PlannerField[]>(fields);
   const [values, setValues] = useState<Record<string, string>>(() =>
@@ -440,7 +445,7 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
                 <div>
                   <span style={{ fontFamily: FONT, fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Est. package</span>
                   <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 24, color: C.orange, lineHeight: 1 }}>
-                    {suggestion.estimatedPrice}
+                    {convert(suggestion.estimatedPrice)}
                   </div>
                 </div>
                 <Link to={"/holidays"}>

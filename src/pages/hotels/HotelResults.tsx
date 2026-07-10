@@ -1,5 +1,4 @@
-// import { useCurrency } from '../../hooks/useCurrency';
-import { formatINR } from '../../lib/flights_api';
+import { useCurrency } from '../../context/currencyContext';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HotelFilters from '../../components/hotels/HotelFilters';
@@ -49,7 +48,7 @@ function StarRow({ count }: { count: number }) {
 }
 
 function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; nights: number; showTotalPrice: boolean; isSelected?: boolean; }) {
-  //const { formatCurrency, symbol } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const { setSelectedHotel } = useHotelStore();
   const totalPayable = showTotalPrice
@@ -148,7 +147,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
           <div style={{ textAlign: "right", marginTop: "auto" }}>
             <div style={{ fontSize: 11, color: S.muted, marginBottom: 4, fontWeight: 500 }}>{nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}</div>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1 }}>
-              {formatINR(totalPayable)}
+              {convert(totalPayable)}
             </div>
             <div style={{ fontSize: 10, color: S.muted, marginTop: 4, fontWeight: 500 }}>
               incl. taxes & fees
@@ -199,7 +198,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
               <div className="text-right hidden sm:block">
                 <div className="text-sm text-gray-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
                 <div className="font-extrabold text-xl text-[#00477f] leading-none">
-                  {formatINR(getHotelTotalPayable(hotel))}
+                  {convert(getHotelTotalPayable(hotel))}
                 </div>
               </div>
               <button
@@ -217,7 +216,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
 }
 
 export default function HotelResults() {
-  //const { formatCurrency, symbol } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const [urlParams] = useRouterSearchParams();
   const isDefault = urlParams.get('default') === 'true';
@@ -548,7 +547,7 @@ export default function HotelResults() {
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6">
             <div>
               <div className="flex items-end gap-3 mb-1">
-                <div className="text-2xl font-extrabold tabular-nums text-slate-900">{formatINR(totalPrice)}</div>
+                <div className="text-2xl font-extrabold tabular-nums text-slate-900">{convert(totalPrice)}</div>
               </div>
               <div className="text-xs text-slate-500 font-medium">
                 {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlumTrips Tax Invoice</title>
+  
+  <!-- Web Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <style>
+
+    body { margin: 0; padding: 0; background-color: #f5f6f8; font-family: 'Outfit', Arial, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table { border-spacing: 0; border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { border: 0; display: block; line-height: 100%; outline: none; text-decoration: none; }
+    .main-container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .header { background-color: #0f172a; padding: 8px 30px; }
+    .section { padding: 40px; }
+    .invoice-table th { background-color: #0f172a; color: #ffffff; font-size: 13px; font-weight: bold; text-align: left; padding: 14px 16px; }
+    .invoice-table td { border-bottom: 1px solid #e2e8f0; padding: 14px 16px; font-size: 13px; color: #334155; }
+    @media screen and (max-width: 600px) {
+      .responsive-td { display: block !important; width: 100% !important; box-sizing: border-box; }
+      .mobile-padding { padding-top: 24px !important; }
+    }
+  </style>
+</head>
+<body style="background-color: #f5f6f8; margin: 0; padding: 40px 0;">
+  <center>
+    <table class="main-container" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; border-radius: 12px;">
+      
+      <!-- HEADER -->
+      <tr>
+        <td class="header" style="background-color: #0f172a;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td class="responsive-td" valign="top">
+                <img src="./assets/logoW&OO.png" alt="PlumTrips" width="130" style="display: block; width: 130px; height: auto;">
+              </td>
+              <td class="responsive-td mobile-padding" align="right" valign="top">
+                <p style="margin: 0 0 6px 0; color: #ffffff; font-size: 20px; font-weight: bold; letter-spacing: 1px;">TAX INVOICE</p>
+                <p style="margin: 0 0 4px 0; color: #94a3b8; font-size: 13px;">Invoice #: {{invoice_number}}</p>
+                <p style="margin: 0; color: #94a3b8; font-size: 13px;">Date: {{invoice_date}}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- BILLING & BOOKING INFO -->
+      <tr>
+        <td class="section" style="background-color: #ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td class="responsive-td" width="50%" valign="top">
+                <p style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: bold;">Billed To</p>
+                <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">
+                  <strong>{{customer_name}}</strong><br>
+                  {{billing_address_line1}}<br>
+                  {{billing_city}}<br>
+                  {{billing_state_zip}}<br>
+                  {{billing_country}}
+                </p>
+              </td>
+              <td class="responsive-td mobile-padding" width="50%" valign="top">
+                <p style="margin: 0 0 6px 0; color: #0f172a; font-size: 14px; font-weight: bold;">Booking Reference</p>
+                <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px;">PTO-2505-88421</p>
+                
+                <p style="margin: 0 0 6px 0; color: #0f172a; font-size: 14px; font-weight: bold;">Travel Dates</p>
+                <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px;">10 Jun, 2025 - 16 Jun, 2025</p>
+                
+                <p style="margin: 0 0 6px 0; color: #0f172a; font-size: 14px; font-weight: bold;">Destination</p>
+                <p style="margin: 0; color: #334155; font-size: 14px;">Bali, Indonesia</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- ITEM TABLE -->
+      <tr>
+        <td style="padding: 0 40px; background-color: #ffffff;">
+          <table class="invoice-table" width="100%" cellpadding="0" cellspacing="0" style="border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+            <thead>
+              <tr>
+                <th width="45%">Description</th>
+                <th width="15%" align="center" style="text-align: center;">Qty</th>
+                <th width="20%" align="right" style="text-align: right;">Unit Price (INR)</th>
+                <th width="20%" align="right" style="text-align: right;">Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody>
+                  {{#each invoice_items}}
+                  <tr>
+                    <td style="border-bottom: 1px solid #e2e8f0; padding: 14px 16px; font-size: 13px; color: #334155;">{{this.description}}</td>
+                    <td style="border-bottom: 1px solid #e2e8f0; padding: 14px 16px; font-size: 13px; color: #334155;" align="center">{{this.qty}}</td>
+                    <td style="border-bottom: 1px solid #e2e8f0; padding: 14px 16px; font-size: 13px; color: #334155;" align="right">{{this.unit_price}}</td>
+                    <td style="border-bottom: 1px solid #e2e8f0; padding: 14px 16px; font-size: 13px; color: #334155;" align="right">{{this.amount}}</td>
+                  </tr>
+                  {{/each}}
+                </tbody>
+          </table>
+        </td>
+      </tr>
+
+      <!-- TOTALS -->
+      <tr>
+        <td style="padding: 16px 40px 40px 40px; background-color: #ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="40%"></td>
+              <td width="60%">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 10px 16px; color: #0f172a; font-size: 14px; font-weight: bold;">Subtotal</td>
+                    <td align="right" style="padding: 10px 16px; color: #334155; font-size: 14px;">{{subtotal}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; color: #0f172a; font-size: 14px; font-weight: bold;">Taxes &amp; Fees</td>
+                    <td align="right" style="padding: 10px 16px; color: #334155; font-size: 14px;">{{taxes}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 16px 10px 16px; color: #64748b; font-size: 12px;">{{tax_name}} &nbsp;<span style="color:#94a3b8; font-weight:400;">incl. in above</span></td>
+                    <td align="right" style="padding: 6px 16px 10px 16px; color: #64748b; font-size: 12px;">{{tax_amount}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 14px 16px; color: #0f172a; font-size: 15px; font-weight: bold; border-top: 1px solid #e2e8f0;">Total Amount (INR)</td>
+                    <td align="right" style="padding: 14px 16px; color: #0f172a; font-size: 15px; font-weight: bold; border-top: 1px solid #e2e8f0;">{{total_amount}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; color: #475569; font-size: 13px;">Amount Paid</td>
+                    <td align="right" style="padding: 10px 16px; color: #475569; font-size: 13px;">{{total_amount}}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 10px 16px; color: #0f172a; font-size: 14px; font-weight: bold; border-bottom: 2px solid #0f172a;">Balance Due</td>
+                    <td align="right" style="padding: 10px 16px; color: #0f172a; font-size: 14px; font-weight: bold; border-bottom: 2px solid #0f172a;">{{balance_due}}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- AMOUNT IN WORDS & THANK YOU -->
+      <tr>
+        <td style="padding: 0 40px 24px 40px; background-color: #ffffff;">
+          <p style="margin: 0 0 6px 0; color: #0f172a; font-size: 14px; font-weight: bold;">Amount in Words</p>
+          <p style="margin: 0 0 24px 0; color: #334155; font-size: 14px;">{{amount_in_words}}</p>
+          
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-top: 1px dashed #cbd5e1; padding-top: 24px;">
+            <tr>
+              <td valign="middle">
+                <p style="margin: 0 0 6px 0; color: #0f172a; font-size: 15px; font-weight: bold;">Thank you for traveling with PlumTrips!</p>
+                <p style="margin: 0; color: #64748b; font-size: 13px;">We appreciate your trust in us.</p>
+              </td>
+              <td align="right" valign="middle">
+                <svg width="40" height="24" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 12h20M25 12l-6-6M25 12l-6 6" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1 12h2" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- COMPANY DETAILS & SIGNATURE -->
+      <tr>
+        <td style="padding: 24px 40px 40px 40px; background-color: #ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="60%" valign="top">
+                <p style="margin: 0 0 4px 0; color: #64748b; font-size: 10px; font-weight: bold;">{{company_name}}</p>
+                <p style="margin: 0 0 4px 0; color: #94a3b8; font-size: 10px;">GSTIN: {{company_gstin}}</p>
+                <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 10px;">PAN: {{company_pan}}</p>
+                <p style="margin: 0; color: #94a3b8; font-size: 10px;">
+                  &#128222; +91 98765 43210 &nbsp;|&nbsp; 
+                  &#9993; care@plumtrips.com
+                </p>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 10px;">www.plumtrips.com</p>
+              </td>
+              <td width="40%" align="right" valign="bottom">
+                <p style="margin: 0 0 8px 0; color: #0f172a; font-size: 10px; font-weight: bold; text-align: center;">Authorized Signatory</p>
+                <p style="margin:0 0 6px 0;font-family: 'Caveat', cursive, Georgia, serif;font-size:26px;font-style:italic;color:#1a2540;line-height:1.1;text-align:center;">PlumTrips</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- FOOTER FEATURES -->
+      <tr>
+        <td style="background-color: #0f172a; padding: 30px 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td align="center" width="33%" style="color: #94a3b8; font-size: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#8fa8c8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Secure
+              </td>
+              <td align="center" width="33%" style="color: #94a3b8; font-size: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#8fa8c8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Reliable
+              </td>
+              <td align="center" width="33%" style="color: #94a3b8; font-size: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="#f5c842" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Memorable
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+    </table>
+  </center>
+</body>
+</html>

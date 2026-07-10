@@ -323,7 +323,7 @@ export function getPolicyChargeCurrency(policy: CancelPolicySlab): string {
   return policy.currency ?? policy.Currency ?? 'INR';
 }
 
-export function getPolicyChargeText(policy: CancelPolicySlab): string {
+export function getPolicyChargeText(policy: CancelPolicySlab, convert?: (amount: number, fromCurrency?: string) => string): string {
   const amount = getPolicyChargeAmount(policy);
   const type = getPolicyChargeType(policy);
   const currency = getPolicyChargeCurrency(policy);
@@ -331,6 +331,10 @@ export function getPolicyChargeText(policy: CancelPolicySlab): string {
   if (type === 2) {
     // Percentage charge
     return `${amount}% cancellation charge`;
+  }
+
+  if (convert) {
+    return `${convert(amount, currency)} cancellation charge`;
   }
 
   // Fixed / night charge — format as currency with symbol

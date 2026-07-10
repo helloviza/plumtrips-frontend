@@ -218,7 +218,7 @@ export default function TripPlanner() {
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
               {highlightChips.map((chip) => (
-                <span key={chip} className="summary-chip" style={{ color: "#0f172a" }}>
+                <span key={chip} className="summary-chip" style={{ color: "#fff" }}>
                   <BadgeCheck size={13} color={C.orange} />
                   {chip}
                 </span>
@@ -255,7 +255,7 @@ export default function TripPlanner() {
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, color: C.navy, marginBottom: 8 }}>{tripTitle}</h2>
                   <p style={{ fontSize: 15, color: C.textMuted, lineHeight: 1.8, maxWidth: 720 }}>{summary}</p>
                 </div>
-                {pageData.pdfUrl ? (
+                {/* {pageData.pdfUrl ? (
                   <button
                     type="button"
                     onClick={() => window.open(pageData.pdfUrl, "_blank")}
@@ -263,7 +263,7 @@ export default function TripPlanner() {
                   >
                     Download PDF
                   </button>
-                ) : null}
+                ) : null} */}
               </div>
             </section>
 
@@ -397,7 +397,7 @@ export default function TripPlanner() {
               </ul>
             </section>
 
-            <section style={{ background: "linear-gradient(135deg, rgba(255,104,44,0.08) 0%, rgba(45,140,255,0.08) 100%)", borderRadius: 24, padding: 24, border: "1px solid rgba(255,104,44,0.16)" }}>
+            {/* <section style={{ background: "linear-gradient(135deg, rgba(255,104,44,0.08) 0%, rgba(45,140,255,0.08) 100%)", borderRadius: 24, padding: 24, border: "1px solid rgba(255,104,44,0.16)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                 <Star size={17} color={C.orange} />
                 <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>PDF Ready</h4>
@@ -410,7 +410,7 @@ export default function TripPlanner() {
               >
                 Download PDF
               </button>
-            </section>
+            </section> */}
           </aside>
         </main>
       </div>

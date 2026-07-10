@@ -51,8 +51,9 @@ import type {
   FareQuoteResult,
 } from "../../lib/flights_api";
 import { createFlightPaymentOrder, verifyFlightPayment } from "../../services/paymentApi";
+import { couponApi } from "../../lib/couponApi";
 import { calcFares, BookingShell, emptyPassenger } from "./BookingShared";
-import type { BookingFormState, SeatMap } from "./BookingShared";
+import type { BookingFormState, SeatMap, AppliedCoupon } from "./BookingShared";
 
 import BookingStep1FareReview   from "./BookingStep1FareReview";
 import BookingStep2Passengers   from "./BookingStep2Passengers";
@@ -231,6 +232,11 @@ export default function BookingPage({
   const [confirmedPnr, setConfirmedPnr]             = useState<string | undefined>();
   const [confirmedNames, setConfirmedNames]         = useState<string[]>([]);
 
+  // Coupon redemption must only ever fire once for a given booking — this
+  // guards against handlePayment's finalize() running more than once
+  // (retries, StrictMode double-invoke, etc.) from double-spending a coupon.
+  const couponRedeemedRef = useRef(false);
+
 
 
   // ── HELPERS ───────────────────────────────────────────────
@@ -350,6 +356,47 @@ export default function BookingPage({
     
   });
   const totalPayable = Math.round(subtotal + extrasTotal+ seatsTotal + taxes - form.promoDiscount);
+
+  // ── COUPON / PROMO CODE ────────────────────────────────────
+  // Called by BookingStep5Review's <CouponSection> once couponApi.validate()
+  // comes back eligible. This is a dry run only — it just lifts the discount
+  // into `form` so it flows through totalPayable, BookingShell's PriceSidebar,
+  // and MobilePriceBar automatically (they all already read form.promoDiscount).
+  function handleApplyDiscount(coupon: AppliedCoupon) {
+    couponRedeemedRef.current = false; // a freshly-applied coupon hasn't been redeemed yet
+    setForm((f) => ({
+      ...f,
+      promoCode: coupon.code,
+      promoApplied: true,
+      promoDiscount: coupon.discountAmount,
+    }));
+  }
+
+  function handleRemoveDiscount() {
+    couponRedeemedRef.current = false;
+    setForm((f) => ({ ...f, promoCode: "", promoApplied: false, promoDiscount: 0 }));
+  }
+
+  // Actually redeems the coupon (couponApi.apply()) — the call that consumes
+  // a real redemption and enforces one-per-user. Only ever called once a
+  // booking has actually been ticketed (see finalize() in handlePayment),
+  // never on validate/apply-click. Guarded so it can't fire twice.
+  async function redeemCouponIfNeeded(bookingId?: number) {
+    if (!form.promoApplied || !form.promoCode || couponRedeemedRef.current) return;
+    couponRedeemedRef.current = true;
+
+    try {
+      await couponApi.apply({
+        code: form.promoCode,
+        category: "FLIGHT",
+        bookingAmount: subtotal + extrasTotal + seatsTotal + taxes,
+        bookingId: bookingId !== undefined ? String(bookingId) : undefined,
+      });
+    } catch (err) {
+      console.error("[Coupon] redemption failed post-booking (booking itself succeeded):", err);
+    }
+  }
+
 
   // ── STEP 1: FARE QUOTE ────────────────────────────────────
   // Fare-quotes EVERY leg, not just outbound. If a leg already has a clean
@@ -1143,6 +1190,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
 
     const finalize = async (bookingId?: number, pnr?: string) => {
       await saveBooking(bookingId, pnr);
+      await redeemCouponIfNeeded(bookingId);
       setConfirmedBookingId(bookingId);
       setConfirmedPnr(pnr);
       setConfirmedNames(passengerNames);
@@ -1380,6 +1428,9 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           adults={adults} children={children} infants={infants}
           extras={form.extras}
           discount={form.promoDiscount}
+          appliedCoupon={form.promoApplied ? { code: form.promoCode, discountAmount: form.promoDiscount, finalAmount: totalPayable } : null}
+          onApplyDiscount={handleApplyDiscount}
+          onRemoveDiscount={handleRemoveDiscount}
           isInternational={isInternational}
           onConfirm={() => setStep(6)}
           onBack={() => setStep(4)}

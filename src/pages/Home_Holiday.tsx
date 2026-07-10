@@ -14,6 +14,7 @@ import { Input } from "../components/ui_d/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui_d/select";
 import { useToast } from "../components/hooks/use-toast";
 import { useForm } from "react-hook-form";
+import { useCurrency } from "../context/currencyContext";
 
 const inquirySchema = z.object({
   destination: z.string().min(2, "Please enter a destination"),
@@ -43,6 +44,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
 };
 
 export default function Home_Holiday() {
+  const { convert } = useCurrency();
   const { toast } = useToast();
   const heroImgRef = useRef<HTMLImageElement>(null);
 
@@ -282,10 +284,10 @@ export default function Home_Holiday() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-[#003059] border-white/20">
-                          <SelectItem value="under-1L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">Under ₹1L</SelectItem>
-                          <SelectItem value="1L-2L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹1L – ₹2L</SelectItem>
-                          <SelectItem value="2L-5L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹2L – ₹5L</SelectItem>
-                          <SelectItem value="5L-plus" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">₹5L+</SelectItem>
+                          <SelectItem value="under-1L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">Under {convert(100000)}</SelectItem>
+                          <SelectItem value="1L-2L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">{convert(100000)} – {convert(200000)}</SelectItem>
+                          <SelectItem value="2L-5L" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">{convert(200000)} – {convert(500000)}</SelectItem>
+                          <SelectItem value="5L-plus" className="text-white hover:bg-white/10 focus:bg-white/10 cursor-pointer">{convert(500000)}+</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage className="text-[#ffb3a7] text-[10px]" />

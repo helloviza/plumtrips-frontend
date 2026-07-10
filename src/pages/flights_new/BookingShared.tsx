@@ -6,7 +6,8 @@
 
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { couponApi, type CouponReasonCode } from "../../lib/couponApi";
 
 // ─── RE-EXPORT TYPES ────────────────────────────────────────
 
@@ -256,6 +257,144 @@ export function ErrorBanner({ message }: { message: string }) {
   );
 }
 
+// ─── COUPON / PROMO CODE ─────────────────────────────────────
+// Real backend-backed validate flow (dry run — never consumes a
+// redemption). Actual redemption via couponApi.apply() must happen once
+// a real bookingId exists, i.e. on the payment confirmation step — see
+// the note where this component is used.
+
+function couponReasonMessage(reason: CouponReasonCode): string {
+  switch (reason) {
+    case "COUPON_NOT_FOUND": return "Invalid coupon code.";
+    case "COUPON_INACTIVE": return "This coupon is no longer active.";
+    case "COUPON_NOT_YET_STARTED": return "This coupon isn't active yet.";
+    case "COUPON_EXPIRED": return "This coupon has expired.";
+    case "COUPON_EXHAUSTED": return "This coupon has reached its usage limit.";
+    case "CATEGORY_MISMATCH": return "This coupon isn't valid for flight bookings.";
+    case "MIN_BOOKING_AMOUNT_NOT_MET": return "Your booking amount is below the minimum required for this coupon.";
+    case "USER_LIMIT_REACHED": return "You've already used this coupon.";
+    default: return "This coupon can't be applied.";
+  }
+}
+
+export interface AppliedCoupon {
+  code: string;
+  discountAmount: number;
+  finalAmount: number;
+}
+
+export function CouponSection({
+  bookingAmount,
+  category = "FLIGHT",
+  applied,
+  onApply,
+  onRemove,
+}: {
+  /** The pre-discount amount to validate the coupon against (subtotal + seats + extras + taxes). */
+  bookingAmount: number;
+  category?: "FLIGHT" | "HOTEL" | "GENERAL";
+  applied: AppliedCoupon | null;
+  onApply: (result: AppliedCoupon) => void;
+  onRemove: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "validating" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  // Tracks the amount the currently-applied coupon was validated against,
+  // so a change in fare (seat/extras update) invalidates a stale discount.
+  const validatedForRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (applied && validatedForRef.current !== null && validatedForRef.current !== bookingAmount) {
+      validatedForRef.current = null;
+      onRemove();
+      setStatus("error");
+      setError("Fare amount changed — please re-apply your coupon.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingAmount]);
+
+  const handleApply = async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed || status === "validating") return;
+
+    setStatus("validating");
+    setError(null);
+
+    try {
+      const result = await couponApi.validate({ code: trimmed, category, bookingAmount });
+      if (result.eligible) {
+        validatedForRef.current = bookingAmount;
+        setStatus("idle");
+        onApply({
+          code: trimmed,
+          discountAmount: result.discountAmount,
+          finalAmount: result.finalAmount,
+        });
+      } else {
+        setStatus("error");
+        setError(couponReasonMessage(result.reasonCode));
+      }
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Could not validate coupon.");
+    }
+  };
+
+  const handleRemove = () => {
+    validatedForRef.current = null;
+    setCode("");
+    setStatus("idle");
+    setError(null);
+    onRemove();
+  };
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-4">
+      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
+        🎟️ Promo / Coupon Code
+      </div>
+      <div className="flex gap-2">
+        <TextInput
+          value={code}
+          onChange={(v) => setCode(v.toUpperCase())}
+          placeholder="Enter coupon code"
+          disabled={!!applied || status === "validating"}
+        />
+        {applied ? (
+          <button
+            onClick={handleRemove}
+            className="shrink-0 rounded-xl border-2 border-slate-200 px-4 text-sm font-bold text-slate-700
+              hover:border-slate-300 hover:bg-slate-50 transition-all"
+          >
+            Remove
+          </button>
+        ) : (
+          <button
+            onClick={handleApply}
+            disabled={status === "validating" || !code.trim()}
+            className="shrink-0 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white
+              hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {status === "validating" ? "Checking…" : "Apply"}
+          </button>
+        )}
+      </div>
+
+      {applied && (
+        <div className="mt-2 text-xs font-bold text-emerald-600">
+          ✓ {applied.code} applied — saving {formatINR(applied.discountAmount)}
+        </div>
+      )}
+
+      {status === "error" && error && (
+        <div className="mt-2 text-xs font-bold text-rose-600">⚠️ {error}</div>
+      )}
+    </div>
+  );
+}
+
 // ─── SEAT PRICE HELPER ───────────────────────────────────────
 
 export function calcSeatTotal(
@@ -380,12 +519,12 @@ export function PriceSidebar({
 
       {/* ── Header gradient ── */}
       <div className="relative overflow-hidden px-5 py-5"
-        style={{ background: "linear-gradient(135deg, #0c1445 0%, #1a3a8f 60%, #1e56db 100%)" }}>
+style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 100%)" }}>
         {/* Decorative orbs */}
         <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(99,179,237,0.15) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(255,200,150,0.2) 0%, transparent 70%)" }} />
         <div className="absolute bottom-0 left-0 w-16 h-16 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(208,101,73,0.2) 0%, transparent 70%)" }} />
 
         <div className="relative">
           <div className="flex items-center gap-1.5 mb-3">

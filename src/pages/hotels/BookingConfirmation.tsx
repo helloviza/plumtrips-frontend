@@ -1,5 +1,4 @@
-// import { useCurrency } from '../../hooks/useCurrency';
-import { formatINR } from '../../lib/flights_api';
+import { useCurrency } from '../../context/currencyContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,7 +21,7 @@ import toast from 'react-hot-toast';
 const POLL_DELAY_MS = 120_000; // 2 minutes — per spec
 
 export default function BookingConfirmation() {
-  //const { formatINR: formatCurrency } = useCurrency();
+  const { convert } = useCurrency();
   const navigate = useNavigate();
   const {
     bookingId: storeBookingId,
@@ -337,7 +336,7 @@ export default function BookingConfirmation() {
                 {selectedRooms.map(room => (
                   <div key={room.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">{room.name} × {room.quantity}</span>
-                    <span className="font-medium">{formatINR(getRoomOnlinePayable(room, room.quantity))}</span>
+                    <span className="font-medium">{convert(getRoomOnlinePayable(room, room.quantity))}</span>
                   </div>
                 ))}
                 {payAtHotelTotal > 0 && (
@@ -383,7 +382,7 @@ export default function BookingConfirmation() {
               {/* Total */}
               <div className="flex justify-between border-t border-gray-200 pt-3 font-bold text-gray-900">
                 <span>Total Paid</span>
-                <span className="text-xl text-orange-600">{formatINR(totalPaid)}</span>
+                <span className="text-xl text-orange-600">{convert(totalPaid)}</span>
               </div>
               {payAtHotelTotal > 0 && (
                 <p className="mt-1 text-xs text-gray-400">
