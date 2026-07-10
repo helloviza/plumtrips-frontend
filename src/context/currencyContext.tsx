@@ -28,6 +28,12 @@ interface CurrencyContextValue {
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
+// Always round UP to the nearest whole number.
+// e.g. 29.99 -> 30, 29.4 -> 30, 29.0 -> 29
+function roundUp(amount: number): number {
+  return Math.ceil(amount);
+}
+
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrency] = useState("INR");
   const [rates, setRates] = useState<Record<string, number>>({ INR: 1 });
@@ -49,27 +55,31 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   /**
    * Convert an amount to the currently selected currency.
+   * Result is always rounded UP to the nearest whole number
+   * (29.99 -> 30, 29.4 -> 30).
    *
    * @param amount        — numeric amount
    * @param fromCurrency  — the currency the amount is already in (default: "INR")
-   * @returns             — formatted string like "₹4,999" or "$59.87"
+   * @returns             — formatted string like "₹4,999" or "$60"
    */
   const convert = (amount: number, fromCurrency = "INR"): string => {
     if (loading || !rates[currency] || !rates[fromCurrency]) {
-      // Fallback: just format in the source currency
-      return `${SYMBOLS[fromCurrency] ?? fromCurrency} ${amount.toLocaleString()}`;
+      // Fallback: just format in the source currency, still rounded up
+      const rounded = roundUp(amount);
+      return `${SYMBOLS[fromCurrency] ?? fromCurrency} ${rounded.toLocaleString()}`;
     }
 
     // Convert: amount in fromCurrency → INR → target currency
     const inINR = fromCurrency === "INR" ? amount : amount / rates[fromCurrency];
     const converted = inINR * rates[currency];
+    const rounded = roundUp(converted);
 
     return new Intl.NumberFormat(localeFor(currency), {
       style: "currency",
       currency,
-      maximumFractionDigits: currency === "VND" ? 0 : 2,
-      minimumFractionDigits: currency === "VND" ? 0 : 0,
-    }).format(converted);
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+    }).format(rounded);
   };
 
   return (

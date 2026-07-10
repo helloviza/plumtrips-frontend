@@ -45,6 +45,7 @@ import {
   apiGetSSRForLegs,
   formatINR,
 } from "../../lib/flights_api";
+import { useCurrency } from "../../context/currencyContext";
 import type {
   BookPassenger,
   SSRResult,
@@ -1341,7 +1342,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
   }
 
   // ── ALL OTHER STEPS ───────────────────────────────────────
-
+  const { convert } = useCurrency();
   return (
     <BookingShell {...shellProps}>
 
@@ -1457,7 +1458,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
               <span style={{ fontSize: 14, color: "#92400e" }}>
                 ⚠️ The airline has updated the fare
                 {ticketPriceChangedAmount !== null
-                  ? ` to ${formatINR(ticketPriceChangedAmount)}`
+                  ? ` to ${convert(ticketPriceChangedAmount)}`
                   : ""}
                 . Accept the new price to complete your booking.
               </span>

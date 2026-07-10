@@ -6,6 +6,7 @@ import type { BookingFormState, PassengerData, SeatMap } from "./BookingShared";
 import { SectionHeading, ErrorBanner, calcFares } from "./BookingShared";
 import { formatINR, MOCK_MODE } from "../../lib/flights_api";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
+import { useCurrency } from "../../context/currencyContext";
 
 interface Step6Props {
   flight: DisplayFlight; tier: FareTier;
@@ -34,6 +35,7 @@ export default function BookingStep6Payment({
   });
 
   const totalPayable = Math.round(subtotal + extrasTotal + seatsTotal + taxes - form.promoDiscount);
+  const { convert } = useCurrency();
 
   return (
     <div>
@@ -82,7 +84,7 @@ export default function BookingStep6Payment({
 
               {/* Amount */}
               <span className="text-white font-black text-5xl tracking-tight leading-none">
-                {formatINR(totalPayable)}
+                {convert(totalPayable)}
               </span>
 
               {/* CTA label */}

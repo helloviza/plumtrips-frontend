@@ -50,7 +50,7 @@ export default function AuthModal() {
     setAuthStep,
     setAuthMode,
   } = useUi();
-  const { login, register, refresh } = useAuth();
+  const { login, register } = useAuth();
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -145,62 +145,7 @@ export default function AuthModal() {
 
   function handleGoogle() {
     const API = import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
-
-    // Popup dimensions, centered on the current window.
-    const width = 480;
-    const height = 620;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2.5;
-
-    const popup = window.open(
-      `${API}/api/oauth/google/start?popup=1`,
-      "google-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-
-    if (!popup) {
-      // Popup blocked by the browser — fall back to the old full-page redirect
-      // so the user isn't stuck. This path still loses in-memory state, but
-      // it's a rare fallback rather than the default flow.
-      window.location.href = `${API}/api/oauth/google/start?from=${encodeURIComponent(from)}`;
-      return;
-    }
-
-    let settled = false;
-
-    function cleanup() {
-      window.removeEventListener("message", onMessage);
-      clearInterval(pollTimer);
-    }
-
-    async function onMessage(event: MessageEvent) {
-      // Only trust messages from our own backend origin.
-      if (event.origin !== API) return;
-
-      if (event.data?.type === "oauth-success") {
-        settled = true;
-        cleanup();
-        await refresh();      // repopulate `user` in AuthContext
-        onClose();            // close the modal — booking page state is untouched
-      } else if (event.data?.type === "oauth-error") {
-        settled = true;
-        cleanup();
-        setErr("Google sign-in failed. Please try again.");
-      }
-    }
-    window.addEventListener("message", onMessage);
-
-    // Fallback in case the callback page's postMessage doesn't fire for any
-    // reason (e.g. user closes the popup manually). Once it closes, re-check
-    // auth state — if the cookie got set, refresh() will pick up the session.
-    const pollTimer = setInterval(async () => {
-      if (popup.closed) {
-        cleanup();
-        if (!settled) {
-          await refresh();
-        }
-      }
-    }, 500);
+    window.location.href = `${API}/api/oauth/google/start?from=${encodeURIComponent(from)}`;
   }
 
   if (!authOpen) return null;

@@ -3,6 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
+import {
+  Mail,
+  MessageCircle,
+  Phone,
+  PlaneTakeoff,
+  Bed,
+  Headset,
+} from "lucide-react";
 
 /** Brand palette */
 const NAVY       = "#0b1528";   // primary navy blue — headings, dark surfaces
@@ -157,6 +165,7 @@ export default function Concierge() {
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1 border transition-colors hover:border-orange-400"
                   style={{ borderColor: ORANGE, color: NAVY, fontWeight: 600 }}
                 >
+                  <Phone size={14} strokeWidth={2.25} />
                   {PHONE_DISPLAY}
                 </a>
                 <a
@@ -166,6 +175,7 @@ export default function Concierge() {
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1 transition-colors"
                   style={{ background: ORANGE, color: "#fff", fontWeight: 600 }}
                 >
+                  <MessageCircle size={14} strokeWidth={2.25} />
                   WhatsApp
                 </a>
                 {fromSlug && (
@@ -325,7 +335,7 @@ export default function Concierge() {
                       onMouseEnter={e => (e.currentTarget.style.background = "#b8573e")}
                       onMouseLeave={e => (e.currentTarget.style.background = ORANGE)}
                     >
-                      <span className="material-symbols-outlined text-lg">mail</span>
+                      <Mail size={18} strokeWidth={2} />
                       Send via Email
                     </button>
                     {/* Secondary CTA — navy outline */}
@@ -336,7 +346,7 @@ export default function Concierge() {
                       className="w-full flex items-center justify-center gap-2 py-4 text-[14px] font-semibold tracking-[0.05em] uppercase transition-all rounded-[4px] border"
                       style={{ border: `2px solid ${NAVY}`, color: NAVY, background: "transparent" }}
                     >
-                      <span className="material-symbols-outlined text-lg">chat</span>
+                      <MessageCircle size={18} strokeWidth={2} />
                       WhatsApp Us
                     </a>
                   </div>
@@ -379,9 +389,7 @@ export default function Concierge() {
 
               {/* Card 1 — light glass */}
               <BentoCard dark={false}>
-                <span className="material-symbols-outlined text-4xl" style={{ color: ORANGE }}>
-                  flight_takeoff
-                </span>
+                <PlaneTakeoff size={40} strokeWidth={1.75} color={ORANGE} />
                 <div>
                   <h3
                     className="text-[24px] font-semibold leading-[1.4] mb-4"
@@ -398,9 +406,7 @@ export default function Concierge() {
 
               {/* Card 2 — dark navy */}
               <BentoCard dark={true}>
-                <span className="material-symbols-outlined text-4xl" style={{ color: ORANGE }}>
-                  bed
-                </span>
+                <Bed size={40} strokeWidth={1.75} color={ORANGE} />
                 <div>
                   <h3
                     className="text-[24px] font-semibold leading-[1.4] mb-4"
@@ -417,9 +423,7 @@ export default function Concierge() {
 
               {/* Card 3 — light glass */}
               <BentoCard dark={false}>
-                <span className="material-symbols-outlined text-4xl" style={{ color: ORANGE }}>
-                  support_agent
-                </span>
+                <Headset size={40} strokeWidth={1.75} color={ORANGE} />
                 <div>
                   <h3
                     className="text-[24px] font-semibold leading-[1.4] mb-4"
@@ -441,11 +445,6 @@ export default function Concierge() {
       {/* Global styles */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-        }
 
         .lux-line-input {
           width: 100%;

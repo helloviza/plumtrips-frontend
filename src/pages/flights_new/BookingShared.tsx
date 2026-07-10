@@ -8,6 +8,7 @@ import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
 import { useState, useEffect, useRef } from "react";
 import { couponApi, type CouponReasonCode } from "../../lib/couponApi";
+import { useCurrency } from "../../context/currencyContext";
 
 // ─── RE-EXPORT TYPES ────────────────────────────────────────
 
@@ -349,6 +350,7 @@ export function CouponSection({
     setError(null);
     onRemove();
   };
+  const { convert } = useCurrency();
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-4">
@@ -384,7 +386,7 @@ export function CouponSection({
 
       {applied && (
         <div className="mt-2 text-xs font-bold text-emerald-600">
-          ✓ {applied.code} applied — saving {formatINR(applied.discountAmount)}
+          ✓ {applied.code} applied — saving {convert(applied.discountAmount)}
         </div>
       )}
 
@@ -505,6 +507,7 @@ export function PriceSidebar({
   seatMaps?: Record<string, SeatMap>;
   currentStep: number;
 }) {
+  const { convert } = useCurrency();
   const { baseFares, subtotal, extrasTotal, seatsTotal, taxes, taxesIncluded, convenienceFeeDisplay } =
     calcFares({ tier, returnTier, multiCityLegs, adults, children, infants, extras, passengers, seatMaps });
 
@@ -534,7 +537,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
             </span>
           </div>
           <span className="font-black text-[28px] text-white leading-none tracking-tight">
-            {formatINR(total)}
+            {convert(total)}
           </span>
           <div className="text-[11px] text-blue-200/60 mt-1.5 font-medium">
             {travellers} traveller{travellers !== 1 ? "s" : ""} · all taxes included
@@ -546,7 +549,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-blue-200/70 font-medium">Adult (base + tax)</span>
                 <span className="text-white font-semibold">
-                  {formatINR(tier.adultBase ?? 0)} + {formatINR(tier.adultTax ?? 0)}
+                  {convert(tier.adultBase ?? 0)} + {convert(tier.adultTax ?? 0)}
                 </span>
               </div>
             )}
@@ -554,7 +557,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-blue-200/70 font-medium">Child (base + tax)</span>
                 <span className="text-white font-semibold">
-                  {formatINR(tier.childBase ?? 0)} + {formatINR(tier.childTax ?? 0)}
+                  {convert(tier.childBase ?? 0)} + {convert(tier.childTax ?? 0)}
                 </span>
               </div>
             )}
@@ -562,7 +565,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-blue-200/70 font-medium">Infant (base + tax)</span>
                 <span className="text-white font-semibold">
-                  {formatINR(tier.infantBase ?? 0)} + {formatINR(tier.infantTax ?? 0)}
+                  {convert(tier.infantBase ?? 0)} + {convert(tier.infantTax ?? 0)}
                 </span>
               </div>
             )}
@@ -601,7 +604,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
                 Seat upgrades
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
               </span>
-              <span className="font-semibold text-blue-600">{formatINR(seatsTotal)}</span>
+              <span className="font-semibold text-blue-600">{convert(seatsTotal)}</span>
             </div>
           )}
 
@@ -623,7 +626,7 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
           <div className="flex justify-between items-center">
             <span className="text-slate-400">Convenience fee</span>
             <span className="flex items-center gap-1.5">
-              <span className="line-through text-slate-300 font-medium text-[11px]">{formatINR(convenienceFeeDisplay)}</span>
+              <span className="line-through text-slate-300 font-medium text-[11px]">{convert(convenienceFeeDisplay)}</span>
               <span className="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-200/60
                 rounded-full px-2 py-0.5 font-black uppercase tracking-wider">Free</span>
             </span>
@@ -637,14 +640,14 @@ style={{ background: "linear-gradient(135deg, #7a2e1d 0%, #a84b32 60%, #d06549 1
         {/* ── Subtotal ── */}
         <div className="border-t border-dashed border-slate-100 pt-3 flex justify-between items-center text-xs">
           <span className="text-slate-400 font-medium">Subtotal</span>
-          <span className="text-slate-500 font-semibold">{formatINR(subtotal + extrasTotal + seatsTotal + taxes)}</span>
+          <span className="text-slate-500 font-semibold">{convert(subtotal + extrasTotal + seatsTotal + taxes)}</span>
         </div>
 
         {/* ── Total payable ── */}
         <div className="bg-gradient-to-r from-[#f0f5ff] to-[#eff6ff] rounded-2xl px-4 py-3.5
           flex justify-between items-center border border-[#dbeafe]/80">
           <span className="font-black text-slate-800 text-sm">Total payable</span>
-          <span className="font-black text-[#1a56db] text-xl tracking-tight">{formatINR(total)}</span>
+          <span className="font-black text-[#1a56db] text-xl tracking-tight">{convert(total)}</span>
         </div>
 
         {/* ── Baggage info ── */}
@@ -718,11 +721,13 @@ function LineItem({ label, value, accent }: { label: string; value: number; acce
     : accent === "violet" ? "text-violet-600"
     : accent === "blue"   ? "text-blue-600"
     : "text-slate-600";
+  
+  const { convert } = useCurrency();
   return (
     <div className="flex justify-between items-center">
       <span className="text-slate-400">{label}</span>
       <span className={`font-semibold ${textColor}`}>
-        {value < 0 ? `−${formatINR(-value)}` : formatINR(value)}
+        {value < 0 ? `−${convert(-value)}` : convert(value)}
       </span>
     </div>
   );
@@ -752,6 +757,7 @@ export function MobilePriceBar({
   });
   const total = Math.round(subtotal + extrasTotal + seatsTotal + taxes - discount);
   const travellers = adults + children + infants;
+  const { convert } = useCurrency();
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40
@@ -765,7 +771,7 @@ export function MobilePriceBar({
           </span>
         </div>
         <div className="font-black text-xl text-slate-900 tracking-tight leading-tight">
-          {formatINR(total)}
+          {convert(total)}
         </div>
       </div>
       {/* Mini step indicator */}

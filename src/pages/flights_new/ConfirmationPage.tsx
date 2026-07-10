@@ -5,6 +5,7 @@
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
 import { AIRLINE_COLORS } from "./BookingShared";
+import { useCurrency } from "../../context/currencyContext";
 
 interface Step7Props {
   flight: DisplayFlight;
@@ -28,6 +29,7 @@ export default function BookingStep7Confirmation({
 }: Step7Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+  const { convert } = useCurrency();
 
   const allLegs = [
     { flight, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight" },
@@ -132,7 +134,7 @@ export default function BookingStep7Confirmation({
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Amount Paid</div>
             <div className="text-[10px] text-emerald-600">Inclusive of all taxes and fees</div>
           </div>
-          <div className="font-black text-3xl text-emerald-700">{formatINR(totalPaid)}</div>
+          <div className="font-black text-3xl text-emerald-700">{convert(totalPaid)}</div>
         </div>
       </div>
 

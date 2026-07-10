@@ -30,6 +30,7 @@ import { formatINR } from "../../lib/flights_api";
 import type { SSRResult, SSRSegment } from "../../lib/flights_api";
 import type { DisplayFlight } from "../../lib/types_t";
 import { useState } from "react";
+import { useCurrency } from "../../context/currencyContext";
 
 // ─── PROPS ──────────────────────────────────────────────────
 
@@ -159,6 +160,7 @@ export default function BookingStep4Extras({
     }
     return sum + legTotal;
   }, 0);
+  const { convert } = useCurrency();
 
   // ── RENDER ─────────────────────────────────────────────────
 
@@ -264,7 +266,7 @@ export default function BookingStep4Extras({
               </div>
               {hasExtras && (
                 <div className="ml-auto text-xs font-black text-violet-600 bg-violet-50 px-3 py-1 rounded-full">
-                  +{formatINR(extra.mealPrice + extra.baggagePrice)}
+                  +{convert(extra.mealPrice + extra.baggagePrice)}
                 </div>
               )}
             </div>
@@ -311,7 +313,7 @@ export default function BookingStep4Extras({
                           </div>
                           <div className="text-[10px] text-slate-400 mb-1">{meal.description}</div>
                           <div className={`text-[10px] font-black ${selected ? "text-blue-600" : "text-slate-500"}`}>
-                            {meal.price === 0 ? "Free" : `+${formatINR(meal.price)}`}
+                            {meal.price === 0 ? "Free" : `+${convert(meal.price)}`}
                           </div>
                         </button>
                       );
@@ -370,7 +372,7 @@ export default function BookingStep4Extras({
                           </div>
                           <div className="text-[10px] text-slate-400 mb-0.5">{opt.description}</div>
                           <div className={`text-[10px] font-black ${selected ? "text-amber-600" : "text-slate-500"}`}>
-                            {opt.price === 0 ? "Included" : `+${formatINR(opt.price)}`}
+                            {opt.price === 0 ? "Included" : `+${convert(opt.price)}`}
                           </div>
                         </button>
                       );
@@ -400,7 +402,7 @@ export default function BookingStep4Extras({
               Meals + additional baggage for all passengers · all legs & flights
             </div>
           </div>
-          <div className="font-black text-violet-700 text-xl">{formatINR(totalExtras)}</div>
+          <div className="font-black text-violet-700 text-xl">{convert(totalExtras)}</div>
         </div>
       )}
 

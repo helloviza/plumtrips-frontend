@@ -9,6 +9,7 @@ import { SectionHeading, AIRLINE_COLORS, calcFares, CouponSection } from "./Book
 import { formatINR } from "../../lib/flights_api";
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
+import { useCurrency } from "../../context/currencyContext";
 
 interface Step5Props {
   flight: DisplayFlight; tier: FareTier;
@@ -129,6 +130,7 @@ export default function BookingStep5Review({
 
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+  const { convert } = useCurrency();
 
   const allLegs = [
     { flight, tier, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : undefined },
@@ -287,7 +289,7 @@ export default function BookingStep5Review({
       <ReviewCard title="💰 Final Fare Breakdown">
         <div className="space-y-2 text-sm">
           {adults > 0 && (
-            <FareRow label={`${adults} Adult${adults > 1 ? "s" : ""} × ${formatINR(tier.price)}`} value={baseFares.adult} />
+            <FareRow label={`${adults} Adult${adults > 1 ? "s" : ""} × ${convert(tier.price)}`} value={baseFares.adult} />
           )}
           {children > 0 && (
             <FareRow label={`${children} Child${children > 1 ? "ren" : ""}`} value={baseFares.child} />
@@ -304,7 +306,7 @@ export default function BookingStep5Review({
 
           <div className="flex justify-between items-center border-t-2 border-slate-200 pt-3 mt-2">
             <span className="font-black text-slate-900 text-base">Total Payable</span>
-            <span className="font-black text-blue-600 text-xl">{formatINR(total)}</span>
+            <span className="font-black text-blue-600 text-xl">{convert(total)}</span>
           </div>
         </div>
       </ReviewCard>
@@ -360,7 +362,7 @@ export default function BookingStep5Review({
           className="flex-[2] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200 disabled:shadow-none"
         >
           {agreed
-            ? `${user ? "" : "🔐 Sign in & "}Proceed to Payment — ${formatINR(total)} →`
+            ? `${user ? "" : "🔐 Sign in & "}Proceed to Payment — ${convert(total)} →`
             : "Please confirm details above to continue"}
         </button>
       </div>
@@ -380,16 +382,18 @@ function ReviewCard({ title, children }: { title: string; children: React.ReactN
 }
 
 function FareRow({ label, value, accent }: { label: string; value: number; accent?: "violet" | "emerald" }) {
+  const { convert } = useCurrency();
   const color = accent === "emerald" ? "text-emerald-600" : accent === "violet" ? "text-violet-600" : "text-slate-700";
   return (
     <div className={`flex justify-between items-center ${color}`}>
       <span className="text-slate-500">{label}</span>
-      <span className="font-semibold">{value < 0 ? `−${formatINR(-value)}` : formatINR(value)}</span>
+      <span className="font-semibold">{value < 0 ? `−${convert(-value)}` : convert(value)}</span>
     </div>
   );
 }
 
 function LegRow({ flight, tier, label }: { flight: DisplayFlight; tier: FareTier; label?: string }) {
+  const { convert } = useCurrency();
   return (
     <div className="py-4 first:pt-0 last:pb-0">
       <div className="flex items-center justify-between mb-3">
@@ -413,7 +417,7 @@ function LegRow({ flight, tier, label }: { flight: DisplayFlight; tier: FareTier
           </div>
         </div>
         <div className="text-right">
-          <div className="font-black text-blue-600 text-sm">{formatINR(tier.price)}</div>
+          <div className="font-black text-blue-600 text-sm">{convert(tier.price)}</div>
           <div className="text-[9px] text-slate-400">per adult</div>
         </div>
       </div>

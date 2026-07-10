@@ -16,7 +16,7 @@ export function TrustBar({ items }: TrustBarProps) {
           border-radius: 18px;
           margin-top: -44px;
           position: relative;
-          z-index: 20;
+          z-index: 30;
           box-shadow: 0 24px 60px rgba(10,30,63,0.18);
           border: 1px solid rgba(10,30,63,0.06);
           display: grid;

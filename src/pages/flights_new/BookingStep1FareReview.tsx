@@ -6,6 +6,7 @@ import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
 import { AIRLINE_COLORS, SectionHeading, ErrorBanner } from "./BookingShared";
 import { useState } from "react";
+import { useCurrency } from "../../context/currencyContext";
 
 interface Step1Props {
   flight: DisplayFlight;
@@ -85,6 +86,7 @@ export default function BookingStep1FareReview({
 }: Step1Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+  const { convert } = useCurrency();
 
   return (
     <div>
@@ -149,8 +151,8 @@ export default function BookingStep1FareReview({
               <p className="text-xs text-amber-700 mb-4">
                 {fareChangeMessage ?? (
                   <>
-                    Price changed from <strong>{formatINR(tier.price)}</strong> to{" "}
-                    <strong className="text-amber-900">{formatINR(updatedFare)}</strong> per adult since you last checked.
+                    Price changed from <strong>{convert(tier.price)}</strong> to{" "}
+                    <strong className="text-amber-900">{convert(updatedFare)}</strong> per adult since you last checked.
                   </>
                 )}
               </p>
@@ -238,6 +240,7 @@ function FlightDetailCard({
     violet: "text-violet-600 bg-violet-50",
   };
   const accent = accentColor ? accentMap[accentColor] : "";
+  const { convert } = useCurrency();
 
   return (
     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-4">
@@ -323,7 +326,7 @@ function FlightDetailCard({
         <div className="text-xs text-slate-500">
           Fare: <strong className="text-slate-700">{tier.name}</strong>
         </div>
-        <div className="font-black text-blue-600 text-sm">{formatINR(tier.price)} <span className="text-slate-400 font-medium text-[10px]">/ adult</span></div>
+        <div className="font-black text-blue-600 text-sm">{convert(tier.price)} <span className="text-slate-400 font-medium text-[10px]">/ adult</span></div>
       </div>
     </div>
   );

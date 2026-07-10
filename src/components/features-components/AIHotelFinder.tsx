@@ -196,6 +196,35 @@ export function AIHotelFinder({
             {badge}
           </span>
 
+            <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      padding: "5px 10px",
+      borderRadius: 999,
+      background: "rgba(255,255,255,0.08)",
+      border: "1px solid rgba(255,255,255,0.18)",
+      color: "rgba(255,255,255,0.8)",
+      fontFamily: FONT,
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: "0.08em",
+      textTransform: "uppercase",
+    }}
+  >
+    <span
+      style={{
+        width: 5,
+        height: 5,
+        borderRadius: "50%",
+        background: "#4ade80",
+        display: "inline-block",
+      }}
+    />
+    Beta
+  </span>
+
           {/* Title */}
           <h2
             style={{

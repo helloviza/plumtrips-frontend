@@ -20,6 +20,7 @@ import { calculateNights } from '../../lib/utils';
 import toast from 'react-hot-toast';
 import HotelBookingShell from '../../components/hotels/HotelBookingShell';
 import HotelSearchSummaryBar from '../../components/hotels/HotelSearchSummaryBar';
+import { useCurrency } from '../../context/currencyContext';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ function CancellationBadge({
 
 export default function RoomSelection() {
   //const { formatCurrency, symbol, currencyCode } = useCurrency();
+  const { convert } = useCurrency();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -86,6 +88,7 @@ export default function RoomSelection() {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [expandedRoom, setExpandedRoom] = useState<string | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
 
   const [roomPreBooks, setRoomPreBooks] = useState<Record<string, PreBookResponse>>({});
   const [preBookingRoomIds, setPreBookingRoomIds] = useState<Set<string>>(new Set());
@@ -543,7 +546,7 @@ export default function RoomSelection() {
                         {/* Card Footer */}
                         <div className="mt-auto pt-5 border-t border-slate-100 flex items-end justify-between">
                           <div>
-                            <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">{formatINR(totalStay)}</div>
+                            <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">{convert(totalStay)}</div>
                             <div className="text-xs text-slate-500 font-medium tracking-wide uppercase">
                               {nights} Night{nights !== 1 ? 's' : ''} · incl. taxes &amp; fees
                             </div>
@@ -608,7 +611,7 @@ export default function RoomSelection() {
                 <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white">
                   <div className="text-xs font-bold text-slate-500 tracking-wide uppercase mb-1">Starting from</div>
                   <div className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter mb-1">
-                    {formatINR(lowestRoomTotal)}
+                    {convert(lowestRoomTotal)}
                   </div>
                   <div className="text-xs font-medium text-slate-500 mb-4">
                     {nights > 1 ? `for ${nights} nights · incl. taxes` : 'incl. taxes & fees'}
@@ -645,7 +648,7 @@ export default function RoomSelection() {
                     </div>
                   </a>
                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    {hotel.location} - {hotel.landmark}
+                    {hotel.location}
                   </p>
                   <a 
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hotel.name + ' ' + hotel.location)}`}
@@ -703,7 +706,7 @@ export default function RoomSelection() {
             <div>
               <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Your Selection</div>
               <div className="flex items-end gap-3">
-                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{formatINR(totalPrice)}</div>
+                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{convert(totalPrice)}</div>
                 <div className="text-sm font-medium text-slate-500 mb-0.5">
                   {roomsNeeded > 1
                     ? `${totalRoomsSelected} of ${roomsNeeded} rooms • ${nights} night${nights !== 1 ? 's' : ''}`

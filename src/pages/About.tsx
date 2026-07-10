@@ -109,8 +109,8 @@ function HeroSection({ addRef }: { addRef: (el: HTMLElement | null) => void }) {
           support that vanished when you needed it most.
         </p>
         <div className="hero-ctas">
-          <button className="btn-hero-primary">Plan my trip</button>
-          <Link to="/about" className="btn-hero-ghost">
+          <Link to="/holidays" className="btn-hero-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Plan my trip</Link>
+          <Link to="/blogs" className="btn-hero-ghost">
   Read our story <Icon name="arrow_forward" />
 </Link>
         </div>
@@ -358,8 +358,8 @@ function CTASection({ addRef }: { addRef: (el: HTMLElement | null) => void }) {
               here to help.
             </p>
             <div className="cta-buttons">
-              <button className="btn-cta-primary">Plan my trip</button>
-              <button className="btn-cta-ghost">Talk to our team</button>
+              <Link to="/holidays" className="btn-cta-primary" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Plan my trip</Link>
+              <Link to="/contact" className="btn-cta-ghost" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Talk to our team</Link>
             </div>
           </div>
         </div>

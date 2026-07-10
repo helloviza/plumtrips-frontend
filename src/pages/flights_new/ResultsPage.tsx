@@ -8,6 +8,8 @@ import { formatINR, MOCK_MODE, apiSearchFlights, apiFareQuote } from "../../lib/
 import type { FlightSearchResult, FareQuoteResult } from "../../lib/flights_api";
 import OneSearchBar from "./OneSearchBar";
 
+import {useCurrency} from "../../context/currencyContext";
+
 type CityLeg = { from: Airport; to: Airport; departDate: string };
 
 // ─── CONSTANTS ─────────────────────────────────────────────
@@ -130,6 +132,7 @@ function AirlineLogo({
 function FareTierCard({
   tier, selected, onSelect, onShowPolicy,
 }: { tier: FareTier; selected: boolean; onSelect: () => void; onShowPolicy?: () => void }) {
+  const { convert } = useCurrency();
   return (
     <div
       onClick={onSelect}
@@ -158,7 +161,7 @@ function FareTierCard({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep }}>{tier.name}</div>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{formatINR(tier.totalOfferedFare)}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, marginTop: 2 }}>{convert(tier.totalOfferedFare)}</div>
             <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>per adult</div>
           </div>
           <div style={{
@@ -438,6 +441,7 @@ function FareModal({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+  const { convert } = useCurrency();
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
@@ -524,7 +528,7 @@ function FareModal({
                 {tiers[selected]?.name}
               </div>
               <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1.1 }}>
-                {formatINR(tiers[selected]?.totalOfferedFare ?? 0)}
+                {convert(tiers[selected]?.totalOfferedFare ?? 0)}
               </div>
               <div style={{ fontSize: 11, color: S.muted }}>
                 per adult · {tiers[selected]?.cancellationFee}
@@ -568,6 +572,7 @@ function FlightCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const { convert } = useCurrency();
 
   return (
     <div
@@ -662,7 +667,7 @@ function FlightCard({
             display: "flex", flexDirection: "column", alignItems: "flex-end",
             gap: 4, minWidth: 130, flexShrink: 0,
           }}>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: S.navyDeep, lineHeight: 1 }}>{formatINR(flight.price)}</div>
+            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 22, color: S.navyDeep, lineHeight: 1 }}>{convert(flight.price)}</div>
             <div style={{ fontSize: 10, color: S.muted }}>total fare</div>
             <div style={{ fontSize: 10, fontWeight: 700, color: flight.isRefundable ? S.green : S.muted }}>
               {flight.isRefundable ? "✓ Refundable" : "Non-refundable"}
@@ -763,6 +768,7 @@ function FilterPanel({
   const prices = flights.map(f => f.price);
   const maxP = prices.length ? Math.max(...prices) : 20000;
   const minP = prices.length ? Math.min(...prices) : 1000;
+  const { convert } = useCurrency();
 
   const fsLabel: React.CSSProperties = {
     fontSize: 10, fontWeight: 700, color: S.muted,
@@ -839,8 +845,8 @@ function FilterPanel({
           style={{ width: "100%", accentColor: S.navyDeep, margin: "8px 0" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: "'Sora',sans-serif", fontWeight: 700 }}>
-          <span style={{ color: S.muted }}>{formatINR(minP)}</span>
-          <span style={{ color: S.navyDeep }}>{formatINR(filters.maxPrice ?? maxP)}</span>
+          <span style={{ color: S.muted }}>{convert(minP)}</span>
+          <span style={{ color: S.navyDeep }}>{convert(filters.maxPrice ?? maxP)}</span>
         </div>
       </Section>
 
@@ -950,7 +956,7 @@ function FilterPanel({
                     </div>
                   </div>
                   <span style={{ fontSize: 11, fontWeight: 800, color: S.accent, fontFamily: "'Sora',sans-serif", flexShrink: 0 }}>
-                    {formatINR(minPrice)}
+                    {convert(minPrice)}
                   </span>
                 </div>
               );
@@ -1301,6 +1307,7 @@ const sourceFlights = useMemo(() => {
     filters.stops !== null, filters.maxPrice !== null, filters.airlines.length > 0,
     !!filters.departureSlot, !!filters.arrivalSlot, filters.refundable !== null,
   ].filter(Boolean).length;
+  const { convert } = useCurrency();
 
   const cheapestPrice = sourceFlights.length ? Math.min(...sourceFlights.map(f => f.price)) : null;
   const fastestDur    = sourceFlights.length ? Math.min(...sourceFlights.map(f => f.duration)) : null;
@@ -1387,7 +1394,7 @@ const sourceFlights = useMemo(() => {
           {SORT_OPTIONS.map(({ key, label }) => {
             const active = sortKey === key;
             const subVal = key === "price" && cheapestPrice
-              ? formatINR(cheapestPrice)
+              ? convert(cheapestPrice)
               : key === "duration" && fastestDur
                 ? durationStr(fastestDur)
                 : null;

@@ -64,11 +64,11 @@
   --font-display: "Exo 2", sans-serif;
 
   /* Spacing */
-  --section-gap: 140px;
+  --section-gap: 80px;
   --container-max: 1560px;
-  --margin-desktop: 48px;
-  --margin-mobile: 22px;
-  --gutter: 28px;
+  --margin-desktop: 32px;
+  --margin-mobile: 16px;
+  --gutter: 16px;
 
   /* PlumTrip Cinematic Blues */
   --plumtrip-blue: #00477f;

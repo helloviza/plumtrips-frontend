@@ -1,6 +1,6 @@
 ﻿// apps/frontend/src/pages/contact/ContactPage.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useUi } from "../../context/UiContext";
 
@@ -69,9 +69,9 @@ const FAQS = [
 
 // ── Social links ───────────────────────────────────────────
 const SOCIALS = [
-  { label: "Instagram", href: "#", icon: <InstagramIcon /> },
-  { label: "Facebook",  href: "#", icon: <FacebookIcon /> },
-  { label: "YouTube",   href: "#", icon: <YouTubeIcon /> },
+  { label: "Instagram", href: "https://instagram.com/plumtrips", icon: <InstagramIcon /> },
+  { label: "Facebook",  href: "https://facebook.com/plumtrips", icon: <FacebookIcon /> },
+  { label: "YouTube",   href: "https://youtube.com/plumtrips", icon: <YouTubeIcon /> },
 ];
 
 // ── Page ───────────────────────────────────────────────────
@@ -391,7 +391,7 @@ export default function ContactPage() {
                     By sending you agree to our{" "}
                     <a href="/terms" style={{ color: BLUE, textDecoration: "underline" }}>terms</a>
                     {" & "}
-                    <a href="/privacy" style={{ color: BLUE, textDecoration: "underline" }}>privacy policy</a>.
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: BLUE, textDecoration: "underline" }}>privacy policy</a>.
                   </p>
                   <button
                     type="submit"
@@ -416,10 +416,10 @@ export default function ContactPage() {
 
             {/* Quick action buttons */}
             <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-              <a href="/go/concierge?from=contact" className="ct-pill-btn ct-pill-btn-navy" style={{ padding: "12px 22px", fontSize: 14 }}>
+              <Link to="/go/concierge?from=contact" className="ct-pill-btn ct-pill-btn-navy" style={{ padding: "12px 22px", fontSize: 14 }}>
                 Live chat with Concierge
-              </a>
-              <a href="/support" className="ct-pill-btn ct-pill-btn-outline" style={{ padding: "12px 22px", fontSize: 14 }}>
+              </Link>
+              <a href="mailto:support@plumtrips.com?subject=Ticket%20Status%20Inquiry" className="ct-pill-btn ct-pill-btn-outline" style={{ padding: "12px 22px", fontSize: 14 }}>
                 View ticket status
               </a>
             </div>
@@ -469,7 +469,7 @@ export default function ContactPage() {
               <div className="ct-section-eyebrow" style={{ marginBottom: 12 }}>Follow our journeys</div>
               <div style={{ display: "flex", gap: 10 }}>
                 {SOCIALS.map((s) => (
-                  <a key={s.label} href={s.href} className="ct-social-btn">
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="ct-social-btn">
                     {s.icon}
                     {s.label}
                   </a>
@@ -583,15 +583,22 @@ function ChannelRow({
 }: {
   icon: React.ReactNode; label: string; title: string; sub: string; href: string; last?: boolean;
 }) {
+  const isInternal = href.startsWith('/');
+  const Component = isInternal ? Link : 'a';
+  const target = isInternal ? undefined : "_blank";
+  const rel = isInternal ? undefined : "noopener noreferrer";
+
   return (
-    <a href={href} style={{
-      display: "flex", alignItems: "flex-start", gap: 14,
-      padding: "14px 14px",
-      borderRadius: 14,
-      textDecoration: "none",
-      transition: "background .12s",
-      borderBottom: last ? "none" : `1px solid ${BORDER}`,
-    }}
+    <Component
+      {...(isInternal ? { to: href } : { href, target, rel })}
+      style={{
+        display: "flex", alignItems: "flex-start", gap: 14,
+        padding: "14px 14px",
+        borderRadius: 14,
+        textDecoration: "none",
+        transition: "background .12s",
+        borderBottom: last ? "none" : `1px solid ${BORDER}`,
+      }}
       onMouseEnter={(e) => (e.currentTarget.style.background = BLUE_LIGHT)}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
@@ -609,7 +616,7 @@ function ChannelRow({
         <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, marginBottom: 2 }}>{title}</div>
         <div style={{ fontSize: 12, color: SLATE }}>{sub}</div>
       </div>
-    </a>
+    </Component>
   );
 }
 
