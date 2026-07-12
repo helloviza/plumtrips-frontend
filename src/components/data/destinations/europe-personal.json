@@ -20,7 +20,7 @@
           "italic": "cobblestone dreams"
         },
         "description": "Old world charm. New stories to tell.",
-        "backgroundImage": "/assets/attached_assets/europe_hero.jpg",
+        "backgroundImage": "/assets/europe/europe_m.jpg",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,31 +40,31 @@
         "description": "Discover the timeless beauty of Europe through our exclusive access.",
         "items": [
           {
-            "img": "/assets/attached_assets/europe_chateau.jpg",
+            "img": "/assets/europe/europe_chateau.jpg",
             "title": "Private Château Stay",
             "loc": "Luxury Stay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/europe_alps.jpg",
+            "img": "/assets/europe/alpine_hideaways.jpg",
             "title": "Alpine Hideaways",
             "loc": "Nature & Scenery",
             "span": "lg:col-span-1"
           },
           {
-            "img": "/assets/attached_assets/europe_culinary.jpg",
+            "img": "/assets/europe/europe_culinary.jpg",
             "title": "Michelin Dining",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/europe_coast.jpg",
+            "img": "/assets/europe/europe_coast.jpg",
             "title": "Amalfi Escape",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/europe_cities.jpg",
+            "img": "/assets/europe/europe_cities.jpg",
             "title": "City Hopping",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
@@ -99,7 +99,7 @@
             "desc": "The view that needed no filter."
           }
         ],
-        "image": "/assets/attached_assets/exp-europe.png"
+        "image": "/assets/europe/europe_f.jpg"
       }
     },
     {

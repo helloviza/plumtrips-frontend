@@ -20,7 +20,7 @@
           "italic": "everything right"
         },
         "description": "The future looks like this.",
-        "backgroundImage": "/assets/attached_assets/singapore_hero.jpg",
+        "backgroundImage": "/assets/singapore/singapore1.png",
         "form": {
           "title": "Plan a trip you'll actually like",
           "buttonText": "Plan",
@@ -40,31 +40,31 @@
         "description": "Discover the seamless wonder of Singapore through our exclusive access.",
         "items": [
           {
-            "img": "/assets/attached_assets/singapore_marina.jpg",
+            "img": "/assets/singapore/marina_suites.jpg",
             "title": "Marina Bay Suites",
             "loc": "Luxury Stay",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/singapore_gardens.jpg",
+            "img": "/assets/singapore/garden_bay.jpg",
             "title": "Gardens by the Bay",
             "loc": "Nature & Scenery",
             "span": "lg:col-span-1"
           },
           {
-            "img": "/assets/attached_assets/singapore_culinary.jpg",
+            "img": "/assets/singapore/hawker_haute.png",
             "title": "Hawker to Haute Cuisine",
             "loc": "Food & Dining",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/singapore_sentosa.jpg",
+            "img": "/assets/singapore/sentosa_island.jpg",
             "title": "Sentosa Island",
             "loc": "Exclusive",
             "span": "lg:col-span-2"
           },
           {
-            "img": "/assets/attached_assets/singapore_streets.jpg",
+            "img": "/assets/singapore/cultural_neigbour.jpg",
             "title": "Cultural Neighbourhoods",
             "loc": "Exclusive",
             "span": "lg:col-span-3"
@@ -99,7 +99,7 @@
             "desc": "The midnight hawker feast that sealed the trip."
           }
         ],
-        "image": "/assets/attached_assets/exp-singapore.png"
+        "image": "/assets/singapore/singapore_f.jpg"
       }
     },
     {
