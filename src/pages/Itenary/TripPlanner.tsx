@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plane,
@@ -12,7 +12,13 @@ import {
   Compass,
   BadgeCheck,
   Star,
+  MessageCircle,
+  Send,
+  Loader2,
 } from "lucide-react";
+
+import { useCurrency } from "../../context/currencyContext";
+import { getBackendOrigin } from "../../lib/backendOrigin";
 
 const C = {
   orange: "#FF682C",
@@ -23,10 +29,130 @@ const C = {
   textMuted: "#6B7280",
 };
 
+type EditLogEntry = { role: "user" | "assistant"; text: string };
+
+// A Trip Overview row that doubles as an inline editor: clicking the value
+// turns it into an input, and committing it (Enter or blur) fires the same
+// "update trip" chat flow used by the quick-edit chips below — so editing
+// the summary and editing via chat are really the same mechanism.
+function EditableStat({
+  label,
+  value,
+  editKey,
+  activeEditKey,
+  disabled,
+  inputType = "text",
+  onStartEdit,
+  onCancelEdit,
+  onCommit,
+}: {
+  label: string;
+  value: string | number;
+  editKey: string;
+  activeEditKey: string | null;
+  disabled?: boolean;
+  inputType?: "text" | "number";
+  onStartEdit: (key: string) => void;
+  onCancelEdit: () => void;
+  onCommit: (key: string, newValue: string) => void;
+}) {
+  const isEditing = activeEditKey === editKey;
+  const [draft, setDraft] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(String(value));
+      const id = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    onCancelEdit();
+    if (!trimmed || trimmed === String(value)) return;
+    onCommit(editKey, trimmed);
+  };
+
+  return (
+    <li style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+      <span>{label}</span>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type={inputType}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commit();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onCancelEdit();
+            }
+          }}
+          aria-label={`Edit ${label}`}
+          style={{
+            width: 120,
+            textAlign: "right",
+            padding: "4px 8px",
+            borderRadius: 8,
+            border: `1px solid ${C.orange}`,
+            fontSize: 13,
+            color: C.navy,
+            outline: "none",
+            background: "#FFF7F3",
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => !disabled && onStartEdit(editKey)}
+          disabled={disabled}
+          title="Click to edit"
+          style={{
+            background: "none",
+            border: "none",
+            padding: "2px 0",
+            cursor: disabled ? "default" : "pointer",
+            color: C.navy,
+            fontWeight: 700,
+            fontSize: 13,
+            textDecoration: disabled ? "none" : "underline",
+            textDecorationStyle: "dotted",
+            textUnderlineOffset: 3,
+            textDecorationColor: "rgba(10,30,63,0.35)",
+          }}
+        >
+          {value}
+        </button>
+      )}
+    </li>
+  );
+}
+
 export default function TripPlanner() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const pageData = (state as any) || JSON.parse(sessionStorage.getItem("plumml_itinerary_data") || "null") || null;
+  const initialData = (state as any) || JSON.parse(sessionStorage.getItem("plumml_itinerary_data") || "null") || null;
+
+  // Trip data now lives in state so the "Update your trip" chat below
+  // can rewrite it in place, without needing to re-navigate to this page.
+  const [tripData, setTripData] = useState<any>(initialData);
+
+  // ── "Update your trip" mini chat ──
+  const [editLog, setEditLog] = useState<EditLogEntry[]>([]);
+  const [editInput, setEditInput] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const editInputRef = useRef<HTMLInputElement | null>(null);
+  const editLogRef = useRef<HTMLDivElement | null>(null);
+
+  // Which Trip Overview stat (if any) is currently being edited inline.
+  const [editingStatKey, setEditingStatKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (document.getElementById("pt-poppins")) return;
@@ -37,7 +163,103 @@ export default function TripPlanner() {
     document.head.appendChild(l);
   }, []);
 
-  if (!pageData || !pageData.itinerary) {
+  useEffect(() => {
+    if (editLogRef.current) {
+      editLogRef.current.scrollTop = editLogRef.current.scrollHeight;
+    }
+  }, [editLog, isEditing]);
+
+  const getSessionId = () => {
+    let sid = window.localStorage.getItem("plumml_session_id");
+    if (!sid) {
+      sid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `plumml-${Date.now()}`;
+      window.localStorage.setItem("plumml_session_id", sid);
+    }
+    return sid;
+  };
+
+  const sendTripEdit = async (message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed || isEditing) return;
+
+    setEditInput("");
+    setEditLog((current) => [...current, { role: "user", text: trimmed }]);
+    setIsEditing(true);
+
+    const BACKEND = getBackendOrigin();
+    try {
+      const response = await fetch(`${BACKEND}/api/v1/plumml/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: getSessionId(), message: trimmed }),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const errorText = data?.error || data?.message || response.statusText || "Update failed";
+        throw new Error(errorText);
+      }
+
+      const replyText = data?.reply || "Done — I've updated your trip.";
+      setEditLog((current) => [...current, { role: "assistant", text: replyText }]);
+
+      setTripData((prev: any) => {
+        const updated = {
+          ...prev,
+          itinerary: data?.itinerary || prev?.itinerary,
+          outboundFlight: data?.outboundFlight ?? prev?.outboundFlight,
+          returnFlight: data?.returnFlight ?? prev?.returnFlight,
+          hotel: data?.hotel ?? prev?.hotel,
+          priceBreakdown: data?.priceBreakdown || prev?.priceBreakdown,
+          slots: { ...(prev?.slots || {}), ...(data?.slots || {}) },
+          pdfUrl: data?.pdfUrl ?? prev?.pdfUrl,
+        };
+        try {
+          sessionStorage.setItem("plumml_itinerary_data", JSON.stringify(updated));
+        } catch {
+          // ignore storage failures
+        }
+        return updated;
+      });
+    } catch (error: any) {
+      console.error("Trip edit failed", error);
+      setEditLog((current) => [
+        ...current,
+        { role: "assistant", text: error?.message || "Sorry, something went wrong updating your trip. Please try again." },
+      ]);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  // Fired when someone edits a Trip Overview value directly (destination,
+  // origin, adults, children, vibe). Builds a natural instruction and sends
+  // it through the exact same update-trip pipeline as the chips/chat below,
+  // so an inline edit and a typed chat message trigger identically.
+  const handleStatCommit = (key: string, newValue: string) => {
+    const messageByKey: Record<string, string> = {
+      destinationCity: `Please change my destination to ${newValue}.`,
+      originCity: `Please change my departure city to ${newValue}.`,
+      adults: `Please update the number of adults to ${newValue}.`,
+      children: `Please update the number of children to ${newValue}.`,
+      tripVibe: `Please change the trip vibe to ${newValue}.`,
+    };
+    sendTripEdit(messageByKey[key] || `Please update ${key} to ${newValue}.`);
+  };
+
+  const handleQuickEdit = (type: "dates" | "vibe" | "travelers") => {
+    const templates: Record<typeof type, string> = {
+      dates: "I'd like to change my travel dates to ",
+      vibe: "Please change the trip vibe to ",
+      travelers: "Please update the number of travelers to ",
+    };
+    setEditInput(templates[type]);
+    editInputRef.current?.focus();
+  };
+
+  if (!tripData || !tripData.itinerary) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px", background: "linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%)" }}>
         <div style={{ textAlign: "center", maxWidth: 560, background: "#fff", borderRadius: 28, padding: "36px 32px", boxShadow: "0 20px 60px rgba(15,23,42,0.08)" }}>
@@ -69,12 +291,12 @@ export default function TripPlanner() {
     );
   }
 
-  const itinerary = pageData.itinerary;
-  const slots = pageData.slots || {};
-  const outboundFlight = pageData.outboundFlight || null;
-  const returnFlight = pageData.returnFlight || null;
-  const hotel = pageData.hotel || null;
-  const priceBreakdown = pageData.priceBreakdown || {};
+  const itinerary = tripData.itinerary;
+  const slots = tripData.slots || {};
+  const outboundFlight = tripData.outboundFlight || null;
+  const returnFlight = tripData.returnFlight || null;
+  const hotel = tripData.hotel || null;
+  const priceBreakdown = tripData.priceBreakdown || {};
   const tripTitle = itinerary.tripTitle || `${slots.destinationCity || "Your Trip"} Itinerary`;
   const summary = itinerary.summary || "Your personalized itinerary is ready.";
   const days = Array.isArray(itinerary.days) ? itinerary.days : [];
@@ -85,12 +307,6 @@ export default function TripPlanner() {
     slots.tripVibe || "Personalized",
   ];
 
-  const formatMoney = (value: unknown): string => {
-    if (typeof value === "number") return `₹${value.toLocaleString("en-IN")}`;
-    if (typeof value === "string") return value;
-    return "-";
-  };
-
   const formatFlight = (flight: any) => {
     if (!flight) return null;
     return (
@@ -98,7 +314,7 @@ export default function TripPlanner() {
         <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{flight.airline} {flight.flightNumber}</div>
         <div style={{ fontSize: 14, color: C.textMuted }}>{flight.departureTime || "TBD"} → {flight.arrivalTime || "TBD"}</div>
         <div style={{ fontSize: 13, color: C.textMuted }}>{flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops === 1 ? "" : "s"}`}</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.orange }}>{formatMoney(flight.price)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.orange }}>{convert(flight.price)}</div>
       </div>
     );
   };
@@ -110,10 +326,12 @@ export default function TripPlanner() {
         <div style={{ fontSize: 16, fontWeight: 700, color: C.navy }}>{hotelData.name}</div>
         <div style={{ fontSize: 14, color: C.textMuted }}>{hotelData.roomType || "Room details not available"}</div>
         <div style={{ fontSize: 13, color: C.textMuted }}>{hotelData.mealPlan || "Meal plan not available"}</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.orange }}>{formatMoney(hotelData.totalPrice)}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.orange }}>{convert(hotelData.totalPrice)}</div>
       </div>
     );
   };
+
+  const { convert } = useCurrency();
 
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif", background: "linear-gradient(180deg, #f8fbff 0%, #f2f6fb 100%)", minHeight: "100vh", paddingBottom: 100 }}>
@@ -163,6 +381,45 @@ export default function TripPlanner() {
         .day-card:hover {
           transform: translateY(-2px);
           box-shadow: 0 18px 45px rgba(15,23,42,0.1);
+        }
+        .quick-edit-chip {
+          font-family: inherit;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: ${C.navy};
+          background: #F1F5F9;
+          border: 1px solid #E2E8F0;
+          border-radius: 999px;
+          padding: 7px 13px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .quick-edit-chip:hover {
+          background: rgba(255,104,44,0.1);
+          border-color: rgba(255,104,44,0.35);
+          color: ${C.orange};
+        }
+        .edit-log-bubble {
+          padding: 9px 13px;
+          border-radius: 14px;
+          font-size: 13px;
+          line-height: 1.5;
+          max-width: 88%;
+        }
+        .edit-log-bubble.user {
+          align-self: flex-end;
+          background: ${C.orange};
+          color: #fff;
+          border-bottom-right-radius: 4px;
+        }
+        .edit-log-bubble.assistant {
+          align-self: flex-start;
+          background: #F1F5F9;
+          color: #1f2937;
+          border-bottom-left-radius: 4px;
         }
         @media (max-width: 980px) {
           .trip-planner-grid { grid-template-columns: 1fr !important; }
@@ -255,15 +512,6 @@ export default function TripPlanner() {
                   <h2 style={{ fontSize: "1.8rem", fontWeight: 800, color: C.navy, marginBottom: 8 }}>{tripTitle}</h2>
                   <p style={{ fontSize: 15, color: C.textMuted, lineHeight: 1.8, maxWidth: 720 }}>{summary}</p>
                 </div>
-                {/* {pageData.pdfUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => window.open(pageData.pdfUrl, "_blank")}
-                    style={{ background: "linear-gradient(135deg, #FF682C 0%, #ff8a4c 100%)", color: "#fff", border: "none", borderRadius: 999, padding: "13px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 25px rgba(255,104,44,0.25)" }}
-                  >
-                    Download PDF
-                  </button>
-                ) : null} */}
               </div>
             </section>
 
@@ -363,20 +611,20 @@ export default function TripPlanner() {
               <div style={{ display: "grid", gap: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", color: C.textMuted }}>
                   <span>Flight total</span>
-                  <strong>{formatMoney(priceBreakdown.flightTotal)}</strong>
+                  <strong>{convert(priceBreakdown.flightTotal)}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", color: C.textMuted }}>
                   <span>Hotel total</span>
-                  <strong>{formatMoney(priceBreakdown.hotelTotal)}</strong>
+                  <strong>{convert(priceBreakdown.hotelTotal)}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", color: C.textMuted }}>
                   <span>Minimum spend</span>
-                  <strong>{formatMoney(priceBreakdown.minimumLocalSpend)}</strong>
+                  <strong>{convert(priceBreakdown.minimumLocalSpend)}</strong>
                 </div>
                 <div style={{ height: 1, background: "#E5E7EB", margin: "8px 0" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, color: C.navy }}>
                   <span>Total</span>
-                  <strong>{formatMoney(priceBreakdown.total)}</strong>
+                  <strong>{convert(priceBreakdown.total)}</strong>
                 </div>
               </div>
             </section>
@@ -389,28 +637,171 @@ export default function TripPlanner() {
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>Trip Overview</h3>
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12, color: C.textMuted }}>
-                <li style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Destination</span><strong style={{ color: C.navy }}>{slots.destinationCity || "Not provided"}</strong></li>
-                <li style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Origin</span><strong style={{ color: C.navy }}>{slots.originCity || "Not provided"}</strong></li>
-                <li style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Adults</span><strong style={{ color: C.navy }}>{slots.adults || 1}</strong></li>
-                <li style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Children</span><strong style={{ color: C.navy }}>{slots.children || 0}</strong></li>
-                <li style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span>Vibe</span><strong style={{ color: C.navy }}>{slots.tripVibe || "Flexible"}</strong></li>
+                <EditableStat
+                  label="Destination"
+                  value={slots.destinationCity || "Not provided"}
+                  editKey="destinationCity"
+                  activeEditKey={editingStatKey}
+                  disabled={isEditing}
+                  onStartEdit={setEditingStatKey}
+                  onCancelEdit={() => setEditingStatKey(null)}
+                  onCommit={handleStatCommit}
+                />
+                <EditableStat
+                  label="Origin"
+                  value={slots.originCity || "Not provided"}
+                  editKey="originCity"
+                  activeEditKey={editingStatKey}
+                  disabled={isEditing}
+                  onStartEdit={setEditingStatKey}
+                  onCancelEdit={() => setEditingStatKey(null)}
+                  onCommit={handleStatCommit}
+                />
+                <EditableStat
+                  label="Adults"
+                  value={slots.adults || 1}
+                  editKey="adults"
+                  inputType="number"
+                  activeEditKey={editingStatKey}
+                  disabled={isEditing}
+                  onStartEdit={setEditingStatKey}
+                  onCancelEdit={() => setEditingStatKey(null)}
+                  onCommit={handleStatCommit}
+                />
+                <EditableStat
+                  label="Children"
+                  value={slots.children || 0}
+                  editKey="children"
+                  inputType="number"
+                  activeEditKey={editingStatKey}
+                  disabled={isEditing}
+                  onStartEdit={setEditingStatKey}
+                  onCancelEdit={() => setEditingStatKey(null)}
+                  onCommit={handleStatCommit}
+                />
+                <EditableStat
+                  label="Vibe"
+                  value={slots.tripVibe || "Flexible"}
+                  editKey="tripVibe"
+                  activeEditKey={editingStatKey}
+                  disabled={isEditing}
+                  onStartEdit={setEditingStatKey}
+                  onCancelEdit={() => setEditingStatKey(null)}
+                  onCommit={handleStatCommit}
+                />
               </ul>
+              <p style={{ margin: "10px 0 0", fontSize: 11, color: "rgba(107,114,128,0.8)" }}>
+                Tap any value to edit it — it'll update your trip automatically.
+              </p>
             </section>
 
-            {/* <section style={{ background: "linear-gradient(135deg, rgba(255,104,44,0.08) 0%, rgba(45,140,255,0.08) 100%)", borderRadius: 24, padding: 24, border: "1px solid rgba(255,104,44,0.16)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <Star size={17} color={C.orange} />
-                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.navy }}>PDF Ready</h4>
+            {/* ── Update your trip: quick chips + free-text chat, wired to the same planner backend ── */}
+            <section className="glass-card" style={{ padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,104,44,0.12)", display: "grid", placeItems: "center" }}>
+                  <MessageCircle size={18} color={C.orange} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.navy }}>Update your trip</h3>
+                  <div style={{ fontSize: 12, color: C.textMuted }}>Change dates, vibe, or anything else</div>
+                </div>
               </div>
-              <p style={{ margin: "0 0 12px", color: C.textMuted, lineHeight: 1.7 }}>Your itinerary PDF has been generated and can be downloaded at any time.</p>
-              <button
-                type="button"
-                onClick={() => window.open(pageData.pdfUrl, "_blank")}
-                style={{ width: "100%", background: "linear-gradient(135deg, #FF682C 0%, #ff8a4c 100%)", color: "#fff", border: "none", borderRadius: 14, padding: "14px", fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 25px rgba(255,104,44,0.25)" }}
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                <button type="button" className="quick-edit-chip" onClick={() => handleQuickEdit("dates")}>
+                  <CalendarDays size={13} /> Change dates
+                </button>
+                <button type="button" className="quick-edit-chip" onClick={() => handleQuickEdit("vibe")}>
+                  <Star size={13} /> Change vibe
+                </button>
+                <button type="button" className="quick-edit-chip" onClick={() => handleQuickEdit("travelers")}>
+                  <Users size={13} /> Update travelers
+                </button>
+              </div>
+
+              <div
+                ref={editLogRef}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  maxHeight: 190,
+                  overflowY: "auto",
+                  marginBottom: 12,
+                  paddingRight: 4,
+                }}
               >
-                Download PDF
-              </button>
-            </section> */}
+                {editLog.length === 0 && !isEditing ? (
+                  <p style={{ margin: 0, fontSize: 13, color: C.textMuted, lineHeight: 1.6 }}>
+                    Tap a shortcut above or type below — e.g. "push my trip back a week" or "make it more relaxed and beachy".
+                  </p>
+                ) : (
+                  editLog.map((entry, index) => (
+                    <div key={index} className={`edit-log-bubble ${entry.role}`}>
+                      {entry.text}
+                    </div>
+                  ))
+                )}
+                {isEditing && (
+                  <div className="edit-log-bubble assistant" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Loader2 size={13} className="spin" style={{ animation: "spin 1s linear infinite" }} />
+                    Updating your trip…
+                  </div>
+                )}
+              </div>
+
+              <style>{`
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+              `}</style>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  ref={editInputRef}
+                  value={editInput}
+                  onChange={(event) => setEditInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      sendTripEdit(editInput);
+                    }
+                  }}
+                  placeholder="Tell us what to change…"
+                  aria-label="Describe the change you want to make to your trip"
+                  disabled={isEditing}
+                  style={{
+                    flex: 1,
+                    padding: "10px 14px",
+                    borderRadius: 999,
+                    border: "1px solid #E2E8F0",
+                    background: "#F8FAFC",
+                    color: "#0f172a",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => sendTripEdit(editInput)}
+                  disabled={isEditing || !editInput.trim()}
+                  aria-label="Send update"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    border: "none",
+                    background: C.orange,
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: isEditing || !editInput.trim() ? "default" : "pointer",
+                    opacity: isEditing || !editInput.trim() ? 0.55 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Send size={15} />
+                </button>
+              </div>
+            </section>
           </aside>
         </main>
       </div>

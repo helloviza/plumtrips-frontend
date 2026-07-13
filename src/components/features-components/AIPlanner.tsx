@@ -5,7 +5,21 @@ import { getBackendOrigin } from "../../lib/backendOrigin";
 import { Link, useNavigate } from "react-router-dom";
 import { useCurrency } from "../../context/currencyContext";
 
-function Field({ label, placeholder, fullWidth, isCurrency, value, onChange }: PlannerField & { value: string; onChange: (value: string) => void }) {
+function Field({
+  label,
+  placeholder,
+  fullWidth,
+  isCurrency,
+  value,
+  onChange,
+  onBlur,
+  isMissing,
+}: PlannerField & {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  isMissing?: boolean;
+}) {
   const { convert, symbol } = useCurrency();
   const displayLabel = isCurrency ? `${label} (${symbol})` : label;
   const displayPlaceholder = isCurrency ? convert(Number(placeholder)) : placeholder;
@@ -17,10 +31,11 @@ function Field({ label, placeholder, fullWidth, isCurrency, value, onChange }: P
           fontFamily: FONT,
           fontSize: 11,
           fontWeight: 600,
-          color: "rgba(255,255,255,0.55)",
+          color: isMissing ? "#ff9a7a" : "rgba(255,255,255,0.55)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           marginBottom: 6,
+          transition: "color 0.15s ease",
         }}
       >
         {displayLabel}
@@ -30,17 +45,20 @@ function Field({ label, placeholder, fullWidth, isCurrency, value, onChange }: P
         aria-label={displayLabel}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         style={{
           width: "100%",
           boxSizing: "border-box",
           padding: "11px 14px",
           borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(255,255,255,0.06)",
+          border: isMissing ? "1px solid rgba(255,104,44,0.75)" : "1px solid rgba(255,255,255,0.14)",
+          background: isMissing ? "rgba(255,104,44,0.08)" : "rgba(255,255,255,0.06)",
           color: "#fff",
           fontFamily: FONT,
           fontSize: 13,
           outline: "none",
+          boxShadow: isMissing ? "0 0 0 3px rgba(255,104,44,0.14)" : "none",
+          transition: "border 0.15s ease, background 0.15s ease, box-shadow 0.15s ease",
         }}
       />
     </div>
@@ -78,6 +96,53 @@ function IconSend() {
   );
 }
 
+// Turns a raw field label ("Budget", "Adults", "Trip Vibe"...) into a
+// natural, first-person phrase so we can ask about it the way a person
+// would, instead of echoing the form label back like a validator.
+function describeFieldNaturally(label: string): string {
+  const key = label.toLowerCase();
+  if (key.includes("destination")) return "where you're dreaming of going";
+  if (key.includes("origin") || key.includes("from")) return "which city you'll be setting off from";
+  if (key.includes("date") || key.includes("when")) return "when you're hoping to travel";
+  if (key.includes("budget") || key.includes("price") || key.includes("cost")) return "roughly what budget you have in mind";
+  if (key.includes("child")) return "how many kids will be joining";
+  if (key.includes("adult") || key.includes("traveler") || key.includes("guest") || key.includes("people")) return "how many of you are travelling";
+  if (key.includes("vibe") || key.includes("style") || key.includes("mood")) return "what kind of vibe you're after for this trip";
+  if (key.includes("night") || key.includes("duration") || key.includes("day")) return "how many days you'd like to be away";
+  return `your ${label.toLowerCase()}`;
+}
+
+// A few warm, varied openers so the very first question doesn't feel
+// copy-pasted every time someone opens the planner.
+const FRIENDLY_OPENERS = [
+  "Before I get going, ",
+  "One quick thing — ",
+  "Happy to start planning! First, ",
+  "Almost there — just ",
+];
+
+// A few short, varied acknowledgements used between questions so a
+// multi-question flow still feels like a real back-and-forth conversation.
+const CONTINUATION_OPENERS = [
+  "Got it, thanks! ",
+  "Perfect, noted. ",
+  "Great, thank you! ",
+  "Awesome. ",
+];
+
+// Asks about exactly ONE missing field at a time — never the whole list —
+// so filling in a multi-field gap feels like a short back-and-forth
+// conversation instead of a wall of validation text.
+function buildSingleFieldQuestion(label: string, isFirstQuestion: boolean): string {
+  const ask = describeFieldNaturally(label);
+  if (isFirstQuestion) {
+    const opener = FRIENDLY_OPENERS[Math.floor(Math.random() * FRIENDLY_OPENERS.length)];
+    return `${opener}could you tell me ${ask}? 😊`;
+  }
+  const opener = CONTINUATION_OPENERS[Math.floor(Math.random() * CONTINUATION_OPENERS.length)];
+  return `${opener}And could you tell me ${ask}?`;
+}
+
 export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate, suggestion }: AIPlannerProps) {
   const { convert } = useCurrency();
   const navigate = useNavigate();
@@ -85,6 +150,10 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(fields.map((field) => [field.name ?? field.label, ""]))
   );
+  const [missingFieldKeys, setMissingFieldKeys] = useState<string[]>([]);
+  // The one field we're currently asking about — we only ever ask about a
+  // single missing field at a time, never the whole list at once.
+  const [awaitingFieldKey, setAwaitingFieldKey] = useState<string | null>(null);
 
   // Shared chat state — used by BOTH the form's "Generate" button and the
   // floating chat widget, so every message lands in one single conversation.
@@ -131,14 +200,81 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
 
   const handleFieldChange = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }));
+    // As soon as someone starts filling in a field we flagged, clear its error state.
+    if (value.trim()) {
+      setMissingFieldKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : prev));
+    }
   };
 
-  const buildMessageFromFields = () => {
+  // Looks up which fields are still empty, optionally against a fresher
+  // values object (useful right after a setValues call, since state
+  // updates aren't visible synchronously).
+  const getMissingFields = (valuesOverride?: Record<string, string>) => {
+    const source = valuesOverride ?? values;
+    return activeFields.filter((field) => {
+      const key = field.name ?? field.label;
+      return !String(source[key] ?? "").trim();
+    });
+  };
+
+  // After a field gets answered (via the form or via chat), this decides
+  // what happens next: ask about the next missing field one at a time, or
+  // — once nothing's left — either auto-continue the conversation or just
+  // let the person know they're ready to hit Generate.
+  const askNextMissingOrFinish = async (
+    answeredKey: string,
+    updatedValues: Record<string, string>,
+    autoSubmitWhenDone: boolean
+  ) => {
+    setMissingFieldKeys((prev) => prev.filter((k) => k !== answeredKey));
+    const stillMissing = getMissingFields(updatedValues);
+
+    if (stillMissing.length) {
+      const nextField = stillMissing[0];
+      const nextKey = nextField.name ?? nextField.label;
+      setAwaitingFieldKey(nextKey);
+      setMissingFieldKeys([nextKey]);
+      setChatLog((current) => [
+        ...current,
+        { role: "assistant", text: buildSingleFieldQuestion(nextField.label, false) },
+      ]);
+      setIsWidgetOpen(true);
+      setHasUnread(false);
+      return;
+    }
+
+    setAwaitingFieldKey(null);
+    setMissingFieldKeys([]);
+
+    if (autoSubmitWhenDone) {
+      await sendToPlanner(buildMessageFromFields(updatedValues));
+    } else {
+      setChatLog((current) => [
+        ...current,
+        { role: "assistant", text: "That's everything I need — hit Generate whenever you're ready! 🎉" },
+      ]);
+      setIsWidgetOpen(true);
+      setHasUnread(false);
+    }
+  };
+
+  // Fires when someone tabs/clicks out of the field we're currently
+  // asking about in the form itself — lets typing directly into the form
+  // advance the same one-at-a-time flow as answering in chat.
+  const handleFieldBlur = async (key: string) => {
+    if (key !== awaitingFieldKey) return;
+    const value = values[key];
+    if (!value || !value.trim()) return;
+    await askNextMissingOrFinish(key, values, false);
+  };
+
+  const buildMessageFromFields = (valuesOverride?: Record<string, string>) => {
+    const source = valuesOverride ?? values;
     return [
       "Please use the information below to start the travel planning conversation.",
       ...activeFields.map((field) => {
         const key = field.name ?? field.label;
-        const value = values[key] || "";
+        const value = source[key] || "";
         return `${field.label}: ${value || "(not provided)"}`;
       }),
     ].join("\n");
@@ -234,22 +370,26 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
   };
 
   const handleGenerate = async () => {
-    const missingFields = activeFields.filter((field) => {
-      const key = field.name ?? field.label;
-      return !String(values[key] ?? "").trim();
-    });
+    const missingFields = getMissingFields();
 
     if (missingFields.length) {
-      const missingLabels = missingFields.map((field) => field.label).join(", ");
+      // Only ever ask about the FIRST missing field — the rest will be
+      // asked one at a time as each answer comes in.
+      const firstField = missingFields[0];
+      const firstKey = firstField.name ?? firstField.label;
+      setAwaitingFieldKey(firstKey);
+      setMissingFieldKeys([firstKey]);
       setChatLog((current) => [
         ...current,
-        { role: "assistant", text: `Please fill in all required fields before generating: ${missingLabels}.` },
+        { role: "assistant", text: buildSingleFieldQuestion(firstField.label, true) },
       ]);
       setIsWidgetOpen(true);
       setHasUnread(false);
       return;
     }
 
+    setAwaitingFieldKey(null);
+    setMissingFieldKeys([]);
     await sendToPlanner(buildMessageFromFields());
   };
 
@@ -257,6 +397,18 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
     const message = chatInput.trim();
     if (!message) return;
     setChatInput("");
+
+    // If we just asked about a specific field, treat this reply as the
+    // answer to THAT field, fill it in, then move on to the next missing
+    // one (or wrap up) — one question at a time.
+    if (awaitingFieldKey) {
+      setChatLog((current) => [...current, { role: "user", text: message }]);
+      const updatedValues = { ...values, [awaitingFieldKey]: message };
+      setValues(updatedValues);
+      await askNextMissingOrFinish(awaitingFieldKey, updatedValues, true);
+      return;
+    }
+
     await sendToPlanner(message);
   };
 
@@ -387,6 +539,8 @@ export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate
                     {...f}
                     value={values[key] ?? ""}
                     onChange={(value) => handleFieldChange(key, value)}
+                    onBlur={() => handleFieldBlur(key)}
+                    isMissing={missingFieldKeys.includes(key)}
                   />
                 );
               })}
