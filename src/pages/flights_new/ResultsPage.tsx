@@ -325,7 +325,7 @@ function FarePolicyModal({
         style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(3px)" }}
         onClick={onClose}
       />
-      <div style={{
+      <div className="fare-policy-modal" style={{
         position: "relative", width: "100%", maxWidth: 480,
         background: "#fff", borderRadius: 18, maxHeight: "85dvh",
         display: "flex", flexDirection: "column", overflow: "hidden",
@@ -449,7 +449,7 @@ function FareModal({
         style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
         onClick={onClose}
       />
-      <div style={{
+      <div className="fare-modal" style={{
         position: "relative", width: "100%", maxWidth: 780,
         background: "#fff", borderRadius: 20, maxHeight: "92dvh",
         display: "flex", flexDirection: "column", overflow: "hidden",
@@ -457,7 +457,7 @@ function FareModal({
       }}>
 
         {/* Header */}
-        <div style={{
+        <div className="fare-modal-header" style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "14px 20px", borderBottom: `1px solid ${S.border}`, flexShrink: 0,
         }}>
@@ -486,7 +486,7 @@ function FareModal({
         </div>
 
         {/* Body */}
-        <div style={{ overflowY: "auto", flex: 1, padding: "20px" }}>
+        <div className="fare-modal-body" style={{ overflowY: "auto", flex: 1, padding: "20px" }}>
           {tiers.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>✈️</div>
@@ -497,7 +497,7 @@ function FareModal({
             </div>
           ) : (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+              <div className="fare-tier-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
                 {tiers.map((tier, idx) => (
                   <FareTierCard
                     key={tier.resultIndex + idx}
@@ -518,7 +518,7 @@ function FareModal({
 
         {/* Footer */}
         {tiers.length > 0 && (
-          <div style={{
+          <div className="fare-modal-footer" style={{
             padding: "14px 20px", borderTop: `1px solid ${S.border}`,
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: S.surface, flexShrink: 0, gap: 16,
@@ -536,6 +536,7 @@ function FareModal({
             </div>
             <button
               onClick={() => onBook(tiers[selected])}
+              className="fare-modal-cta"
               style={{
                 background: S.accent, color: "#fff", border: "none", borderRadius: 12,
                 padding: "13px 28px", fontFamily: "'Sora',sans-serif", fontWeight: 800,
@@ -587,11 +588,11 @@ function FlightCard({
         transform: hovered ? "translateY(-1px)" : "none",
       }}
     >
-      <div style={{ padding: "10px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="fc-pad" style={{ padding: "10px 18px" }}>
+        <div className="fc-row" style={{ display: "flex", alignItems: "center", gap: 10 }}>
 
           {/* Airline */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 100, flexShrink: 0 }}>
+          <div className="fc-airline" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 100, flexShrink: 0 }}>
             <AirlineLogo code={flight.airlineCode} size="md" />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 11, color: S.navyDeep, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{flight.airline}</div>
@@ -605,16 +606,16 @@ function FlightCard({
           </div>
 
           {/* Times + route line */}
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 0 }}>
+          <div className="fc-times" style={{ flex: 1, display: "flex", alignItems: "center", gap: 0, minWidth: 0 }}>
             {/* Depart */}
             <div style={{ textAlign: "center", minWidth: 56 }}>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, lineHeight: 1 }}>{flight.departTime}</div>
+              <div className="fc-time-val" style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, lineHeight: 1 }}>{flight.departTime}</div>
               <div style={{ fontSize: 10, fontWeight: 600, color: S.muted, marginTop: 2 }}>{flight.fromCode}</div>
               {flight.terminal && <div style={{ fontSize: 9, color: S.mutedLt }}>T{flight.terminal}</div>}
             </div>
 
             {/* Route line */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 10px" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 10px", minWidth: 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#6b7fa3", fontFamily: "'Sora',sans-serif" }}>{flight.durationLabel}</div>
               <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 3 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", border: `1.5px solid ${S.mutedLt}`, flexShrink: 0 }} />
@@ -632,14 +633,14 @@ function FlightCard({
                   <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                 </svg>
               </div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: flight.stops === 0 ? S.green : "#d97706" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: flight.stops === 0 ? S.green : "#d97706", whiteSpace: "nowrap" }}>
                 {flight.stops === 0 ? "Non-stop" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}${flight.stopInfo ? ` · ${flight.stopInfo}` : ""}`}
               </div>
             </div>
 
             {/* Arrive */}
             <div style={{ textAlign: "center", minWidth: 56 }}>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, lineHeight: 1 }}>
+              <div className="fc-time-val" style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: S.ink, lineHeight: 1 }}>
                 {flight.arriveTime}
                 {flight.arriveDate !== flight.departDate && (
                   <sup style={{ fontSize: 10, color: S.accent, fontWeight: 700, marginLeft: 1 }}>+1</sup>
@@ -650,7 +651,7 @@ function FlightCard({
           </div>
 
           {/* Baggage + refundable */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+          <div className="fc-bags" style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4, background: S.surface, borderRadius: 7, padding: "4px 7px" }}>
               <span style={{ fontSize: 11 }}>🧳</span>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#4a5e7a" }}>{flight.checkinBaggage}</span>
@@ -662,7 +663,7 @@ function FlightCard({
           </div>
 
           {/* Price + CTA */}
-          <div style={{
+          <div className="fc-price" style={{
             paddingLeft: 14, borderLeft: `1px solid ${S.border}`,
             display: "flex", flexDirection: "column", alignItems: "flex-end",
             gap: 4, minWidth: 130, flexShrink: 0,
@@ -679,6 +680,7 @@ function FlightCard({
             )}
             <button
               onClick={() => onViewFares(flight)}
+              className="fc-cta"
               style={{
                 background: S.accent, color: "#fff", border: "none",
                 borderRadius: 10, padding: "9px 16px",
@@ -722,7 +724,7 @@ function FlightCard({
 
       {expanded && (
         <div style={{ borderTop: `1px solid ${S.border}`, background: S.surface, padding: "14px 16px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          <div className="fc-details-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
             {[
               ["Aircraft",    flight.craft ?? "—"],
               ["Terminal",    flight.terminal ? `T${flight.terminal}` : "—"],
@@ -1029,12 +1031,12 @@ function SkeletonCard() {
           <div style={{ height: 12, background: "#e2ecf7", borderRadius: 6, width: "40%" }} />
           <div style={{ height: 10, background: "#eef3fa", borderRadius: 6, width: "25%" }} />
         </div>
-        <div style={{ flex: 1, height: 2, background: "#eef3fa", borderRadius: 2 }} />
+        <div className="hidden sm:block" style={{ flex: 1, height: 2, background: "#eef3fa", borderRadius: 2 }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
           <div style={{ height: 20, background: "#e2ecf7", borderRadius: 6, width: 80 }} />
           <div style={{ height: 10, background: "#eef3fa", borderRadius: 6, width: 55 }} />
         </div>
-        <div style={{ height: 34, width: 90, background: "#e2ecf7", borderRadius: 9, flexShrink: 0 }} />
+        <div className="hidden sm:block" style={{ height: 34, width: 90, background: "#e2ecf7", borderRadius: 9, flexShrink: 0 }} />
       </div>
     </div>
   );
@@ -1319,6 +1321,114 @@ const sourceFlights = useMemo(() => {
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
+
+        /* ============================================================
+           RESPONSIVE LAYER
+           Breakpoints: >=1024px desktop, 768-1023px tablet,
+           481-767px large phone, <=480px small phone.
+           Tailwind's lg: (1024px) utility classes already hide/show the
+           desktop sidebar vs. the mobile filter/sort chip row — the
+           rules below handle everything else: header padding, the
+           flight-card layout, and the fare/policy modals.
+        ============================================================ */
+
+        .results-header-pad { padding: 16px 70px; }
+        .results-body { padding: 12px 24px; }
+
+        @media (max-width: 1023px) {
+          .results-header-pad { padding: 12px 16px; }
+          .results-body { padding: 10px 12px; gap: 12px !important; }
+        }
+        @media (max-width: 480px) {
+          .results-header-pad { padding: 10px 10px; }
+        }
+
+        /* Flight card */
+        .fc-pad { padding: 10px 18px; }
+        .fc-row { flex-wrap: nowrap; }
+        .fc-airline { min-width: 100px; }
+        .fc-times { min-width: 0; }
+        .fc-bags { }
+        .fc-price { padding-left: 14px; border-left: 1px solid ${S.border}; align-items: flex-end; min-width: 130px; }
+
+        @media (max-width: 900px) {
+          .fc-bags { display: none !important; }
+        }
+
+        @media (max-width: 680px) {
+          .fc-pad { padding: 12px 14px; }
+          .fc-row {
+            flex-wrap: wrap;
+            row-gap: 10px;
+            column-gap: 10px;
+          }
+          .fc-airline {
+            min-width: 0;
+            width: auto;
+            order: 1;
+            flex: 1 1 auto;
+          }
+          .fc-price {
+            order: 2;
+            width: auto;
+            min-width: 0;
+            padding-left: 0;
+            border-left: none;
+            align-items: flex-end;
+            flex: 0 0 auto;
+          }
+          .fc-times {
+            order: 3;
+            flex: 1 1 100%;
+            width: 100%;
+            padding-top: 8px;
+            border-top: 1px dashed ${S.border};
+          }
+          .fc-bags {
+            order: 4;
+            display: flex !important;
+            flex-direction: row !important;
+            flex: 1 1 100%;
+            width: 100%;
+          }
+          .fc-time-val { font-size: 17px !important; }
+        }
+
+        @media (max-width: 380px) {
+          .fc-time-val { font-size: 15px !important; }
+          .fc-price > div:first-child { font-size: 19px !important; }
+        }
+
+        .fc-details-grid { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 560px) {
+          .fc-details-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+
+        /* Fare modal */
+        .fare-modal { max-width: 780px; }
+        .fare-modal-header { padding: 14px 20px; }
+        .fare-modal-body { padding: 20px; }
+        .fare-modal-footer { padding: 14px 20px; flex-direction: row; }
+        .fare-tier-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+        @media (max-width: 640px) {
+          .fare-modal-header { padding: 12px 14px; gap: 8px !important; }
+          .fare-modal-body { padding: 14px; }
+          .fare-modal-footer {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+            padding: 12px 14px;
+          }
+          .fare-modal-cta { width: 100%; }
+          .fare-tier-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important; gap: 10px !important; }
+        }
+
+        /* Fare policy modal */
+        .fare-policy-modal { max-width: 480px; }
+        @media (max-width: 480px) {
+          .fare-policy-modal { border-radius: 16px 16px 0 0 !important; }
+        }
       `}</style>
 
       {/* ── HEADER ── */}
@@ -1326,7 +1436,7 @@ const sourceFlights = useMemo(() => {
          background: "#fff"
         //background: `linear-gradient(160deg, #081428 0%, ${S.navy} 60%, ${S.navyMid} 100%)`,
       }}>
-<div style={{ width: "100%", padding: "16px 70px" }}>
+<div className="results-header-pad" style={{ width: "100%" }}>
 
 <OneSearchBar
   form={form}
@@ -1464,7 +1574,7 @@ const sourceFlights = useMemo(() => {
       </div>
 
       {/* ── BODY ── */}
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "12px 12px", display: "flex", gap: 20 }}>
+      <div className="results-body" style={{ maxWidth: 1440, margin: "0 auto", display: "flex", gap: 20 }}>
 
         {/* Desktop sidebar */}
         <aside style={{ width: 260, flexShrink: 0 }} className="hidden lg:block">
@@ -1492,6 +1602,18 @@ const sourceFlights = useMemo(() => {
             </span>
           </div>
 
+          {/* Mobile-only compact results heading (no lg:flex duplicate needed since chip row above already shows filter/sort) */}
+          <div className="lg:hidden" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2px" }}>
+            <span style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 12, color: S.navyDeep }}>
+              {isMultiCity
+                ? `Leg ${activeTab + 1}: ${legs[activeTab]?.from.code} → ${legs[activeTab]?.to.code}`
+                : "Departing flights"}
+            </span>
+            <span style={{ fontSize: 11, color: S.muted }}>
+              {loading ? "Searching…" : `${filtered.length} of ${sourceFlights.length}`}
+            </span>
+          </div>
+
           {/* Multi-city status */}
           {isMultiCity && legs.length > 0 && !loading && (
             <div>
@@ -1514,8 +1636,8 @@ const sourceFlights = useMemo(() => {
 
           {/* Round trip step indicator */}
           {isRoundTrip && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981", flexShrink: 0 }} />
               <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Sora',sans-serif", color: S.navyDeep }}>
                 {selectedOutboundFlight ? "✓ Outbound Selected" : "Step 1: Pick Outbound Flight"}
                 {" · "}{form.from?.code} → {form.to?.code}
@@ -1587,7 +1709,7 @@ const sourceFlights = useMemo(() => {
               {/* Return flights */}
               {isRoundTrip && filteredReturn.length > 0 && (
                 <>
-                  <div id="return-flights-section" style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 6px" }}>
+                  <div id="return-flights-section" style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 6px", flexWrap: "wrap" }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: selectedOutboundFlight ? S.navyMid : "#10b981" }} />
                     <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "'Sora',sans-serif", color: S.navyDeep }}>
                       {selectedOutboundFlight ? "Step 2: Pick Return Flight" : "Return"}

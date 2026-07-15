@@ -57,9 +57,8 @@ export default function HotelSearchBar({
   return (
     <div className={cn('relative z-30', className)}>
       <div
-        className="md:flex md:items-stretch"
+        className="flex flex-col md:flex-row md:items-stretch"
         style={{
-          display: "flex",
           background: "#fff",
           borderRadius: variant === 'results' ? 0 : 14,
           boxShadow: variant === 'results' ? "none" : "0 8px 30px rgba(0,0,0,0.12)",
@@ -69,7 +68,7 @@ export default function HotelSearchBar({
         }}
       >
         {/* Destination */}
-        <div style={{ zIndex: 50, flexShrink: 0, minWidth: 240, maxWidth: 320, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 50, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[240px] md:max-w-[320px] border-b md:border-b-0">
           <FieldLabel>Destination</FieldLabel>
           <LocationAutocomplete
             variant="bar"
@@ -101,7 +100,7 @@ export default function HotelSearchBar({
         />
 
         {/* Guests */}
-        <div style={{ zIndex: 20, flexShrink: 0, minWidth: 200, maxWidth: 280, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 20, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[200px] md:max-w-[280px] border-b md:border-b-0">
           <FieldLabel>Guest</FieldLabel>
           <GuestsRoomsSelector
             variant="bar"
@@ -120,7 +119,7 @@ export default function HotelSearchBar({
         </div>
 
         {/* Nationality */}
-        <div style={{ zIndex: 10, flexShrink: 0, minWidth: 150, maxWidth: 200, minHeight: 64, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="border-b md:border-b-0">
+        <div style={{ zIndex: 10, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[150px] md:max-w-[200px] border-b md:border-b-0">
           <FieldLabel>Nationality</FieldLabel>
           <NationalitySelector
             variant="bar"
@@ -138,12 +137,13 @@ export default function HotelSearchBar({
           onClick={onSearch}
           style={{
             background: '#d06549', color: '#fff', border: 'none',
-            padding: '0 26px', cursor: 'pointer',
+            padding: '16px 26px', cursor: 'pointer',
             fontWeight: 800, fontSize: 13, letterSpacing: '0.04em',
             transition: 'background .2s', flexShrink: 0,
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderRadius: variant === 'results' ? 0 : '0 14px 14px 0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            borderRadius: variant === 'results' ? 0 : '0 0 14px 14px',
           }}
+          className="md:!rounded-r-[14px] md:!rounded-bl-none"
           onMouseEnter={e => e.currentTarget.style.background = '#b8543a'}
           onMouseLeave={e => e.currentTarget.style.background = '#d06549'}
         >

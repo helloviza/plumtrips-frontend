@@ -81,8 +81,8 @@ const TRENDING = [
       </div>
 
       {/* Hero content */}
-      <div className="relative z-30 flex-grow flex items-center w-full">
-        <div className="relative z-[30] mx-auto w-[92%] px-6 pt-[140px] pb-14">
+      <div className="relative z-50 flex-grow flex items-center w-full">
+        <div className="relative z-[50] mx-auto w-[92%] px-6 pt-[140px] pb-14">
 
           {/* Headline + Deal Card */}
           <div
@@ -148,10 +148,10 @@ const TRENDING = [
             </div>
 
             {/* Right: Hotel Deal Card */}
-            <div style={{ flexShrink: 0, alignSelf: "flex-start", marginTop: 4 }}>
+            <div className="shrink-0 w-full md:w-auto self-start mt-1">
               <div
+                className="w-full md:w-[212px]"
                 style={{
-                  width: 212,
                   borderRadius: 16,
                   padding: "14px 16px",
                   background: "rgba(255,255,255,0.12)",

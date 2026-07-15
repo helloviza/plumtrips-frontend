@@ -178,7 +178,7 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
       
       {/* Sticky Bottom Bar for Selected Hotel */}
       {isSelected && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center animate-in slide-in-from-bottom-full duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center">
           <div className="max-w-6xl w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
@@ -227,6 +227,7 @@ export default function HotelResults() {
   // Local state
   const [propertySearch, setPropertySearch] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
   const showTotalPrice = true;
 
@@ -274,8 +275,8 @@ export default function HotelResults() {
     let finalCheckIn = ci;
     let finalCheckOut = co;
 
-    // Default dates if empty OR if navigated from header
-    if (!finalCheckIn || !finalCheckOut || isDefault) {
+    // Default dates if BOTH are empty OR if navigated from header
+    if ((!finalCheckIn && !finalCheckOut) || isDefault) {
       finalCheckIn = new Date();
       finalCheckIn.setDate(finalCheckIn.getDate() + 1);
       finalCheckOut = new Date();
@@ -287,7 +288,7 @@ export default function HotelResults() {
       setSearchParams({ childrenAges: Array(searchParams.children).fill(5) });
     }
 
-    if (!finalLocation) return;
+    if (!finalLocation || !finalCheckIn || !finalCheckOut) return;
 
     // Skip if nothing meaningful changed (avoids double-firing on mount)
     const currentKey = `${searchParams.rooms}-${searchParams.adults}-${searchParams.children}-${finalLocation}-${finalCheckIn.toISOString().split('T')[0]}-${finalCheckOut.toISOString().split('T')[0]}`;
@@ -423,29 +424,73 @@ export default function HotelResults() {
         className="sticky top-[52px] md:top-[88px] z-40 border-b border-gray-200 backdrop-blur-sm shadow-sm"
         style={{ boxShadow: "0 8px 28px rgba(15,23,42,0.08)" }}
       >
-        <div className="mx-auto max-w-7xl ">
-          <HotelSearchBar 
-            onSearch={() => {
-               const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
-               const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
-               
-               search({
-                 cityCode: searchParams.locationId ?? searchParams.location,
-                 checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
-                 checkOut: checkOut ? checkOut.toISOString().split('T')[0] : '',
-                 rooms: searchParams.rooms,
-                 adults: searchParams.adults,
-                 children: searchParams.children || undefined,
-                 childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
-                 nationality: searchParams.nationality || 'IN',
-               });
-            }} 
-          />
+        <div className="mx-auto max-w-7xl">
+          {/* Desktop Search Bar */}
+          <div className="hidden md:block">
+            <HotelSearchBar 
+              onSearch={() => {
+                 const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
+                 const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
+                 
+                 search({
+                   cityCode: searchParams.locationId ?? searchParams.location,
+                   checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
+                   checkOut: checkOut ? checkOut.toISOString().split('T')[0] : '',
+                   rooms: searchParams.rooms,
+                   adults: searchParams.adults,
+                   children: searchParams.children || undefined,
+                   childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
+                   nationality: searchParams.nationality || 'IN',
+                 });
+              }} 
+            />
+          </div>
+
+          {/* Mobile Search Summary */}
+          <div className="md:hidden p-3 flex items-center justify-between bg-white/90 backdrop-blur-md">
+            <div className="flex flex-col min-w-0 flex-1 mr-4">
+               <span className="font-bold text-[13px] text-slate-800 truncate leading-tight mb-0.5">{searchParams.location || 'Anywhere'}</span>
+               <span className="text-[11px] text-slate-500 font-medium truncate">
+                 {searchParams.checkIn ? new Date(searchParams.checkIn).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'Any date'} - {searchParams.checkOut ? new Date(searchParams.checkOut).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'Any date'} • {searchParams.adults} Adult{searchParams.adults > 1 ? 's' : ''}
+               </span>
+            </div>
+            <button 
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className="text-[11px] font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 uppercase tracking-wide shrink-0 transition-colors hover:bg-blue-100"
+            >
+              {showMobileSearch ? 'Close' : 'Modify'}
+            </button>
+          </div>
+
+          {/* Mobile Expanded Search Bar */}
+          {showMobileSearch && (
+            <div className="md:hidden bg-white p-3 max-h-[75vh] overflow-y-auto shadow-inner border-t border-slate-100">
+               <HotelSearchBar 
+                 variant="results"
+                 onSearch={() => {
+                   setShowMobileSearch(false);
+                   const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
+                   const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
+                   
+                   search({
+                     cityCode: searchParams.locationId ?? searchParams.location,
+                     checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
+                     checkOut: checkOut ? checkOut.toISOString().split('T')[0] : '',
+                     rooms: searchParams.rooms,
+                     adults: searchParams.adults,
+                     children: searchParams.children || undefined,
+                     childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
+                     nationality: searchParams.nationality || 'IN',
+                   });
+                 }} 
+               />
+            </div>
+          )}
         </div>
       </div>
       
       {/* ── Body ── */}
-      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "20px 24px", display: "flex", gap: 20 }}>
+      <div className="flex flex-col lg:flex-row max-w-[1440px] mx-auto px-4 md:px-6 py-5 gap-5">
         {/* ── Left sidebar ── */}
         <aside style={{ width: 260, flexShrink: 0 }} className="hidden lg:block">
           <div className="sticky top-[240px]">
@@ -543,7 +588,7 @@ export default function HotelResults() {
 
       {/* ── Sticky Room Selection Summary Bar ── */}
       {totalRoomsSelected > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-md transition-transform translate-y-0">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6">
             <div>
               <div className="flex items-end gap-3 mb-1">

@@ -130,7 +130,7 @@ export default function HotelSearchSummaryBar() {
               {/* Check-in + Check-out — trigger pair with floating picker */}
               <div className="sm:col-span-2">
                 <FieldLabel>Dates</FieldLabel>
-                <div className="flex rounded-lg border border-slate-200 bg-white overflow-visible">
+                <div className="flex flex-col sm:flex-row rounded-lg border border-slate-200 bg-white overflow-visible">
                   <HotelRangePickerTriggers
                     checkIn={checkIn}
                     checkOut={checkOut}

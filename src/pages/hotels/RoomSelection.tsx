@@ -701,7 +701,7 @@ export default function RoomSelection() {
 
       {/* Checkout Sticky Bottom Bar (Only visible when rooms are selected) */}
       {totalRoomsSelected > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-12px_40px_rgba(15,23,42,0.12)] transform transition-transform animate-in slide-in-from-bottom-full">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-12px_40px_rgba(15,23,42,0.12)]">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4">
             <div>
               <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Your Selection</div>
