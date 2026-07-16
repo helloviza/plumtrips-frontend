@@ -233,8 +233,8 @@ export default function Footer() {
         {/* Left Brand */}
         <div className="footer-brand">
           <img
-            src="/assets/logoW&OO.png"
-            alt="PlumTrips"
+            src="/assets/footer-logo.png"
+            alt="Plumtrips"
             className="footer-logo"
           />
           <h2>

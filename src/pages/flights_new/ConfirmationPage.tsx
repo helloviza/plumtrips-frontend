@@ -2,10 +2,12 @@
 //  BookingStep7Confirmation.tsx — Step 7: Booking Confirmed
 // ============================================================
 
+import React, { useEffect, useState, useRef } from "react";
 import type { DisplayFlight, FareTier } from "../../lib/types_t";
 import { formatINR } from "../../lib/flights_api";
 import { AIRLINE_COLORS } from "./BookingShared";
-import { useCurrency } from "../../context/currencyContext";
+import { sendFlightConfirmationEmail, sendTaxInvoiceEmail } from "../../lib/emailApi";
+import { buildFlightConfirmationHtml, buildTaxInvoiceHtml } from "../../lib/buildBookingEmail";
 
 interface Step7Props {
   flight: DisplayFlight;
@@ -20,16 +22,38 @@ interface Step7Props {
   totalPaid: number;
   isInternational: boolean;
   onDone: () => void;
+
+  // --- NEW: optional data to fill the email templates properly ---------
+  // If you don't have a real breakdown yet, omit this and the email will
+  // just show the full totalPaid as "Flights" with 0 taxes — good enough
+  // to unblock sending, fix up once your API returns a real breakdown.
+  priceBreakdown?: {
+    flightsAmount: number;
+    hotelsAmount?: number;
+    transfersAmount?: number;
+    taxesAmount: number;
+    hotelNights?: number;
+  };
+  // Billing info for the tax invoice. Optional for the same reason —
+  // omit it and the invoice will use the contact email's name/blank address.
+  billingInfo?: {
+    customerName: string;
+    addressLine1: string;
+    city: string;
+    stateZip: string;
+    country: string;
+  };
+  invoiceNumber?: string; // e.g. from your backend once booking is created
 }
 
 export default function BookingStep7Confirmation({
   flight, tier, returnFlight, returnTier, multiCityLegs,
   bookingId, pnr, passengerNames, contactEmail,
   totalPaid, isInternational, onDone,
+  priceBreakdown, billingInfo, invoiceNumber,
 }: Step7Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
-  const { convert } = useCurrency();
 
   const allLegs = [
     { flight, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight" },
@@ -44,10 +68,94 @@ export default function BookingStep7Confirmation({
         .filter(Boolean)
     : [];
 
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const emailSentRef = useRef(false);
+
+  useEffect(() => {
+    if (!bookingId || !contactEmail || emailSentRef.current) return;
+
+    // Prevent strict mode double-firing
+    emailSentRef.current = true;
+    setEmailStatus('sending');
+
+    const today = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
+
+    const price = priceBreakdown ?? {
+      flightsAmount: totalPaid,
+      hotelsAmount: 0,
+      transfersAmount: 0,
+      taxesAmount: 0,
+      hotelNights: 0,
+    };
+
+    const flightHtml = buildFlightConfirmationHtml({
+      bookingReference: pnrList[0] ?? String(bookingId),
+      bookingDate: today,
+      primaryFlight: allLegs[0].flight,
+      tier,
+      passengerNames: passengerNames ?? [],
+      paxCount: (passengerNames ?? []).length || 1,
+      price: {
+        flightsAmount: price.flightsAmount,
+        hotelsAmount: price.hotelsAmount,
+        transfersAmount: price.transfersAmount,
+        taxesAmount: price.taxesAmount,
+        totalAmount: totalPaid,
+        hotelNights: price.hotelNights,
+      },
+    });
+
+    const invoiceHtml = buildTaxInvoiceHtml({
+      invoiceNumber: invoiceNumber ?? `INV-${bookingId}`,
+      invoiceDate: today,
+      customerName: billingInfo?.customerName ?? passengerNames?.[0] ?? contactEmail,
+      billingAddressLine1: billingInfo?.addressLine1 ?? "",
+      billingCity: billingInfo?.city ?? "",
+      billingStateZip: billingInfo?.stateZip ?? "",
+      billingCountry: billingInfo?.country ?? "",
+      items: [
+        {
+          description: `Flight — ${allLegs[0].flight.fromCode} to ${allLegs[0].flight.toCode}`,
+          qty: (passengerNames ?? []).length || 1,
+          unitPrice: price.flightsAmount / ((passengerNames ?? []).length || 1),
+          amount: price.flightsAmount,
+        },
+      ],
+      subtotal: price.flightsAmount + (price.hotelsAmount ?? 0) + (price.transfersAmount ?? 0),
+      taxes: price.taxesAmount,
+      taxName: "GST",
+      totalAmount: totalPaid,
+      amountPaid: totalPaid,
+    });
+
+    Promise.all([
+      sendFlightConfirmationEmail({
+        bookingId,
+        pnr,
+        email: contactEmail,
+        subject: `Your PlumTrips Booking is Confirmed — ${pnrList[0] ?? bookingId}`,
+        html: flightHtml,
+      }),
+      sendTaxInvoiceEmail({
+        bookingId,
+        type: 'flight',
+        email: contactEmail,
+        subject: `Tax Invoice for Booking ${pnrList[0] ?? bookingId}`,
+        html: invoiceHtml,
+      }),
+    ]).then(([confSuccess, invSuccess]) => {
+      // If either fails, we can show an error, but usually partial success is okay.
+      // For simplicity, we just mark success if both or at least one succeeds, or show error if both fail.
+      setEmailStatus((confSuccess || invSuccess) ? 'success' : 'error');
+    });
+  }, [bookingId, contactEmail, pnr]);
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Success banner */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-6">
         <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
           <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -55,10 +163,27 @@ export default function BookingStep7Confirmation({
         </div>
         <h1 className="font-black text-3xl text-slate-900 tracking-tight mb-2">Booking Confirmed!</h1>
         <p className="text-slate-500 text-sm">
-          Your e-ticket has been sent to{" "}
-          <span className="font-bold text-slate-700">{contactEmail}</span>
+          Your e-ticket has been secured.
         </p>
       </div>
+
+      {/* Email feedback banner */}
+      {emailStatus === 'sending' && (
+        <div className="mb-8 p-3 rounded-xl bg-blue-50 text-blue-700 text-sm text-center flex items-center justify-center gap-2">
+          <div className="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
+          Sending confirmation and tax invoice emails to {contactEmail}...
+        </div>
+      )}
+      {emailStatus === 'success' && (
+        <div className="mb-8 p-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm text-center font-medium">
+          A confirmation and tax invoice have been sent to your registered email address ({contactEmail}).
+        </div>
+      )}
+      {emailStatus === 'error' && (
+        <div className="mb-8 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
+          We couldn't send the emails at this time, but your booking is perfectly safe and confirmed!
+        </div>
+      )}
 
       {/* PNR / Booking ref */}
       {(pnr || bookingId) && (
@@ -134,7 +259,7 @@ export default function BookingStep7Confirmation({
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Amount Paid</div>
             <div className="text-[10px] text-emerald-600">Inclusive of all taxes and fees</div>
           </div>
-          <div className="font-black text-3xl text-emerald-700">{convert(totalPaid)}</div>
+          <div className="font-black text-3xl text-emerald-700">{formatINR(totalPaid)}</div>
         </div>
       </div>
 

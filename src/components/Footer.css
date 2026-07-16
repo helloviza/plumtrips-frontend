@@ -58,9 +58,10 @@
   width: auto;
   object-fit: contain;
   object-position: left center;
-  margin-top: -30px;
-  margin-left: -20px;
-  margin-bottom: 0px;
+  margin-top: -5px;
+  margin-left: -5px;
+  margin-bottom: 5px;
+  border-radius: 10px;
 }
 
 .cta {

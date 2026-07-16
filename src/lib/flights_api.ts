@@ -1794,6 +1794,75 @@ export async function apiBookTicket(input: BookTicketInput): Promise<BookTicketR
   };
 }
 
+
+// ─── CANCEL PNR ────────────────────────────────────────────
+ 
+export type CancelPNRInput = {
+  bookingId: number;
+  source:    number;   // TBO Source (same numeric Source you get back on the flight result)
+  remarks?:  string;   // optional reason, shown to the airline/TBO ops team
+};
+ 
+export type CancelPNRResult = {
+  success:         boolean;
+  cancellationId?: number;
+  status?:         string;   // e.g. "Requested" | "Cancelled" | "Rejected" | "InProgress"
+  message?:        string;
+  refundAmount?:   number;
+};
+ 
+export async function apiCancelPNR(input: CancelPNRInput): Promise<CancelPNRResult> {
+  if (MOCK_MODE) {
+    await new Promise((r) => setTimeout(r, 1200));
+    return {
+      success:        true,
+      cancellationId: Math.floor(Math.random() * 900_000 + 100_000),
+      status:         "Requested",
+      message:        "Cancellation request submitted successfully. Refund (if applicable) will be processed as per the fare rules.",
+      refundAmount:   0,
+    };
+  }
+ 
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/cancelPNR`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({
+      bookingId: input.bookingId,
+      source:    JSON.stringify(input.source),
+      Remarks:   input.remarks ?? "",
+    }),
+  });
+ 
+  if (!res.ok) {
+    let errMsg = `Cancellation request failed (HTTP ${res.status})`;
+    try {
+      const errJson = await res.json();
+      if (errJson?.message) errMsg = errJson.message;
+      else if (errJson?.error) errMsg = errJson.error;
+    } catch { /* ignore */ }
+    throw new Error(errMsg);
+  }
+ 
+  const json = await res.json();
+  if (json?.ok === false) throw new Error(json?.message ?? "Cancellation failed");
+ 
+  const responseData = json?.data ?? json;
+  const response      = responseData?.Response ?? responseData;
+ 
+  const tboError = response?.Error;
+  if (tboError?.ErrorCode && tboError.ErrorCode !== 0) {
+    throw new Error(tboError.ErrorMessage || "Cancellation failed");
+  }
+ 
+  return {
+    success:        true,
+    cancellationId: response?.CancellationId ?? response?.CancellationRequestId,
+    status:         response?.CancellationStatus ?? response?.Status ?? "Requested",
+    message:        response?.Message ?? "Cancellation request submitted.",
+    refundAmount:   response?.RefundAmount,
+  };
+}
+
 // ─── AIRPORTS ──────────────────────────────────────────────
 
 export async function apiGetAirports(): Promise<Airport[]> {
