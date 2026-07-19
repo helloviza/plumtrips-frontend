@@ -825,6 +825,97 @@ function MultiCityPanel({
 const IconPlane  = () => <svg width={16} height={16} fill="none" stroke={S.navyMid} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>;
 const IconCalendar = () => <svg width={16} height={16} fill="none" stroke={S.navyMid} strokeWidth={2} viewBox="0 0 24 24"><rect x={3} y={4} width={18} height={18} rx={2} /><path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" /></svg>;
 const IconUsers  = () => <svg width={16} height={16} fill="none" stroke={S.navyMid} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx={9} cy={7} r={4} /><path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>;
+const IconSeat   = () => <svg width={16} height={16} fill="none" stroke={S.navyMid} strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 4v9a2 2 0 002 2h8" /><path strokeLinecap="round" strokeLinejoin="round" d="M5 20h14M8 20l1-5M18 20l-2-5M15 15h3a2 2 0 002-2v-1" /></svg>;
+const IconCard   = () => <svg width={16} height={16} fill="none" stroke={S.navyMid} strokeWidth={2} viewBox="0 0 24 24"><rect x={2} y={5} width={20} height={14} rx={2.5} /><path strokeLinecap="round" d="M2 9.5h20" /></svg>;
+
+// ─── TOP-ROW DROPDOWN TRIGGER (desktop row 1) ─────────────────────────────────
+function TopDropdownButton({
+  icon, label, active, onClick,
+}: { icon: React.ReactNode; label: string; active?: boolean; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button type="button" onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 7,
+        background: active || hov ? "#f0f5fb" : "transparent",
+        border: "none", borderRadius: 10, padding: "9px 12px",
+        cursor: "pointer", fontSize: 13.5, fontWeight: 700, color: S.navyDeep,
+        transition: "background .15s", whiteSpace: "nowrap",
+      }}>
+      {icon}
+      <span>{label}</span>
+      <svg width={10} height={10} fill="none" stroke="#9aa9c0" strokeWidth={2.3} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  );
+}
+
+// ─── ROW-2 ICON FIELD (from / to / date boxes) ────────────────────────────────
+function IconField({
+  icon, label, value, active, onClick, style: extra,
+}: {
+  icon: React.ReactNode; label: string; value: string;
+  active?: boolean; onClick: () => void; style?: React.CSSProperties;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button type="button" onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "13px 18px", minWidth: 0,
+        background: active ? "#eef4ff" : hov ? "#f5f8fc" : "transparent",
+        border: "none", cursor: "pointer", textAlign: "left",
+        transition: "background .15s", ...extra,
+      }}>
+      <span style={{ flexShrink: 0, display: "flex" }}>{icon}</span>
+      <span style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11.5, color: S.muted, fontWeight: 600, marginBottom: 2, whiteSpace: "nowrap" }}>{label}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: S.navyDeep, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      </span>
+    </button>
+  );
+}
+
+// ─── PAYMENT METHOD POPOVER (UI-only, decorative — no data/API behind it) ─────
+function PaymentMethodPopover({
+  anchorRef, open, value, onChange, onClose,
+}: {
+  anchorRef: React.RefObject<HTMLElement | null>; open: boolean; value: string;
+  onChange: (v: string) => void; onClose: () => void;
+}) {
+  const popupRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (anchorRef.current?.contains(e.target as Node)) return;
+      if (popupRef.current?.contains(e.target as Node)) return;
+      onClose();
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open, anchorRef, onClose]);
+  if (!open) return null;
+  const options = ["All Payment Methods", "Credit / Debit Card", "UPI", "Net Banking", "Wallets"];
+  return (
+    <div ref={popupRef} style={{
+      position: "absolute", top: "calc(100% + 6px)", right: 0, width: 220, zIndex: 60,
+      background: S.navy, borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)",
+      boxShadow: "0 24px 64px rgba(0,0,0,0.55)", overflow: "hidden",
+    }}>
+      {options.map(o => (
+        <button key={o} type="button" onClick={() => onChange(o)}
+          style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: value === o ? "rgba(255,255,255,0.12)" : "transparent", border: "none", borderBottom: "1px solid rgba(255,255,255,0.06)", color: "#fff", fontSize: 13, fontWeight: value === o ? 800 : 500, cursor: "pointer" }}
+          onMouseEnter={e => { if (value !== o) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+          onMouseLeave={e => { if (value !== o) e.currentTarget.style.background = "transparent"; }}>
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export interface OneSearchBarProps {
@@ -924,6 +1015,11 @@ export default function OneSearchBar({
   const [popup, setPopup] = useState<ActivePopup>(null);
   const toggle = useCallback((p: ActivePopup) => setPopup(prev => prev === p ? null : p), []);
 
+  // UI-only, decorative — not part of the search form / API payload
+  const [paymentMethod, setPaymentMethod] = useState("All Payment Methods");
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const paymentRef = useRef<HTMLDivElement>(null);
+
   const fromRef   = useRef<HTMLDivElement>(null);
   const toRef     = useRef<HTMLDivElement>(null);
   const departRef = useRef<HTMLDivElement>(null);
@@ -966,6 +1062,21 @@ export default function OneSearchBar({
       short: dt.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
       sub:   dt.toLocaleDateString("en-IN", { weekday: "short", year: "numeric" }),
     };
+  }
+
+  // Full single-line date label used by the redesigned desktop bar, e.g. "Thu, 16 Jul 2026"
+  function fmtDateLong(d: string) {
+    if (!d) return "Select date";
+    const dt = new Date(d + "T00:00:00");
+    const weekday = dt.toLocaleDateString("en-US", { weekday: "short" });
+    return `${weekday}, ${dt.getDate()} ${MONTHS[dt.getMonth()].slice(0, 3)} ${dt.getFullYear()}`;
+  }
+
+  // Shifts a yyyy-mm-dd string by `delta` days — powers the ‹ › quick-nav arrows
+  function shiftDate(d: string, delta: number) {
+    const dt = new Date((d || today) + "T00:00:00");
+    dt.setDate(dt.getDate() + delta);
+    return dt.toLocaleDateString("en-CA");
   }
 
   const isRound   = form.tripType === "roundTrip";
@@ -1288,167 +1399,199 @@ export default function OneSearchBar({
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  DESKTOP LAYOUT  (≥1024px)  — original horizontal bar
+  //  DESKTOP LAYOUT  (≥1024px)  — redesigned two-row bar
+  //  Row 1: trip-type tabs + travellers/class/payment + Search
+  //  Row 2: From ⇄ To · Departure Date (· Return when round-trip)
+  //  All state, handlers, and API calls are unchanged from before.
   // ══════════════════════════════════════════════════════════════
+  const TABS: { key: SearchForm["tripType"]; label: string }[] = [
+    { key: "oneWay",     label: "One-way" },
+    { key: "roundTrip",  label: "Round-trip" },
+    // { key: "multiCity",  label: "Multi-city" },
+  ];
+
   return (
     <div style={{ width: "100%" }}>
+      {/* ── ROW 1 : tabs + travellers / class / payment + search ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, padding: "6px 4px 14px" }}>
+        {/* Trip type tabs */}
+        <div ref={tripRef} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {TABS.map(t => {
+            const isActive = form.tripType === t.key;
+            return (
+              <button key={t.key} type="button"
+                onClick={() => {
+                  setForm(f => ({ ...f, tripType: t.key, returnDate: t.key !== "roundTrip" ? "" : f.returnDate }));
+                  onTripTypeChange?.(t.key);
+                }}
+                style={{
+                  border: "none", cursor: "pointer", borderRadius: 20,
+                  padding: "9px 16px", fontSize: 14.5, fontWeight: 700,
+                  background: isActive ? "#e7f0ff" : "transparent",
+                  color: isActive ? S.navyMid : "#8a97ab",
+                  transition: "all .15s",
+                }}>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right-hand control cluster */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+          {/* Travellers */}
+          <div ref={paxRef} style={{ position: "relative" }}>
+            <TopDropdownButton icon={<IconUsers />} label={`${totalPax} ${totalPax === 1 ? "Adult" : "Travellers"}`}
+              active={popup === "pax"} onClick={() => toggle("pax")} />
+            <PaxPicker anchorRef={paxRef} open={popup === "pax"}
+              adults={form.adults} children={form.children} infants={form.infants} cabinClass={form.cabinClass}
+              onChange={(a, c, i, cls) => setForm(f => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))}
+              onClose={() => setPopup(null)} />
+          </div>
+
+          {/* Cabin class — shares the same travellers/class popover as above */}
+          <TopDropdownButton icon={<IconSeat />} label={form.cabinClass}
+            active={popup === "pax"} onClick={() => toggle("pax")} />
+
+          {/* Payment methods — UI-only, decorative */}
+          <div ref={paymentRef} style={{ position: "relative" }}>
+            <TopDropdownButton icon={<IconCard />} label={paymentMethod}
+              active={paymentOpen} onClick={() => setPaymentOpen(o => !o)} />
+            <PaymentMethodPopover anchorRef={paymentRef} open={paymentOpen} value={paymentMethod}
+              onChange={v => { setPaymentMethod(v); setPaymentOpen(false); }}
+              onClose={() => setPaymentOpen(false)} />
+          </div>
+
+          {/* Non-stop — kept for functional parity, tucked in compactly */}
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "0 8px" }}>
+            <input type="checkbox" checked={form.nonStopOnly}
+              onChange={e => setForm(f => ({ ...f, nonStopOnly: e.target.checked }))}
+              style={{ accentColor: S.accent, width: 14, height: 14 }} />
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: S.muted, whiteSpace: "nowrap" }}>Non-stop</span>
+          </label>
+
+          {/* Search */}
+          <button type="button" onClick={handleSearch}
+            style={{ background: S.accent, color: "#fff", border: "none", padding: "13px 28px", cursor: "pointer", fontWeight: 800, fontSize: 14, letterSpacing: "0.02em", borderRadius: 12, display: "flex", alignItems: "center", gap: 8, transition: "background .2s" }}
+            onMouseEnter={e => (e.currentTarget.style.background = S.accentDk)}
+            onMouseLeave={e => (e.currentTarget.style.background = S.accent)}>
+            {pricesLoading ? (
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ animation: "spin 1s linear infinite" }}>
+                <path strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
+              </svg>
+            ) : (
+              <svg width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <circle cx={11} cy={11} r={8} /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+              </svg>
+            )}
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* ── ROW 2 : From ⇄ To · Departure Date (· Return) ── */}
       <div style={{
         display: "flex", alignItems: "stretch",
         background: "#fff", borderRadius: 14,
         boxShadow: "0 4px 30px rgba(0,48,95,0.12)",
         border: `1px solid ${S.border}`,
-        overflow: "hidden", position: "relative", minHeight: 64,
+        overflow: "hidden", position: "relative", minHeight: 68,
       }}>
-
-        {/* TRIP TYPE */}
-        <div ref={tripRef} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <button type="button" onClick={() => toggle("tripType")}
-            style={{ height: "100%", display: "flex", alignItems: "center", gap: 4, padding: "0 14px", background: popup === "tripType" ? "rgba(0,48,95,0.10)" : "rgba(0,48,95,0.06)", border: "none", borderRight: `1px solid ${S.border}`, cursor: "pointer", borderRadius: "12px 0 0 12px", transition: "background .15s" }}
-            onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,48,95,0.10)")}
-            onMouseLeave={e => (e.currentTarget.style.background = popup === "tripType" ? "rgba(0,48,95,0.10)" : "rgba(0,48,95,0.06)")}>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: tripColor, whiteSpace: "nowrap" }}>{tripLabel}</span>
-            <svg width={10} height={10} fill="none" stroke={tripColor} strokeWidth={2.5} viewBox="0 0 24 24" style={{ flexShrink: 0, opacity: 0.7 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <TripTypePicker anchorRef={tripRef} open={popup === "tripType"} value={form.tripType}
-            onChange={t => { setForm(f => ({ ...f, tripType: t, returnDate: t !== "roundTrip" ? "" : f.returnDate })); onTripTypeChange?.(t); setPopup(null); }}
-            onClose={() => setPopup(null)} />
-        </div>
-
-        {/* FROM */}
-        {!isMulti && (
-          <div ref={fromRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 130, maxWidth: 170 }}>
-            <PillField label="From" line1={form.from?.code ?? "—"} line2={form.from?.city}
-              active={popup === "from"} onClick={() => toggle("from")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
-            <AirportDropdownPortal anchorRef={fromRef} open={popup === "from"} airports={airports}
-              onSelect={a => { setForm(f => ({ ...f, from: a })); setPopup(null); }}
-              onClose={() => setPopup(null)} />
-          </div>
-        )}
-
-        {/* SWAP */}
-        {!isMulti && (
-          <div style={{ display: "flex", alignItems: "center", padding: "0 4px", borderRight: `1px solid ${S.border}`, flexShrink: 0 }}>
-            <button type="button" onClick={() => setForm(f => ({ ...f, from: f.to, to: f.from }))}
-              style={{ width: 28, height: 28, borderRadius: "50%", border: `1.5px solid ${S.borderMid}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "#f0f5fb")}
-              onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
-              <svg width={13} height={13} fill="none" stroke={S.navyMid} strokeWidth={2.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* TO */}
-        {!isMulti && (
-          <div ref={toRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 130, maxWidth: 170 }}>
-            <PillField label="To" line1={form.to?.code ?? "—"} line2={form.to?.city}
-              active={popup === "to"} onClick={() => toggle("to")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
-            <AirportDropdownPortal anchorRef={toRef} open={popup === "to"} airports={airports}
-              onSelect={a => { setForm(f => ({ ...f, to: a })); setPopup(null); }}
-              onClose={() => setPopup(null)} />
-          </div>
-        )}
-
-        {/* DEPART */}
-        {!isMulti && (
-          <div ref={departRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 110 }}>
-            <PillField label="Depart" line1={departFmt?.short ?? "Select"} line2={departFmt?.sub}
-              active={popup === "depart"} onClick={() => toggle("depart")}
-              style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
-            {popup === "depart" && (
-              <CalendarPopup anchorRef={departRef} value={form.departDate}
-                value2={isRound ? form.returnDate : undefined} isRange={isRound}
-                min={today} prices={calPrices}
-                onChange={(d1, d2) => { setForm(f => ({ ...f, departDate: d1, returnDate: d2 ?? f.returnDate })); if (!isRound || d2) setPopup(null); }}
+        {!isMulti ? (
+          <>
+            {/* FROM */}
+            <div ref={fromRef} style={{ display: "flex", alignItems: "stretch", flex: 1, minWidth: 150, borderRight: `1px solid ${S.border}` }}>
+              <IconField icon={<IconPlane />} label="From"
+                value={form.from ? `${form.from.city} (${form.from.code})` : "Select"}
+                active={popup === "from"} onClick={() => toggle("from")} style={{ flex: 1 }} />
+              <AirportDropdownPortal anchorRef={fromRef} open={popup === "from"} airports={airports}
+                onSelect={a => { setForm(f => ({ ...f, from: a })); setPopup(null); }}
                 onClose={() => setPopup(null)} />
-            )}
-          </div>
-        )}
+            </div>
 
-        {/* RETURN */}
-        {!isMulti && (
-          <div ref={returnRef} style={{ display: "flex", alignItems: "stretch", flexShrink: 0, minWidth: 110 }}>
-            {isRound ? (
-              <>
-                <PillField label="Return" line1={returnFmt?.short ?? "Select"} line2={returnFmt?.sub}
-                  active={popup === "return"} onClick={() => toggle("return")}
-                  style={{ flex: 1, borderRight: `1px solid ${S.border}` }} />
+            {/* SWAP */}
+            <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: `1px solid ${S.border}`, flexShrink: 0 }}>
+              <button type="button" onClick={() => setForm(f => ({ ...f, from: f.to, to: f.from }))}
+                style={{ width: 30, height: 30, borderRadius: "50%", border: `1.5px solid ${S.borderMid}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#f0f5fb")}
+                onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                <svg width={14} height={14} fill="none" stroke={S.navyMid} strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </button>
+            </div>
+
+            {/* TO */}
+            <div ref={toRef} style={{ display: "flex", alignItems: "stretch", flex: 1, minWidth: 150, borderRight: `1px solid ${S.border}` }}>
+              <IconField icon={<IconPlane />} label="To"
+                value={form.to ? `${form.to.city} (${form.to.code})` : "Select"}
+                active={popup === "to"} onClick={() => toggle("to")} style={{ flex: 1 }} />
+              <AirportDropdownPortal anchorRef={toRef} open={popup === "to"} airports={airports}
+                onSelect={a => { setForm(f => ({ ...f, to: a })); setPopup(null); }}
+                onClose={() => setPopup(null)} />
+            </div>
+
+            {/* DEPART */}
+            <div ref={departRef} style={{ display: "flex", alignItems: "stretch", flex: 1, minWidth: 190, borderRight: isRound ? `1px solid ${S.border}` : "none" }}>
+              <IconField icon={<IconCalendar />} label="Departure Date"
+                value={form.departDate ? fmtDateLong(form.departDate) : "Select"}
+                active={popup === "depart"} onClick={() => toggle("depart")} style={{ flex: 1 }} />
+              {popup === "depart" && (
+                <CalendarPopup anchorRef={departRef} value={form.departDate}
+                  value2={isRound ? form.returnDate : undefined} isRange={isRound}
+                  min={today} prices={calPrices}
+                  onChange={(d1, d2) => { setForm(f => ({ ...f, departDate: d1, returnDate: d2 ?? f.returnDate })); if (!isRound || d2) setPopup(null); }}
+                  onClose={() => setPopup(null)} />
+              )}
+              {/* Quick day-shift arrows — one-way only, matches the reference design */}
+              {!isRound && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 16px", flexShrink: 0 }}>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, departDate: shiftDate(f.departDate, -1) }))}
+                    style={{ width: 26, height: 26, borderRadius: 8, border: `1px solid ${S.borderMid}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f0f5fb")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                    <svg width={12} height={12} fill="none" stroke={S.navyMid} strokeWidth={2.4} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, departDate: shiftDate(f.departDate, 1) }))}
+                    style={{ width: 26, height: 26, borderRadius: 8, border: `1px solid ${S.borderMid}`, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f0f5fb")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+                    <svg width={12} height={12} fill="none" stroke={S.navyMid} strokeWidth={2.4} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* RETURN — only for round-trip */}
+            {isRound && (
+              <div ref={returnRef} style={{ display: "flex", alignItems: "stretch", flex: 1, minWidth: 190 }}>
+                <IconField icon={<IconCalendar />} label="Return Date"
+                  value={form.returnDate ? fmtDateLong(form.returnDate) : "Select"}
+                  active={popup === "return"} onClick={() => toggle("return")} style={{ flex: 1 }} />
                 {popup === "return" && (
                   <CalendarPopup anchorRef={returnRef} value={form.departDate} value2={form.returnDate}
                     isRange min={today} prices={calPrices}
                     onChange={(d1, d2) => { setForm(f => ({ ...f, departDate: d1, returnDate: d2 ?? "" })); if (d2) setPopup(null); }}
                     onClose={() => setPopup(null)} />
                 )}
-              </>
-            ) : (
-              <button type="button"
-                onClick={() => { setForm(f => ({ ...f, tripType: "roundTrip" })); onTripTypeChange?.("roundTrip"); }}
-                style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 16px", borderRight: `1px solid ${S.border}`, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "all .15s", minWidth: 110, opacity: 0.55 }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.background = "#f5f8fc"; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = "0.55"; e.currentTarget.style.background = "transparent"; }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 1 }}>Return</div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: S.navyDeep, lineHeight: 1 }}>+ Add return</div>
-                <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>Switch to round-trip</div>
-              </button>
+              </div>
             )}
-          </div>
-        )}
-
-        {/* MULTI-CITY ROUTE SUMMARY */}
-        {isMulti && (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "10px 16px", borderRight: `1px solid ${S.border}` }}>
+          </>
+        ) : (
+          /* MULTI-CITY ROUTE SUMMARY */
+          <div style={{ flex: 1, display: "flex", alignItems: "center", padding: "12px 20px", gap: 12 }}>
+            <span style={{ flexShrink: 0, display: "flex" }}><IconPlane /></span>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>Route</div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: S.navyDeep }}>{routeStr}</div>
-              <div style={{ fontSize: 10, color: S.muted, marginTop: 1 }}>{multiLegs.length} flights · edit below ↓</div>
+              <div style={{ fontSize: 11.5, fontWeight: 600, color: S.muted, marginBottom: 2 }}>Route</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: S.navyDeep }}>{routeStr}</div>
+              <div style={{ fontSize: 11, color: S.muted, marginTop: 1 }}>{multiLegs.length} flights · edit below ↓</div>
             </div>
           </div>
         )}
-
-        {/* TRAVELLERS */}
-        <div ref={paxRef} style={{ display: "flex", alignItems: "stretch", flex: isMulti ? "0 0 auto" : 1, minWidth: 0 }}>
-          <PillField label="Travellers & Class"
-            line1={`${totalPax} Traveller${totalPax !== 1 ? "s" : ""}`}
-            line2={form.cabinClass}
-            active={popup === "pax"} onClick={() => toggle("pax")}
-            style={{ flex: 1, overflow: "hidden" }} />
-          <PaxPicker anchorRef={paxRef} open={popup === "pax"}
-            adults={form.adults} children={form.children} infants={form.infants} cabinClass={form.cabinClass}
-            onChange={(a, c, i, cls) => setForm(f => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))}
-            onClose={() => setPopup(null)} />
-        </div>
-
-        {/* NON-STOP */}
-        <div style={{ display: "flex", alignItems: "center", padding: "0 12px", borderLeft: `1px solid ${S.border}`, flexShrink: 0 }}>
-          <label style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Non-stop</span>
-            <input type="checkbox" checked={form.nonStopOnly}
-              onChange={e => setForm(f => ({ ...f, nonStopOnly: e.target.checked }))}
-              style={{ accentColor: S.accent, width: 15, height: 15 }} />
-          </label>
-        </div>
-
-        {/* SEARCH */}
-        <button type="button" onClick={handleSearch}
-          style={{ background: S.accent, color: "#fff", border: "none", padding: "0 26px", cursor: "pointer", fontWeight: 800, fontSize: 13, letterSpacing: "0.04em", transition: "background .2s", flexShrink: 0, display: "flex", alignItems: "center", gap: 8, borderRadius: "0 12px 12px 0" }}
-          onMouseEnter={e => (e.currentTarget.style.background = S.accentDk)}
-          onMouseLeave={e => (e.currentTarget.style.background = S.accent)}>
-          {pricesLoading ? (
-            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ animation: "spin 1s linear infinite" }}>
-              <path strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
-            </svg>
-          ) : (
-            <svg width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <circle cx={11} cy={11} r={8} /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
-            </svg>
-          )}
-          Search
-        </button>
       </div>
 
       {isMulti && (

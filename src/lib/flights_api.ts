@@ -1863,6 +1863,112 @@ export async function apiCancelPNR(input: CancelPNRInput): Promise<CancelPNRResu
   };
 }
 
+
+
+// ============================================================
+//  UPDATED — replace the previous apiCancelPNR block in flights_api.ts
+//  with this. Route path now matches the backend: SendCancellationRequest.
+//  Body shape now matches TBO's SendChangeRequest spec.
+// ============================================================
+
+// ─── CANCEL PNR ────────────────────────────────────────────
+
+export enum CancelRequestType {
+  NotSet              = 0,
+  FullCancellation    = 1,
+  PartialCancellation = 2,
+  Reissuance          = 3,
+}
+
+export enum CancelCancellationType {
+  NotSet          = 0,
+  NoShow          = 1,
+  FlightCancelled = 2,
+  Others          = 3,
+}
+
+export type CancelSendInput = {
+  bookingId:        number;
+  requestType:      CancelRequestType;
+  cancellationType: CancelCancellationType;
+  // Mandatory only when requestType === PartialCancellation
+  origin?:          string;
+  destination?:     string;
+  // Integer, or comma-separated string if cancelling multiple tickets
+  ticketId:         string | number;
+  remarks:          string;
+};
+
+export type CancelSendResult = {
+  success:         boolean;
+  cancellationId?: number;
+  status?:         string;   // e.g. "Requested" | "Cancelled" | "Rejected" | "InProgress"
+  message?:        string;
+  refundAmount?:   number;
+};
+
+export async function apiCancelSend(input: CancelSendInput): Promise<CancelSendResult> {
+  if (MOCK_MODE) {
+    await new Promise((r) => setTimeout(r, 1200));
+    return {
+      success:        true,
+      cancellationId: Math.floor(Math.random() * 900_000 + 100_000),
+      status:         "Requested",
+      message:        "Cancellation request submitted successfully. Refund (if applicable) will be processed as per the fare rules.",
+      refundAmount:   0,
+    };
+  }
+
+  if (input.requestType === CancelRequestType.PartialCancellation) {
+    if (!input.origin || !input.destination) {
+      throw new Error("Origin and destination are required for a partial cancellation.");
+    }
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/flights/tbo/SendCancellationRequest`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({
+      bookingId:        input.bookingId,
+      requestType:      input.requestType,
+      cancellationType: input.cancellationType,
+      origin:           input.origin,
+      destination:      input.destination,
+      ticketId:         input.ticketId,
+      remarks:          input.remarks,
+    }),
+  });
+
+  if (!res.ok) {
+    let errMsg = `Cancellation request failed (HTTP ${res.status})`;
+    try {
+      const errJson = await res.json();
+      if (errJson?.message) errMsg = errJson.message;
+      else if (errJson?.error) errMsg = errJson.error;
+    } catch { /* ignore */ }
+    throw new Error(errMsg);
+  }
+
+  const json = await res.json();
+  if (json?.ok === false) throw new Error(json?.message ?? "Cancellation failed");
+
+  const responseData = json?.data ?? json;
+  const response      = responseData?.Response ?? responseData;
+
+  const tboError = response?.Error;
+  if (tboError?.ErrorCode && tboError.ErrorCode !== 0) {
+    throw new Error(tboError.ErrorMessage || "Cancellation failed");
+  }
+
+  return {
+    success:        true,
+    cancellationId: response?.CancellationId ?? response?.CancellationRequestId,
+    status:         response?.CancellationStatus ?? response?.Status ?? "Requested",
+    message:        response?.Message ?? "Cancellation request submitted.",
+    refundAmount:   response?.RefundAmount,
+  };
+}
+
 // ─── AIRPORTS ──────────────────────────────────────────────
 
 export async function apiGetAirports(): Promise<Airport[]> {

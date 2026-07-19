@@ -54,6 +54,7 @@ import RoomSelection from "./pages/hotels/RoomSelection";
 import GuestDetails from "./pages/hotels/GuestDetails";
 import Checkout from "./pages/hotels/Checkout";
 import BookingConfirmation from "./pages/hotels/BookingConfirmation";
+import SendCancellationRequest from "./pages/flights_new/SendCancellationPage";
 
 //Read Blogs
 import ReadBlogPage from "./pages/blogs/ReadBlogPage";
@@ -96,6 +97,7 @@ import HomeCarouselPage from "./pages/marketing/HomeCarousel";
 import  Reviews from "./components/Reviews";
 import TripPlanner from "./pages/Itenary/TripPlanner";
 import CancellationPageFlights from "./pages/flights_new/CancellationPageFlights";
+import { Send } from "lucide-react";
 
 // BLOG
 const BlogIndex = lazy(() => import("./pages/blogs/BlogIndex"));
@@ -365,6 +367,7 @@ export const router = createBrowserRouter(
        {path:"/flights-new/booking", element:<FlightsFlow /> },
        {path:"/flights-new/confirmation" ,element:<FlightsFlow />},
        {path:"/flights-new/cancellation" ,element:<CancellationPageFlights />},
+       {path:"/flights-new/SendCancellation" ,element:<SendCancellationRequest />},
 
             {
               path: "cancellation-and-refund",
