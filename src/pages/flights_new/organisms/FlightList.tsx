@@ -1,22 +1,37 @@
 // ============================================================
 //  FlightList.tsx — sort tabs, AI banner, and the flight
-//  results list. UI unchanged — now driven by a real
-//  `flights: DisplayFlight[]` prop instead of an undefined
-//  module-level `flights` array (that variable was never
-//  defined anywhere in the original file), with real sorting,
-//  loading skeletons, and an empty state.
+//  results list. Logic/data flow is unchanged from your version:
+//  same `flights: DisplayFlight[]` prop, same sorting, same
+//  loading skeletons, same empty state.
+//
+//  What changed this round:
+//   - Removed "Show Price Insights" entirely — it was a dead
+//     link to a feature/endpoint that doesn't exist, so the
+//     `onShowPriceInsights` prop is gone too rather than left
+//     as an unused hook.
+//   - Brought back a list/grid view toggle (like the very first
+//     draft had), now wired to FlightCarda's real `view` prop —
+//     switching actually re-renders the boarding-pass cards in
+//     a 2-up grid instead of just flipping a button that did
+//     nothing.
+//   - AI banner gets a second pass: a soft breathing glow on the
+//     avatar (the one signature motion moment on this list, kept
+//     restrained rather than added everywhere), a gradient title
+//     treatment tying it to the BETA badge, and tightened
+//     spacing/contrast on the chips.
 // ============================================================
 
 import React, { useMemo, useState } from 'react';
 import { SortTab } from '../../molecules/SortTab';
 import { FlightCarda, FlightCardaSkeleton, FlightCardaEmptyState, type FlightCardTag } from './FlightCarda';
 import { motion } from 'framer-motion';
-import { Check, Clock, Leaf, ChevronRight } from 'lucide-react';
+import { Check, Clock, Leaf, LayoutList, LayoutGrid } from 'lucide-react';
 import type { DisplayFlight, FareTier } from '../../../lib/types_t';
 import { useCurrency } from '../../../context/currencyContext';
 import { timeToMins } from '../ResultShared';
 
 type SortKey = 'recommended' | 'cheapest' | 'fastest' | 'departure';
+type ViewMode = 'list' | 'grid';
 
 export interface FlightListProps {
   flights: DisplayFlight[];
@@ -26,16 +41,13 @@ export interface FlightListProps {
   onBookFare?: (f: DisplayFlight, tier: FareTier) => void;
   /** "Clear all filters" in the empty state. */
   onResetFilters?: () => void;
-  /** "Show Price Insights" — no insights data/endpoint exists yet, so this
-   *  is just a hook for whenever that feature lands; omit to hide nothing
-   *  (the button still shows, it just no-ops without a handler). */
-  onShowPriceInsights?: () => void;
 }
 
 const SKELETON_COUNT = 5;
 
-export function FlightList({ flights, loading, onViewFares, onBookFare, onResetFilters, onShowPriceInsights }: FlightListProps) {
+export function FlightList({ flights, loading, onViewFares, onBookFare, onResetFilters }: FlightListProps) {
   const [activeSort, setActiveSort] = useState<SortKey>('recommended');
+  const [view, setView] = useState<ViewMode>('list');
   const { convert } = useCurrency();
 
   // "Recommended" = the order the flights arrived in (assumed to already
@@ -70,149 +82,202 @@ export function FlightList({ flights, loading, onViewFares, onBookFare, onResetF
   }
 
   return (
-    <div className="flex-1 flex flex-col gap-4">
-      {/* Sort Tabs */}
-      <div className="rounded-xl overflow-hidden flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.28)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 8px 32px rgba(40,60,120,0.10), inset 0 1px 0 rgba(255,255,255,0.6)' }}>
-        <div className="flex">
-          <SortTab
-            label="Recommended"
-            price={recommendedFlight ? convert(recommendedFlight.price) : '—'}
-            active={activeSort === 'recommended'}
-            onClick={() => setActiveSort('recommended')}
-          />
-          <div className="w-px bg-slate-100" />
-          <SortTab
-            label="Cheapest"
-            price={cheapestFlight ? convert(cheapestFlight.price) : '—'}
-            active={activeSort === 'cheapest'}
-            onClick={() => setActiveSort('cheapest')}
-          />
-          <div className="w-px bg-slate-100" />
-          <SortTab
-            label="Fastest"
-            price={fastestFlight ? convert(fastestFlight.price) : '—'}
-            active={activeSort === 'fastest'}
-            onClick={() => setActiveSort('fastest')}
-          />
-          <div className="w-px bg-slate-100" />
-          <SortTab
-            label="Departure Time"
-            active={activeSort === 'departure'}
-            onClick={() => setActiveSort('departure')}
-            hasChevron
-          />
+    <div className="flex-1 flex flex-col gap-3 sm:gap-4 w-full min-w-0">
+      {/* Sort Tabs + view toggle — tabs scroll horizontally on mobile/tablet
+          so 4 tabs never get squeezed; the list/grid toggle stays pinned
+          to the right in a single row at every width (it's just two small
+          icon buttons, unlike the old full-width Price Insights link). */}
+      <div
+        className="rounded-2xl overflow-hidden flex items-center justify-between gap-2"
+        style={{
+          background: 'rgba(255,255,255,0.72)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: '1px solid rgba(226,232,240,0.8)',
+          boxShadow: '0 4px 20px rgba(40,60,120,0.07), inset 0 1px 0 rgba(255,255,255,0.7)',
+        }}
+      >
+        <div className="flex overflow-x-auto no-scrollbar min-w-0" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+          <div className="shrink-0">
+            <SortTab
+              label="Recommended"
+              price={recommendedFlight ? convert(recommendedFlight.price) : '—'}
+              active={activeSort === 'recommended'}
+              onClick={() => setActiveSort('recommended')}
+            />
+          </div>
+          <div className="w-px bg-slate-200/70 shrink-0" />
+          <div className="shrink-0">
+            <SortTab
+              label="Cheapest"
+              price={cheapestFlight ? convert(cheapestFlight.price) : '—'}
+              active={activeSort === 'cheapest'}
+              onClick={() => setActiveSort('cheapest')}
+            />
+          </div>
+          <div className="w-px bg-slate-200/70 shrink-0" />
+          <div className="shrink-0">
+            <SortTab
+              label="Fastest"
+              price={fastestFlight ? convert(fastestFlight.price) : '—'}
+              active={activeSort === 'fastest'}
+              onClick={() => setActiveSort('fastest')}
+            />
+          </div>
+          <div className="w-px bg-slate-200/70 shrink-0" />
+          <div className="shrink-0">
+            <SortTab
+              label="Departure Time"
+              active={activeSort === 'departure'}
+              onClick={() => setActiveSort('departure')}
+              hasChevron
+            />
+          </div>
         </div>
 
-        <button onClick={onShowPriceInsights} className="px-4 py-3 flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors h-full">
-          📊 Show Price Insights <ChevronRight size={16} />
-        </button>
+        {/* View toggle — actually switches FlightCarda's `view` prop below,
+            not a decorative button. */}
+        <div className="flex items-center gap-1 pr-2 shrink-0">
+          <button
+            onClick={() => setView('list')}
+            title="List view"
+            className={`p-1.5 rounded-lg transition-colors ${view === 'list' ? 'bg-orange-100 text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+          >
+            <LayoutList size={17} />
+          </button>
+          <button
+            onClick={() => setView('grid')}
+            title="Grid view"
+            className={`p-1.5 rounded-lg transition-colors ${view === 'grid' ? 'bg-orange-100 text-orange-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+          >
+            <LayoutGrid size={17} />
+          </button>
+        </div>
       </div>
 
-      {/* AI Banner — frosted glass premium.
+      {/* AI Banner — frosted glass, the signature element of this list.
           Marketing copy only ("500+ data points", "87% on-time") — no
           backing analytics endpoint exists for this banner, so it stays
-          static, same as the original design. */}
+          static, same as before. */}
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         whileHover={{
           y: -2,
-          boxShadow: '0 18px 45px rgba(70,90,160,.12), 0 0 35px rgba(255,120,120,.08), 0 0 35px rgba(80,140,255,.08)',
+          boxShadow: '0 16px 38px rgba(70,90,160,.10), 0 0 26px rgba(122,95,255,.10)',
         }}
         className="relative overflow-hidden cursor-default"
         style={{
           borderRadius: '24px',
           backdropFilter: 'blur(30px)',
           WebkitBackdropFilter: 'blur(30px)',
-          border: '1px solid rgba(255,255,255,.7)',
-          boxShadow: '0 8px 35px rgba(40,60,120,.08), 0 0 40px rgba(255,120,120,.05), 0 0 50px rgba(70,140,255,.05)',
+          border: '1px solid rgba(255,255,255,.75)',
+          boxShadow: '0 6px 24px rgba(40,60,120,.08), 0 0 24px rgba(122,95,255,.06)',
           background: `
-            radial-gradient(circle at 0% 50%, rgba(255,118,118,.20), transparent 32%),
-            radial-gradient(circle at 100% 50%, rgba(77,152,255,.18), transparent 35%),
-            linear-gradient(90deg, rgba(255,255,255,.94), rgba(252,252,255,.98), rgba(245,249,255,.98), rgba(236,246,255,.95))
+            radial-gradient(circle at 0% 50%, rgba(255,118,118,.14), transparent 32%),
+            radial-gradient(circle at 100% 50%, rgba(77,152,255,.14), transparent 35%),
+            linear-gradient(90deg, rgba(255,255,255,.96), rgba(252,252,255,.98), rgba(245,249,255,.98), rgba(238,246,255,.96))
           `,
           transition: 'transform .35s ease, box-shadow .35s ease',
         }}
       >
-        <div className="flex items-center gap-4 px-5 py-4 relative z-10">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 relative z-10">
 
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 relative"
-            style={{
-              background: 'radial-gradient(circle, #6B6BFF 0%, #6E5CFF 30%, #497DFF 55%, transparent 75%)',
-              boxShadow: '0 0 25px #7A5FFF, 0 0 60px rgba(122,95,255,.55)',
+          {/* Avatar — one restrained signature motion on this whole list:
+              a slow breathing glow, not a hover-only effect, so the banner
+              reads as quietly "alive" rather than static marketing chrome. */}
+          <motion.div
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'radial-gradient(circle, #6B6BFF 0%, #6E5CFF 32%, #497DFF 58%, transparent 78%)' }}
+            animate={{
+              boxShadow: [
+                '0 0 14px rgba(122,95,255,.32), 0 0 28px rgba(122,95,255,.14)',
+                '0 0 20px rgba(122,95,255,.5), 0 0 40px rgba(122,95,255,.26)',
+                '0 0 14px rgba(122,95,255,.32), 0 0 28px rgba(122,95,255,.14)',
+              ],
             }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="9" width="20" height="15" rx="5" fill="white" fillOpacity="0.95"/>
-              <circle cx="10.5" cy="15" r="2" fill="#6B6BFF"/>
-              <circle cx="19.5" cy="15" r="2" fill="#6B6BFF"/>
-              <rect x="11" y="19" width="8" height="2" rx="1" fill="#6B6BFF" opacity="0.7"/>
-              <rect x="13" y="5" width="4" height="5" rx="1.5" fill="white" fillOpacity="0.9"/>
-              <circle cx="15" cy="4" r="1.5" fill="white"/>
-              <rect x="3" y="13" width="2" height="6" rx="1" fill="white" fillOpacity="0.8"/>
-              <rect x="25" y="13" width="2" height="6" rx="1" fill="white" fillOpacity="0.8"/>
-            </svg>
-          </div>
+           <img src="/pluto-mascot.png" alt="Pluto AI" className="w-full h-full object-cover scale-110" style={{ filter: 'drop-shadow(0 0 6px rgba(96,165,250,0.7))' }} />
+                 
+          </motion.div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-800 tracking-wide">✨ Recommended by Pluto AI</span>
-                <span
-                  className="text-[10px] font-semibold text-white px-2 py-0.5 rounded-full"
-                  style={{ background: 'linear-gradient(135deg, #7B61FF, #B16EFF, #FF6FB5)' }}
-                >
-                  BETA
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <div
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ background: '#EAFBF2', color: '#16A34A', border: '1px solid #B8F3CF' }}
-                >
-                  <Check size={10} strokeWidth={3} /> Best value
-                </div>
-                <div
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ background: '#EEF5FF', color: '#2563EB', border: '1px solid #C7DCFF' }}
-                >
-                  <Clock size={10} /> On-time performance 87%
-                </div>
-                <div
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{ background: '#EFFCF4', color: '#0F9D58', border: '1px solid #CFF6DB' }}
-                >
-                  <Leaf size={10} /> Lower carbon
-                </div>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="text-xs sm:text-sm font-bold tracking-wide"
+                style={{
+                  background: 'linear-gradient(90deg, #4338CA, #7C3AED)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                ✨ Recommended by Pluto AI
+              </span>
+              <span
+                className="text-[10px] font-semibold text-white px-2 py-0.5 rounded-full shrink-0"
+                style={{ background: 'linear-gradient(135deg, #7B61FF, #B16EFF, #FF6FB5)' }}
+              >
+                BETA
+              </span>
             </div>
 
-            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 mb-2 leading-relaxed max-w-2xl">
               This flight gives you the best balance of price, time and reliability based on 500+ data points.
             </p>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                style={{ background: '#EAFBF2', color: '#16A34A', border: '1px solid #B8F3CF' }}
+              >
+                <Check size={11} strokeWidth={3} /> Best value
+              </div>
+              <div
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                style={{ background: '#EEF5FF', color: '#2563EB', border: '1px solid #C7DCFF' }}
+              >
+                <Clock size={11} /> On-time performance 87%
+              </div>
+              <div
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"
+                style={{ background: '#EFFCF4', color: '#0F9D58', border: '1px solid #CFF6DB' }}
+              >
+                <Leaf size={11} /> Lower carbon
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Flight Cards list */}
-      <div className="flex flex-col gap-4">
+      {/* Flight Cards — list or grid, both rendering the same real data
+          through FlightCarda's `view` prop. Staggered fade-in either way. */}
+      <div className={view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4' : 'flex flex-col gap-3 sm:gap-4'}>
         {loading ? (
           Array.from({ length: SKELETON_COUNT }).map((_, i) => <FlightCardaSkeleton key={i} />)
         ) : sortedFlights.length === 0 ? (
-          <FlightCardaEmptyState onReset={() => onResetFilters?.()} />
+          <div className={view === 'grid' ? 'sm:col-span-2' : ''}>
+            <FlightCardaEmptyState onReset={() => onResetFilters?.()} />
+          </div>
         ) : (
           sortedFlights.map((flight, i) => (
-            <FlightCarda
+            <motion.div
               key={flight.resultIndex}
-              flight={flight}
-              index={i}
-              tag={tagFor(flight)}
-              onViewFares={onViewFares}
-              onBookFare={onBookFare}
-            />
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: Math.min(i, 6) * 0.04 }}
+            >
+              <FlightCarda
+                flight={flight}
+                index={i}
+                tag={tagFor(flight)}
+                view={view}
+                onViewFares={onViewFares}
+                onBookFare={onBookFare}
+              />
+            </motion.div>
           ))
         )}
       </div>

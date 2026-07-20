@@ -78,7 +78,8 @@ export function SearchSummary({ form, onEdit }: SearchSummaryProps) {
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 opacity-20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
         
         <div className="w-12 h-12 bg-indigo-800 rounded-full flex items-center justify-center border-2 border-indigo-600/50 shadow-inner">
-          <span className="text-2xl">🤖</span>
+          <img src="/pluto-mascot.png" alt="Pluto AI" className="w-full h-full object-cover scale-110" style={{ filter: 'drop-shadow(0 0 6px rgba(96,165,250,0.7))' }} />
+                  
         </div>
         
         <div>

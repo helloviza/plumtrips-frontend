@@ -1,8 +1,17 @@
 // ============================================================
 //  DateSlider.tsx — the horizontal date/price scroller shown
-//  under the search bar. Same visual design as before (glass
-//  pill strip + DatePill), now wired to real data:
+//  under the search bar.
 //
+//  UI reworked to match the capsule-button look:
+//   - Date pills + right-hand action capsules now sit on ONE
+//     single horizontal line (not stacked rows). The date
+//     scroller flexes to fill available space; the action
+//     capsules are docked at the end of that same row.
+//   - Full labeled capsules from lg up; below that, compact
+//     icon-only round buttons so nothing overflows on
+//     mobile/tablet — but always inline, same row.
+//
+//  All data logic is unchanged:
 //  - Per-date fares come from the SAME endpoint the calendar
 //    popup uses — apiGetCalendarPrices(from, to, cabin) — just
 //    windowed down to the ~7 days this strip actually shows.
@@ -27,7 +36,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { DatePill } from './DatePill';
-import { ChevronLeft, ChevronRight, BellRing, Leaf } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BellRing, Leaf, Gem } from 'lucide-react';
 import { apiGetCalendarPrices } from '../../../lib/flights_api';
 
 interface DateSliderProps {
@@ -113,27 +122,38 @@ export function DateSlider({
     scrollerRef.current?.scrollBy({ left: dir * 200, behavior: 'smooth' });
   };
 
+  // Shared visual style for the floating action capsules — kept in one
+  // place so the buttons stay visually consistent.
+  const capsuleStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(203,213,225,0.6)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 2px 8px rgba(40,60,120,0.07)',
+  };
+  const carbonCapsuleStyle: React.CSSProperties = {
+    background: 'rgba(220,252,231,0.75)',
+    border: '1px solid rgba(134,239,172,0.5)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 2px 8px rgba(22,163,74,0.08)',
+  };
+
   return (
-    <div
-      className="w-full rounded-xl flex items-center justify-between overflow-hidden my-4 max-w-7xl mx-auto"
-      style={{
-        background: 'rgba(255,255,255,0.28)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        boxShadow: '0 8px 32px rgba(40,60,120,0.10), inset 0 1px 0 rgba(255,255,255,0.6)',
-      }}
-    >
-      <div className="flex items-center flex-1 py-3 pl-2">
+    // Single row — date scroller + action capsules aligned on one line.
+    <div className="w-full flex items-center gap-3 my-4 max-w-[1500px] mx-auto">
+
+      {/* ── Date scroll section — flexes to fill remaining space ── */}
+      <div className="flex items-center flex-1 min-w-0">
         <button
           onClick={() => scrollBy(-1)}
           aria-label="Earlier dates"
-          className="w-8 h-12 flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors shrink-0"
+          className="w-7 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors shrink-0"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={18} />
         </button>
 
-        <div ref={scrollerRef} className="flex gap-2 px-2 overflow-x-auto scrollbar-hide flex-1">
+        <div ref={scrollerRef} className="flex gap-1.5 pl-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
           {dates.map(d => {
             const iso = toISO(d);
             const isSelected = iso === baseDate;
@@ -161,40 +181,78 @@ export function DateSlider({
         <button
           onClick={() => scrollBy(1)}
           aria-label="Later dates"
-          className="w-8 h-12 flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors shrink-0"
+          className="w-7 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors shrink-0"
         >
-          <ChevronRight size={20} />
+          <ChevronRight size={18} />
         </button>
       </div>
 
-      <div className="hidden lg:flex items-center self-stretch border-l border-slate-100">
-        <div
+      {/* ── Right action capsules — same row, docked at the end.
+          Full labeled capsules from lg up. ── */}
+      <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+        <button
           onClick={onOpenPriceCalendar}
-          className="flex flex-col items-center justify-center px-5 border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors h-full group"
+          style={capsuleStyle}
+          className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all hover:shadow-md group"
         >
-          <span className="text-blue-500 mb-1 group-hover:scale-110 transition-transform">💎</span>
-          <span className="text-xs font-bold text-slate-800">Best Price</span>
-          <span className="text-[10px] text-slate-500">Calendar View Month</span>
-        </div>
+          <Gem size={20} className="text-blue-500 shrink-0" />
+          <div className="text-left">
+            <div className="text-[11px] font-bold text-slate-800 leading-tight whitespace-nowrap">Best Price Calendar</div>
+            <div className="text-[10px] text-slate-400 leading-tight mt-0.5">View Month</div>
+          </div>
+        </button>
 
-        <div
+        <button
           onClick={onOpenPriceAlert}
-          className="flex flex-col items-center justify-center px-5 border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors h-full group"
+          style={capsuleStyle}
+          className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all hover:shadow-md group"
         >
-          <BellRing size={16} className="text-slate-400 mb-1 group-hover:text-orange-500 transition-colors" />
-          <span className="text-xs font-bold text-slate-800">Price Alert</span>
-          <span className="text-[10px] text-slate-500">Get Notified</span>
-        </div>
+          <BellRing size={18} className="text-slate-400 group-hover:text-orange-500 transition-colors shrink-0" />
+          <div className="text-left">
+            <div className="text-[11px] font-bold text-slate-800 leading-tight whitespace-nowrap">Price Alert</div>
+            <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Get Notified</div>
+          </div>
+        </button>
 
-        <div
+        <button
           onClick={onFilterLowerCarbon}
-          className="flex flex-col items-center justify-center px-5 bg-green-50/50 cursor-pointer hover:bg-green-50 transition-colors h-full group"
+          style={carbonCapsuleStyle}
+          className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition-all hover:shadow-md group"
         >
-          <Leaf size={16} className="text-green-600 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="text-xs font-bold text-green-800 text-center leading-tight">
-            Lower Carbon<br />Flights Available
-          </span>
-        </div>
+          <Leaf size={18} className="text-green-500 shrink-0" />
+          <div className="text-left">
+            <div className="text-[11px] font-bold text-green-700 leading-tight whitespace-nowrap">Lower Carbon Flights</div>
+            <div className="text-[10px] text-green-600 leading-tight mt-0.5">Available</div>
+          </div>
+        </button>
+      </div>
+
+      {/* ── Compact icon-only actions — same row, mobile/tablet (below lg) ── */}
+      <div className="flex lg:hidden items-center gap-2 shrink-0">
+        <button
+          onClick={onOpenPriceCalendar}
+          aria-label="Best Price Calendar"
+          style={capsuleStyle}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:shadow-md shrink-0"
+        >
+          <Gem size={16} className="text-blue-500" />
+        </button>
+        <button
+          onClick={onOpenPriceAlert}
+          aria-label="Price Alert"
+          style={capsuleStyle}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:shadow-md shrink-0"
+        >
+          <BellRing size={14} className="text-slate-400" />
+        </button>
+        <button
+          onClick={onFilterLowerCarbon}
+          aria-label="Lower Carbon Flights Available"
+          style={carbonCapsuleStyle}
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:shadow-md shrink-0"
+        >
+          <Leaf size={14} className="text-green-500" />
+        </button>
       </div>
     </div>
   );

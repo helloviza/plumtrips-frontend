@@ -1,12 +1,10 @@
 // ============================================================
 //  FilterPanela.tsx — sidebar / drawer filters.
 //
-//  UI is unchanged from the original design (accordion sections,
-//  checkbox-style stops list, airline "show more", time-slot grid,
-//  carbon tag). What changed is that every control now reads from
-//  and writes to a real `filters` object via the same
-//  flights/filters/onChange/onReset/mobile contract used elsewhere
-//  in the results page, instead of local-only placeholder state.
+//  UI is wired to real data (accordion sections, checkbox-style
+//  stops list, airline "show more", time-slot grid, carbon tag)
+//  via the same flights/filters/onChange/onReset/mobile contract
+//  used elsewhere in the results page.
 //
 //  BUG FIX: the original file referenced an `airlines` array that
 //  was never defined anywhere in the component — it's now derived
@@ -14,6 +12,13 @@
 //  the selection from the CURRENT selection (not the full airline
 //  list), so unchecking a second airline can't silently re-check
 //  one you'd already unchecked.
+//
+//  UI POLISH: Baggage & Fare Type and Layover City used to render
+//  as plain comma-joined text, which looked flat next to the rest
+//  of the panel. They now render as pill/chip badges (same visual
+//  language as the airline "show more" and Refundability cards),
+//  so every section reads as a first-class filter block even
+//  where there's no ActiveFilters field to wire up yet.
 // ============================================================
 
 import React, { useState } from 'react';
@@ -21,7 +26,7 @@ import { FilterSection } from '../../molecules/FilterSection';
 import { Slider } from '../../atoms/Slider';
 import { Checkbox } from '../../atoms/Checkbox';
 import { AirlineLogo } from '../../molecules/AirlineLogo';
-import { SlidersHorizontal, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { SlidersHorizontal, Sunrise, Sun, Sunset, Moon, Luggage, Ticket, MapPin } from 'lucide-react';
 import { Tag } from '../../atoms/Tag';
 import { cn } from '../../../lib/utils';
 import type { DisplayFlight, ActiveFilters } from '../../../lib/types_t';
@@ -36,6 +41,16 @@ const TIME_SLOTS = [
   { id: 'evening',   label: 'Evening',   range: '6PM – 9PM',  Icon: Sunset,  color: 'text-rose-500',   bg: 'bg-rose-50',   border: 'border-rose-300'   },
   { id: 'night',     label: 'Night',     range: '9PM – 6AM',  Icon: Moon,    color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-300' },
 ] as const;
+
+// Small reusable pill used for the Baggage/Fare Type/Layover chip lists.
+function InfoChip({ icon: Icon, label }: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 rounded-full pl-2 pr-2.5 py-1">
+      <Icon size={12} className="text-slate-400 shrink-0" />
+      {label}
+    </span>
+  );
+}
 
 interface FilterPanelaProps {
   flights: DisplayFlight[];
@@ -80,6 +95,13 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
   };
   const setStops = (s: 0 | 1 | 2, checked: boolean) =>
     onChange({ ...filters, stops: checked ? s : null });
+
+  // Derived, display-only data for the Baggage & Fare Type / Layover City
+  // sections. No ActiveFilters field exists for these yet, so they stay
+  // informational — but they're rendered as chips instead of raw text.
+  const checkinBaggages = [...new Set(flights.map(f => f.checkinBaggage).filter(Boolean))] as string[];
+  const fareTypes = [...new Set(flights.map(f => f.fareType).filter(Boolean))] as string[];
+  const layoverCities = [...new Set(flights.flatMap(f => f.segments.slice(0, -1).map(s => s.toCity)))];
 
   return (
     <div className={cn('w-full flex flex-col', mobile ? '' : 'h-full sticky top-4 max-h-[calc(100vh-2rem)]')}>
@@ -233,18 +255,28 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
             </div>
           </FilterSection>
 
-          {/* Baggage & Fare Type — real data (cabinBaggage/checkinBaggage/fareType
-              all exist on DisplayFlight), but ActiveFilters has no matching field
-              yet, so this shows the real values across current results without
-              filtering. Add a field (e.g. `fareType: string | null`) to
-              ActiveFilters to make this interactive, same pattern as Stops. */}
+          {/* Baggage & Fare Type — real data, rendered as chip pills so it
+              reads as a proper filter block instead of a line of plain text.
+              Still informational (no ActiveFilters field yet) — add e.g.
+              `fareType: string | null` to make it interactive, same
+              pattern as Stops/Refundability. */}
           <FilterSection title="Baggage & Fare Type" defaultExpanded={false}>
-            <div className="text-sm text-slate-500 space-y-1">
+            <div className="flex flex-col gap-3">
               <div>
-                Checked baggage: {[...new Set(flights.map(f => f.checkinBaggage).filter(Boolean))].join(', ') || 'Not specified'}
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Checked Baggage</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {checkinBaggages.length
+                    ? checkinBaggages.map(b => <InfoChip key={b} icon={Luggage} label={b} />)
+                    : <span className="text-xs text-slate-400">Not specified</span>}
+                </div>
               </div>
               <div>
-                Fare type: {[...new Set(flights.map(f => f.fareType).filter(Boolean))].join(', ') || 'Not specified'}
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Fare Type</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {fareTypes.length
+                    ? fareTypes.map(f => <InfoChip key={f} icon={Ticket} label={f} />)
+                    : <span className="text-xs text-slate-400">Not specified</span>}
+                </div>
               </div>
             </div>
           </FilterSection>
@@ -285,16 +317,15 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
           </FilterSection>
 
           {/* Layover City — real data, derived from each flight's segments
-              (every stop's toCity except the final destination). No matching
-              field in ActiveFilters yet, so this is informational only. */}
+              (every stop's toCity except the final destination), rendered
+              as chip pills for visual consistency with the rest of the
+              panel. No matching field in ActiveFilters yet, so this stays
+              informational only. */}
           <FilterSection title="Layover City" defaultExpanded={false}>
-            <div className="text-sm text-slate-500">
-              {(() => {
-                const cities = [...new Set(
-                  flights.flatMap(f => f.segments.slice(0, -1).map(s => s.toCity))
-                )];
-                return cities.length ? cities.join(', ') : 'Direct flights only';
-              })()}
+            <div className="flex flex-wrap gap-1.5">
+              {layoverCities.length
+                ? layoverCities.map(c => <InfoChip key={c} icon={MapPin} label={c} />)
+                : <span className="text-xs text-slate-400">Direct flights only</span>}
             </div>
           </FilterSection>
 
