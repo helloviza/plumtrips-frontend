@@ -6,7 +6,8 @@ import SortDropdown from '../../components/hotels/SortDropdown';
 import {
   MapPin, X, Star, Search,
   Wifi, Dumbbell, UtensilsCrossed, Car, Waves,
-  Coffee, Loader2, AlertTriangle, Shield, CheckCircle, Building2
+  Coffee, Loader2, AlertTriangle, Shield, CheckCircle, Building2,
+  List, ArrowRight
 } from 'lucide-react';
 import { getAmenityIcon } from '../../components/hotels/amenityIcons';
 import { useHotelStore } from '../../stores/hotelStore';
@@ -17,7 +18,7 @@ import Button from '../../components/ui/Button';
 import HotelSearchBar from '../../components/hotels/HotelSearchBar';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 
-// ── Musafir colour tokens ─────────────────────────────────────────────────
+// ── Musafir colour tokens (kept for any values still referenced below) ────
 const S = {
   navy:      "#00305f",
   navyDeep:  "#0d2d5e",
@@ -41,7 +42,7 @@ function StarRow({ count }: { count: number }) {
   return (
     <span className="flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className={`h-3.5 w-3.5 ${i < count ? 'fill-[#FFC107] text-[#FFC107]' : 'fill-gray-200 text-gray-200'}`} />
+        <Star key={i} size={12} className={i < count ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'} />
       ))}
     </span>
   );
@@ -63,147 +64,143 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div 
+    <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      className="bg-white rounded-2xl border overflow-hidden flex flex-col md:flex-row transition-all"
       style={{
-        background: "#fff",
-        borderRadius: 16,
-        border: `1px solid ${hovered || isSelected ? "rgba(0,71,127,0.28)" : S.border}`,
-        overflow: "hidden",
-        transition: "all .2s",
-        boxShadow: isSelected ? "0 4px 12px rgba(0,71,127,0.15)" : "none",
+        borderColor: hovered || isSelected ? '#93c5fd' : '#e2e8f0',
+        boxShadow: isSelected ? '0 8px 24px rgba(37,99,235,0.14)' : hovered ? '0 12px 32px rgba(40,60,120,0.10)' : '0 2px 12px rgba(40,60,120,0.06)',
       }}
-      className="flex flex-col md:flex-row"
     >
       <div className="flex flex-col md:flex-row flex-1 min-w-0">
-        {/* Image Gallery area */}
-        <div style={{ position: "relative" }} className="w-full md:w-64 h-48 shrink-0 bg-slate-100 overflow-hidden flex items-center justify-center">
+        {/* Image area */}
+        <div className="relative w-full md:w-60 h-48 md:h-auto shrink-0 bg-slate-100 overflow-hidden flex items-center justify-center">
           {hotel.images && hotel.images[0] ? (
             <img
               src={hotel.images[0]}
               alt={hotel.name}
               loading="lazy"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className="flex flex-col items-center justify-center opacity-40 text-[#00305f]">
-              <Building2 className="w-12 h-12 mb-2" />
-              <span className="text-xs font-bold font-['Sora',sans-serif]">No Image Available</span>
+            <div className="flex flex-col items-center justify-center opacity-40 text-slate-500">
+              <Building2 className="w-10 h-10 mb-2" />
+              <span className="text-xs font-bold">No Image Available</span>
             </div>
           )}
           {hotel.freeCancellation && (
-            <span style={{ position: "absolute", top: 12, left: 12, background: "rgba(16,185,129,0.95)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 8px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
-              <Shield className="w-3 h-3" /> Free cancellation
+            <span className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-lg text-[10px] font-bold text-white px-2 py-1 shadow-sm" style={{ background: 'rgba(16,163,74,0.95)' }}>
+              <Shield size={11} /> Free cancellation
             </span>
           )}
         </div>
 
-        {/* Middle: Info */}
-        <div style={{ flex: 1, padding: "16px 20px", display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <div>
-            <div style={{ marginBottom: 8 }}>
-              <StarRow count={hotel.starRating} />
-            </div>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 18, color: S.navyDeep, lineHeight: 1.2, marginBottom: 4 }}>
-              {hotel.name}
-            </div>
-            <p style={{ fontSize: 12, color: S.navyMid, display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
-              <MapPin className="h-3.5 w-3.5" />
-              <span style={{ textDecoration: "underline", textDecorationStyle: "dotted", cursor: "pointer" }}>{hotel.location}</span>
-            </p>
+        {/* Center: Details */}
+        <div className="flex-1 flex flex-col px-5 py-4 min-w-0 border-r-0 md:border-r border-slate-100">
+          <div className="mb-2">
+            <StarRow count={hotel.starRating} />
           </div>
+          <h3 className="text-[16px] font-bold text-slate-900 leading-tight mb-1.5">
+            {hotel.name}
+          </h3>
+          <p className="flex items-center gap-1 text-[12px] text-slate-500 mb-3">
+            <MapPin size={12} className="text-slate-400 shrink-0" />
+            <span className="underline decoration-dotted decoration-slate-300 cursor-pointer">{hotel.location}</span>
+          </p>
 
-          <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <div className="flex flex-wrap items-center gap-1.5 mt-auto">
             {hotel.amenities.slice(0, 5).map((a: string, i: number) => (
-              <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: S.navyDeep, background: S.surface, border: `1px solid ${S.border}`, padding: "4px 8px", borderRadius: 6, fontWeight: 500 }}>
+              <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
                 {getAmenityIcon(a, 'sm')}
                 {a}
               </span>
             ))}
             {hotel.amenities.length > 5 && (
-              <span style={{ fontSize: 11, color: S.muted, fontWeight: 600 }}>+{hotel.amenities.length - 5} more</span>
+              <span className="text-[11px] font-semibold text-slate-400">+{hotel.amenities.length - 5} more</span>
             )}
           </div>
         </div>
 
         {/* Right: Price & CTA */}
-        <div style={{ flexShrink: 0, borderTop: `1px solid ${S.border}`, padding: "16px 20px", display: "flex", flexDirection: "column", justifyContent: "space-between", background: S.surface }} className="w-full md:w-56 md:border-t-0 md:border-l">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            {/* Ratings strictly from API */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ background: S.navyDeep, color: "#fff", fontWeight: 800, fontSize: 14, padding: "4px 8px", borderRadius: "8px 8px 8px 0", display: "flex", alignItems: "center", fontFamily: "'Sora',sans-serif" }}>
+        <div className="shrink-0 w-full md:w-56 flex flex-col justify-between px-5 py-4 bg-slate-50 border-t md:border-t-0 border-slate-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[13px] font-bold text-white" style={{ background: '#16a34a' }}>
+                <Star size={9} className="fill-white" />
                 {displayRating.toFixed(1)}
               </div>
               {hasRealReviews && (
-                <div style={{ fontSize: 11 }}>
-                  <div style={{ fontWeight: 800, color: S.navyDeep }}>Good</div>
-                  <div style={{ color: S.muted, fontWeight: 500 }}>{hotel.reviewCount} reviews</div>
+                <div className="text-[11px]">
+                  <div className="font-bold text-slate-800 leading-tight">Good</div>
+                  <div className="text-slate-400 font-medium leading-tight">{hotel.reviewCount} reviews</div>
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ textAlign: "right", marginTop: "auto" }}>
-            <div style={{ fontSize: 11, color: S.muted, marginBottom: 4, fontWeight: 500 }}>{nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}</div>
-            <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 24, color: S.navyDeep, lineHeight: 1 }}>
+          <div className="text-right mt-auto">
+            <div className="text-[11px] text-slate-400 font-medium mb-1">
+              {nights} night{nights > 1 ? 's' : ''}, {useHotelStore.getState().searchParams.rooms || 1} room{(useHotelStore.getState().searchParams.rooms || 1) > 1 ? 's' : ''}
+            </div>
+            <div className="text-[24px] font-extrabold text-slate-900 leading-none">
               {convert(totalPayable)}
             </div>
-            <div style={{ fontSize: 10, color: S.muted, marginTop: 4, fontWeight: 500 }}>
-              incl. taxes & fees
+            <div className="text-[10px] text-slate-400 font-medium mt-1">
+              incl. taxes &amp; fees
             </div>
-            
+
             <button
               onClick={() => setSelectedHotel(hotel)}
+              className="mt-4 w-full rounded-xl px-4 py-2.5 text-[13px] font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{
-                marginTop: 16, width: "100%", borderRadius: 12, padding: "12px 16px", fontSize: 13, fontWeight: 800, fontFamily: "'Sora',sans-serif",
-                transition: "all .2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                background: isSelected ? S.green : S.accent,
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
+                background: isSelected ? '#16a34a' : 'linear-gradient(135deg,#f97316,#ea580c)',
+                boxShadow: isSelected ? 'none' : '0 2px 8px rgba(249,115,22,0.35)',
               }}
-              onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = S.accentDk; }}
-              onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background = S.accent; }}
             >
               {isSelected ? (
                 <>
-                  <CheckCircle className="w-4 h-4" /> Selected
+                  <CheckCircle size={15} /> Selected
                 </>
-              ) : 'Select →'}
+              ) : (
+                <>
+                  Select <ArrowRight size={13} />
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
-      
+
       {/* Sticky Bottom Bar for Selected Hotel */}
       {isSelected && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] flex justify-center">
           <div className="max-w-6xl w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
                 {hotel.images && hotel.images[0] ? (
                   <img src={hotel.images[0]} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Building2 className="w-6 h-6 text-gray-400 opacity-50" />
+                  <Building2 className="w-6 h-6 text-slate-400 opacity-50" />
                 )}
               </div>
               <div>
-                <div className="text-sm text-gray-500 font-medium">Selected Hotel</div>
-                <div className="font-bold text-gray-900 truncate max-w-xs sm:max-w-md">{hotel.name}</div>
+                <div className="text-sm text-slate-500 font-medium">Selected Hotel</div>
+                <div className="font-bold text-slate-900 truncate max-w-xs sm:max-w-md">{hotel.name}</div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="text-right hidden sm:block">
-                <div className="text-sm text-gray-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
-                <div className="font-extrabold text-xl text-[#00477f] leading-none">
+                <div className="text-sm text-slate-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
+                <div className="font-extrabold text-xl text-slate-900 leading-none">
                   {convert(getHotelTotalPayable(hotel))}
                 </div>
               </div>
               <button
                 onClick={() => navigate(`/hotels/${hotel.id}/rooms`)}
-                className="flex-1 sm:flex-none bg-[#00477f] hover:bg-[#002766] text-white px-8 py-3 rounded-xl font-bold text-base transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                className="flex-1 sm:flex-none text-white px-8 py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:opacity-90 active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 2px 8px rgba(249,115,22,0.35)' }}
               >
                 View Rooms
               </button>
@@ -260,9 +257,6 @@ export default function HotelResults() {
   }, []);
 
   // ── Trigger API search on mount and when occupancy changes ──────────────
-  // TBO returns occupancy-specific pricing — rooms=1 gives a different rate than
-  // rooms=2. The search must re-run whenever the room/guest count changes so the
-  // displayed per-room price matches what the supplier is actually quoting.
   const searchKey = `${searchParams.rooms}-${searchParams.adults}-${searchParams.children}-${searchParams.locationId || searchParams.location}-${searchParams.checkIn instanceof Date ? searchParams.checkIn.toISOString().split('T')[0] : searchParams.checkIn}-${searchParams.checkOut instanceof Date ? searchParams.checkOut.toISOString().split('T')[0] : searchParams.checkOut}`;
   const lastSearchKeyRef = useRef('');
 
@@ -387,7 +381,7 @@ export default function HotelResults() {
     }
 
     if (filters.cancellationPolicy === 'free') r = r.filter(h => h.freeCancellation);
-    
+
     // Exact match for ReviewScore via StarRating since no text reviews available
     if (filters.reviewScore > 0) {
       r = r.filter(h => h.starRating >= filters.reviewScore);
@@ -408,8 +402,6 @@ export default function HotelResults() {
     resetFilters();
     setPropertySearch('');
   };
-// ── Hotel Card ─────────────────────────────────────────────
-
 
   // Sticky bottom summary bar for multiple room selections
   const totalRoomsSelected = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + r.quantity, 0) : 0;
@@ -418,20 +410,30 @@ export default function HotelResults() {
     : 0;
 
   return (
-    <div style={{ minHeight: "100vh", background: S.surface, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div
+      className="min-h-screen font-sans text-slate-900"
+      style={{
+        background: `radial-gradient(circle at 50% -20%, rgba(82,145,255,.15), transparent 38%), radial-gradient(circle at 0% 20%, rgba(255,132,132,.06), transparent 30%), radial-gradient(circle at 100% 30%, rgba(88,170,255,.08), transparent 35%), linear-gradient(180deg, #FAFCFF 0%, #F6F9FD 40%, #EEF3FA 100%)`,
+      }}
+    >
       {/* ── Top Search Bar ── */}
-      <div 
-        className="sticky top-[52px] md:top-[88px] z-40 border-b border-gray-200 backdrop-blur-sm shadow-sm"
-        style={{ boxShadow: "0 8px 28px rgba(15,23,42,0.08)" }}
+      <div
+        className="sticky top-[52px] md:top-[88px] z-40"
+        style={{
+          background: 'rgba(250,252,255,0.88)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          borderBottom: '1px solid rgba(226,232,240,0.6)',
+        }}
       >
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl px-4 py-3">
           {/* Desktop Search Bar */}
           <div className="hidden md:block">
-            <HotelSearchBar 
+            <HotelSearchBar
               onSearch={() => {
                  const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
                  const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
-                 
+
                  search({
                    cityCode: searchParams.locationId ?? searchParams.location,
                    checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
@@ -442,21 +444,21 @@ export default function HotelResults() {
                    childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
                    nationality: searchParams.nationality || 'IN',
                  });
-              }} 
+              }}
             />
           </div>
 
           {/* Mobile Search Summary */}
-          <div className="md:hidden p-3 flex items-center justify-between bg-white/90 backdrop-blur-md">
+          <div className="md:hidden flex items-center justify-between rounded-xl bg-white border border-slate-200 px-3 py-2.5" style={{ boxShadow: '0 1px 6px rgba(40,60,120,0.07)' }}>
             <div className="flex flex-col min-w-0 flex-1 mr-4">
-               <span className="font-bold text-[13px] text-slate-800 truncate leading-tight mb-0.5">{searchParams.location || 'Anywhere'}</span>
+               <span className="font-bold text-[13px] text-slate-900 truncate leading-tight mb-0.5">{searchParams.location || 'Anywhere'}</span>
                <span className="text-[11px] text-slate-500 font-medium truncate">
                  {searchParams.checkIn ? new Date(searchParams.checkIn).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'Any date'} - {searchParams.checkOut ? new Date(searchParams.checkOut).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'Any date'} • {searchParams.adults} Adult{searchParams.adults > 1 ? 's' : ''}
                </span>
             </div>
-            <button 
+            <button
               onClick={() => setShowMobileSearch(!showMobileSearch)}
-              className="text-[11px] font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 uppercase tracking-wide shrink-0 transition-colors hover:bg-blue-100"
+              className="text-[11px] font-bold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100 uppercase tracking-wide shrink-0 transition-colors hover:bg-orange-100"
             >
               {showMobileSearch ? 'Close' : 'Modify'}
             </button>
@@ -464,14 +466,14 @@ export default function HotelResults() {
 
           {/* Mobile Expanded Search Bar */}
           {showMobileSearch && (
-            <div className="md:hidden bg-white p-3 max-h-[75vh] overflow-y-auto shadow-inner border-t border-slate-100">
-               <HotelSearchBar 
+            <div className="md:hidden mt-2 bg-white rounded-xl p-3 max-h-[75vh] overflow-y-auto border border-slate-200" style={{ boxShadow: '0 1px 6px rgba(40,60,120,0.07)' }}>
+               <HotelSearchBar
                  variant="results"
                  onSearch={() => {
                    setShowMobileSearch(false);
                    const checkIn = searchParams.checkIn ? (searchParams.checkIn instanceof Date ? searchParams.checkIn : new Date(searchParams.checkIn)) : null;
                    const checkOut = searchParams.checkOut ? (searchParams.checkOut instanceof Date ? searchParams.checkOut : new Date(searchParams.checkOut)) : null;
-                   
+
                    search({
                      cityCode: searchParams.locationId ?? searchParams.location,
                      checkIn: checkIn ? checkIn.toISOString().split('T')[0] : '',
@@ -482,13 +484,13 @@ export default function HotelResults() {
                      childrenAges: searchParams.children > 0 ? (searchParams.childrenAges.length === searchParams.children ? searchParams.childrenAges : Array(searchParams.children).fill(5)) : undefined,
                      nationality: searchParams.nationality || 'IN',
                    });
-                 }} 
+                 }}
                />
             </div>
           )}
         </div>
       </div>
-      
+
       {/* ── Body ── */}
       <div className="flex flex-col lg:flex-row max-w-[1440px] mx-auto px-4 md:px-6 py-5 gap-5">
         {/* ── Left sidebar ── */}
@@ -499,43 +501,38 @@ export default function HotelResults() {
         </aside>
 
         {/* ── Results list ── */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="flex-1 min-w-0 flex flex-col gap-3">
           {/* Skeletons */}
           {(loading || (!hasSearched && !error)) && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="flex flex-col gap-3">
               {statusMessage && (
-                <div className="mb-4 flex items-center justify-center gap-2 text-sm font-bold text-[#00477f] bg-blue-50 py-3 rounded-xl border border-blue-100">
+                <div className="mb-2 flex items-center justify-center gap-2 text-sm font-bold text-blue-700 bg-blue-50 py-3 rounded-xl border border-blue-100">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   {statusMessage}
                 </div>
               )}
               {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{
-                  background: "#fff", borderRadius: 16, border: `1px solid ${S.border}`,
-                  height: 140, display: "flex", overflow: "hidden"
-                }}>
-                  <div style={{ width: 140, height: "100%", background: S.surface, animation: "pulse 1.5s infinite" }} />
-                  <div style={{ flex: 1, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ width: "40%", height: 16, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
-                    <div style={{ width: "20%", height: 12, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex" style={{ height: 140 }}>
+                  <div style={{ width: 140, height: "100%" }} className="bg-slate-100 animate-pulse" />
+                  <div className="flex-1 px-6 py-5 flex flex-col gap-3">
+                    <div className="h-4 w-2/5 bg-slate-100 rounded animate-pulse" />
+                    <div className="h-3 w-1/5 bg-slate-100 rounded animate-pulse" />
                   </div>
-                  <div style={{ width: 180, borderLeft: `1px solid ${S.border}`, padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-                     <div style={{ width: 60, height: 14, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite" }} />
-                     <div style={{ width: "100%", height: 24, background: S.surface, borderRadius: 4, animation: "pulse 1.5s infinite", marginTop: "auto" }} />
+                  <div style={{ width: 180 }} className="border-l border-slate-100 p-5 flex flex-col gap-2">
+                     <div className="h-3.5 w-14 bg-slate-100 rounded animate-pulse" />
+                     <div className="h-6 w-full bg-slate-100 rounded animate-pulse mt-auto" />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
-
           {/* Error */}
           {!loading && error && (
-            <div className="flex flex-col items-center justify-center py-20 rounded-xl border border-red-200 bg-white shadow-sm px-4">
+            <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-red-200 bg-white shadow-sm px-4">
               <AlertTriangle className="h-12 w-12 text-red-400 mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Search Failed</h3>
-              <p className="text-gray-500 mb-6 text-center">{error}</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Search Failed</h3>
+              <p className="text-slate-500 mb-6 text-center">{error}</p>
             </div>
           )}
 
@@ -543,25 +540,25 @@ export default function HotelResults() {
           {!loading && !error && hasSearched && (
             filteredHotels.length > 0 ? (
               <>
-                <div className="mb-4 flex items-center justify-between text-sm font-semibold text-gray-700">
-                  <span>{filteredHotels.length} properties found</span>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-900">{filteredHotels.length} properties found</span>
                   <SortDropdown />
                 </div>
                 {/* Hotel List */}
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4">
                   {filteredHotels.slice(0, visibleCount).map((hotel) => (
-                    <HotelCard 
-                      key={hotel.id} 
-                      hotel={hotel} 
-                      nights={nights} 
-                      showTotalPrice={showTotalPrice} 
+                    <HotelCard
+                      key={hotel.id}
+                      hotel={hotel}
+                      nights={nights}
+                      showTotalPrice={showTotalPrice}
                       isSelected={selectedHotel?.id === hotel.id}
                     />
                   ))}
                 </div>
 
                 {visibleCount < filteredHotels.length && (
-                  <div className="mt-8 text-center">
+                  <div className="mt-6 text-center">
                     <Button
                       variant="outline"
                       onClick={() => setVisibleCount(v => v + 10)}
@@ -573,10 +570,10 @@ export default function HotelResults() {
                 )}
               </>
             ) : (
-              <div className="py-24 text-center bg-white rounded-xl border border-gray-200 shadow-sm">
-                <Search className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-                <h3 className="mb-2 text-xl font-bold text-gray-900">No hotels found</h3>
-                <p className="mb-6 text-sm text-gray-500 max-w-sm mx-auto">We couldn't find any properties matching your exact filters. Try broadening your search.</p>
+              <div className="py-24 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+                <h3 className="mb-2 text-xl font-bold text-slate-900">No hotels found</h3>
+                <p className="mb-6 text-sm text-slate-500 max-w-sm mx-auto">We couldn't find any properties matching your exact filters. Try broadening your search.</p>
                 <Button onClick={handleClearFilters}>
                   Clear all filters
                 </Button>
@@ -598,13 +595,13 @@ export default function HotelResults() {
                 {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''}
               </div>
             </div>
-            <Button
-              size="lg"
+            <button
               onClick={() => navigate('/hotels/guest-details')}
-              className="w-full sm:w-auto min-w-[240px] shadow-lg"
+              className="w-full sm:w-auto min-w-[240px] text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 4px 14px rgba(249,115,22,0.35)' }}
             >
               Continue to Guest Details
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -614,16 +611,16 @@ export default function HotelResults() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMobileFilters(false)} />
           <div className="absolute bottom-0 left-0 right-0 h-[85vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl">
-            <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white/95 backdrop-blur px-5 py-4 z-10">
-              <h2 className="text-lg font-bold text-gray-900">Filter Results</h2>
-              <button onClick={() => setShowMobileFilters(false)} className="p-1 rounded-md hover:bg-gray-100">
-                <X className="h-6 w-6 text-gray-500" />
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur px-5 py-4 z-10">
+              <h2 className="text-lg font-bold text-slate-900">Filter Results</h2>
+              <button onClick={() => setShowMobileFilters(false)} className="p-1 rounded-md hover:bg-slate-100">
+                <X className="h-6 w-6 text-slate-500" />
               </button>
             </div>
             <div className="p-5 pb-24">
               <HotelFilters maxPrice={MAX_PRICE} neighborhoods={NEIGHBOURHOODS} amenitiesList={AMENITIES_LIST} propertyTypes={PROPERTY_TYPES} propertySearch={propertySearch} setPropertySearch={setPropertySearch} />
             </div>
-            <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4">
+            <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white p-4">
               <Button
                 fullWidth
                 onClick={() => setShowMobileFilters(false)}
@@ -637,6 +634,3 @@ export default function HotelResults() {
     </div>
   );
 }
-
-
-

@@ -9,6 +9,8 @@ export function HotelRangePickerTriggers({
   checkInLabel = 'Check In',
   checkOutLabel = 'Check Out',
   nightsLabel = true,
+  checkInIcon,
+  checkOutIcon,
 }: {
   checkIn: Date | null; checkOut: Date | null;
   onCheckInChange: (d: Date | null) => void;
@@ -17,6 +19,8 @@ export function HotelRangePickerTriggers({
   checkInError?: string; checkOutError?: string;
   checkInLabel?: string; checkOutLabel?: string;
   nightsLabel?: boolean;
+  checkInIcon?: React.ReactNode;
+  checkOutIcon?: React.ReactNode;
 }) {
   const [openField, setOpenField] = useState<'checkIn' | 'checkOut' | null>(null);
   const checkInRef = useRef<HTMLDivElement>(null);
@@ -34,6 +38,39 @@ export function HotelRangePickerTriggers({
   const dateToStr = (d: Date | null) => d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : "";
   const strToDate = (s: string) => s ? new Date(s + "T00:00:00") : null;
 
+  const checkInContent = (
+    <>
+      <span style={labelStyle}>{checkInLabel}</span>
+      {checkIn
+        ? <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+            {checkIn.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        : <span style={{ fontSize: 13, color: '#94a3b8' }}>Add date</span>
+      }
+      {checkInError && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>{checkInError}</p>}
+    </>
+  );
+
+  const checkOutContent = (
+    <>
+      <span style={labelStyle}>
+        {checkOutLabel}
+        {nightsLabel && nights > 0 && (
+          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#003580', marginLeft: 6 }}>
+            · {nights} night{nights !== 1 ? 's' : ''}
+          </span>
+        )}
+      </span>
+      {checkOut
+        ? <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+            {checkOut.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        : <span style={{ fontSize: 13, color: '#94a3b8' }}>Add date</span>
+      }
+      {checkOutError && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>{checkOutError}</p>}
+    </>
+  );
+
   return (
     <div className="contents">
       {/* Check-in trigger */}
@@ -49,14 +86,14 @@ export function HotelRangePickerTriggers({
           background: openField === 'checkIn' ? '#fef9f7' : 'transparent',
         }}
       >
-        <span style={labelStyle}>{checkInLabel}</span>
-        {checkIn
-          ? <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
-              {checkIn.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-          : <span style={{ fontSize: 13, color: '#94a3b8' }}>Add date</span>
-        }
-        {checkInError && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>{checkInError}</p>}
+        {checkInIcon ? (
+          <div className="flex items-center gap-3 h-full">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+              {checkInIcon}
+            </div>
+            <div className="min-w-0 flex-1">{checkInContent}</div>
+          </div>
+        ) : checkInContent}
       </div>
 
       {/* Check-out trigger */}
@@ -72,21 +109,14 @@ export function HotelRangePickerTriggers({
           background: openField === 'checkOut' ? '#fef9f7' : 'transparent',
         }}
       >
-        <span style={labelStyle}>
-          {checkOutLabel}
-          {nightsLabel && nights > 0 && (
-            <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: '#003580', marginLeft: 6 }}>
-              · {nights} night{nights !== 1 ? 's' : ''}
-            </span>
-          )}
-        </span>
-        {checkOut
-          ? <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
-              {checkOut.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-          : <span style={{ fontSize: 13, color: '#94a3b8' }}>Add date</span>
-        }
-        {checkOutError && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 2 }}>{checkOutError}</p>}
+        {checkOutIcon ? (
+          <div className="flex items-center gap-3 h-full">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+              {checkOutIcon}
+            </div>
+            <div className="min-w-0 flex-1">{checkOutContent}</div>
+          </div>
+        ) : checkOutContent}
       </div>
 
       {/* Floating panel */}

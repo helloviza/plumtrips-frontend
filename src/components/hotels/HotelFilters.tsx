@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, ChevronDown, ChevronUp, Star, Check, X } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Star, Check, X, Wifi, Waves, Coffee, Car, Dumbbell, Wind } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { formatCurrency } from '../../lib/utils';
 import { useCurrency } from '../../context/currencyContext';
@@ -32,11 +32,11 @@ function DualRangeSlider({
         .range-slider-input::-webkit-slider-thumb { pointer-events: auto; }
         .range-slider-input::-moz-range-thumb { pointer-events: auto; }
       `}</style>
-      <div className="absolute top-1.5 left-0 right-0 h-1.5 rounded-full bg-gray-200 pointer-events-none">
+      <div className="absolute top-1.5 left-0 right-0 h-1.5 rounded-full bg-slate-100 pointer-events-none">
         <div
           className="absolute h-1.5 rounded-full transition-all"
           style={{
-            backgroundColor: BLUE,
+            backgroundColor: '#f97316',
             left: `${((low - min) / (max - min)) * 100}%`,
             right: `${100 - ((high - min) / (max - min)) * 100}%`,
           }}
@@ -45,14 +45,64 @@ function DualRangeSlider({
       <input type="range" min={min} max={max} value={low}
         onChange={e => onLowChange(Math.min(parseInt(e.target.value), high - 1))}
         className="absolute w-full h-2 top-1.5 appearance-none bg-transparent cursor-pointer z-20 range-slider-input pointer-events-none"
-        style={{ accentColor: BLUE }}
+        style={{ accentColor: '#f97316' }}
       />
       <input type="range" min={min} max={max} value={high}
         onChange={e => onHighChange(Math.max(parseInt(e.target.value), low + 1))}
         className="absolute w-full h-2 top-1.5 appearance-none bg-transparent cursor-pointer z-20 range-slider-input pointer-events-none"
-        style={{ accentColor: BLUE }}
+        style={{ accentColor: '#f97316' }}
       />
     </div>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-3">
+      {children}
+    </h3>
+  );
+}
+
+function QuickToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+  return (
+    <div
+      className="flex items-center justify-between w-full cursor-pointer select-none py-0.5"
+      onClick={onChange}
+    >
+      <span className="text-sm text-slate-700 font-medium leading-none">{label}</span>
+      <div className={`relative flex-none w-[36px] h-[20px] rounded-full transition-colors duration-200 ${checked ? 'bg-orange-500' : 'bg-slate-200'}`}>
+        <span
+          className="absolute top-[2px] left-[2px] w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"
+          style={{ transform: checked ? 'translateX(16px)' : 'translateX(0px)' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+const AMENITY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
+  'Wi-Fi': Wifi, 'WiFi': Wifi, 'Free Wi-Fi': Wifi,
+  'Pool': Waves,
+  'Breakfast': Coffee,
+  'Parking': Car,
+  'Gym': Dumbbell,
+  'A/C': Wind,
+};
+
+function AmenityChip({ label, active, onToggle }: { label: string; active: boolean; onToggle: () => void }) {
+  const Icon = AMENITY_ICONS[label] || Check;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-all ${
+        active ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+      }`}
+    >
+      <Icon size={12} />
+      {label}
+    </button>
   );
 }
 
@@ -100,70 +150,58 @@ export default function HotelFilters({
     (filters.reviewScore > 0 ? 1 : 0);
 
   return (
-    <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", overflow: "hidden" }} className="w-full">
+    <div className="w-full bg-white rounded-2xl border border-slate-200" style={{ boxShadow: "0 2px 12px rgba(40,60,120,0.07)" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-        <span style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 15, color: S.navyDeep }}>Filters</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <span className="text-[15px] font-bold text-slate-900">Filters</span>
         {(activeFilterCount > 0 || propertySearch) && (
-          <button 
-            onClick={() => { resetFilters(); setPropertySearch(''); }} 
-            style={{ fontSize: 13, color: S.accent, fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}
+          <button
+            onClick={() => { resetFilters(); setPropertySearch(''); }}
+            className="text-xs font-bold text-orange-500 hover:underline bg-transparent border-none cursor-pointer"
           >
             Clear all
           </button>
         )}
       </div>
 
-      {/* Search by property */}
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          value={propertySearch}
-          onChange={e => setPropertySearch(e.target.value)}
-          placeholder="Search by property name"
-          className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#003580]/20 focus:border-[#003580] transition-all outline-none placeholder:text-gray-400"
-        />
-        {propertySearch && (
-          <button onClick={() => setPropertySearch('')} className="absolute right-3 top-3">
-            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-          </button>
-        )}
-      </div>
+      <div className="px-5 py-4">
+        {/* Search by property */}
+        <div className="relative mb-5">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={propertySearch}
+            onChange={e => setPropertySearch(e.target.value)}
+            placeholder="Search by property name"
+            className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none placeholder:text-slate-400"
+          />
+          {propertySearch && (
+            <button onClick={() => setPropertySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+              <X className="h-4 w-4 text-slate-400 hover:text-slate-600" />
+            </button>
+          )}
+        </div>
 
-      <div style={{ display: "flex", flexDirection: "column" }}>
         {/* Popular Filters */}
-        {/* Popular Filters */}
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Popular Filters</h3>
-          <div className="space-y-3.5">
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 0" }}>
-              <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.cancellationPolicy === 'free' ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.cancellationPolicy === 'free' && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
-              </div>
-              <input type="checkbox" className="hidden"
-                checked={filters.cancellationPolicy === 'free'}
-                onChange={() => setFilters({ cancellationPolicy: filters.cancellationPolicy === 'free' ? 'all' : 'free' })}
-              />
-              <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Free cancellation</span>
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "6px 0" }}>
-              <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes('Breakfast') ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.amenities.includes('Breakfast') && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
-              </div>
-              <input type="checkbox" className="hidden"
-                checked={filters.amenities.includes('Breakfast')}
-                onChange={() => toggleArrayFilter('amenities', 'Breakfast')}
-              />
-              <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Breakfast included</span>
-            </label>
+        <div className="pb-5 mb-5 border-b border-slate-100">
+          <SectionHeading>Popular Filters</SectionHeading>
+          <div className="space-y-3">
+            <QuickToggleRow
+              label="Free cancellation"
+              checked={filters.cancellationPolicy === 'free'}
+              onChange={() => setFilters({ cancellationPolicy: filters.cancellationPolicy === 'free' ? 'all' : 'free' })}
+            />
+            <QuickToggleRow
+              label="Breakfast included"
+              checked={filters.amenities.includes('Breakfast')}
+              onChange={() => toggleArrayFilter('amenities', 'Breakfast')}
+            />
           </div>
         </div>
 
         {/* Price Slider */}
-        {/* Price Slider */}
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Price Range</h3>
+        <div className="pb-5 mb-5 border-b border-slate-100">
+          <SectionHeading>Price Range</SectionHeading>
           <DualRangeSlider
             min={0} max={maxPrice}
             low={filters.priceRange[0]}
@@ -172,20 +210,19 @@ export default function HotelFilters({
             onHighChange={v => setFilters({ priceRange: [filters.priceRange[0], v] })}
           />
           <div className="mt-4 flex items-center justify-between gap-2">
-            <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 w-full text-center">
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 w-full text-center">
               {convert(filters.priceRange[0])}
             </div>
-            <span className="text-gray-400 font-bold">-</span>
-            <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 w-full text-center">
+            <span className="text-slate-300 font-bold">–</span>
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 w-full text-center">
               {filters.priceRange[1] >= 50000 ? `${convert(maxPrice)}+` : convert(filters.priceRange[1])}
             </div>
           </div>
         </div>
 
         {/* Star Rating Pills */}
-        {/* Star Rating Pills */}
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Star Rating</h3>
+        <div className="pb-5 mb-5 border-b border-slate-100">
+          <SectionHeading>Star Rating</SectionHeading>
           <div className="flex flex-wrap gap-2">
             {[5, 4, 3, 2, 1].map(star => {
               const isSelected = filters.starRatings.includes(star);
@@ -193,12 +230,14 @@ export default function HotelFilters({
                 <button
                   key={star}
                   onClick={() => toggleArrayFilter('starRatings', star)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all border
-                    ${isSelected 
-                      ? 'bg-[#003580] border-[#003580] text-white' 
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-[#003580] hover:bg-blue-50'}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[12px] font-semibold transition-all ${
+                    isSelected
+                      ? 'bg-amber-400 border-amber-400 text-white shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300'
+                  }`}
                 >
-                  {star} <Star className={`h-3.5 w-3.5 ${isSelected ? 'fill-white text-white' : 'fill-yellow-400 text-yellow-400'}`} />
+                  <Star size={11} className={isSelected ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'} />
+                  {star}
                 </button>
               );
             })}
@@ -206,10 +245,9 @@ export default function HotelFilters({
         </div>
 
         {/* Guest Rating */}
-        {/* Guest Rating */}
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-          <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Guest Rating</h3>
-          <div className="space-y-2">
+        <div className="pb-5 mb-5 border-b border-slate-100">
+          <SectionHeading>Guest Rating</SectionHeading>
+          <div className="space-y-2.5">
             {[
               { label: 'Excellent: 9+', value: 9 },
               { label: 'Very Good: 8+', value: 8 },
@@ -218,16 +256,24 @@ export default function HotelFilters({
             ].map(r => {
               const isSelected = filters.reviewScore === r.value;
               return (
-                <label key={r.value} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? 'border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {isSelected && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
+                <div
+                  key={r.value}
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setFilters({ reviewScore: isSelected ? 0 : r.value })}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      isSelected ? 'border-orange-500 bg-orange-500' : 'border-slate-300 bg-white'
+                    }`}>
+                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <input type="radio" className="hidden"
+                      checked={isSelected}
+                      onChange={() => setFilters({ reviewScore: isSelected ? 0 : r.value })}
+                    />
+                    <span className="text-sm text-slate-700 font-medium">{r.label}</span>
                   </div>
-                  <input type="radio" className="hidden"
-                    checked={isSelected}
-                    onChange={() => setFilters({ reviewScore: isSelected ? 0 : r.value })}
-                  />
-                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</span>
-                </label>
+                </div>
               );
             })}
           </div>
@@ -235,29 +281,30 @@ export default function HotelFilters({
 
         {/* Property Type */}
         {propertyTypes.length > 0 && (
-          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Property Type</h3>
-            <div className="space-y-3.5">
+          <div className="pb-5 mb-5 border-b border-slate-100">
+            <SectionHeading>Property Type</SectionHeading>
+            <div className="space-y-3">
               {(showAllPropertyTypes ? propertyTypes : propertyTypes.slice(0, 5)).map(pt => (
-                <label key={pt} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.propertyTypes.includes(pt) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.propertyTypes.includes(pt) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
+                <label key={pt} className="flex cursor-pointer items-center gap-2.5 group">
+                  <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                    filters.propertyTypes.includes(pt) ? 'bg-orange-500 border-orange-500' : 'border-slate-300 group-hover:border-orange-400'
+                  }`}>
+                    {filters.propertyTypes.includes(pt) && <Check style={{ width: 10, height: 10, color: "#fff" }} />}
                   </div>
                   <input type="checkbox" className="hidden"
                     checked={filters.propertyTypes.includes(pt)}
                     onChange={() => toggleArrayFilter('propertyTypes', pt)}
                   />
-                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pt}</span>
+                  <span className="text-sm text-slate-700 font-medium flex-1 truncate">{pt}</span>
                 </label>
               ))}
             </div>
             {propertyTypes.length > 5 && (
-              <button 
+              <button
                 onClick={() => setShowAllPropertyTypes(!showAllPropertyTypes)}
-                className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
+                className="mt-3 text-xs text-orange-600 font-semibold hover:underline flex items-center gap-1"
               >
-                {showAllPropertyTypes ? 'Show less' : 'Show all'}
-                {showAllPropertyTypes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showAllPropertyTypes ? '− Show less' : '+ Show more'}
               </button>
             )}
           </div>
@@ -265,29 +312,24 @@ export default function HotelFilters({
 
         {/* Amenities */}
         {amenitiesList.length > 0 && (
-          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Amenities</h3>
-            <div className="space-y-3.5">
+          <div className="pb-5 mb-5 border-b border-slate-100">
+            <SectionHeading>Amenities</SectionHeading>
+            <div className="flex flex-wrap gap-2">
               {(showAllAmenities ? amenitiesList : amenitiesList.slice(0, 5)).map(am => (
-                <label key={am} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes(am) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.amenities.includes(am) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
-                  </div>
-                  <input type="checkbox" className="hidden"
-                    checked={filters.amenities.includes(am)}
-                    onChange={() => toggleArrayFilter('amenities', am)}
-                  />
-                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{am}</span>
-                </label>
+                <AmenityChip
+                  key={am}
+                  label={am}
+                  active={filters.amenities.includes(am)}
+                  onToggle={() => toggleArrayFilter('amenities', am)}
+                />
               ))}
             </div>
             {amenitiesList.length > 5 && (
-              <button 
+              <button
                 onClick={() => setShowAllAmenities(!showAllAmenities)}
-                className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
+                className="mt-3 text-xs text-orange-600 font-semibold hover:underline flex items-center gap-1"
               >
-                {showAllAmenities ? 'Show less' : 'Show all'}
-                {showAllAmenities ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showAllAmenities ? '− Show less' : '+ Show more'}
               </button>
             )}
           </div>
@@ -295,34 +337,34 @@ export default function HotelFilters({
 
         {/* Neighborhoods */}
         {neighborhoods.length > 0 && (
-          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${S.borderMid}` }}>
-            <h3 style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 13, color: S.navyDeep, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Neighborhood</h3>
-            <div className="space-y-3.5">
+          <div>
+            <SectionHeading>Neighborhood</SectionHeading>
+            <div className="space-y-3">
               {(showAllNeighborhoods ? neighborhoods : neighborhoods.slice(0, 5)).map(nb => (
-                <label key={nb} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.neighborhoods.includes(nb) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.neighborhoods.includes(nb) && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
+                <label key={nb} className="flex cursor-pointer items-center gap-2.5 group">
+                  <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                    filters.neighborhoods.includes(nb) ? 'bg-orange-500 border-orange-500' : 'border-slate-300 group-hover:border-orange-400'
+                  }`}>
+                    {filters.neighborhoods.includes(nb) && <Check style={{ width: 10, height: 10, color: "#fff" }} />}
                   </div>
                   <input type="checkbox" className="hidden"
                     checked={filters.neighborhoods.includes(nb)}
                     onChange={() => toggleArrayFilter('neighborhoods', nb)}
                   />
-                  <span style={{ fontSize: 13, color: S.navyDeep, fontWeight: 500, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{nb}</span>
+                  <span className="text-sm text-slate-700 font-medium flex-1 truncate">{nb}</span>
                 </label>
               ))}
             </div>
             {neighborhoods.length > 5 && (
-              <button 
+              <button
                 onClick={() => setShowAllNeighborhoods(!showAllNeighborhoods)}
-                className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
+                className="mt-3 text-xs text-orange-600 font-semibold hover:underline flex items-center gap-1"
               >
-                {showAllNeighborhoods ? 'Show less' : 'Show all'}
-                {showAllNeighborhoods ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showAllNeighborhoods ? '− Show less' : '+ Show more'}
               </button>
             )}
           </div>
         )}
-
       </div>
     </div>
   );

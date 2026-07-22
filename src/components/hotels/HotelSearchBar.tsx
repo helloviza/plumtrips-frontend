@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Clock } from 'lucide-react';
+import { Search, Clock, MapPin, Users, Globe2, Calendar } from 'lucide-react';
 import LocationAutocomplete from './LocationAutocomplete';
 import { HotelRangePickerTriggers } from './HotelRangePicker';
 import GuestsRoomsSelector from './GuestsRoomsSelector';
@@ -24,7 +24,7 @@ function FieldDivider() {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mb-1 block text-[10px] font-bold text-[#8fafd4] uppercase tracking-widest">
+    <span className="mb-0.5 block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
       {children}
     </span>
   );
@@ -57,31 +57,41 @@ export default function HotelSearchBar({
   return (
     <div className={cn('relative z-30', className)}>
       <div
-        className="flex flex-col md:flex-row md:items-stretch"
+        className="flex flex-col md:flex-row md:items-center gap-0"
         style={{
-          background: "#fff",
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
           borderRadius: variant === 'results' ? 0 : 14,
-          boxShadow: variant === 'results' ? "none" : "0 8px 30px rgba(0,0,0,0.12)",
+          boxShadow: variant === 'results' ? "none" : "0 1px 6px rgba(40,60,120,0.07)",
           position: "relative",
           zIndex: 50,
-          minHeight: 64
+          minHeight: 64,
+          padding: variant === 'results' ? 0 : '10px 14px',
         }}
       >
         {/* Destination */}
-        <div style={{ zIndex: 50, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[240px] md:max-w-[320px] border-b md:border-b-0">
-          <FieldLabel>Destination</FieldLabel>
-          <LocationAutocomplete
-            variant="bar"
-            value={searchParams.location}
-            onChange={(value, locationId) =>
-              setSearchParams({ location: value, ...(locationId ? { locationId } : {}) })
-            }
-            placeholder="City or hotel"
-            error={errors.location}
-          />
+        <div
+          style={{ zIndex: 50, position: 'relative' }}
+          className="flex items-center gap-3 flex-1 min-w-0 w-full md:w-auto pr-0 md:pr-4 pb-3 md:pb-0 border-b md:border-b-0 md:border-r border-slate-200"
+        >
+          <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <MapPin size={17} className="text-blue-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <FieldLabel>Destination</FieldLabel>
+            <LocationAutocomplete
+              variant="bar"
+              value={searchParams.location}
+              onChange={(value, locationId) =>
+                setSearchParams({ location: value, ...(locationId ? { locationId } : {}) })
+              }
+              placeholder="City or hotel"
+              error={errors.location}
+            />
+          </div>
         </div>
 
-        {/* Check-in + Check-out — unified range picker */}
+        {/* Check-in + Check-out — no extra wrapper/border here; each trigger carries its own icon + its own border-right (matches "like others" partitions, no doubling) */}
         <HotelRangePickerTriggers
           checkIn={checkIn}
           checkOut={checkOut}
@@ -97,61 +107,84 @@ export default function HotelSearchBar({
           minDate={new Date()}
           checkInError={errors.checkIn}
           checkOutError={errors.checkOut}
+          checkInIcon={<Calendar size={17} className="text-orange-500" />}
+          checkOutIcon={<Calendar size={17} className="text-orange-500" />}
         />
 
         {/* Guests */}
-        <div style={{ zIndex: 20, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[200px] md:max-w-[280px] border-b md:border-b-0">
-          <FieldLabel>Guest</FieldLabel>
-          <GuestsRoomsSelector
-            variant="bar"
-            rooms={searchParams.rooms}
-            adults={searchParams.adults}
-            children={searchParams.children}
-            childrenAges={searchParams.childrenAges}
-            roomGuests={searchParams.roomGuests}
-            onRoomsChange={(rooms) => setSearchParams({ rooms })}
-            onAdultsChange={(adults) => setSearchParams({ adults })}
-            onChildrenChange={(children) => setSearchParams({ children })}
-            onChildrenAgesChange={(childrenAges) => setSearchParams({ childrenAges })}
-            onRoomGuestsChange={(roomGuests) => setSearchParams({ roomGuests })}
-            error={errors.guests}
-          />
+        <div
+          style={{ zIndex: 20, position: 'relative' }}
+          className="flex items-center gap-3 flex-1 min-w-0 w-full md:w-auto py-3 md:py-0 md:px-5 border-b md:border-b-0 md:border-r border-slate-200"
+        >
+          <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+            <Users size={17} className="text-purple-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <FieldLabel>Guest</FieldLabel>
+            <GuestsRoomsSelector
+              variant="bar"
+              rooms={searchParams.rooms}
+              adults={searchParams.adults}
+              children={searchParams.children}
+              childrenAges={searchParams.childrenAges}
+              roomGuests={searchParams.roomGuests}
+              onRoomsChange={(rooms) => setSearchParams({ rooms })}
+              onAdultsChange={(adults) => setSearchParams({ adults })}
+              onChildrenChange={(children) => setSearchParams({ children })}
+              onChildrenAgesChange={(childrenAges) => setSearchParams({ childrenAges })}
+              onRoomGuestsChange={(roomGuests) => setSearchParams({ roomGuests })}
+              error={errors.guests}
+            />
+          </div>
         </div>
 
         {/* Nationality */}
-        <div style={{ zIndex: 10, position: 'relative', borderRight: '1px solid #e2ecf7', padding: '10px 14px' }} className="shrink-0 min-h-[64px] w-full md:w-auto md:min-w-[150px] md:max-w-[200px] border-b md:border-b-0">
-          <FieldLabel>Nationality</FieldLabel>
-          <NationalitySelector
-            variant="bar"
-            value={searchParams.nationality || 'IN'}
-            onChange={(nationality) => setSearchParams({ nationality })}
-            error={errors.nationality}
-          />
+        <div
+          style={{ zIndex: 10, position: 'relative' }}
+          className="flex items-center gap-3 flex-1 min-w-0 w-full md:w-auto py-3 md:py-0 md:px-5"
+        >
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <Globe2 size={17} className="text-emerald-600" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <FieldLabel>Nationality</FieldLabel>
+            <NationalitySelector
+              variant="bar"
+              value={searchParams.nationality || 'IN'}
+              onChange={(nationality) => setSearchParams({ nationality })}
+              error={errors.nationality}
+            />
+          </div>
         </div>
-
-        <div style={{ flex: 1 }} className="hidden md:block" />
 
         {/* Search Button */}
         <button
           type="button"
           onClick={onSearch}
           style={{
-            background: '#d06549', color: '#fff', border: 'none',
-            padding: '16px 26px', cursor: 'pointer',
-            fontWeight: 800, fontSize: 13, letterSpacing: '0.04em',
-            transition: 'background .2s', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            borderRadius: variant === 'results' ? 0 : '0 0 14px 14px',
+            background: 'linear-gradient(135deg,#f97316,#ea580c)',
+            color: '#fff',
+            border: 'none',
+            padding: '12px 24px',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: '0.01em',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            borderRadius: 12,
+            boxShadow: '0 2px 8px rgba(249,115,22,0.35)',
+            marginTop: 12,
           }}
-          className="md:!rounded-r-[14px] md:!rounded-bl-none"
-          onMouseEnter={e => e.currentTarget.style.background = '#b8543a'}
-          onMouseLeave={e => e.currentTarget.style.background = '#d06549'}
+          className="w-full md:w-auto md:mt-0 md:ml-4 hover:opacity-90 active:scale-[0.98] transition-all"
         >
-          <Search className="h-4 w-4 md:hidden" />
+          <Search size={15} />
           Search
         </button>
       </div>
-
     </div>
   );
 }

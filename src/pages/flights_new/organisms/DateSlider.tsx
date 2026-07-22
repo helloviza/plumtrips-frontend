@@ -114,9 +114,19 @@ export function DateSlider({
   const base = new Date(baseDate + 'T00:00:00');
   if (isNaN(base.getTime())) return null;
 
+  // Real "today", from local date components — NOT derived from baseDate.
+  // A date is dropped from the strip only if its actual calendar date is
+  // before today, regardless of what date the user is currently searching.
+  // Searching "today" (21 Jul) drops 18/19/20 Jul (genuinely past) from
+  // the strip entirely — no slash, they just aren't rendered. Searching a
+  // future date (21 Aug) keeps 18/19/20 Aug, since those days haven't
+  // happened yet relative to the real calendar — only their position
+  // relative to the selected date matters there.
+  const todayISO = toISO(new Date());
+
   const dates = Array.from({ length: spread * 2 + 1 }, (_, i) =>
     new Date(base.getFullYear(), base.getMonth(), base.getDate() + (i - spread))
-  );
+  ).filter(d => toISO(d) >= todayISO);
 
   const scrollBy = (dir: 1 | -1) => {
     scrollerRef.current?.scrollBy({ left: dir * 200, behavior: 'smooth' });
@@ -165,15 +175,16 @@ export function DateSlider({
             const dateLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
             return (
-              <DatePill
-                key={iso}
-                day={day}
-                date={dateLabel}
-                price={fare != null ? currency(fare) : null}
-                active={isSelected}
-                isLoading={isLoading && prices[iso] == null}
-                onClick={() => onSelectDate(iso)}
-              />
+              <div key={iso} className="relative shrink-0">
+                <DatePill
+                  day={day}
+                  date={dateLabel}
+                  price={fare != null ? currency(fare) : null}
+                  active={isSelected}
+                  isLoading={isLoading && prices[iso] == null}
+                  onClick={() => onSelectDate(iso)}
+                />
+              </div>
             );
           })}
         </div>
