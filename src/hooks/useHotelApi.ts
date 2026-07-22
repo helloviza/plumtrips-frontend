@@ -491,6 +491,10 @@ function normHotel(
   const price = Math.max(0, perRoomTotalFare - perRoomTax);
   const freeCancellation = rooms.some((r: any) => r.IsRefundable === true);
   const mealType: string = cheapest?.MealType ?? '';
+  const latRaw = cityHotel?.Latitude ?? cityHotel?.latitude;
+  const lngRaw = cityHotel?.Longitude ?? cityHotel?.longitude;
+  const _latitude  = latRaw != null && !isNaN(Number(latRaw)) ? Number(latRaw) : undefined;
+  const _longitude = lngRaw != null && !isNaN(Number(lngRaw)) ? Number(lngRaw) : undefined;
 
   return {
     id: String(cityHotel?.HotelCode ?? cityHotel?.hotelCode ?? ''),
@@ -524,12 +528,16 @@ function normHotel(
     _rooms: rooms,       // raw room array from /search
     _taxes: perRoomTax,  // per-room tax (TBO aggregate divided by quantity)
     _traceId: searchTraceId,
+        _latitude,
+    _longitude,
   } as Hotel & {
     _hotelCode: string;
     _mealType: string;
     _rooms: any[];
     _taxes: number;
     _traceId?: string;
+        _latitude?: number;
+    _longitude?: number;
   };
 }
 

@@ -97,6 +97,8 @@ export interface Hotel {
   _rooms?: any[];
   _taxes?: number;
   _traceId?: string;
+  _latitude?: number;
+  _longitude?: number;
 }
 
 export interface RoomGuestConfig {
