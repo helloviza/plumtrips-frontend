@@ -355,10 +355,10 @@ export default function RoomSelection() {
       <div className="font-sans pb-24 w-full">
         <HotelSearchSummaryBar />
         {/* Top Gallery Section */}
-        <div className="mb-6 rounded-2xl overflow-hidden bg-white p-2 shadow-sm border border-slate-100">
+        <div className="mb-8 rounded-3xl overflow-hidden bg-white/70 backdrop-blur-xl p-2.5 shadow-[0_8px_32px_rgba(15,23,42,0.08)] border border-white/80">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 h-[400px]">
             {/* Main Left Image */}
-            <div className="md:col-span-2 rounded-xl overflow-hidden relative group cursor-pointer" onClick={() => setIsGalleryOpen(true)}>
+            <div className="md:col-span-2 rounded-2xl overflow-hidden relative group cursor-pointer" onClick={() => setIsGalleryOpen(true)}>
               {hotel.images?.[0] ? (
                 <img src={hotel.images[0]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               ) : (
@@ -373,14 +373,14 @@ export default function RoomSelection() {
             </div>
             {/* Right Stacked Images */}
             <div className="hidden md:flex flex-col gap-2 h-full">
-              <div className="flex-1 min-h-0 rounded-xl overflow-hidden relative group">
+              <div className="flex-1 min-h-0 rounded-2xl overflow-hidden relative group">
                 {hotel.images?.[1] ? (
                   <img src={hotel.images[1]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full bg-slate-200" />
                 )}
               </div>
-              <div className="flex-1 min-h-0 rounded-xl overflow-hidden relative group cursor-pointer">
+              <div className="flex-1 min-h-0 rounded-2xl overflow-hidden relative group cursor-pointer">
                 {hotel.images?.[2] ? (
                   <img src={hotel.images[2]} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
@@ -401,7 +401,7 @@ export default function RoomSelection() {
         </div>
 
         {/* Hotel Info Banner */}
-        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white/60 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_32px_rgba(15,23,42,0.08)] border border-white/70">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex items-center gap-0.5 text-amber-400">
@@ -409,9 +409,9 @@ export default function RoomSelection() {
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
               </div>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">{hotel.propertyType || 'Hotel'}</span>
+              <span className="text-[11px] font-bold text-[#00477f] uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">{hotel.propertyType || 'Hotel'}</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{hotel.name}</h1>
+            <h1 className="text-[28px] md:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{hotel.name}</h1>
             <p className="text-slate-600 flex items-center gap-1.5 text-sm font-medium">
               <MapPin className="w-4 h-4 text-[#00477f]" />
               {hotel.location} {hotel.distance && <span className="text-slate-400 font-normal">| {hotel.distance}</span>}
@@ -426,8 +426,8 @@ export default function RoomSelection() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* About the Property */}
-            <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900 mb-4">About the Property</h2>
+            <section className="bg-white/60 backdrop-blur-xl p-6 rounded-3xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] border border-white/70">
+              <h2 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">About the Property</h2>
               <div 
                 className={`text-slate-600 leading-relaxed text-sm [&>p]:mb-3 [&>br]:mb-2 [&>b]:font-bold [&>strong]:font-bold ${showMoreAbout ? '' : 'line-clamp-3'}`}
                 dangerouslySetInnerHTML={{ 
@@ -436,19 +436,19 @@ export default function RoomSelection() {
               />
               <button 
                 onClick={() => setShowMoreAbout(!showMoreAbout)}
-                className="text-[#00477f] font-bold text-sm mt-3 flex items-center hover:underline"
+                className="text-[#00477f] font-bold text-sm mt-3 flex items-center gap-0.5 hover:gap-1.5 transition-all hover:underline"
               >
-                {showMoreAbout ? 'Show less' : 'Show more'} <ChevronRight className={`w-4 h-4 ml-0.5 transition-transform ${showMoreAbout ? '-rotate-90' : 'rotate-90'}`} />
+                {showMoreAbout ? 'Show less' : 'Show more'} <ChevronRight className={`w-4 h-4 transition-transform ${showMoreAbout ? '-rotate-90' : 'rotate-90'}`} />
               </button>
             </section>
 
             {/* Experience & Amenities */}
-            <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h2 className="text-xl font-bold text-slate-900 mb-6">Experience & Amenities</h2>
+            <section className="bg-white/60 backdrop-blur-xl p-6 rounded-3xl shadow-[0_4px_20px_rgba(15,23,42,0.06)] border border-white/70">
+              <h2 className="text-xl font-bold text-slate-900 mb-6 tracking-tight">Experience & Amenities</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6">
                 {hotel.amenities.slice(0, showAllAmenities ? hotel.amenities.length : 8).map((am, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-700 text-sm font-medium">
-                    <span className="text-[#00477f] shrink-0 flex items-center">
+                    <span className="text-[#00477f] shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 border border-blue-100">
                       {getAmenityIcon(am, 'lg')}
                     </span>
                     <span className="leading-tight pt-0.5">{am}</span>
@@ -458,16 +458,16 @@ export default function RoomSelection() {
               {hotel.amenities.length > 8 && (
                 <button 
                   onClick={() => setShowAllAmenities(!showAllAmenities)}
-                  className="text-[#00477f] font-bold text-sm mt-6 flex items-center hover:underline"
+                  className="text-[#00477f] font-bold text-sm mt-6 flex items-center gap-0.5 hover:gap-1.5 transition-all hover:underline"
                 >
-                  {showAllAmenities ? 'Show Less' : `Show All ${hotel.amenities.length} Amenities`} <ChevronRight className={`w-4 h-4 ml-0.5 transition-transform ${showAllAmenities ? '-rotate-90' : 'rotate-90'}`} />
+                  {showAllAmenities ? 'Show Less' : `Show All ${hotel.amenities.length} Amenities`} <ChevronRight className={`w-4 h-4 transition-transform ${showAllAmenities ? '-rotate-90' : 'rotate-90'}`} />
                 </button>
               )}
             </section>
 
             {/* Choose Your Room */}
             <section id="rooms-list" className="scroll-mt-24">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">Choose Your Room</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-6 tracking-tight">Choose Your Room</h2>
               
               <div className="flex flex-col gap-6">
                 {rooms.map((room, index) => {
@@ -483,10 +483,10 @@ export default function RoomSelection() {
                   return (
                     <article
                       key={room.id}
-                      className={`flex flex-col md:flex-row overflow-hidden rounded-2xl border transition-all duration-200 ${
+                      className={`flex flex-col md:flex-row overflow-hidden rounded-3xl border transition-all duration-300 ${
                         selected
-                          ? 'border-[#003580] shadow-md shadow-blue-900/10 bg-blue-50/5 ring-2 ring-[#003580]'
-                          : 'border-slate-200 hover:border-slate-300 hover:shadow-md bg-white'
+                          ? 'border-[#003580] shadow-[0_12px_36px_rgba(0,53,128,0.18)] bg-gradient-to-br from-blue-50/50 to-white ring-2 ring-[#003580]/30'
+                          : 'border-slate-200/80 bg-white/70 backdrop-blur-sm hover:border-slate-300 hover:shadow-[0_10px_28px_rgba(15,23,42,0.08)] hover:-translate-y-0.5'
                       }`}
                     >
                       {/* Left Side: Room Image */}
@@ -499,7 +499,7 @@ export default function RoomSelection() {
                           </div>
                         )}
                         {room.size > 0 && (
-                          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1.5 border border-white">
+                          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-slate-800 shadow-md flex items-center gap-1.5 border border-white">
                             <Maximize2 className="w-3.5 h-3.5" /> {room.size} sq.ft
                           </div>
                         )}
@@ -510,13 +510,13 @@ export default function RoomSelection() {
                         <div className="flex justify-between items-start gap-4 mb-2">
                           <h3 className="text-xl font-extrabold text-slate-900 tracking-tight leading-tight">{room.name}</h3>
                           <div className="flex flex-col items-end gap-1.5 shrink-0 relative z-10">
-                            {index === 0 && <span className="bg-blue-50 text-[#00477f] text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-blue-100 shadow-sm">Top Pick</span>}
+                            {index === 0 && <span className="bg-gradient-to-r from-blue-600 to-[#00477f] text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest shadow-md shadow-blue-900/20">Top Pick</span>}
                           </div>
                         </div>
                         
                         <div className="text-sm text-slate-600 mb-5 font-medium">
-                          <span className="flex items-center gap-1.5 text-[#00477f]">
-                            <CheckCircle className="w-4 h-4" /> {room.mealPlanLabel || 'Room Only'}
+                          <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1 text-xs font-bold">
+                            <CheckCircle className="w-3.5 h-3.5" /> {room.mealPlanLabel || 'Room Only'}
                           </span>
                         </div>
 
@@ -529,14 +529,14 @@ export default function RoomSelection() {
 
                         {/* Mandatory Tax Box */}
                         {room.additionalCharges ? (
-                          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3.5 shadow-sm max-w-md">
+                          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 shadow-sm max-w-md">
                             <div className="flex items-start gap-2 mb-2.5">
                               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                               <span className="text-xs font-bold text-amber-900 leading-tight">
                                 Mandatory extra charges – payable directly to the hotel at check-in/check-out
                               </span>
                             </div>
-                            <div className="flex justify-between items-center text-xs font-bold text-amber-800 ml-6 bg-white px-3 py-2 rounded-lg border border-amber-100">
+                            <div className="flex justify-between items-center text-xs font-bold text-amber-800 ml-6 bg-white px-3 py-2 rounded-xl border border-amber-100">
                               <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/> Mandatory Tax</span>
                               <span>{room.additionalChargesCurrency || currencyCode} {room.additionalCharges}</span>
                             </div>
@@ -546,7 +546,7 @@ export default function RoomSelection() {
                         {/* Card Footer */}
                         <div className="mt-auto pt-5 border-t border-slate-100 flex items-end justify-between">
                           <div>
-                            <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-1">{convert(totalStay)}</div>
+                            <div className="text-3xl font-black bg-gradient-to-r from-[#003580] to-[#00477f] bg-clip-text text-transparent tracking-tighter leading-none mb-1">{convert(totalStay)}</div>
                             <div className="text-xs text-slate-500 font-medium tracking-wide uppercase">
                               {nights} Night{nights !== 1 ? 's' : ''} · incl. taxes &amp; fees
                             </div>
@@ -559,7 +559,7 @@ export default function RoomSelection() {
                               <button
                                 type="button"
                                 onClick={() => handleDecrement(room)}
-                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-300 bg-white text-slate-600 hover:border-[#003580] hover:text-[#003580] transition-colors"
+                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-300 bg-white text-slate-600 hover:border-[#003580] hover:text-[#003580] hover:shadow-md transition-all"
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
@@ -577,7 +577,7 @@ export default function RoomSelection() {
                                 type="button"
                                 onClick={() => handleIncrement(room)}
                                 disabled={totalRoomsSelected >= roomsNeeded}
-                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#003580] bg-[#003580] text-white hover:bg-[#002766] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#003580] bg-gradient-to-br from-[#003580] to-[#00295c] text-white shadow-md shadow-blue-900/25 hover:shadow-lg hover:shadow-blue-900/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -586,7 +586,7 @@ export default function RoomSelection() {
                             <Button
                               size="lg"
                               disabled={totalRoomsSelected >= roomsNeeded}
-                              className="bg-[#00477f] hover:bg-[#003580] rounded-xl font-bold px-8 shadow-lg shadow-blue-900/20 disabled:opacity-40"
+                              className="bg-gradient-to-r from-[#00477f] to-[#003580] hover:opacity-90 rounded-2xl font-bold px-8 shadow-lg shadow-blue-900/25 disabled:opacity-40 transition-opacity"
                               onClick={() => handleIncrement(room)}
                             >
                               Select Room &rarr;
@@ -607,16 +607,16 @@ export default function RoomSelection() {
             <div className="sticky top-24 space-y-6">
               
               {/* Sticky Booking Card */}
-              <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white">
+              <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_10px_36px_rgba(15,23,42,0.10)] border border-white/70 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-blue-50/60 to-white">
                   <div className="text-xs font-bold text-slate-500 tracking-wide uppercase mb-1">Starting from</div>
-                  <div className="text-3xl font-black text-slate-900 tabular-nums tracking-tighter mb-1">
+                  <div className="text-3xl font-black bg-gradient-to-r from-[#003580] to-[#00477f] bg-clip-text text-transparent tabular-nums tracking-tighter mb-1">
                     {convert(lowestRoomTotal)}
                   </div>
                   <div className="text-xs font-medium text-slate-500 mb-4">
                     {nights > 1 ? `for ${nights} nights · incl. taxes` : 'incl. taxes & fees'}
                   </div>
-                  <Button fullWidth size="lg" className="bg-orange-600 hover:bg-orange-700 font-bold rounded-xl text-base shadow-lg shadow-orange-600/20" onClick={scrollToRooms}>
+                  <Button fullWidth size="lg" className="bg-gradient-to-r from-orange-500 to-orange-600 hover:opacity-90 font-bold rounded-2xl text-base shadow-lg shadow-orange-600/25 transition-opacity" onClick={scrollToRooms}>
                     View Rooms &rarr;
                   </Button>
                 </div>
@@ -630,7 +630,7 @@ export default function RoomSelection() {
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.name + ' ' + hotel.location)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block rounded-xl overflow-hidden mb-3 relative h-32 bg-slate-100 border border-slate-200 cursor-pointer group"
+                    className="block rounded-2xl overflow-hidden mb-3 relative h-32 bg-slate-100 border border-slate-200 cursor-pointer group shadow-sm"
                   >
                     <iframe 
                       src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.name + ' ' + hotel.location)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
@@ -660,7 +660,7 @@ export default function RoomSelection() {
                   </a>
                 </div>
 
-                <div className="p-4 bg-slate-50">
+                <div className="p-4 bg-slate-50/80">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500 font-medium">Check-in</span>
                     <span className="font-bold text-slate-900">{hotel.checkInTime || '2:00 PM'}</span>
@@ -673,7 +673,7 @@ export default function RoomSelection() {
               </div>
 
               {/* Need Help Banner (Sidebar version) */}
-              <div className="bg-gradient-to-br from-[#00477f] to-blue-900 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
+              <div className="bg-gradient-to-br from-[#00477f] to-blue-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-lg shadow-blue-900/20">
                 <div className="absolute -top-4 -right-4 p-4 opacity-10">
                   <MessageCircle className="w-32 h-32" />
                 </div>
@@ -694,19 +694,19 @@ export default function RoomSelection() {
 
       {/* Floating Bottom Right Support Widget */}
       <div className="fixed bottom-6 right-6 z-50">
-        <button className="w-14 h-14 bg-[#00477f] hover:bg-blue-800 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
+        <button className="w-14 h-14 bg-gradient-to-br from-[#00477f] to-blue-800 hover:from-blue-800 hover:to-[#00477f] text-white rounded-full shadow-2xl shadow-blue-900/30 flex items-center justify-center transition-transform hover:scale-110 active:scale-95">
           <MessageCircle className="w-6 h-6" />
         </button>
       </div>
 
       {/* Checkout Sticky Bottom Bar (Only visible when rooms are selected) */}
       {totalRoomsSelected > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-12px_40px_rgba(15,23,42,0.12)]">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/70 bg-white/90 backdrop-blur-xl p-4 shadow-[0_-12px_40px_rgba(15,23,42,0.12)]">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4">
             <div>
               <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Your Selection</div>
               <div className="flex items-end gap-3">
-                <div className="text-3xl font-black text-slate-900 tracking-tight leading-none">{convert(totalPrice)}</div>
+                <div className="text-3xl font-black bg-gradient-to-r from-[#003580] to-[#00477f] bg-clip-text text-transparent tracking-tight leading-none">{convert(totalPrice)}</div>
                 <div className="text-sm font-medium text-slate-500 mb-0.5">
                   {roomsNeeded > 1
                     ? `${totalRoomsSelected} of ${roomsNeeded} rooms • ${nights} night${nights !== 1 ? 's' : ''}`
@@ -723,7 +723,7 @@ export default function RoomSelection() {
             
             <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
               {supplierPriceChanged && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm w-full sm:w-[350px] mb-2 animate-in fade-in slide-in-from-bottom-2">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm w-full sm:w-[350px] mb-2 animate-in fade-in slide-in-from-bottom-2">
                   <div className="flex items-start gap-2.5">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                     <div className="flex-1">
@@ -759,7 +759,7 @@ export default function RoomSelection() {
                   }
                 }}
                 disabled={totalRoomsSelected < searchParams.rooms || preBookingSubmit}
-                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl px-10 shadow-lg shadow-emerald-600/20 text-lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 disabled:opacity-60 text-white font-bold rounded-2xl px-10 shadow-lg shadow-emerald-600/25 text-lg transition-opacity"
               >
                 {preBookingSubmit ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
@@ -792,7 +792,7 @@ export default function RoomSelection() {
           <div className="flex-1 overflow-y-auto p-4 sm:p-8">
             <div className="max-w-6xl mx-auto columns-1 sm:columns-2 md:columns-3 gap-4 space-y-4">
               {hotel.images?.map((img, i) => (
-                <div key={i} className="break-inside-avoid rounded-xl overflow-hidden bg-slate-900 border border-white/10">
+                <div key={i} className="break-inside-avoid rounded-2xl overflow-hidden bg-slate-900 border border-white/10">
                   <img src={img} alt={`${hotel.name} photo ${i + 1}`} className="w-full h-auto object-cover hover:opacity-90 transition" loading="lazy" />
                 </div>
               ))}
@@ -805,4 +805,3 @@ export default function RoomSelection() {
     </HotelBookingShell>
   );
 }
-

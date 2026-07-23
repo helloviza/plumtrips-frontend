@@ -128,7 +128,7 @@ function AirportDropdown({
     : Math.max(8, Math.min(pos.left, vw - POPUP_W - 8));
 
   return createPortal(
-    <div ref={popupRef} className="absolute z-[99999] flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-2xl bg-white"
+    <div ref={popupRef} className="absolute z-40 flex flex-col overflow-hidden rounded-2xl border border-slate-200 shadow-2xl bg-white"
       style={{ top, left, width: POPUP_W, height: POPUP_H }}>
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 shrink-0 bg-slate-50">
         <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,7 +293,7 @@ function CalendarPopup({
   const calendars = showSingleMonth ? [{ y: vy, m: vm }] : [{ y: vy, m: vm }, { y: vy2, m: vm2 }];
 
   return createPortal(
-    <div ref={popupRef} className="absolute z-[99999] bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden" style={{ top, left, width: POPUP_W }}>
+    <div ref={popupRef} className="absolute z-40 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden" style={{ top, left, width: POPUP_W }}>
       {isRange && (
         <div className="flex border-b border-slate-100 bg-slate-50">
           {([
@@ -405,7 +405,7 @@ function PaxPicker({
   );
 
   return createPortal(
-    <div ref={popupRef} className="absolute z-[99999] rounded-2xl border border-slate-200 shadow-2xl p-[18px] bg-white" style={{ top, left, width: POPUP_W }}>
+    <div ref={popupRef} className="absolute z-40 rounded-2xl border border-slate-200 shadow-2xl p-[18px] bg-white" style={{ top, left, width: POPUP_W }}>
       <PRow label="Adults" sub="12+ years" value={adults} min={1} max={9} onCh={v => onChange(v, children, infants, cabinClass)} />
       <PRow label="Children" sub="2–12 years" value={children} min={0} max={9} onCh={v => onChange(adults, v, infants, cabinClass)} />
       <PRow label="Infants" sub="Under 2 years" value={infants} min={0} max={4} onCh={v => onChange(adults, children, v, cabinClass)} />
@@ -549,7 +549,7 @@ export default function SearchBar({ onSearch, form: formProp, tripType: tripType
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full pt-3 pb-1 relative z-40">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full pt-3 pb-1 relative z-20">
 
       {/* ── Single white card wrapping both rows ── */}
       <div className="rounded-xl overflow-visible bg-white border border-slate-200 shadow-sm">

@@ -25,10 +25,10 @@ export function SearchSummary({ form, onEdit }: SearchSummaryProps) {
       
       {/* Summary Card */}
       <div className="rounded-xl p-5 flex flex-col gap-4" style={{ background: 'rgba(255,255,255,0.28)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 8px 32px rgba(40,60,120,0.10), inset 0 1px 0 rgba(255,255,255,0.6)' }}>
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <h3 className="font-bold text-slate-900">Your Search Summary</h3>
           <button onClick={onEdit} className="text-xs font-semibold text-orange-600 hover:underline">Edit</button>
-        </div>
+        </div> */}
         
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-sm text-slate-700 font-medium bg-slate-50 p-2 rounded-lg border border-slate-100">

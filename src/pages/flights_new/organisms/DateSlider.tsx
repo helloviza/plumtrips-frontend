@@ -79,7 +79,7 @@ export function DateSlider({
   currency,
   onSelectDate,
   prices: pricesProp,
-  spread = 3,
+  spread = 15,
   onOpenPriceCalendar,
   onOpenPriceAlert,
   onFilterLowerCarbon,

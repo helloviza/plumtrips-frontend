@@ -71,12 +71,7 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
 
   const [showAllAirlines, setShowAllAirlines] = useState(false);
 
-  // ExtendedFilters only has `maxPrice`, not a `minPrice` — so the Slider's
-  // low handle is local, visual-only state (like the Baggage/Refundability/
-  // Layover placeholders below). Only the high handle actually filters
-  // results via onChange. Add a `minPrice` field to ExtendedFilters if you
-  // want the low handle to filter too.
-  const [minPriceLocal, setMinPriceLocal] = useState(minP);
+  // We now have `minPrice` in ActiveFilters, so both handles filter the results.
 
   // Correctly toggles a single airline in/out of the current selection.
   // (filters.airlines === [] is treated as "everything selected".)
@@ -134,16 +129,15 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
           <FilterSection title="Price Range">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-slate-600">
-                {convert(minPriceLocal)} – {convert(filters.maxPrice ?? maxP)}
+                {convert(filters.minPrice ?? minP)} – {convert(filters.maxPrice ?? maxP)}
               </span>
               <Slider
                 min={minP}
                 max={maxP}
                 step={500}
-                value={[minPriceLocal, filters.maxPrice ?? maxP]}
+                value={[filters.minPrice ?? minP, filters.maxPrice ?? maxP]}
                 onValueChange={([lo, hi]) => {
-                  setMinPriceLocal(lo);
-                  onChange({ ...filters, maxPrice: hi });
+                  onChange({ ...filters, minPrice: lo, maxPrice: hi });
                 }}
               />
             </div>

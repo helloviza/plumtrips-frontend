@@ -1,3 +1,4 @@
+import { uniq } from 'lodash';
 import { useCurrency } from '../../context/currencyContext';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -130,6 +131,85 @@ function CategoryChips({ active, onSelect }: { active: string; onSelect: (id: st
   );
 }
 
+// Max amenity chips to show inline on a card before collapsing into "+N more".
+// Card width doesn't grow, so anything beyond this goes into the popup modal.
+const VISIBLE_AMENITY_COUNT = 4;
+
+function AmenitiesModal({ hotelName, amenities, onClose }: { hotelName: string; amenities: string[]; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+        className="bg-white rounded-2xl max-w-md w-full max-h-[70vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white z-10">
+          <div>
+            <h3 className="text-[15px] font-bold text-slate-900">All amenities</h3>
+            <p className="text-[11px] text-slate-400 truncate max-w-[280px]">{hotelName}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-slate-100 shrink-0" aria-label="Close">
+            <X className="h-5 w-5 text-slate-500" />
+          </button>
+        </div>
+        <div className="p-5 flex flex-wrap gap-2">
+          {amenities.map((a, i) => (
+            <AmenityChip key={i} label={a} />
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Card-shaped loading placeholder ───────────────────────────────────────
+   Mirrors the real HotelCard's three-column layout (image / details / price)
+   so the "searching" state reads as a prototype of the card itself rather
+   than generic grey bars, and carries no "finding hotels…" copy at all. ── */
+function HotelCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col md:flex-row animate-pulse">
+      {/* Image column */}
+      <div className="shrink-0 w-full md:w-60 h-48 md:h-[158px] bg-slate-100" />
+
+      {/* Details column */}
+      <div className="flex-1 flex flex-col gap-3 px-5 py-4 border-r-0 md:border-r border-slate-100">
+        <div className="flex gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-3 w-3 rounded-full bg-slate-200" />
+          ))}
+        </div>
+        <div className="h-4 w-2/3 bg-slate-200 rounded" />
+        <div className="h-3 w-1/3 bg-slate-100 rounded" />
+        <div className="flex gap-1.5 mt-auto">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-6 w-16 bg-slate-100 rounded-lg" />
+          ))}
+        </div>
+      </div>
+
+      {/* Price / CTA column */}
+      <div className="shrink-0 w-full md:w-56 flex flex-col justify-between px-5 py-4 bg-slate-50 border-t md:border-t-0 border-slate-100">
+        <div className="h-6 w-14 bg-slate-200 rounded-lg self-start" />
+        <div className="flex flex-col items-end gap-2 mt-auto">
+          <div className="h-3 w-20 bg-slate-100 rounded" />
+          <div className="h-6 w-24 bg-slate-200 rounded" />
+          <div className="h-9 w-full bg-slate-200 rounded-xl mt-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; nights: number; showTotalPrice: boolean; isSelected?: boolean; }) {
   const { convert } = useCurrency();
   const navigate = useNavigate();
@@ -145,9 +225,21 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
 
   const [hovered, setHovered] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
+
+  // De-duplicate amenities coming from the API (e.g. "WiFi" + "Free WiFi" both
+  // present) so the visible-count / "+N more" math is always accurate.
+  const uniqueAmenities: string[] = useMemo(() => uniq(hotel.amenities), [hotel.amenities]);
 
   const gallery: string[] = (hotel.images && hotel.images.length > 0) ? hotel.images : [];
   const thumbCount = Math.min(gallery.length, 3);
+
+  // Clicking Select takes the guest straight into the room list for this hotel —
+  // no intermediate "Selected" state / sticky confirm bar to click through.
+  const handleSelectHotel = () => {
+    setSelectedHotel(hotel);
+    navigate(`/hotels/${hotel.id}/rooms`);
+  };
 
   return (
     <motion.div
@@ -226,12 +318,18 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
             <span className="underline decoration-dotted decoration-slate-300 cursor-pointer">{hotel.location}</span>
           </p>
 
-          <div className="flex flex-wrap gap-1.5 mt-auto">
-            {hotel.amenities.slice(0, 5).map((a: string, i: number) => (
+          <div className="flex flex-wrap items-center gap-1.5 mt-auto">
+            {uniqueAmenities.slice(0, VISIBLE_AMENITY_COUNT).map((a: string, i: number) => (
               <AmenityChip key={i} label={a} />
             ))}
-            {hotel.amenities.length > 5 && (
-              <span className="text-[11px] font-semibold text-slate-400 self-center">+{hotel.amenities.length - 5} more</span>
+            {uniqueAmenities.length > VISIBLE_AMENITY_COUNT && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowAmenitiesModal(true); }}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline self-center px-1"
+              >
+                +{uniqueAmenities.length - VISIBLE_AMENITY_COUNT} more
+              </button>
             )}
           </div>
         </div>
@@ -265,63 +363,29 @@ function HotelCard({ hotel, nights, showTotalPrice, isSelected }: { hotel: any; 
             </div>
 
             <button
-              onClick={() => setSelectedHotel(hotel)}
+              onClick={handleSelectHotel}
               className="mt-4 w-full rounded-xl px-4 py-2.5 text-[13px] font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{
-                background: isSelected ? '#16a34a' : 'linear-gradient(135deg,#f97316,#ea580c)',
-                boxShadow: isSelected ? 'none' : '0 2px 8px rgba(249,115,22,0.35)',
+                background: 'linear-gradient(135deg,#f97316,#ea580c)',
+                boxShadow: '0 2px 8px rgba(249,115,22,0.35)',
               }}
             >
-              {isSelected ? (
-                <>
-                  <CheckCircle size={15} /> Selected
-                </>
-              ) : (
-                <>
-                  Select <ArrowRight size={13} />
-                </>
-              )}
+              Select <ArrowRight size={13} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Sticky Bottom Bar for Selected Hotel */}
-      {isSelected && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] flex justify-center">
-          <div className="max-w-6xl w-full flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
-                {hotel.images && hotel.images[0] ? (
-                  <img src={hotel.images[0]} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <Building2 className="w-6 h-6 text-slate-400 opacity-50" />
-                )}
-              </div>
-              <div>
-                <div className="text-sm text-slate-500 font-medium">Selected Hotel</div>
-                <div className="font-bold text-slate-900 truncate max-w-xs sm:max-w-md">{hotel.name}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <div className="text-right hidden sm:block">
-                <div className="text-sm text-slate-500 font-medium">{nights} night{nights > 1 ? 's' : ''}</div>
-                <div className="font-extrabold text-xl text-slate-900 leading-none">
-                  {convert(getHotelTotalPayable(hotel))}
-                </div>
-              </div>
-              <button
-                onClick={() => navigate(`/hotels/${hotel.id}/rooms`)}
-                className="flex-1 sm:flex-none text-white px-8 py-3 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 2px 8px rgba(249,115,22,0.35)' }}
-              >
-                View Rooms
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Amenities popup — shows the full de-duplicated list without widening the card */}
+      <AnimatePresence>
+        {showAmenitiesModal && (
+          <AmenitiesModal
+            hotelName={hotel.name}
+            amenities={uniqueAmenities}
+            onClose={() => setShowAmenitiesModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -667,7 +731,7 @@ export default function HotelResults() {
   const isDefault = urlParams.get('default') === 'true';
 
   const { searchParams, filters, resetFilters, sortBy, sortDirection, setSearchResultsMap, selectedHotel, selectedRooms, setSearchParams, resetBooking } = useHotelStore();
-  const { hotels: apiHotels, rawResults, loading, hasSearched, error, statusMessage, search } = useHotelSearch();
+  const { hotels: apiHotels, rawResults, loading, hasSearched, error, search } = useHotelSearch();
 
   // Local state
   const [propertySearch, setPropertySearch] = useState('');
@@ -783,11 +847,12 @@ export default function HotelResults() {
     return Array.from(seen).slice(0, 20);
   }, [apiHotels]);
 
+  // De-duplicated with lodash's uniq — API results sometimes repeat the same
+  // amenity label across hotels/rooms, which used to inflate this list.
   const AMENITIES_LIST = useMemo(() => {
-    const seen = new Set<string>();
-    apiHotels.forEach(h => h.amenities.forEach(a => seen.add(a)));
+    const all = uniq(apiHotels.flatMap(h => h.amenities as string[]));
     const fallback = ['Free WiFi', 'Pool', 'Spa', 'Gym', 'Restaurant', 'Parking', 'Breakfast'];
-    return seen.size > 0 ? Array.from(seen).slice(0, 15) : fallback;
+    return all.length > 0 ? all.slice(0, 15) : fallback;
   }, [apiHotels]);
 
   const PROPERTY_TYPES = useMemo(() => {
@@ -860,12 +925,6 @@ export default function HotelResults() {
     resetFilters();
     setPropertySearch('');
   };
-
-  // Sticky bottom summary bar for multiple room selections
-  const totalRoomsSelected = selectedRooms.length ? selectedRooms.reduce((sum, r) => sum + r.quantity, 0) : 0;
-  const totalPrice = selectedRooms.length
-    ? selectedRooms.reduce((sum, r) => sum + getRoomOnlinePayable(r, r.quantity), 0)
-    : 0;
 
   return (
     <div
@@ -1012,27 +1071,11 @@ export default function HotelResults() {
             {/* Category chips (cosmetic only, matches reference — does not affect filtering) */}
             <CategoryChips active={activeCategory} onSelect={setActiveCategory} />
 
-            {/* Skeletons */}
+            {/* Loading state — card-shaped skeletons only, no "finding hotels…" copy or spinner */}
             {(loading || (!hasSearched && !error)) && (
-              <div className="flex flex-col gap-3">
-                {statusMessage && (
-                  <div className="mb-2 flex items-center justify-center gap-2 text-sm font-bold text-blue-700 bg-blue-50 py-3 rounded-xl border border-blue-100">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    {statusMessage}
-                  </div>
-                )}
+              <div className="flex flex-col gap-4">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex" style={{ height: 140 }}>
-                    <div style={{ width: 140, height: "100%" }} className="bg-slate-100 animate-pulse" />
-                    <div className="flex-1 px-6 py-5 flex flex-col gap-3">
-                      <div className="h-4 w-2/5 bg-slate-100 rounded animate-pulse" />
-                      <div className="h-3 w-1/5 bg-slate-100 rounded animate-pulse" />
-                    </div>
-                    <div style={{ width: 180 }} className="border-l border-slate-100 p-5 flex flex-col gap-2">
-                       <div className="h-3.5 w-14 bg-slate-100 rounded animate-pulse" />
-                       <div className="h-6 w-full bg-slate-100 rounded animate-pulse mt-auto" />
-                    </div>
-                  </div>
+                  <HotelCardSkeleton key={i} />
                 ))}
               </div>
             )}
@@ -1095,29 +1138,6 @@ export default function HotelResults() {
           )}
         </div>
       </div>
-
-      {/* ── Sticky Room Selection Summary Bar ── */}
-      {totalRoomsSelected > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white p-4 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6">
-            <div>
-              <div className="flex items-end gap-3 mb-1">
-                <div className="text-2xl font-extrabold tabular-nums text-slate-900">{convert(totalPrice)}</div>
-              </div>
-              <div className="text-xs text-slate-500 font-medium">
-                {totalRoomsSelected} room{totalRoomsSelected !== 1 ? 's' : ''} selected · {nights} night{nights !== 1 ? 's' : ''}
-              </div>
-            </div>
-            <button
-              onClick={() => navigate('/hotels/guest-details')}
-              className="w-full sm:w-auto min-w-[240px] text-white px-8 py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 4px 14px rgba(249,115,22,0.35)' }}
-            >
-              Continue to Guest Details
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Mobile filter drawer ── */}
       {showMobileFilters && (

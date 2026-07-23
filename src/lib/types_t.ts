@@ -156,7 +156,8 @@ totalOfferedFare: number; // Fare.OfferedFare — the final total from TBO
 }
 
 export interface ActiveFilters {
-  stops: number | null;        // null = all
+  stops: number | null; 
+  minPrice: number | null;       // null = all
   maxPrice: number | null;
   airlines: string[];
   departureSlot: string | null; // "morning" | "afternoon" | "evening" | "night"
