@@ -12,6 +12,7 @@ import { slotMatch, type CityLeg } from './ResultShared';
 const DEFAULT_FILTERS: ActiveFilters = {
   stops: null,
   maxPrice: null,
+  minPrice: null,
   airlines: [],
   departureSlot: null,
   arrivalSlot: null,
@@ -85,12 +86,16 @@ export default function ResultsSearch({
 
   const displayedFlights = isPickingReturn ? (returnFlights as DisplayFlight[]) : outboundFlights;
 
+  // BUG FIX: this used to only check `maxPrice`, so dragging the low handle
+  // of the price-range slider had zero effect on the results — `minPrice`
+  // is now applied the same way `maxPrice` is.
   const filteredFlights = useMemo(() => {
     return displayedFlights.filter(f => {
       if (filters.stops !== null) {
         const matchesStops = filters.stops === 2 ? f.stops >= 2 : f.stops === filters.stops;
         if (!matchesStops) return false;
       }
+      if (filters.minPrice !== null && f.price < filters.minPrice) return false;
       if (filters.maxPrice !== null && f.price > filters.maxPrice) return false;
       if (filters.airlines.length > 0 && !filters.airlines.includes(f.airline)) return false;
       if (!slotMatch(f.departTime, filters.departureSlot)) return false;
@@ -199,9 +204,18 @@ export default function ResultsSearch({
             >
               <style>{`@media (min-width: 1024px) { .results-filter-card { height: calc(100vh - 100px); } }`}</style>
               <div className="results-filter-card flex flex-col flex-1 min-h-0">
+                {/* BUG FIX: FilterPanela now gets the full unfiltered
+                    `displayedFlights`, not `filteredFlights`. Feeding it the
+                    already-filtered list meant the airline list, the price
+                    slider's min/max bounds, and the stop-price labels all
+                    shrank the moment any filter was applied — so options
+                    would disappear and the slider range would shift under
+                    the user as soon as they touched a filter. `FlightList`
+                    below still gets `filteredFlights`, since that's the
+                    actual results list that should reflect the filters. */}
                 <FilterPanela
                   mobile
-                  flights={filteredFlights}
+                  flights={displayedFlights}
                   filters={filters}
                   onChange={setFilters}
                   onReset={() => setFilters(DEFAULT_FILTERS)}

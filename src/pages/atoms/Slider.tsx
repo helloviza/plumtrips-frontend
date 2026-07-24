@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef } from 'react';
 import { cn } from '../../lib/utils';
 
 interface SliderProps {
@@ -20,13 +20,14 @@ export function Slider({ min, max, step = 1, value, onValueChange, className }: 
   const snap = (v: number) => Math.round(v / step) * step;
   const pctFromClientX = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
-    if (!rect) return min;
+    if (!rect || rect.width === 0) return min;
     const pct = (clientX - rect.left) / rect.width;
     return clamp(snap(min + pct * range));
   };
 
   const startDrag = (handle: 'lo' | 'hi') => (e: React.PointerEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
 
     const move = (ev: PointerEvent) => {
@@ -56,43 +57,47 @@ export function Slider({ min, max, step = 1, value, onValueChange, className }: 
   const hiPct = ((hi - min) / range) * 100;
 
   return (
-    <div ref={trackRef} className={cn('relative w-full h-4 flex items-center py-4', className)}>
-      {/* Track */}
-      <div className="absolute w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+    // Added 'px-2' here so the track is inset by 8px on each side. 
+    // This perfectly accommodates the 16px (w-4) handles.
+    <div className={cn('relative w-full h-5 flex items-center px-2', className)}>
+      <div ref={trackRef} className="relative w-full h-1">
+        {/* Base track */}
+        <div className="absolute inset-0 bg-slate-200 rounded-full" />
+
         {/* Selected range */}
         <div
-          className="absolute h-full bg-orange-500 rounded-full"
+          className="absolute top-0 h-full bg-orange-500 rounded-full"
           style={{ left: `${loPct}%`, right: `${100 - hiPct}%` }}
         />
+
+        {/* Low handle */}
+        <div
+          role="slider"
+          aria-label="Minimum"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={lo}
+          tabIndex={0}
+          onPointerDown={startDrag('lo')}
+          onKeyDown={nudge('lo')}
+          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-sm cursor-grab active:cursor-grabbing touch-none"
+          style={{ left: `${loPct}%`, transform: 'translate(-50%, -50%)' }}
+        />
+
+        {/* High handle */}
+        <div
+          role="slider"
+          aria-label="Maximum"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={hi}
+          tabIndex={0}
+          onPointerDown={startDrag('hi')}
+          onKeyDown={nudge('hi')}
+          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-sm cursor-grab active:cursor-grabbing touch-none"
+          style={{ left: `${hiPct}%`, transform: 'translate(-50%, -50%)' }}
+        />
       </div>
-
-      {/* Low handle */}
-      <div
-        role="slider"
-        aria-label="Minimum"
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={lo}
-        tabIndex={0}
-        onPointerDown={startDrag('lo')}
-        onKeyDown={nudge('lo')}
-        className="absolute w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-sm -ml-2 cursor-grab active:cursor-grabbing touch-none"
-        style={{ left: `${loPct}%` }}
-      />
-
-      {/* High handle */}
-      <div
-        role="slider"
-        aria-label="Maximum"
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={hi}
-        tabIndex={0}
-        onPointerDown={startDrag('hi')}
-        onKeyDown={nudge('hi')}
-        className="absolute w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-sm -ml-2 cursor-grab active:cursor-grabbing touch-none"
-        style={{ left: `${hiPct}%` }}
-      />
     </div>
   );
 }

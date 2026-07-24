@@ -1,9 +1,41 @@
 import { useState } from 'react';
-import { Search, ChevronDown, ChevronUp, Star, Check, X } from 'lucide-react';
+import _ from 'lodash';
+import {
+  Search, ChevronDown, ChevronUp, Star, Check, X,
+  Wifi, Car, Waves, Dumbbell, Coffee, PawPrint, Wind,
+  Tv, UtensilsCrossed, WashingMachine, Sparkles, ParkingSquare,
+  Baby, Cigarette, Snowflake, ShieldCheck,
+} from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { formatCurrency } from '../../lib/utils';
 
 const BLUE = '#003580';
+
+// Maps common amenity names to a representative icon.
+// Falls back to a generic sparkle icon for anything unrecognized,
+// so every row always has an aligned icon slot instead of empty space.
+const AMENITY_ICON_RULES: [RegExp, React.ComponentType<{ className?: string }>][] = [
+  [/wi-?fi|internet/i, Wifi],
+  [/park/i, Car],
+  [/pool|swim/i, Waves],
+  [/gym|fitness/i, Dumbbell],
+  [/breakfast|coffee/i, Coffee],
+  [/pet/i, PawPrint],
+  [/air ?condition|a\/c/i, Wind],
+  [/tv|television/i, Tv],
+  [/restaurant|kitchen|dining/i, UtensilsCrossed],
+  [/laundry|washer/i, WashingMachine],
+  [/garage|valet/i, ParkingSquare],
+  [/child|kid|baby|family/i, Baby],
+  [/smok/i, Cigarette],
+  [/ac |cooling|heater|heating/i, Snowflake],
+  [/secur|safe/i, ShieldCheck],
+];
+
+function getAmenityIcon(name: string) {
+  const match = AMENITY_ICON_RULES.find(([regex]) => regex.test(name));
+  return match ? match[1] : Sparkles;
+}
 
 function DualRangeSlider({
   min, max, low, high,
@@ -43,6 +75,39 @@ function DualRangeSlider({
   );
 }
 
+// Reusable checkbox row — square check, fixed-size icon slot, single-line
+// truncating label. Using items-center (not items-start) keeps the box,
+// icon, and text baseline-aligned regardless of label length.
+function CheckboxRow({
+  checked,
+  onChange,
+  label,
+  icon: Icon,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-3 group">
+      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors
+        ${checked ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
+        {checked && <Check className="h-3.5 w-3.5 text-white" />}
+      </div>
+      <input type="checkbox" className="hidden" checked={checked} onChange={onChange} />
+      {Icon && (
+        <div className="flex h-4 w-4 shrink-0 items-center justify-center text-gray-400 group-hover:text-[#003580] transition-colors">
+          <Icon className="h-4 w-4" />
+        </div>
+      )}
+      <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors truncate">
+        {label}
+      </span>
+    </label>
+  );
+}
+
 interface HotelFiltersProps {
   maxPrice: number;
   neighborhoods: string[];
@@ -66,13 +131,22 @@ export default function HotelFilters({
   const [showAllNeighborhoods, setShowAllNeighborhoods] = useState(false);
   const [showAllPropertyTypes, setShowAllPropertyTypes] = useState(false);
 
-  // Helper to toggle array items in filters
+  // De-duplicated source lists — guards against upstream data (e.g. an API
+  // response) containing the same amenity/neighborhood/property type twice,
+  // which previously caused duplicate rows and duplicate React keys.
+  const uniqueAmenities = _.uniq(amenitiesList);
+  const uniqueNeighborhoods = _.uniq(neighborhoods);
+  const uniquePropertyTypes = _.uniq(propertyTypes);
+
+  // Helper to toggle array items in filters. Uses lodash to guarantee the
+  // resulting filter array never contains duplicate entries, even if the
+  // same value somehow gets toggled twice in a row (e.g. a fast double-click).
   const toggleArrayFilter = (key: 'starRatings' | 'amenities' | 'propertyTypes' | 'neighborhoods', val: any) => {
     const arr = filters[key] as any[];
     if (arr.includes(val)) {
-      setFilters({ [key]: arr.filter(item => item !== val) });
+      setFilters({ [key]: _.without(arr, val) });
     } else {
-      setFilters({ [key]: [...arr, val] });
+      setFilters({ [key]: _.uniq([...arr, val]) });
     }
   };
 
@@ -123,26 +197,17 @@ export default function HotelFilters({
         <div className="p-5">
           <h3 className="font-bold text-gray-900 mb-4">Popular Filters</h3>
           <div className="space-y-3.5">
-            <label className="flex cursor-pointer items-start gap-3 group">
-              <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.cancellationPolicy === 'free' ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.cancellationPolicy === 'free' && <Check className="h-3.5 w-3.5 text-white" />}
-              </div>
-              <input type="checkbox" className="hidden"
-                checked={filters.cancellationPolicy === 'free'}
-                onChange={() => setFilters({ cancellationPolicy: filters.cancellationPolicy === 'free' ? 'all' : 'free' })}
-              />
-              <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">Free cancellation</span>
-            </label>
-            <label className="flex cursor-pointer items-start gap-3 group">
-              <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes('Breakfast') ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                {filters.amenities.includes('Breakfast') && <Check className="h-3.5 w-3.5 text-white" />}
-              </div>
-              <input type="checkbox" className="hidden"
-                checked={filters.amenities.includes('Breakfast')}
-                onChange={() => toggleArrayFilter('amenities', 'Breakfast')}
-              />
-              <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">Breakfast included</span>
-            </label>
+            <CheckboxRow
+              checked={filters.cancellationPolicy === 'free'}
+              onChange={() => setFilters({ cancellationPolicy: filters.cancellationPolicy === 'free' ? 'all' : 'free' })}
+              label="Free cancellation"
+            />
+            <CheckboxRow
+              checked={filters.amenities.includes('Breakfast')}
+              onChange={() => toggleArrayFilter('amenities', 'Breakfast')}
+              label="Breakfast included"
+              icon={Coffee}
+            />
           </div>
         </div>
 
@@ -201,8 +266,8 @@ export default function HotelFilters({
             ].map(r => {
               const isSelected = filters.reviewScore === r.value;
               return (
-                <label key={r.value} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? 'border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
+                <label key={r.value} className="flex cursor-pointer items-center gap-3 group">
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${isSelected ? 'border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
                     {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#003580]" />}
                   </div>
                   <input type="radio" className="hidden"
@@ -217,24 +282,20 @@ export default function HotelFilters({
         </div>
 
         {/* Property Type */}
-        {propertyTypes.length > 0 && (
+        {uniquePropertyTypes.length > 0 && (
           <div className="p-5">
             <h3 className="font-bold text-gray-900 mb-4">Property Type</h3>
             <div className="space-y-3.5">
-              {(showAllPropertyTypes ? propertyTypes : propertyTypes.slice(0, 5)).map(pt => (
-                <label key={pt} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.propertyTypes.includes(pt) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.propertyTypes.includes(pt) && <Check className="h-3.5 w-3.5 text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden"
-                    checked={filters.propertyTypes.includes(pt)}
-                    onChange={() => toggleArrayFilter('propertyTypes', pt)}
-                  />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">{pt}</span>
-                </label>
+              {(showAllPropertyTypes ? uniquePropertyTypes : uniquePropertyTypes.slice(0, 5)).map(pt => (
+                <CheckboxRow
+                  key={pt}
+                  checked={filters.propertyTypes.includes(pt)}
+                  onChange={() => toggleArrayFilter('propertyTypes', pt)}
+                  label={pt}
+                />
               ))}
             </div>
-            {propertyTypes.length > 5 && (
+            {uniquePropertyTypes.length > 5 && (
               <button 
                 onClick={() => setShowAllPropertyTypes(!showAllPropertyTypes)}
                 className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
@@ -246,25 +307,23 @@ export default function HotelFilters({
           </div>
         )}
 
-        {/* Amenities */}
-        {amenitiesList.length > 0 && (
+        {/* Amenities — 2-column grid on wider screens, icon-labelled rows,
+            all baseline-aligned via the shared CheckboxRow component. */}
+        {uniqueAmenities.length > 0 && (
           <div className="p-5">
             <h3 className="font-bold text-gray-900 mb-4">Amenities</h3>
-            <div className="space-y-3.5">
-              {(showAllAmenities ? amenitiesList : amenitiesList.slice(0, 5)).map(am => (
-                <label key={am} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.amenities.includes(am) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.amenities.includes(am) && <Check className="h-3.5 w-3.5 text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden"
-                    checked={filters.amenities.includes(am)}
-                    onChange={() => toggleArrayFilter('amenities', am)}
-                  />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors line-clamp-1">{am}</span>
-                </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3.5">
+              {(showAllAmenities ? uniqueAmenities : uniqueAmenities.slice(0, 8)).map(am => (
+                <CheckboxRow
+                  key={am}
+                  checked={filters.amenities.includes(am)}
+                  onChange={() => toggleArrayFilter('amenities', am)}
+                  label={am}
+                  icon={getAmenityIcon(am)}
+                />
               ))}
             </div>
-            {amenitiesList.length > 5 && (
+            {uniqueAmenities.length > 8 && (
               <button 
                 onClick={() => setShowAllAmenities(!showAllAmenities)}
                 className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
@@ -277,24 +336,20 @@ export default function HotelFilters({
         )}
 
         {/* Neighborhoods */}
-        {neighborhoods.length > 0 && (
+        {uniqueNeighborhoods.length > 0 && (
           <div className="p-5">
             <h3 className="font-bold text-gray-900 mb-4">Neighborhood</h3>
             <div className="space-y-3.5">
-              {(showAllNeighborhoods ? neighborhoods : neighborhoods.slice(0, 5)).map(nb => (
-                <label key={nb} className="flex cursor-pointer items-start gap-3 group">
-                  <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${filters.neighborhoods.includes(nb) ? 'bg-[#003580] border-[#003580]' : 'border-gray-300 group-hover:border-[#003580]'}`}>
-                    {filters.neighborhoods.includes(nb) && <Check className="h-3.5 w-3.5 text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden"
-                    checked={filters.neighborhoods.includes(nb)}
-                    onChange={() => toggleArrayFilter('neighborhoods', nb)}
-                  />
-                  <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors line-clamp-1">{nb}</span>
-                </label>
+              {(showAllNeighborhoods ? uniqueNeighborhoods : uniqueNeighborhoods.slice(0, 5)).map(nb => (
+                <CheckboxRow
+                  key={nb}
+                  checked={filters.neighborhoods.includes(nb)}
+                  onChange={() => toggleArrayFilter('neighborhoods', nb)}
+                  label={nb}
+                />
               ))}
             </div>
-            {neighborhoods.length > 5 && (
+            {uniqueNeighborhoods.length > 5 && (
               <button 
                 onClick={() => setShowAllNeighborhoods(!showAllNeighborhoods)}
                 className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"

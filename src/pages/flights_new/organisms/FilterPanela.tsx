@@ -19,6 +19,16 @@
 //  language as the airline "show more" and Refundability cards),
 //  so every section reads as a first-class filter block even
 //  where there's no ActiveFilters field to wire up yet.
+//
+//  BUG FIX: root wrapper now keeps `h-full` even when `mobile` is
+//  true. The caller (ResultsSearch.tsx) always passes `mobile`,
+//  including on desktop where this panel sits inside a sticky
+//  sidebar with an explicit height — dropping `h-full` there left
+//  the inner `flex-1 min-h-0` scroll region with no bounded height
+//  to size against, so the filter list could render fully expanded
+//  instead of scrolling. Only the sticky/max-height behavior is
+//  conditional now, since the parent already handles stickiness
+//  itself in that case.
 // ============================================================
 
 import React, { useState } from 'react';
@@ -99,7 +109,7 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
   const layoverCities = [...new Set(flights.flatMap(f => f.segments.slice(0, -1).map(s => s.toCity)))];
 
   return (
-    <div className={cn('w-full flex flex-col', mobile ? '' : 'h-full sticky top-4 max-h-[calc(100vh-2rem)]')}>
+    <div className={cn('w-full h-full flex flex-col', !mobile && 'sticky top-4 max-h-[calc(100vh-2rem)]')}>
 
       {/* Header */}
       <div className="flex items-center justify-between pb-3 mb-1 border-b border-slate-100 shrink-0">
@@ -124,8 +134,7 @@ export function FilterPanela({ flights, filters, onChange, onReset, mobile }: Fi
 
         <div className="h-full overflow-y-auto filter-scroll pr-0.5">
 
-          {/* Price Range — high handle filters for real via filters.maxPrice;
-              low handle is local-only until ExtendedFilters gets a minPrice field. */}
+          {/* Price Range */}
           <FilterSection title="Price Range">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-slate-600">
