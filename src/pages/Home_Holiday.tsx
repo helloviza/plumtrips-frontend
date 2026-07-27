@@ -358,10 +358,10 @@ export default function Home_Holiday() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-auto lg:h-[500px]">
             {[
-              { img: "/assets/attached_assets/exp-tuscany.png", title: "Wine Tasting", loc: "Tuscany", span: "lg:col-span-2 lg:row-span-2" },
-              { img: "/assets/attached_assets/exp-dubai.png", title: "Desert Luxury", loc: "Dubai", span: "lg:col-span-1 lg:row-span-1" },
-              { img: "/assets/attached_assets/exp-tokyo.png", title: "Hidden Cafés", loc: "Tokyo", span: "lg:col-span-1 lg:row-span-2" },
-              { img: "/assets/home_m/bali1.png", title: "Island Hopping", loc: "Maldives", span: "lg:col-span-1 lg:row-span-1" }
+              { img: "/assets/attached_assets/exp-tusc.jpg", title: "Wine Tasting", loc: "Tuscany", span: "lg:col-span-2 lg:row-span-2" },
+              { img: "/assets/attached_assets/exp-dubai.jpg", title: "Desert Luxury", loc: "Dubai", span: "lg:col-span-1 lg:row-span-1" },
+              { img: "/assets/attached_assets/exp-tokyo.jpg", title: "Hidden Cafés", loc: "Tokyo", span: "lg:col-span-1 lg:row-span-2" },
+              { img: "/assets/attached_assets/island-hop.jpg", title: "Island Hopping", loc: "Maldives", span: "lg:col-span-1 lg:row-span-1" }
             ].map((exp, i) => (
               <FadeIn 
                 key={i} 

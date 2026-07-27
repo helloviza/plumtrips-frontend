@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useHotelStore } from '../../stores/hotelStore';
 import { formatCurrency } from '../../lib/utils';
+import { Slider } from '../atoms/Slider';
 
 const BLUE = '#003580';
 
@@ -35,44 +36,6 @@ const AMENITY_ICON_RULES: [RegExp, React.ComponentType<{ className?: string }>][
 function getAmenityIcon(name: string) {
   const match = AMENITY_ICON_RULES.find(([regex]) => regex.test(name));
   return match ? match[1] : Sparkles;
-}
-
-function DualRangeSlider({
-  min, max, low, high,
-  onLowChange, onHighChange,
-}: {
-  min: number; max: number; low: number; high: number;
-  onLowChange: (v: number) => void;
-  onHighChange: (v: number) => void;
-}) {
-  return (
-    <div className="relative h-5 w-full mt-2">
-      <style>{`
-        .range-slider-input::-webkit-slider-thumb { pointer-events: auto; }
-        .range-slider-input::-moz-range-thumb { pointer-events: auto; }
-      `}</style>
-      <div className="absolute top-1.5 left-0 right-0 h-1.5 rounded-full bg-gray-200 pointer-events-none">
-        <div
-          className="absolute h-1.5 rounded-full transition-all"
-          style={{
-            backgroundColor: BLUE,
-            left: `${((low - min) / (max - min)) * 100}%`,
-            right: `${100 - ((high - min) / (max - min)) * 100}%`,
-          }}
-        />
-      </div>
-      <input type="range" min={min} max={max} value={low}
-        onChange={e => onLowChange(Math.min(parseInt(e.target.value), high - 1))}
-        className="absolute w-full h-2 top-1.5 appearance-none bg-transparent cursor-pointer z-20 range-slider-input pointer-events-none"
-        style={{ accentColor: BLUE }}
-      />
-      <input type="range" min={min} max={max} value={high}
-        onChange={e => onHighChange(Math.max(parseInt(e.target.value), low + 1))}
-        className="absolute w-full h-2 top-1.5 appearance-none bg-transparent cursor-pointer z-20 range-slider-input pointer-events-none"
-        style={{ accentColor: BLUE }}
-      />
-    </div>
-  );
 }
 
 // Reusable checkbox row — square check, fixed-size icon slot, single-line
@@ -150,6 +113,11 @@ export default function HotelFilters({
     }
   };
 
+  // Normalizes the stored "high" bound: the store uses 50000 as a sentinel
+  // for "no upper limit", but the Slider needs a real numeric max to
+  // position its handle correctly.
+  const priceHigh = filters.priceRange[1] === 50000 ? maxPrice : filters.priceRange[1];
+
   const activeFilterCount = (filters.priceRange[0] > 0 ? 1 : 0) +
     (filters.priceRange[1] < 50000 ? 1 : 0) +
     filters.starRatings.length +
@@ -214,12 +182,11 @@ export default function HotelFilters({
         {/* Price Slider */}
         <div className="p-5">
           <h3 className="font-bold text-gray-900 mb-4">Price Range</h3>
-          <DualRangeSlider
-            min={0} max={maxPrice}
-            low={filters.priceRange[0]}
-            high={filters.priceRange[1] === 50000 ? maxPrice : filters.priceRange[1]}
-            onLowChange={v => setFilters({ priceRange: [v, filters.priceRange[1] === 50000 ? maxPrice : filters.priceRange[1]] })}
-            onHighChange={v => setFilters({ priceRange: [filters.priceRange[0], v] })}
+          <Slider
+            min={0}
+            max={maxPrice}
+            value={[filters.priceRange[0], priceHigh]}
+            onValueChange={([low, high]) => setFilters({ priceRange: [low, high] })}
           />
           <div className="mt-4 flex items-center justify-between gap-2">
             <div className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 w-full text-center">
@@ -326,7 +293,7 @@ export default function HotelFilters({
             {uniqueAmenities.length > 8 && (
               <button 
                 onClick={() => setShowAllAmenities(!showAllAmenities)}
-                className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#003580] hover:underline"
+                className="mt-4 gap-1 text-sm font-semibold text-[#003580] hover:underline"
               >
                 {showAllAmenities ? 'Show less' : 'Show all'}
                 {showAllAmenities ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -334,7 +301,7 @@ export default function HotelFilters({
             )}
           </div>
         )}
-
+ 
         {/* Neighborhoods */}
         {uniqueNeighborhoods.length > 0 && (
           <div className="p-5">

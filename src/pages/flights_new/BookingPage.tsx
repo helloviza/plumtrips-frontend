@@ -43,7 +43,7 @@ import {
   apiBookFlight,
   apiBookTicket,
   apiGetSSRForLegs,
-  formatINR,
+  formatINR, apiDownloadTicketPdf
 } from "../../lib/flights_api";
 import { useCurrency } from "../../context/currencyContext";
 import type {

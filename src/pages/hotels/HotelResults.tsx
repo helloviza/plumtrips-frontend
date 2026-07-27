@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import HotelFilters from '../../components/hotels/HotelFilters';
+import { Slider } from '../atoms/Slider';
 import SortDropdown from '../../components/hotels/SortDropdown';
 import {
   MapPin, X, Star, Search,
@@ -177,12 +178,12 @@ function AmenitiesModal({ hotelName, amenities, onClose }: { hotelName: string; 
    than generic grey bars, and carries no "finding hotels…" copy at all. ── */
 function HotelCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col md:flex-row animate-pulse">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-auto flex flex-col md:flex-row min-w-0 ">
       {/* Image column */}
       <div className="shrink-0 w-full md:w-60 h-48 md:h-[158px] bg-slate-100" />
 
       {/* Details column */}
-      <div className="flex-1 flex flex-col gap-3 px-5 py-4 border-r-0 md:border-r border-slate-100">
+      <div className="flex-1 min-w-0 flex flex-col gap-3 px-5 py-4 border-r-0 md:border-r border-slate-100">
         <div className="flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-3 w-3 rounded-full bg-slate-200" />
@@ -190,9 +191,9 @@ function HotelCardSkeleton() {
         </div>
         <div className="h-4 w-2/3 bg-slate-200 rounded" />
         <div className="h-3 w-1/3 bg-slate-100 rounded" />
-        <div className="flex gap-1.5 mt-auto">
+        <div className="flex gap-1.5 mt-auto flex-wrap">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-6 w-16 bg-slate-100 rounded-lg" />
+            <div key={i} className="h-6 w-16 bg-slate-100 rounded-lg shrink-0" />
           ))}
         </div>
       </div>
@@ -1073,7 +1074,7 @@ export default function HotelResults() {
 
             {/* Loading state — card-shaped skeletons only, no "finding hotels…" copy or spinner */}
             {(loading || (!hasSearched && !error)) && (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col ">
                 {[1, 2, 3, 4].map(i => (
                   <HotelCardSkeleton key={i} />
                 ))}

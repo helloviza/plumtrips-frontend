@@ -7,10 +7,10 @@ import destBali from "../../../public/assets/attached_assets/dest-bali.png";
 import destItaly from "../../../public/assets/attached_assets/dest-italy.png";
 import destJapan from "../../../public/assets/attached_assets/dest-japan.png";
 import destThailand from "../../../public/assets/attached_assets/dest-thailand.png";
-import expDubai from "../../../public/assets/attached_assets/exp-dubai.png";
+import expDubai from "../../../public/assets/attached_assets/exp-dubai.jpg";
 import expIceland from "../../../public/assets/attached_assets/exp-iceland.png";
 import expThailand from "../../../public/assets/attached_assets/exp-thailand.png";
-import expTokyo from "../../../public/assets/attached_assets/exp-tokyo.png";
+import expTokyo from "../../../public/assets/attached_assets/exp-tokyo.jpg";
 import expTuscany from "../../../public/assets/attached_assets/exp-tuscany.png";
 import heroBg from "../../../public/assets/attached_assets/hero-bg.png";
 
