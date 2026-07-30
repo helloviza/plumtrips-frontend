@@ -320,7 +320,7 @@ export function tboResultToDisplay(
     durationLabel:     minToLabel(totalDuration),
     stops,
     stopInfo:          stops > 0 ? allSegs.slice(0, -1).map(s => s.Destination.Airport.CityCode).join(", ") : undefined,
-    price:             result.Fare.OfferedFare,
+    price:             result.Fare.PublishedFare,
     baseFare:          result.Fare.BaseFare,
     tax:               result.Fare.Tax,
     cabinBaggage:      cabinBag?.CabinBaggage ?? "7 Kg",
