@@ -21,6 +21,19 @@ import type {  BookTicketInput,
 //      clean prefetch isn't available for all of them, instead of only
 //      ever calling apiFareQuote(flight) for the outbound leg.
 //
+//  [MEAL/BAGGAGE-FIX] buildNonLCCPassengers() and buildLCCPassengers()
+//    previously filtered out ANY meal/baggage selection that resolved to
+//    a "no meal"/"no baggage" style code (isNoMealCode() helper, and a
+//    literal `!== "NoBaggage"` check), on the assumption that omitting
+//    them entirely was equivalent to sending them explicitly. That
+//    silently dropped the user's real, explicit selection — even when it
+//    came straight from the airline's own SSR meal/baggage list — so it
+//    never reached the TBO Book/Ticket payload. Removed both filters:
+//    whatever the user actually selected for a segment (real API option,
+//    including a real "No Meal"/"No Baggage" entry) is now sent as-is.
+//    Only truly untouched segments (no selection made at all) are still
+//    omitted, same as before.
+//
 //  Other behavior unchanged:
 //  1. handlePayment branches on isLCC:
 //       LCC  → ticketFlight directly with full passenger payload
@@ -674,10 +687,13 @@ function handlePassengersNext() {
       mealExtrasByPaxLegSeg[extra.passengerId][key] = extra;
     });
 
-    const isNoMealCode = (code?: string) => {
-      const n = String(code || "").trim().toLowerCase();
-      return !n || ["none", "no_meal", "nomeal", "no meal", "no meal preference"].includes(n);
-    };
+    // [MEAL/BAGGAGE-FIX] Previously an isNoMealCode() helper filtered out
+    // any meal selection that resolved to a "no meal" style code, and
+    // baggage was filtered with `!== "NoBaggage"` — both silently dropped
+    // the user's real, explicit selection instead of sending it. Removed:
+    // whatever the user actually picked for a segment is sent as-is.
+    // A segment with no selection at all (extra undefined) is still
+    // naturally skipped below.
 
     const normalizeFlightNo = (raw?: string) => String(raw ?? "").replace(/[^0-9]/g, "");
 
@@ -757,7 +773,10 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
           const segFlightNo    = normalizeFlightNo(extra?.flightNumber ?? seg.flightNumber);
           const segAirlineCode = seg.airlineCode || legs[legIndex]?.flight.airlineCode || "";
 
-          if (extra && !isNoMealCode(extra.mealCode) && seg.availability.meals) {
+          // Send whatever the user explicitly selected — including a real
+          // "No Meal" code from the airline's own SSR list — as long as a
+          // selection actually exists for this segment.
+          if (extra && extra.mealCode && seg.availability.meals) {
             meals.push({
               AirlineCode:        segAirlineCode,
               FlightNumber:       segFlightNo,
@@ -773,7 +792,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
             });
           }
 
-          if (extra && extra.baggageCode && extra.baggageCode !== "NoBaggage" && seg.availability.baggage) {
+          if (extra && extra.baggageCode && seg.availability.baggage) {
             baggage.push({
               WayType:     2,
               Code:        extra.baggageCode,
@@ -844,10 +863,11 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail   || form.contactEmail |
       }
     });
 
-    const isNoMealCode = (code?: string) => {
-      const n = String(code || "").trim().toLowerCase();
-      return !n || ["none", "no_meal", "nomeal", "no meal", "no meal preference"].includes(n);
-    };
+    // [MEAL/BAGGAGE-FIX] Removed isNoMealCode() and the `!== "NoBaggage"`
+    // check — both used to silently discard an explicit, real selection
+    // (including one taken directly from the airline's own SSR options)
+    // instead of sending it. Whatever the user actually picked is now
+    // sent as-is; a segment with no selection is still naturally skipped.
 
     // Per-pax fare — TBO requires this for LCC Ticket.
     // We distribute the tier's OfferedFare evenly; BaseFare+Tax from tier.
@@ -916,7 +936,9 @@ const gstCompanyEmail           = hasGST ? (form.gstCompanyEmail || form.contact
             const key = `${legIndex}:${segIndex}`;
 
             const mealExtra = mealExtrasByPaxLegSeg[i]?.[key];
-            if (mealExtra && !isNoMealCode(mealExtra.mealCode) && seg.availability.meals) {
+            // Send whatever the user explicitly selected — including a
+            // real "No Meal" code from the airline's SSR list.
+            if (mealExtra && mealExtra.mealCode && seg.availability.meals) {
               mealDynamic.push({
                 WayType:            2 as const,
                 Code:               mealExtra.mealCode!,
@@ -932,7 +954,7 @@ const gstCompanyEmail           = hasGST ? (form.gstCompanyEmail || form.contact
             }
 
             const bagExtra = baggageExtrasByPaxLegSeg[i]?.[key];
-            if (bagExtra?.baggageCode && bagExtra.baggageCode !== "NoBaggage" && seg.availability.baggage) {
+            if (bagExtra && bagExtra.baggageCode && seg.availability.baggage) {
               baggage.push({
                 WayType:     2 as const,
                 Code:        bagExtra.baggageCode,
@@ -1241,7 +1263,7 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
           key:         orderData.keyId,
           amount:      orderData.amount,
           currency:    orderData.currency,
-          name:        "PlumTrips",
+          name:        "Plumtrips",
           description: `${flight.fromCode} → ${flight.toCode} · ${adults + children + infants} traveller${adults + children + infants !== 1 ? "s" : ""}`,
           order_id:    orderData.orderId,
           prefill: {

@@ -455,6 +455,15 @@
 //     (which don't match a connecting segment's own O&D).
 // ============================================================
 
+// ============================================================
+// BookingStep4Extras
+// Meals & baggage selection per passenger, per leg, per physical
+// segment. Nothing is auto-selected — every selection (including
+// "No meal" / "No baggage") must be an explicit user click before
+// it is written into form.extras. If the user never touches a
+// leg/segment, no entry is created for it and nothing is sent.
+// ============================================================
+
 import type { PassengerData, ExtraSelection, BookingFormState } from "./BookingShared";
 import { SectionHeading } from "./BookingShared";
 import { formatINR } from "../../lib/flights_api";
@@ -522,12 +531,7 @@ export default function BookingStep4Extras({
     setActiveSegment(0);
   }
 
-  // FIX #1: Derive meals/baggage from the ACTIVE leg's ACTIVE SEGMENT.
-  // Previously this read ssrData.meals/.baggage directly, which for a
-  // 1-stop/2-stop leg silently collapsed to (at best) a mixed, undeduped
-  // list across every physical flight — there was no way to pick meals/
-  // baggage per segment, and no segment identity was kept to send back
-  // to TBO. Now each physical segment (flight) gets its own tab & menu.
+  // Derive meals/baggage from the ACTIVE leg's ACTIVE SEGMENT.
   const activeSegments = legSegments(activeLeg);
   const activeSeg = activeSegments[activeSegment] ?? null;
   const meals   = activeSeg?.meals   ?? [];
@@ -542,26 +546,16 @@ export default function BookingStep4Extras({
 
   // ── Extras helpers ─────────────────────────────────────────
 
-  function getExtra(paxIdx: number, legIdx = activeLeg, segIdx = activeSegment): ExtraSelection {
-    const seg = legSegments(legIdx)[segIdx] ?? null;
+  // NOTE: returns null when the user hasn't made a choice yet for this
+  // passenger/leg/segment. No fabricated "NoMeal"/"NoBaggage" default is
+  // returned here — that would make it look selected in the UI without
+  // the user ever having clicked anything, and without it ever being
+  // written to form.extras.
+  function getExtra(paxIdx: number, legIdx = activeLeg, segIdx = activeSegment): ExtraSelection | null {
     return (
       form.extras.find(
         (e) => e.legIndex === legIdx && e.segmentIndex === segIdx && e.passengerId === paxIdx
-      ) ?? {
-        legIndex: legIdx,
-        segmentIndex: segIdx,
-        flightNumber: seg?.flightNumber,
-        passengerId: paxIdx,
-        mealCode: "NoMeal",
-        mealLabel: "No meal",
-        origin: seg?.origin ?? "",
-        destination: seg?.destination ?? "",
-        baggageLabel:"",
-        mealPrice: 0,
-        baggageCode: "NoBaggage",
-        baggageKg: 0,
-        baggagePrice: 0,
-      }
+      ) ?? null
     );
   }
 
@@ -572,15 +566,37 @@ export default function BookingStep4Extras({
     segIdx = activeSegment,
   ) {
     const current = getExtra(paxIdx, legIdx, segIdx);
+    const seg = legSegments(legIdx)[segIdx] ?? null;
+
+    // Base skeleton only used to merge `partial` onto — it carries no
+    // meal/baggage choice of its own (empty codes), so nothing here
+    // counts as a "selection" until `partial` is applied by a real click.
+    const base: ExtraSelection =
+      current ?? {
+        legIndex: legIdx,
+        segmentIndex: segIdx,
+        flightNumber: seg?.flightNumber,
+        passengerId: paxIdx,
+        mealCode: "",
+        mealLabel: "",
+        origin: seg?.origin ?? "",
+        destination: seg?.destination ?? "",
+        baggageLabel: "",
+        mealPrice: 0,
+        baggageCode: "",
+        baggageKg: 0,
+        baggagePrice: 0,
+      };
+
     const updated = form.extras.filter(
       (e) => !(e.legIndex === legIdx && e.segmentIndex === segIdx && e.passengerId === paxIdx)
     );
-    updated.push({ ...current, ...partial });
+    updated.push({ ...base, ...partial });
     onChange({ ...form, extras: updated });
   }
 
-  // FIX #2: Total extras sums across ALL legs AND ALL physical segments
-  // within each leg (a 1-stop/2-stop leg has more than one).
+  // Total extras sums across ALL legs AND ALL physical segments within
+  // each leg, but only counts entries the user actually created.
   const legCount = Math.max(legs.length, ssrDataPerLeg.length, 1);
   const totalExtras = form.passengers.reduce((sum, _, paxIdx) => {
     let legTotal = 0;
@@ -588,7 +604,7 @@ export default function BookingStep4Extras({
       const segCount = Math.max(legSegments(legIdx).length, 1);
       for (let segIdx = 0; segIdx < segCount; segIdx++) {
         const e = getExtra(paxIdx, legIdx, segIdx);
-        legTotal += e.mealPrice + e.baggagePrice;
+        if (e) legTotal += e.mealPrice + e.baggagePrice;
       }
     }
     return sum + legTotal;
@@ -620,7 +636,6 @@ export default function BookingStep4Extras({
               }`}
             >
               {leg.label}: {leg.flight.fromCode} → {leg.flight.toCode}
-              {/* FIX #3: show unavailable badge when EVERY segment of this leg lacks meals+baggage */}
               {legSegments(i).every((seg) => !seg.availability.meals && !seg.availability.baggage) && (
                 <span className="ml-1.5 text-[9px] text-amber-500 font-normal">
                   unavailable
@@ -678,7 +693,9 @@ export default function BookingStep4Extras({
         if (paxTypes[i] === "Infant") return null;
 
         const extra = getExtra(i, activeLeg, activeSegment);
-        const hasExtras = extra.mealPrice + extra.baggagePrice > 0;
+        const hasExtras = extra ? extra.mealPrice + extra.baggagePrice > 0 : false;
+        const mealChosen = extra?.mealCode ?? null;
+        const baggageChosen = extra?.baggageCode ?? null;
 
         return (
           <motion.div
@@ -708,7 +725,12 @@ export default function BookingStep4Extras({
               </div>
               {hasExtras && (
                 <div className="ml-auto text-[11px] font-black text-violet-600 bg-violet-50 px-3 py-1 rounded-full">
-                  +{convert(extra.mealPrice + extra.baggagePrice)}
+                  +{convert(extra!.mealPrice + extra!.baggagePrice)}
+                </div>
+              )}
+              {!extra && (
+                <div className="ml-auto text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">
+                  Not selected
                 </div>
               )}
             </div>
@@ -722,8 +744,11 @@ export default function BookingStep4Extras({
                     <span className="text-[13px] font-bold text-slate-700">Meal Preference</span>
                   </div>
                   <div className="flex flex-col gap-2.5">
+                    {/* Only the airline's real API-provided meal options are
+                        rendered here — including a real "No Meal" entry if
+                        the airline sends one. Nothing is fabricated. */}
                     {meals.map((meal) => {
-                      const selected = extra.mealCode === meal.code;
+                      const selected = mealChosen === meal.code;
                       return (
                         <ExtraOptionCard
                           key={meal.code}
@@ -773,8 +798,11 @@ export default function BookingStep4Extras({
                     <span className="text-[13px] font-bold text-slate-700">Extra Check-in Baggage</span>
                   </div>
                   <div className="flex flex-col gap-2.5">
+                    {/* Only the airline's real API-provided baggage options
+                        are rendered here — including a real "No Baggage"
+                        entry if the airline sends one. Nothing is fabricated. */}
                     {baggage.map((opt) => {
-                      const selected = extra.baggageKg === opt.kg;
+                      const selected = baggageChosen === opt.code;
                       return (
                         <ExtraOptionCard
                           key={opt.kg}

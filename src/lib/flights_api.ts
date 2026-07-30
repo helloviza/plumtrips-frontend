@@ -243,7 +243,7 @@ function variantToFareTier(
     adultTax,
     childTax,
     infantTax,
-    totalOfferedFare: raw.Fare.OfferedFare,
+    totalOfferedFare: raw.Fare.PublishedFare,
     seatCharges:      raw.Fare.TotalSeatCharges,
     mealCharges:      raw.Fare.TotalMealCharges,
     baggageCharges:   raw.Fare.TotalBaggageCharges,
