@@ -29,6 +29,10 @@ import {
 } from "../components/features-components";
 import { AIHotelFinder } from "../components/features-components/AIHotelFinder";
 
+// Adjust this import path to match where your AIPlanner folder actually lives
+import { PlannerChatProvider } from "../components/features-components/PlannerChatContext";
+import { PlannerChatWidget } from "../components/features-components/PlannerChatWidget";
+
 // ---------------------------------------------------------------------------
 // HotelHome — Hotels landing page at route "/hotels"
 // ---------------------------------------------------------------------------
@@ -153,58 +157,63 @@ export default function HotelHome() {
       {/* ── Scroll-progress bar (warm gold for hotel page) ── */}
       <div id="scroll-progress" aria-hidden="true" />
 
-      <div
-        className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
-        style={{ fontFamily: "Inter, sans-serif" }}
-      >
-        {/* ── HERO ── */}
-        <HeroHotel />
+      <PlannerChatProvider fields={aiPlannerProps.fields} onGenerate={aiPlannerProps.onGenerate}>
+        <div
+          className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
+          style={{ fontFamily: "Inter, sans-serif" }}
+        >
+          {/* ── HERO ── */}
+          <HeroHotel />
 
-        {/* ── CONTENT SECTIONS ── */}
-        <TrustBar {...trustBarProps} />
+          {/* ── CONTENT SECTIONS ── */}
+          <TrustBar {...trustBarProps} />
 
-        <div className="reveal parallax-clip">
-          <TrendingDestination
-            {...hotelTrendingDestinationsProps}
-            onActionClick={() => navigate("/holidays")}
-          />
+          <div className="reveal parallax-clip">
+            <TrendingDestination
+              {...hotelTrendingDestinationsProps}
+              onActionClick={() => navigate("/holidays")}
+            />
+          </div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal" data-tilt>
+            <TravelYourWay
+              {...hotelCollectionsProps}
+              onActionClick={() => navigate("/offers")}
+            />
+          </div>
+
+          <div className="reveal"><AIHotelFinder {...aiHotelFinderProps}/></div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={handleBookDemo} onPrimaryClick={() => {
+    window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
+
+          <div className="reveal"><StatsStrip {...statsStripProps} /></div>
+
+          <div className="reveal" data-tilt>
+            <Testimonials {...guestStoriesProps} onActionClick={()=>navigate("/reviews")} />
+          </div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal parallax-clip">
+            <TravelStories
+              {...travelStoriesProps}
+              onActionClick={() => navigate("/blogs")}
+            />
+          </div>
+
+          <div className="reveal"><TrustedPartners {...topHotelBrandsProps} /></div>
+
+          <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
         </div>
 
-        <div className="section-divider reveal" />
-
-        <div className="reveal" data-tilt>
-          <TravelYourWay
-            {...hotelCollectionsProps}
-            onActionClick={() => navigate("/offers")}
-          />
-        </div>
-
-        <div className="reveal"><AIHotelFinder {...aiHotelFinderProps}/></div>
-
-        <div className="section-divider reveal" />
-
-        <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={handleBookDemo} onPrimaryClick={() => {
-  window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
-
-        <div className="reveal"><StatsStrip {...statsStripProps} /></div>
-
-        <div className="reveal" data-tilt>
-          <Testimonials {...guestStoriesProps} onActionClick={()=>navigate("/reviews")} />
-        </div>
-
-        <div className="section-divider reveal" />
-
-        <div className="reveal parallax-clip">
-          <TravelStories
-            {...travelStoriesProps}
-            onActionClick={() => navigate("/blogs")}
-          />
-        </div>
-
-        <div className="reveal"><TrustedPartners {...topHotelBrandsProps} /></div>
-
-        <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
-      </div>
+        {/* Mounted once at the page root — fixed position, visible on the whole page */}
+        <PlannerChatWidget />
+      </PlannerChatProvider>
     </>
   );
 }

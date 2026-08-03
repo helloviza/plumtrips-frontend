@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { TransparentVideo } from "./TransparentVideo";
 import { C, FONT, IconArrow } from "./token";
 import type { AIHotelFinderProps, PlannerField } from "./types";
 import { Link, useNavigate } from "react-router-dom";
 import { useCurrency } from "../../context/currencyContext";
 import { getBackendOrigin } from "../../lib/backendOrigin";
+import dogAnimationVideo from "../../assets/dog_animation.mp4";
 
 // ── Sub-components ────────────────────────────────────────────────
 
@@ -930,7 +932,6 @@ export function AIHotelFinder({
           box-shadow: 0 30px 70px rgba(0,0,0,0.5);
           display: flex;
           flex-direction: column;
-          overflow: hidden;
           z-index: 1000;
         }
         .hotel-chat-header {
@@ -940,6 +941,8 @@ export function AIHotelFinder({
           display: flex;
           align-items: center;
           justify-content: space-between;
+          border-top-left-radius: 18px;
+          border-top-right-radius: 18px;
         }
         .hotel-chat-body {
           flex: 1;
@@ -981,10 +984,12 @@ export function AIHotelFinder({
         }
         .hotel-chat-input-row {
           display: flex;
-          gap: 8px;
+          gap: 10px;
           padding: 12px;
-          border-top: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.02);
+          border-top: 1px solid rgba(255,255,255,0.06);
+          background: rgba(0,0,0,0.15);
+          border-bottom-left-radius: 18px;
+          border-bottom-right-radius: 18px;
         }
         .hotel-chat-input {
           flex: 1;
@@ -1021,6 +1026,23 @@ export function AIHotelFinder({
 
       {isWidgetOpen && (
         <div className="hotel-chat-panel" role="dialog" aria-label="Hotel finder chat">
+          <TransparentVideo 
+            src={dogAnimationVideo} 
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              marginBottom: -2,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 200,
+              height: 'auto',
+              maxHeight: 200,
+              zIndex: 1002,
+              pointerEvents: 'none',
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))'
+            }} 
+            tolerance={35}
+          />
           <div className="hotel-chat-header">
             <div>
               <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 14, color: "#fff" }}>

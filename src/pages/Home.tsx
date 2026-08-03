@@ -30,6 +30,10 @@ import {
   conciergeCTAProps,
 } from "../components/features-components";
 
+// Adjust this import path to match where your AIPlanner folder actually lives
+import { PlannerChatProvider } from "../components/features-components/PlannerChatContext";
+import { PlannerChatWidget } from "../components/features-components/PlannerChatWidget";
+
 // ---------------------------------------------------------------------------
 // Home — Flights landing page at route "/"
 // ---------------------------------------------------------------------------
@@ -56,51 +60,51 @@ export default function Home() {
   }, []);
 
   const handleBookDemo = () => {
-  const title = encodeURIComponent("Plumtrips Demo Call");
+    const title = encodeURIComponent("Plumtrips Demo Call");
 
-  const details = encodeURIComponent(
-    `I'd like to see how Plumtrips works and learn how it can streamline travel planning, bookings, and expense management for my organization.`
-  );
+    const details = encodeURIComponent(
+      `I'd like to see how Plumtrips works and learn how it can streamline travel planning, bookings, and expense management for my organization.`
+    );
 
-  const location = encodeURIComponent("Google Meet");
+    const location = encodeURIComponent("Google Meet");
 
-  const guests = encodeURIComponent(
-    "sauravvk@plumtrips.com,imran.ali@plumtrips.com"
-  );
+    const guests = encodeURIComponent(
+      "sauravvk@plumtrips.com,imran.ali@plumtrips.com"
+    );
 
-  const url =
-    `https://calendar.google.com/calendar/render?action=TEMPLATE` +
-    `&text=${title}` +
-    `&details=${details}` +
-    `&location=${location}` +
-    `&add=${guests}`;
+    const url =
+      `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+      `&text=${title}` +
+      `&details=${details}` +
+      `&location=${location}` +
+      `&add=${guests}`;
 
-  window.open(url, "_blank", "noopener,noreferrer");
-};
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
-// ✅ Fixed — includes query params
-function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
-  sessionStorage.setItem(
-    "flightSearch",
-    JSON.stringify({ form, multiLegs: multiLegs ?? null })
-  );
+  // ✅ Fixed — includes query params
+  function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
+    sessionStorage.setItem(
+      "flightSearch",
+      JSON.stringify({ form, multiLegs: multiLegs ?? null })
+    );
 
-  const params = new URLSearchParams({
-    from:     form.from.code,
-    to:       form.to.code,
-    depart:   form.departDate,
-    trip:     form.tripType,
-    adults:   String(form.adults),
-    children: String(form.children),
-    infants:  String(form.infants),
-    cabin:    form.cabinClass,
-    fare:     form.fareType,
-    ...(form.returnDate  && { return:  form.returnDate }),
-    ...(form.nonStopOnly && { nonStop: "1" }),
-  });
+    const params = new URLSearchParams({
+      from: form.from.code,
+      to: form.to.code,
+      depart: form.departDate,
+      trip: form.tripType,
+      adults: String(form.adults),
+      children: String(form.children),
+      infants: String(form.infants),
+      cabin: form.cabinClass,
+      fare: form.fareType,
+      ...(form.returnDate && { return: form.returnDate }),
+      ...(form.nonStopOnly && { nonStop: "1" }),
+    });
 
-  navigate(`/flights-new/results?${params.toString()}`);
-}
+    navigate(`/flights-new/results?${params.toString()}`);
+  }
 
   return (
     <>
@@ -205,61 +209,73 @@ function handleFlightSearch(form: SearchForm, multiLegs?: CityLeg[]) {
       {/* ── Scroll-progress bar ── */}
       <div id="scroll-progress" aria-hidden="true" />
 
-      <div
-        className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
-        style={{ fontFamily: "Inter, sans-serif" }}
-      >
-        {/* ── HERO ── */}
-        <HeroHome
-          onSearch={handleFlightSearch}
-          tripType={tripType}
-          onTripTypeChange={setTripType}
-        />
-
-        <TrustBar {...trustBarProps} />
-
-        <div className="reveal parallax-clip">
-          <TrendingDestination
-            {...trendingDestinationProps}
-            onActionClick={() => navigate("/holidays")}
+      <PlannerChatProvider fields={aiPlannerProps.fields} onGenerate={aiPlannerProps.onGenerate}>
+        <div
+          className="bg-[#f9f9fc] text-[#1a1c1e] -mt-[124px]"
+          style={{ fontFamily: "Inter, sans-serif" }}
+        >
+          {/* ── HERO ── */}
+          <HeroHome
+            onSearch={handleFlightSearch}
+            tripType={tripType}
+            onTripTypeChange={setTripType}
           />
+
+          <TrustBar {...trustBarProps} />
+
+          <div className="reveal parallax-clip">
+            <TrendingDestination
+              {...trendingDestinationProps}
+              onActionClick={() => navigate("/holidays")}
+            />
+          </div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal" data-tilt>
+            <TravelYourWay
+              {...travelYourWayProps}
+              onActionClick={() => navigate("/offers")}
+            />
+          </div>
+
+          <div className="reveal"><AIPlanner {...aiPlannerProps} /></div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal">
+            <CorporateTravel
+              {...corporateTravelProps}
+              onSecondaryClick={handleBookDemo}
+              onPrimaryClick={() => {
+                window.open("https://plumbox.plumtrips.com", "_blank");
+              }}
+            />
+          </div>
+
+          <div className="reveal"><StatsStrip {...statsStripProps} /></div>
+
+          <div className="reveal" data-tilt>
+            <Testimonials {...testimonialsProps} onActionClick={() => navigate("/reviews")} />
+          </div>
+
+          <div className="section-divider reveal" />
+
+          <div className="reveal parallax-clip">
+            <TravelStories
+              {...travelStoriesProps}
+              onActionClick={() => navigate("/blogs")}
+            />
+          </div>
+
+          <div className="reveal"><TrustedPartners {...trustedPartnersProps} /></div>
+
+          <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
         </div>
 
-        <div className="section-divider reveal" />
-
-        <div className="reveal" data-tilt>
-          <TravelYourWay
-            {...travelYourWayProps}
-            onActionClick={() => navigate("/offers")}
-          />
-        </div>
-
-        <div className="reveal"><AIPlanner {...aiPlannerProps}   /></div>
-
-        <div className="section-divider reveal" />
-
-        <div className="reveal"><CorporateTravel {...corporateTravelProps} onSecondaryClick={handleBookDemo}
-        {...corporateTravelProps} onPrimaryClick={() => {window.open("https://plumbox.plumtrips.com", "_blank")}} /></div>
-
-        <div className="reveal"><StatsStrip {...statsStripProps} /></div>
-
-        <div className="reveal" data-tilt>
-          <Testimonials {...testimonialsProps} onActionClick={()=>navigate("/reviews")} />
-        </div>
-
-        <div className="section-divider reveal" />
-
-        <div className="reveal parallax-clip">
-          <TravelStories
-            {...travelStoriesProps}
-            onActionClick={() => navigate("/blogs")}
-          />
-        </div>
-
-        <div className="reveal"><TrustedPartners {...trustedPartnersProps} /></div>
-
-        <div className="reveal"><ConciergeCTA {...conciergeCTAProps} /></div>
-      </div>
+        {/* Mounted once at the page root — fixed position, visible on the whole page */}
+        <PlannerChatWidget />
+      </PlannerChatProvider>
     </>
   );
 }

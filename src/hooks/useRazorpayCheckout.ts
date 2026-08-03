@@ -55,7 +55,7 @@ export function useRazorpayCheckout() {
           key: orderData.keyId,
           amount: orderData.amount,
           currency: orderData.currency,
-          name: 'PlumTrips',
+          name: 'Plumtrips',
           description,
           order_id: orderData.orderId,
           prefill: {

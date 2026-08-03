@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { C, FONT, IconArrow } from "./token";
 import type { AIPlannerProps, PlannerField } from "./types";
-import { getBackendOrigin } from "../../lib/backendOrigin";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+
 import { useCurrency } from "../../context/currencyContext";
+import { usePlannerChat } from "./PlannerChatContext";
 
 function Field({
   label,
@@ -65,814 +65,235 @@ function Field({
   );
 }
 
-// Simple inline icons so we don't need a new dependency
-function IconChatBubble() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M4 4h16v11H8l-4 4V4z"
-        stroke="#fff"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconClose() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 6L18 18M18 6L6 18" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconSend() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 11L21 3L13 21L11 13L3 11Z" fill="#fff" />
-    </svg>
-  );
-}
-
-// Turns a raw field label ("Budget", "Adults", "Trip Vibe"...) into a
-// natural, first-person phrase so we can ask about it the way a person
-// would, instead of echoing the form label back like a validator.
-function describeFieldNaturally(label: string): string {
-  const key = label.toLowerCase();
-  if (key.includes("destination")) return "where you're dreaming of going";
-  if (key.includes("origin") || key.includes("from")) return "which city you'll be setting off from";
-  if (key.includes("date") || key.includes("when")) return "when you're hoping to travel";
-  if (key.includes("budget") || key.includes("price") || key.includes("cost")) return "roughly what budget you have in mind";
-  if (key.includes("child")) return "how many kids will be joining";
-  if (key.includes("adult") || key.includes("traveler") || key.includes("guest") || key.includes("people")) return "how many of you are travelling";
-  if (key.includes("vibe") || key.includes("style") || key.includes("mood")) return "what kind of vibe you're after for this trip";
-  if (key.includes("night") || key.includes("duration") || key.includes("day")) return "how many days you'd like to be away";
-  return `your ${label.toLowerCase()}`;
-}
-
-// A few warm, varied openers so the very first question doesn't feel
-// copy-pasted every time someone opens the planner.
-const FRIENDLY_OPENERS = [
-  "Before I get going, ",
-  "One quick thing — ",
-  "Happy to start planning! First, ",
-  "Almost there — just ",
-];
-
-// A few short, varied acknowledgements used between questions so a
-// multi-question flow still feels like a real back-and-forth conversation.
-const CONTINUATION_OPENERS = [
-  "Got it, thanks! ",
-  "Perfect, noted. ",
-  "Great, thank you! ",
-  "Awesome. ",
-];
-
-// Asks about exactly ONE missing field at a time — never the whole list —
-// so filling in a multi-field gap feels like a short back-and-forth
-// conversation instead of a wall of validation text.
-function buildSingleFieldQuestion(label: string, isFirstQuestion: boolean): string {
-  const ask = describeFieldNaturally(label);
-  if (isFirstQuestion) {
-    const opener = FRIENDLY_OPENERS[Math.floor(Math.random() * FRIENDLY_OPENERS.length)];
-    return `${opener}could you tell me ${ask}? 😊`;
-  }
-  const opener = CONTINUATION_OPENERS[Math.floor(Math.random() * CONTINUATION_OPENERS.length)];
-  return `${opener}And could you tell me ${ask}?`;
-}
-
-export function AIPlanner({ badge, title, subtitle, fields, ctaLabel, onGenerate, suggestion }: AIPlannerProps) {
+export function AIPlanner({ badge, title, subtitle, ctaLabel, suggestion }: AIPlannerProps) {
   const { convert } = useCurrency();
-  const navigate = useNavigate();
-  const [activeFields, setActiveFields] = useState<PlannerField[]>(fields);
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((field) => [field.name ?? field.label, ""]))
-  );
-  const [missingFieldKeys, setMissingFieldKeys] = useState<string[]>([]);
-  // The one field we're currently asking about — we only ever ask about a
-  // single missing field at a time, never the whole list at once.
-  const [awaitingFieldKey, setAwaitingFieldKey] = useState<string | null>(null);
-
-  // Shared chat state — used by BOTH the form's "Generate" button and the
-  // floating chat widget, so every message lands in one single conversation.
-  const [chatLog, setChatLog] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [customFieldLabel, setCustomFieldLabel] = useState("");
-
-  // Floating widget state
-  const [isWidgetOpen, setIsWidgetOpen] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
-  const [chatInput, setChatInput] = useState("");
-  const chatBodyRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setActiveFields(fields);
-    setValues((current) => ({
-      ...Object.fromEntries(fields.map((field) => [field.name ?? field.label, ""])),
-      ...current,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields]);
-
-  // Auto-scroll to the latest message whenever the log changes
-  useEffect(() => {
-    if (chatBodyRef.current) {
-      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-    }
-    if (chatLog.length && !isWidgetOpen) {
-      setHasUnread(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatLog]);
-
-  const sessionId = useMemo(() => {
-    let sid = window.localStorage.getItem("plumml_session_id");
-    if (!sid) {
-      sid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `plumml-${Date.now()}`;
-      window.localStorage.setItem("plumml_session_id", sid);
-    }
-    return sid;
-  }, []);
-
-  const handleFieldChange = (key: string, value: string) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
-    // As soon as someone starts filling in a field we flagged, clear its error state.
-    if (value.trim()) {
-      setMissingFieldKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : prev));
-    }
-  };
-
-  // Looks up which fields are still empty, optionally against a fresher
-  // values object (useful right after a setValues call, since state
-  // updates aren't visible synchronously).
-  const getMissingFields = (valuesOverride?: Record<string, string>) => {
-    const source = valuesOverride ?? values;
-    return activeFields.filter((field) => {
-      const key = field.name ?? field.label;
-      return !String(source[key] ?? "").trim();
-    });
-  };
-
-  // After a field gets answered (via the form or via chat), this decides
-  // what happens next: ask about the next missing field one at a time, or
-  // — once nothing's left — either auto-continue the conversation or just
-  // let the person know they're ready to hit Generate.
-  const askNextMissingOrFinish = async (
-    answeredKey: string,
-    updatedValues: Record<string, string>,
-    autoSubmitWhenDone: boolean
-  ) => {
-    setMissingFieldKeys((prev) => prev.filter((k) => k !== answeredKey));
-    const stillMissing = getMissingFields(updatedValues);
-
-    if (stillMissing.length) {
-      const nextField = stillMissing[0];
-      const nextKey = nextField.name ?? nextField.label;
-      setAwaitingFieldKey(nextKey);
-      setMissingFieldKeys([nextKey]);
-      setChatLog((current) => [
-        ...current,
-        { role: "assistant", text: buildSingleFieldQuestion(nextField.label, false) },
-      ]);
-      setIsWidgetOpen(true);
-      setHasUnread(false);
-      return;
-    }
-
-    setAwaitingFieldKey(null);
-    setMissingFieldKeys([]);
-
-    if (autoSubmitWhenDone) {
-      await sendToPlanner(buildMessageFromFields(updatedValues));
-    } else {
-      setChatLog((current) => [
-        ...current,
-        { role: "assistant", text: "That's everything I need — hit Generate whenever you're ready! 🎉" },
-      ]);
-      setIsWidgetOpen(true);
-      setHasUnread(false);
-    }
-  };
-
-  // Fires when someone tabs/clicks out of the field we're currently
-  // asking about in the form itself — lets typing directly into the form
-  // advance the same one-at-a-time flow as answering in chat.
-  const handleFieldBlur = async (key: string) => {
-    if (key !== awaitingFieldKey) return;
-    const value = values[key];
-    if (!value || !value.trim()) return;
-    await askNextMissingOrFinish(key, values, false);
-  };
-
-  const buildMessageFromFields = (valuesOverride?: Record<string, string>) => {
-    const source = valuesOverride ?? values;
-    return [
-      "Please use the information below to start the travel planning conversation.",
-      ...activeFields.map((field) => {
-        const key = field.name ?? field.label;
-        const value = source[key] || "";
-        return `${field.label}: ${value || "(not provided)"}`;
-      }),
-    ].join("\n");
-  };
-
-  const downloadFile = async (url: string) => {
-    const fileName = url.split("/").pop()?.split("?")[0] || "itinerary.pdf";
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.setAttribute("download", fileName);
-    anchor.setAttribute("target", "_blank");
-    anchor.style.display = "none";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => {
-      window.open(url, "_blank");
-    }, 100);
-  };
-
-  // Core "send to planner backend" logic, shared by the field-based
-  // Generate button and the free-typing floating chat box.
-  const sendToPlanner = async (message: string) => {
-    if (isLoading || !message.trim()) return;
-
-    setChatLog((current) => [...current, { role: "user", text: message }]);
-    setIsLoading(true);
-    setIsWidgetOpen(true);
-    setHasUnread(false);
-
-    const BACKEND = getBackendOrigin();
-    try {
-      const response = await fetch(`${BACKEND}/api/v1/plumml/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message }),
-      });
-
-      const data = await response.json().catch(() => null);
-      if (!response.ok) {
-        const errorText = data?.error || data?.message || response.statusText || "Unknown error";
-        throw new Error(`Planner request failed: ${errorText}`);
-      }
-
-      const replyText = data?.reply || "Planner responded without text.";
-      setChatLog((current) => [...current, { role: "assistant", text: replyText }]);
-
-      const plannerResult = {
-        itinerary: data?.itinerary,
-        outboundFlight: data?.outboundFlight,
-        returnFlight: data?.returnFlight,
-        hotel: data?.hotel,
-        priceBreakdown: data?.priceBreakdown,
-        pdfUrl: data?.pdfUrl,
-        slots: data?.slots || {},
-        reply: replyText,
-      };
-
-      if (plannerResult.itinerary) {
-        try {
-          sessionStorage.setItem("plumml_itinerary_data", JSON.stringify(plannerResult));
-        } catch {
-          // ignore session storage failures
-        }
-      }
-
-      if (data?.pdfUrl) {
-        const downloadUrl = data.pdfUrl.startsWith("http")
-          ? data.pdfUrl
-          : `${BACKEND}${data.pdfUrl.startsWith("/") ? "" : "/"}${data.pdfUrl}`;
-        await downloadFile(downloadUrl);
-        setChatLog((current) => [
-          ...current,
-          {
-            role: "assistant",
-            text: `Your itinerary PDF has been generated and the download should begin shortly.`,
-          },
-        ]);
-      }
-
-      if (plannerResult.itinerary) {
-        navigate("/tripPlanner", { state: plannerResult });
-      }
-
-      onGenerate?.();
-    } catch (error: any) {
-      console.error("AIPlanner request failed", error);
-      const errorMessage = error?.message || "Sorry, something went wrong while sending your request.";
-      setChatLog((current) => [...current, { role: "assistant", text: errorMessage }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerate = async () => {
-    const missingFields = getMissingFields();
-
-    if (missingFields.length) {
-      // Only ever ask about the FIRST missing field — the rest will be
-      // asked one at a time as each answer comes in.
-      const firstField = missingFields[0];
-      const firstKey = firstField.name ?? firstField.label;
-      setAwaitingFieldKey(firstKey);
-      setMissingFieldKeys([firstKey]);
-      setChatLog((current) => [
-        ...current,
-        { role: "assistant", text: buildSingleFieldQuestion(firstField.label, true) },
-      ]);
-      setIsWidgetOpen(true);
-      setHasUnread(false);
-      return;
-    }
-
-    setAwaitingFieldKey(null);
-    setMissingFieldKeys([]);
-    await sendToPlanner(buildMessageFromFields());
-  };
-
-  const handleSendChatInput = async () => {
-    const message = chatInput.trim();
-    if (!message) return;
-    setChatInput("");
-
-    // If we just asked about a specific field, treat this reply as the
-    // answer to THAT field, fill it in, then move on to the next missing
-    // one (or wrap up) — one question at a time.
-    if (awaitingFieldKey) {
-      setChatLog((current) => [...current, { role: "user", text: message }]);
-      const updatedValues = { ...values, [awaitingFieldKey]: message };
-      setValues(updatedValues);
-      await askNextMissingOrFinish(awaitingFieldKey, updatedValues, true);
-      return;
-    }
-
-    await sendToPlanner(message);
-  };
-
-  const handleAddCustomField = () => {
-    const label = customFieldLabel.trim();
-    if (!label) return;
-    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    if (values[key] !== undefined) return;
-    setActiveFields((prev) => [
-      ...prev,
-      { name: key, label, placeholder: `Enter ${label.toLowerCase()}`, fullWidth: true },
-    ]);
-    setValues((prev) => ({ ...prev, [key]: "" }));
-    setCustomFieldLabel("");
-  };
+  const {
+    activeFields,
+    values,
+    missingFieldKeys,
+    isLoading,
+    handleFieldChange,
+    handleFieldBlur,
+    handleGenerate,
+  } = usePlannerChat();
 
   return (
-    <>
-      <section className="ai-planner-section">
-        <style>{`
-          .ai-planner-section {
-            background: linear-gradient(135deg, ${C.navy} 0%, ${C.navyDeep} 100%);
-            padding: 72px 48px;
-          }
-          .ai-planner-grid {
-            max-width: 100%;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.4fr 1fr;
-            gap: 32px;
-            align-items: stretch;
-          }
-          .ai-planner-fields {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-          }
-          .ai-planner-suggestion {
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            min-height: 380px;
-            box-shadow: 0 30px 70px rgba(0,0,0,0.45);
-          }
-          @media (max-width: 900px) {
-            .ai-planner-section { padding: 48px 24px; }
-            .ai-planner-grid { grid-template-columns: 1fr; }
-            .ai-planner-suggestion { min-height: 320px; }
-          }
-          @media (max-width: 480px) {
-            .ai-planner-section { padding: 36px 16px; }
-            .ai-planner-fields { grid-template-columns: 1fr; }
-          }
-        `}</style>
+    <section className="ai-planner-section">
+      <style>{`
+        .ai-planner-section {
+          background: linear-gradient(135deg, ${C.navy} 0%, ${C.navyDeep} 100%);
+          padding: 72px 48px;
+        }
+        .ai-planner-grid {
+          max-width: 100%;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 32px;
+          align-items: stretch;
+        }
+        .ai-planner-fields {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+        .ai-planner-suggestion {
+          border-radius: 20px;
+          overflow: hidden;
+          position: relative;
+          min-height: 380px;
+          box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+        }
+        @media (max-width: 900px) {
+          .ai-planner-section { padding: 48px 24px; }
+          .ai-planner-grid { grid-template-columns: 1fr; }
+          .ai-planner-suggestion { min-height: 320px; }
+        }
+        @media (max-width: 480px) {
+          .ai-planner-section { padding: 36px 16px; }
+          .ai-planner-fields { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
-        <div className="ai-planner-grid">
-          {/* ── Form card ── */}
-          <div
+      <div className="ai-planner-grid">
+        {/* ── Form card ── */}
+        <div
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: 20,
+            padding: "36px 34px",
+            boxShadow: "0 30px 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10)",
+          }}
+        >
+          <span
             style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              borderRadius: 20,
-              padding: "36px 34px",
-              boxShadow: "0 30px 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 14px",
+              borderRadius: 999,
+              background: "rgba(255,104,44,0.15)",
+              border: "1px solid rgba(255,104,44,0.3)",
+              color: C.orange,
+              fontFamily: FONT,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginBottom: 18,
+            }}
+          >
+            {badge}
+          </span>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 10px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: FONT,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
             }}
           >
             <span
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "6px 14px",
-                borderRadius: 999,
-                background: "rgba(255,104,44,0.15)",
-                border: "1px solid rgba(255,104,44,0.3)",
-                color: C.orange,
-                fontFamily: FONT,
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                marginBottom: 18,
-              }}
-            >
-              {badge}
-            </span>
-            <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 5,
-      padding: "5px 10px",
-      borderRadius: 999,
-      background: "rgba(255,255,255,0.08)",
-      border: "1px solid rgba(255,255,255,0.18)",
-      color: "rgba(255,255,255,0.8)",
-      fontFamily: FONT,
-      fontSize: 10,
-      fontWeight: 700,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase",
-    }}
-  >
-    <span
-      style={{
-        width: 5,
-        height: 5,
-        borderRadius: "50%",
-        background: "#4ade80",
-        display: "inline-block",
-      }}
-    />
-    Beta
-  </span>
-
-            <h2 style={{ fontFamily: FONT, fontWeight: 700, fontSize: "1.9rem", lineHeight: 1.2, color: "#fff", margin: "0 0 8px" }}>
-              {title}
-            </h2>
-            <p style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "0 0 20px" }}>
-              {subtitle}
-            </p>
-            <div className="ai-planner-fields">
-              {activeFields.map((f) => {
-                const key = f.name ?? f.label;
-                return (
-                  <Field
-                    key={key}
-                    {...f}
-                    value={values[key] ?? ""}
-                    onChange={(value) => handleFieldChange(key, value)}
-                    onBlur={() => handleFieldBlur(key)}
-                    isMissing={missingFieldKeys.includes(key)}
-                  />
-                );
-              })}
-            </div>
-            <button
-              onClick={handleGenerate}
-              disabled={isLoading}
-              style={{
-                marginTop: 22,
-                width: "100%",
-                padding: "14px",
-                borderRadius: 12,
-                border: "none",
-                background: C.orange,
-                color: "#fff",
-                fontFamily: FONT,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: isLoading ? "default" : "pointer",
-                opacity: isLoading ? 0.7 : 1,
-                boxShadow: "0 10px 30px rgba(255,104,44,0.45)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              {ctaLabel} <IconArrow />
-            </button>
-            {/* <p
-              style={{
-                marginTop: 14,
-                fontFamily: FONT,
-                fontSize: 12,
-                color: "rgba(255,255,255,0.5)",
-              }}
-            >
-              Your conversation with the planner continues in the chat bubble at the bottom-right of the screen.
-            </p> */}
-          </div>
-
-          {/* ── Suggestion card ── */}
-          <div className="ai-planner-suggestion">
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage: `url('${suggestion.imageUrl}')`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(180deg,rgba(6,18,36,0.2) 0%,rgba(6,18,36,0.92) 100%)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                top: 18,
-                left: 18,
-                padding: "6px 12px",
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.15)",
-                backdropFilter: "blur(10px)",
-                color: "#fff",
-                fontFamily: FONT,
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {suggestion.badge}
-            </div>
-            <div style={{ position: "absolute", left: 22, right: 22, bottom: 22 }}>
-              <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 22, color: "#fff" }}>
-                {suggestion.destination}
-              </div>
-              <div style={{ fontFamily: FONT, fontSize: 13, color: "rgba(255,255,255,0.75)", margin: "4px 0 14px" }}>
-                {suggestion.tagline}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <span style={{ fontFamily: FONT, fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Est. package</span>
-                  <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 24, color: C.orange, lineHeight: 1 }}>
-                    {convert(suggestion.estimatedPrice)}
-                  </div>
-                </div>
-                <Link to={"/holidays"}>
-                  <button
-                    onClick={suggestion.onViewItinerary}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#fff",
-                      color: C.navy,
-                      fontFamily: FONT,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    View itinerary
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Floating chat widget: fixed to the bottom-right of the VIEWPORT ── */}
-      <style>{`
-        .plumml-fab {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          width: 58px;
-          height: 58px;
-          border-radius: 50%;
-          border: none;
-          background: ${C.orange};
-          box-shadow: 0 12px 28px rgba(255,104,44,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 1000;
-          transition: transform 0.15s ease;
-        }
-        .plumml-fab:hover { transform: scale(1.06); }
-        .plumml-fab-badge {
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          width: 14px;
-          height: 14px;
-          border-radius: 50%;
-          background: #ff3b3b;
-          border: 2px solid ${C.navyDeep};
-        }
-        .plumml-chat-panel {
-          position: fixed;
-          bottom: 96px;
-          right: 24px;
-          width: 340px;
-          max-width: calc(100vw - 32px);
-          height: 460px;
-          max-height: calc(100vh - 140px);
-          background: ${C.navyDeep};
-          border: 1px solid rgba(255,255,255,0.12);
-          border-radius: 18px;
-          box-shadow: 0 30px 70px rgba(0,0,0,0.5);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          z-index: 1000;
-        }
-        .plumml-chat-header {
-          padding: 14px 16px;
-          background: linear-gradient(135deg, ${C.navy} 0%, ${C.navyDeep} 100%);
-          border-bottom: 1px solid rgba(255,255,255,0.1);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .plumml-chat-body {
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .plumml-chat-message {
-          border-radius: 16px;
-          padding: 10px 14px;
-          line-height: 1.5;
-          font-family: ${FONT};
-          font-size: 13px;
-          max-width: 85%;
-          white-space: pre-wrap;
-        }
-        .plumml-chat-message.user {
-          background: ${C.orange};
-          color: #fff;
-          align-self: flex-end;
-          border-bottom-right-radius: 4px;
-        }
-        .plumml-chat-message.assistant {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: #fff;
-          align-self: flex-start;
-          border-bottom-left-radius: 4px;
-        }
-        .plumml-chat-empty {
-          margin: auto;
-          text-align: center;
-          font-family: ${FONT};
-          font-size: 13px;
-          color: rgba(255,255,255,0.45);
-          padding: 0 20px;
-        }
-        .plumml-chat-input-row {
-          display: flex;
-          gap: 8px;
-          padding: 12px;
-          border-top: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.02);
-        }
-        .plumml-chat-input {
-          flex: 1;
-          padding: 10px 14px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.14);
-          background: rgba(255,255,255,0.06);
-          color: #fff;
-          font-family: ${FONT};
-          font-size: 13px;
-          outline: none;
-        }
-        .plumml-chat-send {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          border: none;
-          background: ${C.orange};
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        @media (max-width: 480px) {
-          .plumml-chat-panel {
-            right: 16px;
-            bottom: 88px;
-            width: calc(100vw - 32px);
-          }
-          .plumml-fab { right: 16px; bottom: 16px; }
-        }
-      `}</style>
-
-      {isWidgetOpen && (
-        <div className="plumml-chat-panel" role="dialog" aria-label="Trip planner chat support">
-          <div className="plumml-chat-header">
-            <div>
-              <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 14, color: "#fff" }}>
-                Trip Planner Chat
-              </div>
-              <div style={{ fontFamily: FONT, fontSize: 11, color: "rgba(255,255,255,0.55)" }}>
-                {isLoading ? "Typing…" : "We're here to help"}
-              </div>
-            </div>
-            <button
-              onClick={() => setIsWidgetOpen(false)}
-              aria-label="Close chat"
-              style={{
-                width: 28,
-                height: 28,
+                width: 5,
+                height: 5,
                 borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,255,255,0.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
+                background: "#4ade80",
+                display: "inline-block",
               }}
-            >
-              <IconClose />
-            </button>
-          </div>
-
-          <div className="plumml-chat-body" ref={chatBodyRef}>
-            {chatLog.length === 0 && !isLoading && (
-              <div className="plumml-chat-empty">
-                Fill in the planner form or just type below to start planning your trip.
-              </div>
-            )}
-            {chatLog.map((item, index) => (
-              <div key={`${item.role}-${index}`} className={`plumml-chat-message ${item.role}`}>
-                {item.text}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="plumml-chat-message assistant">Sending to planner…</div>
-            )}
-          </div>
-
-          <div className="plumml-chat-input-row">
-            <input
-              className="plumml-chat-input"
-              placeholder="Type a message…"
-              aria-label="Chat message"
-              value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleSendChatInput();
-                }
-              }}
-              disabled={isLoading}
             />
-            <button
-              className="plumml-chat-send"
-              onClick={handleSendChatInput}
-              disabled={isLoading || !chatInput.trim()}
-              aria-label="Send message"
-              style={{ opacity: isLoading || !chatInput.trim() ? 0.6 : 1 }}
-            >
-              <IconSend />
-            </button>
+            Beta
+          </span>
+
+          <h2 style={{ fontFamily: FONT, fontWeight: 700, fontSize: "1.9rem", lineHeight: 1.2, color: "#fff", margin: "0 0 8px" }}>
+            {title}
+          </h2>
+          <p style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.6)", margin: "0 0 20px" }}>
+            {subtitle}
+          </p>
+          <div className="ai-planner-fields">
+            {activeFields.map((f) => {
+              const key = f.name ?? f.label;
+              return (
+                <Field
+                  key={key}
+                  {...f}
+                  value={values[key] ?? ""}
+                  onChange={(value) => handleFieldChange(key, value)}
+                  onBlur={() => handleFieldBlur(key)}
+                  isMissing={missingFieldKeys.includes(key)}
+                />
+              );
+            })}
+          </div>
+          <button
+            onClick={handleGenerate}
+            disabled={isLoading}
+            style={{
+              marginTop: 22,
+              width: "100%",
+              padding: "14px",
+              borderRadius: 12,
+              border: "none",
+              background: C.orange,
+              color: "#fff",
+              fontFamily: FONT,
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: isLoading ? "default" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
+              boxShadow: "0 10px 30px rgba(255,104,44,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            {ctaLabel} <IconArrow />
+          </button>
+        </div>
+
+        {/* ── Suggestion card ── */}
+        <div className="ai-planner-suggestion">
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url('${suggestion.imageUrl}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(180deg,rgba(6,18,36,0.2) 0%,rgba(6,18,36,0.92) 100%)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 18,
+              left: 18,
+              padding: "6px 12px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(10px)",
+              color: "#fff",
+              fontFamily: FONT,
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            {suggestion.badge}
+          </div>
+          <div style={{ position: "absolute", left: 22, right: 22, bottom: 22 }}>
+            <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 22, color: "#fff" }}>
+              {suggestion.destination}
+            </div>
+            <div style={{ fontFamily: FONT, fontSize: 13, color: "rgba(255,255,255,0.75)", margin: "4px 0 14px" }}>
+              {suggestion.tagline}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <span style={{ fontFamily: FONT, fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Est. package</span>
+                <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 24, color: C.orange, lineHeight: 1 }}>
+                  {convert(suggestion.estimatedPrice)}
+                </div>
+              </div>
+              <Link to={"/holidays"}>
+                <button
+                  onClick={suggestion.onViewItinerary}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "#fff",
+                    color: C.navy,
+                    fontFamily: FONT,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  View itinerary
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
-      )}
-
-      <button
-        className="plumml-fab"
-        onClick={() => {
-          setIsWidgetOpen((open) => !open);
-          setHasUnread(false);
-        }}
-        aria-label="Toggle chat support"
-      >
-        <IconChatBubble />
-        {hasUnread && <span className="plumml-fab-badge" />}
-      </button>
-    </>
+      </div>
+    </section>
   );
 }

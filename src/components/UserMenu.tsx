@@ -61,7 +61,7 @@ export default function UserMenu() {
       >
         <AvatarCircle name={firstName} />
         <span className="hidden sm:block">
-          Hi, <strong>{firstName}</strong>
+          <strong>{firstName}</strong>
         </span>
         <svg
           className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
