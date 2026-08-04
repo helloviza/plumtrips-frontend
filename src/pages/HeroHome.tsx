@@ -204,9 +204,9 @@ export default function HeroHome({ onSearch, tripType = "oneWay", onTripTypeChan
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.65)" }}>
+                  {/* <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.65)" }}>
                     Cheapest this week
-                  </span>
+                  </span> */}
                   <img src="/home/graph.png" alt="" style={{ width: 30, height: 30, marginRight: -4, marginBottom: -2, filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.25))" }} />
                 </div>
                 <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 14, color: "#fff", marginBottom: 6 }}>

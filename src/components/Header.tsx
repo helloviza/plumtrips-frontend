@@ -18,9 +18,9 @@ const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
  *   import { HEADER_BLEED } from "./Header";
  *   <div className={HEADER_BLEED}>...</div>
  *
- * Or just add `-mt-[124px]` directly to your page's top wrapper.
+ * Or just add `-mt-[7.75em]` directly to your page's top wrapper.
  */
-export const HEADER_BLEED = "-mt-[124px]" as const;
+export const HEADER_BLEED = "-mt-[7.75em]" as const;
 
 /**
  * Only these paths get the glassmorphic floating header on load.
@@ -81,7 +81,7 @@ export default function Header() {
   const renderNavItemDesktop = (item: { to: string; label: string; exact: boolean }) => {
     const externalUrl = externalByLabel[item.label];
     const baseClasses =
-      "relative flex items-center h-full px-4 text-[14px] font-medium transition-colors duration-200";
+      "relative flex items-center h-full px-4 text-[0.875em] font-medium transition-colors duration-200";
 
     if (externalUrl) {
       return (
@@ -112,7 +112,7 @@ export default function Header() {
           <>
             {item.label}
             {isActive && (
-              <span className="absolute left-4 right-4 bottom-0 h-[3px] rounded-t-md bg-[#d06549]" />
+              <span className="absolute left-4 right-4 bottom-0 h-[0.1875em] rounded-t-md bg-[#d06549]" />
             )}
           </>
         )}
@@ -130,7 +130,7 @@ export default function Header() {
           href={externalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block rounded-lg px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 text-[15px] font-medium transition-all"
+          className="block rounded-lg px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 text-[0.9375em] font-medium transition-all"
           onClick={closeMobile}
         >
           {item.label}
@@ -144,7 +144,7 @@ export default function Header() {
         to={item.to}
         end={item.exact}
         className={({ isActive }) =>
-          `block rounded-lg px-4 py-3 text-[15px] transition-all ${
+          `block rounded-lg px-4 py-3 text-[0.9375em] transition-all ${
             isActive
               ? "font-semibold text-white bg-[#d06549]/20 border border-[#d06549]/30"
               : "font-medium text-white/80 hover:text-white hover:bg-white/10"
@@ -162,7 +162,7 @@ export default function Header() {
       <div className="sticky top-0 z-[1000] w-full font-sans bg-transparent">
 
         {/* ── TOP UTILITY BAR ── */}
-        <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[11px] font-medium text-white/70">
+        <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[0.6875em] font-medium text-white/70">
           <div className="flex gap-8">
             <button className="flex items-center gap-2 hover:text-white transition-colors">
               <PhoneCall size={14} className="opacity-70" /> 24/7 Support
@@ -181,7 +181,7 @@ export default function Header() {
             >
               <MapPin size={16} />
               <span>{selectedRegion.text}</span>
-              <span className={`text-[9px] opacity-60 transition-transform duration-200 ${regionMenuOpen ? "rotate-180" : ""}`}>
+              <span className={`text-[0.5625em] opacity-60 transition-transform duration-200 ${regionMenuOpen ? "rotate-180" : ""}`}>
                 ▼
               </span>
             </button>
@@ -193,11 +193,11 @@ export default function Header() {
                   className="fixed inset-0 z-[1000]" 
                   onClick={() => setRegionMenuOpen(false)} 
                 />
-                <div className="absolute right-0 top-[calc(100%+8px)] flex flex-col w-[200px] bg-[#0b1528] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[1001]">
+                <div className="absolute right-0 top-[calc(100%+0.5em)] flex flex-col w-[12.5em] bg-[#0b1528] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[1001]">
                   {REGIONS.map((region) => (
                     <button
                       key={region.id}
-                      className={`text-left px-4 py-3 text-[12px] transition-colors ${
+                      className={`text-left px-4 py-3 text-[0.75em] transition-colors ${
                         selectedRegion.id === region.id 
                           ? "bg-[#d06549]/20 text-white font-medium" 
                           : "text-white/70 hover:text-white hover:bg-white/5"
@@ -228,8 +228,8 @@ export default function Header() {
           <div
             className={`mx-auto flex items-center justify-between transition-all duration-300 ease-in-out ${
               isFloating
-                ? "max-w-full bg-[#0b1528]/40 backdrop-blur-xl border border-white/20 rounded-2xl h-[72px] px-5 md:px-8 shadow-xl"
-                : "max-w-full h-[64px] px-6 md:px-10 rounded-none border-transparent"
+                ? "max-w-full bg-[#0b1528]/40 backdrop-blur-xl border border-white/20 rounded-2xl h-[4.5em] px-5 md:px-8 shadow-xl"
+                : "max-w-full h-[4em] px-6 md:px-10 rounded-none border-transparent"
             }`}
           >
             {/* Logo */}
@@ -260,9 +260,9 @@ export default function Header() {
                 aria-label="Toggle navigation menu"
               >
                 <div className="space-y-1.5">
-                  <span className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "translate-y-[8px] rotate-45" : ""}`} />
-                  <span className={`block h-[2px] w-5 bg-white transition-opacity duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`} />
-                  <span className={`block h-[2px] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "-translate-y-[8px] -rotate-45" : ""}`} />
+                  <span className={`block h-[0.125em] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "translate-y-[0.5em] rotate-45" : ""}`} />
+                  <span className={`block h-[0.125em] w-5 bg-white transition-opacity duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`} />
+                  <span className={`block h-[0.125em] w-5 bg-white transition-transform duration-300 ${mobileOpen ? "-translate-y-[0.5em] -rotate-45" : ""}`} />
                 </div>
               </button>
             </div>
@@ -272,7 +272,7 @@ export default function Header() {
         {/* ── Mobile slide-down menu ── */}
         <div
           className={`absolute top-[100%] left-0 w-full md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-            mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            mobileOpen ? "max-h-[31.25em] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <div className="m-4 rounded-2xl border border-white/10 bg-[#081020]/95 backdrop-blur-2xl p-3 shadow-2xl">
@@ -287,22 +287,22 @@ export default function Header() {
         :root { --accent: #d06549; }
         .signin-wrapper button, .signin-wrapper a[role="button"] {
           background-color: var(--accent) !important; color: white !important;
-          padding: 8px 20px !important; border-radius: 8px !important;
-          border: none !important; font-size: 14px !important; font-weight: 600 !important;
+          padding: 0.5em 1.25em !important; border-radius: 0.5em !important;
+          border: none !important; font-size: 0.875em !important; font-weight: 600 !important;
           cursor: pointer !important; letter-spacing: 0.02em !important;
-          box-shadow: 0 4px 14px rgba(208,101,73,0.3) !important;
+          box-shadow: 0 0.25em 0.875em rgba(208,101,73,0.3) !important;
           transition: all 0.2s ease-in-out !important;
-          display: flex !important; align-items: center !important; gap: 8px !important;
+          display: flex !important; align-items: center !important; gap: 0.5em !important;
         }
         .signin-wrapper button::before, .signin-wrapper a[role="button"]::before {
-          content: ""; display: inline-block; width: 16px; height: 16px;
+          content: ""; display: inline-block; width: 1em; height: 1em;
           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E");
           background-size: contain; background-repeat: no-repeat;
         }
         .signin-wrapper button:hover, .signin-wrapper a[role="button"]:hover {
           background-color: #bd553b !important;
-          box-shadow: 0 6px 20px rgba(208,101,73,0.5) !important;
-          transform: translateY(-1px) !important;
+          box-shadow: 0 0.375em 1.25em rgba(208,101,73,0.5) !important;
+          transform: translateY(-0.0625em) !important;
         }
       `}</style>
     </>
