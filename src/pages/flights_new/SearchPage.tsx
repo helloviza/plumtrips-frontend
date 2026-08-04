@@ -54,6 +54,46 @@ function totalTravelers(adults: number, children: number, infants: number): numb
   return adults + children + infants;
 }
 
+// ── TRAVELER LIMITS ────────────────────────────────────────────
+// Business rules:
+//   1) Infants can never exceed the number of Adults (each infant needs an adult).
+//   2) Adults + Children + Infants can never exceed MAX_TRAVELERS (9).
+// These helpers compute, for the *current* state, the max value each field is
+// allowed to take, so the +/- counters simply disable themselves at the limit —
+// there's no way to reach an invalid combination through the UI.
+const MAX_TRAVELERS = 9;
+
+function travelerLimits(adults: number, children: number, infants: number) {
+  return {
+    maxAdults: Math.max(1, MAX_TRAVELERS - children - infants),
+    maxChildren: Math.max(0, MAX_TRAVELERS - adults - infants),
+    // Infants are capped by BOTH the adult count and the remaining headroom to 9
+    maxInfants: Math.max(0, Math.min(adults, MAX_TRAVELERS - adults - children)),
+  };
+}
+
+// When Adults is decreased, any previously-valid Infants/Children count may now
+// violate the rules (e.g. infants > adults). This rebalances the trio so it's
+// always valid after an adults change.
+function applyAdultsChange<T extends { adults: number; children: number; infants: number }>(
+  state: T,
+  newAdults: number
+): T {
+  const adults = Math.max(1, Math.min(MAX_TRAVELERS, newAdults));
+  let infants = Math.min(state.infants, adults);
+  let children = state.children;
+  if (adults + children + infants > MAX_TRAVELERS) {
+    children = Math.max(0, MAX_TRAVELERS - adults - infants);
+  }
+  return { ...state, adults, children, infants };
+}
+
+// Infants setter that also enforces the infants <= adults rule directly
+// (belt-and-braces alongside the dynamic max on the counter itself).
+function clampInfants<T extends { adults: number; infants: number }>(state: T, newInfants: number): T {
+  return { ...state, infants: Math.max(0, Math.min(newInfants, state.adults)) };
+}
+
 // ── PORTAL POSITION HOOK ──────────────────────────────────────
 function usePortalPos(anchorRef: React.RefObject<HTMLElement | null>, open: boolean) {
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0, height: 0 });
@@ -494,6 +534,8 @@ function TravelersPopup({ form, onFormChange, anchorRef, onClose }: {
     ? Math.max(8, Math.min(pos.left, window.innerWidth - popupWidth - 8))
     : Math.max(8, Math.min(pos.left, window.innerWidth - popupWidth - 8));
 
+  const { maxAdults, maxChildren, maxInfants } = travelerLimits(form.adults, form.children, form.infants);
+
   return createPortal(
     <div ref={popupRef} style={{
       position: "absolute", top: pos.top + 4, left: popupLeft,
@@ -511,7 +553,8 @@ function TravelersPopup({ form, onFormChange, anchorRef, onClose }: {
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a3558" }}>Adults</div>
             <div style={{ fontSize: 11, color: "#94a3b8" }}>12+ years</div>
           </div>
-          <TravelerCounter value={form.adults} min={1} max={9} onChange={(v) => onFormChange({ adults: v })} />
+          <TravelerCounter value={form.adults} min={1} max={maxAdults}
+            onChange={(v) => onFormChange(applyAdultsChange(form, v))} />
         </div>
         {/* Children */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -519,15 +562,17 @@ function TravelersPopup({ form, onFormChange, anchorRef, onClose }: {
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a3558" }}>Children</div>
             <div style={{ fontSize: 11, color: "#94a3b8" }}>2–11 years</div>
           </div>
-          <TravelerCounter value={form.children} min={0} max={9} onChange={(v) => onFormChange({ children: v })} />
+          <TravelerCounter value={form.children} min={0} max={maxChildren}
+            onChange={(v) => onFormChange({ children: v })} />
         </div>
         {/* Infants */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#1a3558" }}>Infants</div>
-            <div style={{ fontSize: 11, color: "#94a3b8" }}>Under 2 years</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>Under 2 years · max {form.adults} (1 per adult)</div>
           </div>
-          <TravelerCounter value={form.infants} min={0} max={4} onChange={(v) => onFormChange({ infants: v })} />
+          <TravelerCounter value={form.infants} min={0} max={maxInfants}
+            onChange={(v) => onFormChange(clampInfants(form, v))} />
         </div>
 
         <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
@@ -716,6 +761,7 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
   // ── Total travelers label ──
   const total = totalTravelers(form.adults, form.children, form.infants);
   const travelersLabel = `${total} Traveler${total !== 1 ? "s" : ""}`;
+  const { maxAdults, maxChildren, maxInfants } = travelerLimits(form.adults, form.children, form.infants);
 
   function setTripType(t: "oneWay" | "roundTrip" | "multiCity") {
     setForm((f) => ({ ...f, tripType: t }));
@@ -810,9 +856,12 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
             {/* Passengers row */}
             <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 20, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row", padding: "14px 0 4px", borderTop: `1px solid ${C.divider}`, marginTop: 6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 20, flexWrap: "wrap" }}>
-                <Counter label="Adults" value={form.adults} min={1} max={9} onChange={(v) => setForm(f => ({ ...f, adults: v }))} />
-                <Counter label="Children" value={form.children} min={0} max={9} onChange={(v) => setForm(f => ({ ...f, children: v }))} />
-                <Counter label="Infants" value={form.infants} min={0} max={4} onChange={(v) => setForm(f => ({ ...f, infants: v }))} />
+                <Counter label="Adults" value={form.adults} min={1} max={maxAdults}
+                  onChange={(v) => setForm(f => applyAdultsChange(f, v))} />
+                <Counter label="Children" value={form.children} min={0} max={maxChildren}
+                  onChange={(v) => setForm(f => ({ ...f, children: v }))} />
+                <Counter label="Infants" value={form.infants} min={0} max={maxInfants}
+                  onChange={(v) => setForm(f => clampInfants(f, v))} />
                 <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.08)" }} />
                 <CabinClassPicker cabinClass={form.cabinClass} onChange={(cls) => setForm(f => ({ ...f, cabinClass: cls }))} />
               </div>
@@ -1002,9 +1051,12 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
         {!isMobile && (
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "14px 18px", flexWrap: "wrap", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: isTablet ? 14 : 22, flexWrap: "wrap" }}>
-              <Counter label="Adults"   value={form.adults}   min={1} max={9} onChange={(v) => setForm(f => ({ ...f, adults: v }))} />
-              <Counter label="Children" value={form.children} min={0} max={9} onChange={(v) => setForm(f => ({ ...f, children: v }))} />
-              <Counter label="Infants"  value={form.infants}  min={0} max={4} onChange={(v) => setForm(f => ({ ...f, infants: v }))} />
+              <Counter label="Adults"   value={form.adults}   min={1} max={maxAdults}
+                onChange={(v) => setForm(f => applyAdultsChange(f, v))} />
+              <Counter label="Children" value={form.children} min={0} max={maxChildren}
+                onChange={(v) => setForm(f => ({ ...f, children: v }))} />
+              <Counter label="Infants"  value={form.infants}  min={0} max={maxInfants}
+                onChange={(v) => setForm(f => clampInfants(f, v))} />
               <div style={{ width: 1, height: 40, background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
               <CabinClassPicker cabinClass={form.cabinClass} onChange={(cls) => setForm(f => ({ ...f, cabinClass: cls }))} />
               <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }}>

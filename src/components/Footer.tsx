@@ -322,7 +322,9 @@ export default function Footer() {
               </svg>
             </div>
             <div>
-              <div style={{ color: "#fff" }}>hello@plumtrips.com</div>
+              <a href="mailto:hello@plumtrips.com" style={{ color: "#fff"}}>
+                hello@plumtrips.com
+              </a>
             </div>
           </div>
 

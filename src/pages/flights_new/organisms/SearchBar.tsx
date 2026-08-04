@@ -352,7 +352,7 @@ function CalendarPopup({
   );
 }
 
-// ─── PASSENGERS & CLASS POPOVER (unchanged) ─────────────────────────────────
+// ─── PASSENGERS & CLASS POPOVER ─────────────────────────────────
 function PaxPicker({
   anchorRef, open, adults, children, infants, cabinClass, onChange, onClose,
 }: {
@@ -404,11 +404,53 @@ function PaxPicker({
     </div>
   );
 
+  // ── Passenger count rules ──────────────────────────────────────────────
+  //  1. Infants can never exceed Adults (one infant per adult, lap-held).
+  //  2. Adults + Children + Infants must never exceed 9 total.
+  const MAX_TOTAL = 9;
+  const MAX_INFANTS_HARD_CAP = 4; // pre-existing product rule, kept as an upper bound
+
+  const totalPax = adults + children + infants;
+  const remaining = Math.max(0, MAX_TOTAL - totalPax);
+
+  // Each counter's max = its current value + whatever headroom is left in the
+  // 9-pax budget, further bounded by any field-specific hard cap.
+  const maxAdultsAllowed = Math.min(MAX_TOTAL, adults + remaining);
+  const maxChildrenAllowed = Math.min(MAX_TOTAL, children + remaining);
+  // Infants are additionally capped by the number of adults (rule #1) and the hard cap of 4.
+  const maxInfantsAllowed = Math.min(MAX_INFANTS_HARD_CAP, adults, infants + remaining);
+
+  const infantsExceedAdults = infants > adults;
+
   return createPortal(
     <div ref={popupRef} className="absolute z-40 rounded-2xl border border-slate-200 shadow-2xl p-[18px] bg-white" style={{ top, left, width: POPUP_W }}>
-      <PRow label="Adults" sub="12+ years" value={adults} min={1} max={9} onCh={v => onChange(v, children, infants, cabinClass)} />
-      <PRow label="Children" sub="2–12 years" value={children} min={0} max={9} onCh={v => onChange(adults, v, infants, cabinClass)} />
-      <PRow label="Infants" sub="Under 2 years" value={infants} min={0} max={4} onCh={v => onChange(adults, children, v, cabinClass)} />
+      <PRow
+        label="Adults" sub="12+ years" value={adults} min={1} max={maxAdultsAllowed}
+        onCh={v => {
+          // If adults drops below the current infant count, bring infants down to match,
+          // since infants can never outnumber adults.
+          const newInfants = Math.min(infants, v);
+          onChange(v, children, newInfants, cabinClass);
+        }}
+      />
+      <PRow
+        label="Children" sub="2–12 years" value={children} min={0} max={maxChildrenAllowed}
+        onCh={v => onChange(adults, v, infants, cabinClass)}
+      />
+      <PRow
+        label="Infants" sub="Under 2 years" value={infants} min={0} max={maxInfantsAllowed}
+        onCh={v => onChange(adults, children, Math.min(v, adults), cabinClass)}
+      />
+      {infantsExceedAdults && (
+        <p className="mt-1 mb-1.5 text-[11px] font-semibold text-red-500">
+          Infants can't exceed the number of adults.
+        </p>
+      )}
+      {totalPax >= MAX_TOTAL && (
+        <p className="mt-1 mb-1.5 text-[11px] font-semibold text-slate-400">
+          Maximum {MAX_TOTAL} travellers per booking.
+        </p>
+      )}
       <div className="mt-3.5">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cabin Class</div>
         <div className="grid grid-cols-2 gap-1.5">
@@ -470,6 +512,26 @@ export interface SearchBarProps {
 
 type ActivePopup = 'from' | 'to' | 'depart' | 'return' | 'pax' | null;
 
+// Final safety net for passenger counts, applied at the point the form
+// state is actually written — independent of whatever UI triggered it:
+//   1. infants can never exceed adults
+//   2. adults + children + infants can never exceed 9
+const PAX_MAX_TOTAL = 9;
+const PAX_MAX_INFANTS = 4;
+function clampPaxCounts(adults: number, children: number, infants: number) {
+  const a = Math.max(1, Math.min(PAX_MAX_TOTAL, adults));
+  let i = Math.max(0, Math.min(PAX_MAX_INFANTS, infants, a));
+  let c = Math.max(0, children);
+  const overflow = a + c + i - PAX_MAX_TOTAL;
+  if (overflow > 0) {
+    const cCut = Math.min(c, overflow);
+    c -= cCut;
+    const remainingOverflow = overflow - cCut;
+    if (remainingOverflow > 0) i = Math.max(0, i - remainingOverflow);
+  }
+  return { adults: a, children: c, infants: i };
+}
+
 export default function SearchBar({ onSearch, form: formProp, tripType: tripTypeProp, onTripTypeChange }: SearchBarProps) {
   const today = new Date().toLocaleDateString('en-CA');
 
@@ -484,9 +546,7 @@ export default function SearchBar({ onSearch, form: formProp, tripType: tripType
     to: formProp?.to ?? MOCK_AIRPORTS[0],
     departDate: formProp?.departDate ?? today,
     returnDate: formProp?.returnDate ?? '',
-    adults: formProp?.adults ?? 1,
-    children: formProp?.children ?? 0,
-    infants: formProp?.infants ?? 0,
+    ...clampPaxCounts(formProp?.adults ?? 1, formProp?.children ?? 0, formProp?.infants ?? 0),
     cabinClass: formProp?.cabinClass ?? 'Economy',
     nonStopOnly: formProp?.nonStopOnly ?? false,
     // fareType kept in state only because SearchForm requires it —
@@ -586,7 +646,7 @@ export default function SearchBar({ onSearch, form: formProp, tripType: tripType
               </button>
               <PaxPicker anchorRef={paxRef} open={popup === 'pax'}
                 adults={form.adults} children={form.children} infants={form.infants} cabinClass={form.cabinClass}
-                onChange={(a, c, i, cls) => setForm(f => ({ ...f, adults: a, children: c, infants: i, cabinClass: cls }))}
+                onChange={(a, c, i, cls) => setForm(f => ({ ...f, ...clampPaxCounts(a, c, i), cabinClass: cls }))}
                 onClose={() => setPopup(null)} />
             </div>
 
