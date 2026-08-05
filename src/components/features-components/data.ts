@@ -119,7 +119,7 @@ export const aiPlannerProps: AIPlannerProps = {
     { name: "duration", label: "Duration", placeholder: "2026-08-08 to 2026-08-15" },
     { name: "travelers", label: "Travelers", placeholder: "1 Adults with No Child" },
     { name: "tripVibe", label: "Trip vibe", placeholder: "Relaxing / Adventure" },
-    { name: "specialRequests", label: "Special requests", placeholder: "Any extra requirements?", fullWidth: true },
+    { name: "specialRequests", label: "Special requests", placeholder: "Name for Personalisation ", fullWidth: true },
   ],
   ctaLabel: "Generate My Trip",
   suggestion: {

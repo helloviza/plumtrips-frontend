@@ -1087,4 +1087,4 @@ export default function SearchPage({ onSearch, tripType: tripTypeProp, onTripTyp
       </GlassCard>
     </div>
   );
-}
+}    
