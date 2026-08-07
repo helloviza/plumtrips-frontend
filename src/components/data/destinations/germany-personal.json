@@ -1,0 +1,206 @@
+{
+  "id": "germany-personal",
+  "name": "Germany",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#e3a019",
+    "selectionText": "black"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "Culture & Castles",
+        "title": {
+          "regular": "Fairy tale forests.\nAvant-garde cities.\n",
+          "italic": "Germany awaits."
+        },
+        "description": "Where medieval history meets cutting-edge cool. A journey through time.",
+        "backgroundImage": "/assets/home_m/germany (1).png",
+        "form": {
+          "title": "Plan your German journey",
+          "buttonText": "Explore",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "conversations",
+      "type": "Experiences",
+      "data": {
+        "badge": "CURATED MOMENTS",
+        "title": {
+          "regular": "The best discoveries ",
+          "italic": "happen off the autobahn."
+        },
+        "description": "Experience the rich culture through our exclusive local access.",
+        "items": [
+          {
+            "img": "/assets/generated/neuschwanstein_1786087000315.jpg",
+            "title": "Neuschwanstein Tour",
+            "loc": "Bavaria",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/berlin_art_1786087014808.jpg",
+            "title": "Underground Art",
+            "loc": "Berlin",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "/assets/generated/rhine_river_1786087026448.jpg",
+            "title": "Rhine River Cruise",
+            "loc": "Rhine Valley",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/oktoberfest_1786087040752.jpg",
+            "title": "Oktoberfest VIP",
+            "loc": "Munich",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/black_forest_1786087050667.jpg",
+            "title": "Black Forest Drive",
+            "loc": "Baden-Württemberg",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "details",
+      "type": "TextGrid",
+      "data": {
+        "badge": "WHAT WE HANDLE",
+        "title": {
+          "regular": "German engineering, ",
+          "italic": "applied to your trip."
+        },
+        "description": "Precision planning for a flawless experience.",
+        "items": [
+          {
+            "title": "Historic Hotels",
+            "desc": "Stay in renovated castles and chic modern lofts."
+          },
+          {
+            "title": "Premium Rail",
+            "desc": "First-class ICE train passes for seamless intercity travel."
+          },
+          {
+            "title": "Local Guides",
+            "desc": "Historians and artists to show you the real Germany."
+          },
+          {
+            "title": "Dining Access",
+            "desc": "Reservations at top-tier Michelin restaurants and historic beer halls."
+          },
+          {
+            "title": "Full Itinerary",
+            "desc": "A perfectly paced schedule of culture, history, and nightlife."
+          },
+          {
+            "title": "24/7 Concierge",
+            "desc": "Round-the-clock support for any spontaneous requests."
+          }
+        ]
+      }
+    },
+    {
+      "id": "morning-mountain",
+      "type": "FeatureList",
+      "data": {
+        "badge": "THE JOURNEY",
+        "title": {
+          "regular": "A medieval square. ",
+          "italic": "A modern skyline."
+        },
+        "items": [
+          {
+            "title": "Step into a fairy tale",
+            "desc": "Wander the romantic road and discover castles in the clouds.",
+            "img": "https://upload.wikimedia.org/wikipedia/commons/d/d0/1932._%D0%91%D0%B8%D0%BB%D0%B8%D0%B1%D0%B8%D0%BD._%D0%9C%D0%BE%D1%80%D0%BE%D0%B7%D0%BA%D0%BE.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+            "align": "left"
+          },
+          {
+            "title": "Feel the city pulse",
+            "desc": "Dive into Berlin's world-famous arts and techno scene.",
+            "img": "https://picsum.photos/seed/58/800/600",
+            "align": "right"
+          },
+          {
+            "title": "Taste the tradition",
+            "desc": "Savor authentic pretzels, bratwurst, and world-class brews in Bavaria.",
+            "img": "https://picsum.photos/seed/321/800/600",
+            "align": "left"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "FLEXIBLE PLANNING",
+        "title": {
+          "regular": "Clear in the service. ",
+          "italic": "Clear in the logic."
+        },
+        "tiers": [
+          {
+            "name": "Classic Explorer",
+            "price": "Custom",
+            "description": "Essential planning for your getaway.",
+            "features": [
+              "Boutique accommodations",
+              "ICE Train Passes",
+              "Curated itinerary",
+              "WhatsApp support"
+            ]
+          },
+          {
+            "name": "Premium Journey",
+            "price": "Custom",
+            "description": "Elevated experiences and premium stays.",
+            "features": [
+              "Castle hotel stays",
+              "Private city guides",
+              "Exclusive brewery tours",
+              "Priority 24/7 concierge"
+            ],
+            "highlight": true
+          },
+          {
+            "name": "Ultimate Luxury",
+            "price": "Custom",
+            "description": "The absolute pinnacle of personalized travel.",
+            "features": [
+              "Autobahn supercar rental",
+              "Helicopter transfers",
+              "VIP event access",
+              "Dedicated travel manager"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "light",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "A few days. ",
+          "italic": "One very good decision."
+        },
+        "description": "Tell us how you want to experience Germany.",
+        "buttonText": "Start Planning"
+      }
+    }
+  ]
+}

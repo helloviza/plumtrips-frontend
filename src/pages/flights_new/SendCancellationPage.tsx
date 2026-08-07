@@ -1,6 +1,6 @@
 // ============================================================
 //  CancellationPage.tsx — Request a PNR Cancellation
-//  Matches TBO's SendChangeRequest spec via apiCancelPNR()
+//  Matches TBO's SendChangeRequest spec via apiCancelSend()
 // ============================================================
 
 import React, { useState } from "react";
@@ -9,12 +9,10 @@ import {
   formatINR,
   CancelRequestType,
   CancelCancellationType,
-  type CancelPNRResult,
+  type CancelSendResult,
 } from "../../lib/flights_api";
 
 interface CancellationPageProps {
-  // Optional prefill — pass these in if the user is arriving from an
-  // existing booking (e.g. "My Trips" screen). All remain editable.
   defaultBookingId?: number;
   defaultTicketId?: string | number;
   onDone?: () => void;
@@ -48,24 +46,36 @@ export default function CancellationPage({
   );
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+  // Comma-separated ticket IDs. Only sent to TBO for Partial Cancellation.
   const [ticketId, setTicketId] = useState<string>(
     defaultTicketId != null ? String(defaultTicketId) : ""
   );
   const [remarks, setRemarks] = useState("");
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [result, setResult] = useState<CancelPNRResult | null>(null);
+  const [result, setResult] = useState<CancelSendResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
   const isPartial = requestType === CancelRequestType.PartialCancellation;
+  const isReissuance = requestType === CancelRequestType.Reissuance;
 
   const bookingIdNum = Number(bookingId);
+
+  const ticketIdsArray = ticketId
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(Number);
+
   const isValid =
     bookingId.trim() !== "" &&
     Number.isFinite(bookingIdNum) &&
-    ticketId.trim() !== "" &&
     remarks.trim() !== "" &&
-    (!isPartial || (origin.trim() !== "" && destination.trim() !== ""));
+    (!isPartial ||
+      (origin.trim() !== "" &&
+        destination.trim() !== "" &&
+        ticketIdsArray.length > 0 &&
+        ticketIdsArray.every((n) => Number.isFinite(n))));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,14 +86,24 @@ export default function CancellationPage({
     setResult(null);
 
     try {
+      const normalizedOrigin = origin.trim().toUpperCase();
+      const normalizedDestination = destination.trim().toUpperCase();
+      const normalizedTicketIds = ticketIdsArray.join(",");
+
       const res = await apiCancelSend({
-        bookingId:        bookingIdNum,
+        bookingId: bookingIdNum,
         requestType,
         cancellationType,
-        origin:           isPartial ? origin.trim().toUpperCase() : undefined,
-        destination:      isPartial ? destination.trim().toUpperCase() : undefined,
-        ticketId:         ticketId.trim(),
-        remarks:          remarks.trim(),
+        remarks: remarks.trim(),
+        ...(isPartial
+          ? {
+              origin: normalizedOrigin,
+              destination: normalizedDestination,
+              ticketId: normalizedTicketIds,
+            }
+          : {
+              ticketId: normalizedTicketIds,
+            }),
       });
       setResult(res);
       setStatus("success");
@@ -97,6 +117,17 @@ export default function CancellationPage({
     setStatus("idle");
     setResult(null);
     setErrorMsg("");
+  }
+
+  // TBO's Status/ChangeRequestStatus codes — adjust labels once you've confirmed
+  // the full enum against TBO docs (4 = Cancelled Successfully, seen in your sample).
+  function statusLabel(changeRequestStatus?: number) {
+    switch (changeRequestStatus) {
+      case 4:
+        return { text: "Cancelled", color: "text-emerald-400" };
+      default:
+        return { text: "Requested", color: "text-amber-400" };
+    }
   }
 
   return (
@@ -116,53 +147,75 @@ export default function CancellationPage({
 
       {/* Success state */}
       {status === "success" && result && (
-        <div className="mb-6">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-700 rounded-3xl p-6 mb-4 text-white">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-              Cancellation Request
-            </div>
-            <div className="flex flex-wrap gap-4 mb-4">
-              {result.cancellationId && (
-                <div>
-                  <div className="text-[10px] text-slate-500 mb-0.5">Cancellation ID</div>
-                  <div className="font-black text-xl font-mono">#{result.cancellationId}</div>
+        <div className="mb-6 space-y-4">
+          {result.changeRequestInfo?.map((t, index) => {
+            const s = statusLabel(t.changeRequestStatus);
+            return (
+              <div
+                key={t.changeRequestId ?? `${t.ticketId ?? "request"}-${index}`}
+                className="bg-linear-to-br from-slate-900 to-slate-700 rounded-3xl p-6 text-white"
+              >
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                  Change Request
                 </div>
-              )}
-              <div>
-                <div className="text-[10px] text-slate-500 mb-0.5">Status</div>
-                <div className="font-black text-xl font-mono tracking-widest text-emerald-400">
-                  {result.status ?? "Requested"}
+                <div className="flex flex-wrap gap-4 mb-4">
+                  <div>
+                    <div className="text-[10px] text-slate-500 mb-0.5">Change Request ID</div>
+                    <div className="font-black text-xl font-mono">#{t.changeRequestId}</div>
+                  </div>
+                  {t.ticketId != null && (
+                    <div>
+                      <div className="text-[10px] text-slate-500 mb-0.5">Ticket ID</div>
+                      <div className="font-black text-xl font-mono">{t.ticketId}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-[10px] text-slate-500 mb-0.5">Status</div>
+                    <div className={`font-black text-xl font-mono tracking-widest ${s.color}`}>
+                      {s.text}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <p className="text-xs text-slate-500">
-              Reference booking #{bookingId} · Ticket {ticketId}
-              {isPartial ? ` · ${origin.toUpperCase()} → ${destination.toUpperCase()}` : ""}
-            </p>
-          </div>
 
-          <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5 mb-4">
+                {t.remarks && <p className="text-xs text-slate-400 mb-3">{t.remarks}</p>}
+
+                {(typeof t.cancellationCharge === "number" || typeof t.refundedAmount === "number") && (
+                  <div className="flex gap-6 pt-3 border-t border-white/10">
+                    {typeof t.cancellationCharge === "number" && (
+                      <div>
+                        <div className="text-[10px] text-slate-500 mb-0.5">Cancellation Charge</div>
+                        <div className="font-bold text-sm">{formatINR(t.cancellationCharge)}</div>
+                      </div>
+                    )}
+                    {typeof t.refundedAmount === "number" && (
+                      <div>
+                        <div className="text-[10px] text-slate-500 mb-0.5">Refunded Amount</div>
+                        <div className="font-bold text-sm text-emerald-400">
+                          {formatINR(t.refundedAmount)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {t.creditNoteNo && (
+                  <p className="text-[11px] text-slate-500 mt-3">
+                    Credit Note: {t.creditNoteNo}
+                    {t.creditNoteCreatedOn ? ` · ${new Date(t.creditNoteCreatedOn).toLocaleDateString()}` : ""}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+
+          <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-5">
             <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">
-              {result.message ? "Confirmation" : "Request Submitted"}
+              Request Submitted
             </div>
             <p className="text-sm text-emerald-800">
-              {result.message ?? "Your cancellation request has been submitted successfully."}
+              Your cancellation request for booking #{bookingId} has been submitted successfully.
             </p>
           </div>
-
-          {typeof result.refundAmount === "number" && result.refundAmount > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-                    Estimated Refund
-                  </div>
-                  <div className="text-[10px] text-slate-400">Subject to airline &amp; fare rules</div>
-                </div>
-                <div className="font-black text-3xl text-slate-900">{formatINR(result.refundAmount)}</div>
-              </div>
-            </div>
-          )}
 
           <div className="flex gap-3">
             <button
@@ -206,23 +259,6 @@ export default function CancellationPage({
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                  Ticket ID(s)
-                </label>
-                <input
-                  type="text"
-                  value={ticketId}
-                  onChange={(e) => setTicketId(e.target.value)}
-                  placeholder="e.g. 5012345 or 5012345,5012346"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-                <p className="text-[11px] text-slate-400 mt-1.5">
-                  Comma-separate multiple ticket IDs to cancel more than one passenger.
-                </p>
-              </div>
-
               {/* Request Type */}
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
@@ -245,6 +281,32 @@ export default function CancellationPage({
                     </button>
                   ))}
                 </div>
+                {isReissuance && (
+                  <p className="text-[11px] text-amber-600 mt-1.5">
+                    Reissuance payload isn't confirmed against TBO's spec yet — verify required
+                    fields before relying on this in production.
+                  </p>
+                )}
+              </div>
+
+              {/* Ticket ID(s) — only meaningful (and only sent) for Partial Cancellation */}
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  Ticket ID(s) {isPartial ? "" : "(optional, for your reference)"}
+                </label>
+                <input
+                  type="text"
+                  value={ticketId}
+                  onChange={(e) => setTicketId(e.target.value)}
+                  placeholder="e.g. 5012345 or 5012345,5012346"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required={isPartial}
+                />
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  {isPartial
+                    ? "Comma-separate multiple ticket IDs to cancel more than one passenger. Required for partial cancellation."
+                    : "Not sent to TBO for full cancellation — the whole booking is cancelled regardless of individual ticket IDs."}
+                </p>
               </div>
 
               {/* Origin / Destination — only for Partial Cancellation */}

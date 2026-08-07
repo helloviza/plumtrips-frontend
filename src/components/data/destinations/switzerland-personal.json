@@ -1,0 +1,206 @@
+{
+  "id": "switzerland-personal",
+  "name": "Switzerland",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#c92c2c",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "Alpine Perfection",
+        "title": {
+          "regular": "Snow-capped peaks.\nPristine lakes.\n",
+          "italic": "Switzerland is calling."
+        },
+        "description": "Breathe the crisp alpine air and ride the rails to the top of Europe.",
+        "backgroundImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Satellite_image_of_Switzerland_in_September_2002.jpg/960px-Satellite_image_of_Switzerland_in_September_2002.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+        "form": {
+          "title": "Plan your alpine retreat",
+          "buttonText": "Explore",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "conversations",
+      "type": "Experiences",
+      "data": {
+        "badge": "CURATED MOMENTS",
+        "title": {
+          "regular": "The best views ",
+          "italic": "are earned."
+        },
+        "description": "Experience the majestic Alps through our exclusive panoramic journeys.",
+        "items": [
+          {
+            "img": "/assets/generated/glacier_express_1786086870209.jpg",
+            "title": "Glacier Express",
+            "loc": "Zermatt to St. Moritz",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/lake_geneva_1786086882547.jpg",
+            "title": "Lake Geneva Cruise",
+            "loc": "Montreux",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "/assets/generated/matterhorn_hike_1786086892464.jpg",
+            "title": "Matterhorn Hike",
+            "loc": "Zermatt",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/swiss_skiing_1786086923400.jpg",
+            "title": "Skiing the Alps",
+            "loc": "Verbier",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "/assets/generated/swiss_fondue_1786086936802.jpg",
+            "title": "Cheese & Chocolate",
+            "loc": "Gruyères",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "details",
+      "type": "TextGrid",
+      "data": {
+        "badge": "WHAT WE HANDLE",
+        "title": {
+          "regular": "Like a Swiss watch, ",
+          "italic": "perfectly timed."
+        },
+        "description": "Precision planning for a flawless alpine experience.",
+        "items": [
+          {
+            "title": "Alpine Chalets",
+            "desc": "Stay in luxury ski-in/ski-out resorts and cozy wooden chalets."
+          },
+          {
+            "title": "Swiss Travel Pass",
+            "desc": "Unlimited access to trains, buses, and boats across the country."
+          },
+          {
+            "title": "Mountain Guides",
+            "desc": "Expert alpinists for your hiking, skiing, and climbing adventures."
+          },
+          {
+            "title": "Dining Access",
+            "desc": "Reservations at panoramic revolving restaurants and cozy fondue huts."
+          },
+          {
+            "title": "Full Itinerary",
+            "desc": "A perfectly paced schedule of adventure and relaxation."
+          },
+          {
+            "title": "24/7 Concierge",
+            "desc": "Round-the-clock support for any spontaneous requests."
+          }
+        ]
+      }
+    },
+    {
+      "id": "morning-mountain",
+      "type": "FeatureList",
+      "data": {
+        "badge": "THE JOURNEY",
+        "title": {
+          "regular": "A towering peak. ",
+          "italic": "A crystal clear lake."
+        },
+        "items": [
+          {
+            "title": "Ride the rails",
+            "desc": "Board the world's most scenic trains through snowy mountain passes.",
+            "img": "/assets/generated/swiss_railway_1786086948296.jpg",
+            "align": "left"
+          },
+          {
+            "title": "Breathe the altitude",
+            "desc": "Stand atop the Jungfraujoch, the very top of Europe.",
+            "img": "/assets/generated/jungfraujoch_1786086959569.jpg",
+            "align": "right"
+          },
+          {
+            "title": "Taste the tradition",
+            "desc": "Indulge in rich Swiss chocolate and warm, bubbling cheese fondue.",
+            "img": "/assets/generated/swiss_chocolate_1786086973570.jpg",
+            "align": "left"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "FLEXIBLE PLANNING",
+        "title": {
+          "regular": "Clear in the service. ",
+          "italic": "Clear in the logic."
+        },
+        "tiers": [
+          {
+            "name": "Alpine Explorer",
+            "price": "Custom",
+            "description": "Essential planning for your getaway.",
+            "features": [
+              "Boutique accommodations",
+              "Swiss Travel Pass",
+              "Curated itinerary",
+              "WhatsApp support"
+            ]
+          },
+          {
+            "name": "Premium Journey",
+            "price": "Custom",
+            "description": "Elevated experiences and premium stays.",
+            "features": [
+              "5-star mountain resorts",
+              "First-class panoramic trains",
+              "Private mountain guides",
+              "Priority 24/7 concierge"
+            ],
+            "highlight": true
+          },
+          {
+            "name": "Ultimate Luxury",
+            "price": "Custom",
+            "description": "The absolute pinnacle of personalized travel.",
+            "features": [
+              "Private ski chalet",
+              "Heliskiing adventures",
+              "Watchmaking masterclass",
+              "Dedicated travel manager"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "light",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "A few days. ",
+          "italic": "One very good decision."
+        },
+        "description": "Tell us how you want to experience Switzerland.",
+        "buttonText": "Start Planning"
+      }
+    }
+  ]
+}

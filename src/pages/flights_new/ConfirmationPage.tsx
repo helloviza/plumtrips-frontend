@@ -8,6 +8,7 @@ import { formatINR } from "../../lib/flights_api";
 import { AIRLINE_COLORS } from "./BookingShared";
 import { sendFlightConfirmationEmail, sendTaxInvoiceEmail } from "../../lib/emailApi";
 import { buildFlightConfirmationHtml, buildTaxInvoiceHtml } from "../../lib/buildBookingEmail";
+import { downloadTicketPdf } from "./generateTicketPdf";
 
 interface Step7Props {
   flight: DisplayFlight;
@@ -54,11 +55,18 @@ export default function BookingStep7Confirmation({
 }: Step7Props) {
   const isRoundTrip = !!returnFlight && !!returnTier;
   const isMultiCity = !!(multiCityLegs && multiCityLegs.length > 1);
+  const tripType: "One-way" | "Round Trip" | "Multi-City" = isMultiCity
+    ? "Multi-City"
+    : isRoundTrip
+    ? "Round Trip"
+    : "One-way";
 
   const allLegs = [
-    { flight, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight" },
-    ...(isRoundTrip && returnFlight ? [{ flight: returnFlight, label: "Return" }] : []),
-    ...(isMultiCity ? (multiCityLegs ?? []).slice(1).map((l, i) => ({ flight: l.flight, label: `Leg ${i + 2}` })) : []),
+    { flight, tier, label: isRoundTrip ? "Outbound" : isMultiCity ? "Leg 1" : "Flight" },
+    ...(isRoundTrip && returnFlight && returnTier ? [{ flight: returnFlight, tier: returnTier, label: "Return" }] : []),
+    ...(isMultiCity
+      ? (multiCityLegs ?? []).slice(1).map((l, i) => ({ flight: l.flight, tier: l.tier, label: `Leg ${i + 2}` }))
+      : []),
   ];
 
   const pnrList = pnr
@@ -70,6 +78,7 @@ export default function BookingStep7Confirmation({
 
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const emailSentRef = useRef(false);
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'preparing' | 'error'>('idle');
 
   useEffect(() => {
     if (!bookingId || !contactEmail || emailSentRef.current) return;
@@ -152,6 +161,27 @@ export default function BookingStep7Confirmation({
     });
   }, [bookingId, contactEmail, pnr]);
 
+  async function handleDownloadTicket() {
+    setDownloadStatus('preparing');
+    try {
+      await downloadTicketPdf({
+        bookingId,
+        pnrList,
+        legs: allLegs,
+        tripType,
+        passengerNames: passengerNames ?? [],
+        contactEmail,
+        totalPaid,
+        isInternational,
+        formatAmount: formatINR,
+      });
+      setDownloadStatus('idle');
+    } catch (e) {
+      console.error("Ticket PDF generation failed:", e);
+      setDownloadStatus('error');
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Success banner */}
@@ -165,6 +195,19 @@ export default function BookingStep7Confirmation({
         <p className="text-slate-500 text-sm">
           Your e-ticket has been secured.
         </p>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <span className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-1 rounded-full">
+            {tripType}
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+            {(passengerNames?.length || 1)} {(passengerNames?.length || 1) > 1 ? "Passengers" : "Passenger"}
+          </span>
+          {isInternational && (
+            <span className="text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+              International
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Email feedback banner */}
@@ -209,11 +252,12 @@ export default function BookingStep7Confirmation({
 
       {/* Flight details */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-4">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flight Itinerary</div>
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{allLegs.length} {allLegs.length > 1 ? "Legs" : "Leg"}</div>
         </div>
         <div className="divide-y divide-slate-100">
-          {allLegs.map(({ flight: f, label }, i) => (
+          {allLegs.map(({ flight: f, tier: legTier, label }, i) => (
             <div key={i} className="flex items-center gap-4 p-5">
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xs font-black shrink-0"
@@ -222,9 +266,12 @@ export default function BookingStep7Confirmation({
                 {f.airlineCode}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <span className="font-bold text-slate-900 text-sm">{f.airline} · {f.flightNumber}</span>
                   <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">{label}</span>
+                  {legTier?.name && (
+                    <span className="text-[9px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full uppercase">{legTier.name}</span>
+                  )}
                 </div>
                 <div className="text-xs text-slate-500">{f.fromCode} → {f.toCode} · {f.departDate}</div>
               </div>
@@ -240,7 +287,9 @@ export default function BookingStep7Confirmation({
       {/* Passengers */}
       {passengerNames && passengerNames.length > 0 && (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 mb-4">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Passengers</div>
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            Passengers ({passengerNames.length})
+          </div>
           <div className="space-y-2">
             {passengerNames.map((name, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -284,19 +333,39 @@ export default function BookingStep7Confirmation({
         </div>
       </div>
 
+      {downloadStatus === 'error' && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
+          Couldn't generate the PDF ticket right now — please try again.
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          onClick={handleDownloadTicket}
+          disabled={downloadStatus === 'preparing'}
+          className="sm:col-span-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
+        >
+          {downloadStatus === 'preparing' ? (
+            <>
+              <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              Preparing…
+            </>
+          ) : (
+            <>⬇️ Download Ticket</>
+          )}
+        </button>
         <button
           onClick={onDone}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-blue-200"
+          className="sm:col-span-1 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-2xl text-sm hover:border-slate-300 hover:bg-white transition-all"
         >
           Back to Home
         </button>
         <button
           onClick={() => window.print()}
-          className="flex-1 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-2xl text-sm hover:border-slate-300 hover:bg-white transition-all"
+          className="sm:col-span-1 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-2xl text-sm hover:border-slate-300 hover:bg-white transition-all"
         >
-          🖨️ Print Itinerary
+          🖨️ Print
         </button>
       </div>
     </div>

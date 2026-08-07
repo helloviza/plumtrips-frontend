@@ -401,7 +401,11 @@ export default function Checkout() {
         if (!d) return '';
         const date = d instanceof Date ? d : new Date(d);
         if (isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Use local time instead of UTC to avoid off-by-one day bugs
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
       };
 
       const bookPayload = {
@@ -564,7 +568,10 @@ export default function Checkout() {
         if (!d) return '';
         const date = d instanceof Date ? d : new Date(d);
         if (isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0];
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
       };
 
       const primaryBookingCode = preBookResponses[0]?.bookingCode ?? selectedRooms[0]?._bookingCode ?? selectedRooms[0]?.id ?? '';

@@ -13,6 +13,11 @@ import type { PlannerField } from "./types";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
+function isNonAIField(key: string): boolean {
+  const normalized = key.trim().toLowerCase();
+  return normalized === "phonenumber" || normalized === "contactphone";
+}
+
 // Turns a raw field label ("Budget", "Adults", "Trip Vibe"...) into a
 // natural, first-person phrase so we can ask about it the way a person
 // would, instead of echoing the form label back like a validator.
@@ -79,7 +84,7 @@ interface PlannerChatContextValue {
   handleFieldChange: (key: string, value: string) => void;
   handleFieldBlur: (key: string) => Promise<void>;
   handleGenerate: () => Promise<void>;
-  handleSendChatInput: () => Promise<void>;
+  handleSendChatInput: (msg?: string) => Promise<void>;
   handleAddCustomField: () => void;
 }
 
@@ -106,7 +111,12 @@ export function PlannerChatProvider({
 
   // Shared chat state — used by BOTH the form's "Generate" button and the
   // floating chat widget, so every message lands in one single conversation.
-  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
+  const [chatLog, setChatLog] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      text: "Hi! I'm Pluto AI ✨\n\nI can help you build custom itineraries, find top-rated hotels, or discover hidden gems. How can I help you plan your trip today?",
+    }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [customFieldLabel, setCustomFieldLabel] = useState("");
 
@@ -163,6 +173,7 @@ export function PlannerChatProvider({
     const source = valuesOverride ?? values;
     return activeFields.filter((field) => {
       const key = field.name ?? field.label;
+      if (isNonAIField(key)) return false;
       return !String(source[key] ?? "").trim();
     });
   };
@@ -222,11 +233,13 @@ export function PlannerChatProvider({
     const source = valuesOverride ?? values;
     return [
       "Please use the information below to start the travel planning conversation.",
-      ...activeFields.map((field) => {
-        const key = field.name ?? field.label;
-        const value = source[key] || "";
-        return `${field.label}: ${value || "(not provided)"}`;
-      }),
+      ...activeFields
+        .filter((field) => !isNonAIField(field.name ?? field.label))
+        .map((field) => {
+          const key = field.name ?? field.label;
+          const value = source[key] || "";
+          return `${field.label}: ${value || "(not provided)"}`;
+        }),
     ].join("\n");
   };
 
@@ -247,6 +260,20 @@ export function PlannerChatProvider({
 
   // Core "send to planner backend" logic, shared by the field-based
   // Generate button and the free-typing floating chat box.
+  const savePlannerSubmission = async () => {
+    const BACKEND = getBackendOrigin();
+    const contactPhone = values.phoneNumber || values.contactPhone || "";
+    try {
+      await fetch(`${BACKEND}/api/v1/plumml/submission`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, formValues: values, contactPhone }),
+      });
+    } catch {
+      /* ignore persistence failures */
+    }
+  };
+
   const sendToPlanner = async (message: string) => {
     if (isLoading || !message.trim()) return;
 
@@ -256,11 +283,12 @@ export function PlannerChatProvider({
     setHasUnread(false);
 
     const BACKEND = getBackendOrigin();
+    const contactPhone = values.phoneNumber || values.contactPhone || "";
     try {
       const response = await fetch(`${BACKEND}/api/v1/plumml/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message }),
+        body: JSON.stringify({ sessionId, message, formValues: values, contactPhone }),
       });
 
       const data = await response.json().catch(() => null);
@@ -271,6 +299,7 @@ export function PlannerChatProvider({
 
       const replyText = data?.reply || "Planner responded without text.";
       setChatLog((current) => [...current, { role: "assistant", text: replyText }]);
+      void savePlannerSubmission();
 
       const plannerResult = {
         itinerary: data?.itinerary,
@@ -343,10 +372,10 @@ export function PlannerChatProvider({
     await sendToPlanner(buildMessageFromFields());
   };
 
-  const handleSendChatInput = async () => {
-    const message = chatInput.trim();
+  const handleSendChatInput = async (msg?: string) => {
+    const message = (msg ?? chatInput).trim();
     if (!message) return;
-    setChatInput("");
+    if (!msg) setChatInput("");
 
     // If we just asked about a specific field, treat this reply as the
     // answer to THAT field, fill it in, then move on to the next missing

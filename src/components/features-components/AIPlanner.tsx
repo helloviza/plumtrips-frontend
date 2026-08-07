@@ -23,6 +23,14 @@ function isDurationField(f: PlannerField): boolean {
   return DURATION_PATTERN.test(key) || DURATION_PATTERN.test(f.label ?? "");
 }
 
+function isTravelersField(f: PlannerField): boolean {
+  return f.name === "travelers" || /travelers?/i.test(f.label ?? "");
+}
+
+function isTripVibeField(f: PlannerField): boolean {
+  return f.name === "tripVibe" || /vibe|mood/i.test(f.label ?? "");
+}
+
 // ─── CITY SEARCH ─────────────────────────────────────────────────
 interface CitySearchResult {
   cityCode?: string;
@@ -559,6 +567,197 @@ function DateRangeField({
   );
 }
 
+// ─── TRAVELERS DROPDOWN FIELD ────────────────────────────────────
+function TravelersDropdownField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onBlur,
+  isMissing,
+}: PlannerField & {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  isMissing?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const [infants, setInfants] = useState(0);
+
+  // Sync internal state -> value only when dropdown closes or value initially parsed
+  useEffect(() => {
+    let str = `${adults} Adult${adults !== 1 ? 's' : ''}`;
+    if (children >= 0) str += ` with ${children} Child${children > 1 ? 'ren' : ''}`;
+    if (infants >= 0) str += ` & with ${infants} Infant${infants > 1 ? 's' : ''}`;
+    onChange(str);
+  }, [adults, children, infants]);
+
+  // Click outside logic
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        onBlur?.();
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open, onBlur]);
+
+  const Counter = ({ title, desc, val, setVal, min }: any) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div>
+        <div style={{ fontFamily: FONT, fontSize: 14, color: "#fff", fontWeight: 600 }}>{title}</div>
+        <div style={{ fontFamily: FONT, fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{desc}</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          type="button"
+          onClick={() => setVal(Math.max(min, val - 1))}
+          disabled={val <= min}
+          style={{
+            width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.2)",
+            background: "transparent", color: val <= min ? "rgba(255,255,255,0.2)" : "#fff",
+            cursor: val <= min ? "default" : "pointer", fontSize: 18,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}
+        >-</button>
+        <div style={{ fontFamily: FONT, fontSize: 14, color: "#fff", minWidth: 16, textAlign: "center" }}>{val}</div>
+        <button
+          type="button"
+          onClick={() => setVal(val + 1)}
+          style={{
+            width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.2)",
+            background: "transparent", color: "#fff", cursor: "pointer", fontSize: 18,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}
+        >+</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div ref={containerRef} style={{ gridColumn: "auto", position: "relative" }}>
+      <label style={labelStyle(isMissing)}>{label}</label>
+      <input
+        placeholder={placeholder}
+        aria-label={label}
+        value={value || "1 Adult"}
+        readOnly
+        onClick={() => setOpen((o) => !o)}
+        style={{ ...inputStyle(isMissing), cursor: "pointer" }}
+      />
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 30, width: 300,
+            borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(15,26,48,0.98)", backdropFilter: "blur(18px)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.45)", padding: 18,
+          }}
+        >
+          <Counter title="Adults" desc="Ages 12 or above" val={adults} setVal={setAdults} min={1} />
+          <Counter title="Children" desc="Ages 2 - 11" val={children} setVal={setChildren} min={0} />
+          <Counter title="Infants" desc="Under 2" val={infants} setVal={setInfants} min={0} />
+          
+          <button
+            type="button"
+            onClick={() => { setOpen(false); onBlur?.(); }}
+            style={{
+              marginTop: 12, width: "100%", padding: "10px", borderRadius: 8,
+              background: C.orange, color: "#fff", border: "none", fontFamily: FONT,
+              fontWeight: 600, cursor: "pointer"
+            }}
+          >
+            Apply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TRIP VIBE DROPDOWN FIELD ────────────────────────────────────
+function TripVibeDropdownField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onBlur,
+  isMissing,
+}: PlannerField & {
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  isMissing?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const options = ["Adventure", "Relaxation", "Luxury", "Family", "Romantic", "Solo", "Business"];
+
+  // Click outside logic
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        onBlur?.();
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open, onBlur]);
+
+  return (
+    <div ref={containerRef} style={{ gridColumn: "auto", position: "relative" }}>
+      <label style={labelStyle(isMissing)}>{label}</label>
+      <input
+        placeholder={placeholder}
+        aria-label={label}
+        value={value}
+        readOnly
+        onClick={() => setOpen((o) => !o)}
+        style={{ ...inputStyle(isMissing), cursor: "pointer" }}
+      />
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 30,
+            borderRadius: 12, border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(15,26,48,0.98)", backdropFilter: "blur(18px)",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.45)", maxHeight: 240, overflowY: "auto"
+          }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => {
+                onChange(opt);
+                setOpen(false);
+                onBlur?.();
+              }}
+              style={{
+                display: "block", width: "100%", textAlign: "left", padding: "10px 14px",
+                border: "none", background: value === opt ? "rgba(255,104,44,0.16)" : "transparent",
+                color: value === opt ? C.orange : "#fff", fontFamily: FONT, fontSize: 13, cursor: "pointer"
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AIPlanner({ badge, title, subtitle, ctaLabel, suggestion }: AIPlannerProps) {
   const { convert } = useCurrency();
   const {
@@ -690,6 +889,12 @@ export function AIPlanner({ badge, title, subtitle, ctaLabel, suggestion }: AIPl
               }
               if (isDurationField(f)) {
                 return <DateRangeField key={key} {...fieldProps} />;
+              }
+              if (isTravelersField(f)) {
+                return <TravelersDropdownField key={key} {...fieldProps} />;
+              }
+              if (isTripVibeField(f)) {
+                return <TripVibeDropdownField key={key} {...fieldProps} />;
               }
               return <Field key={key} {...fieldProps} />;
             })}

@@ -1,0 +1,206 @@
+{
+  "id": "morocco-personal",
+  "name": "Morocco",
+  "type": "personal",
+  "pageTheme": {
+    "bg": "#f9f9fc",
+    "text": "#1a1c1e",
+    "selectionBg": "#d66a2a",
+    "selectionText": "white"
+  },
+  "sections": [
+    {
+      "id": "hero",
+      "type": "Hero",
+      "data": {
+        "theme": "light",
+        "badge": "Desert & Medinas",
+        "title": {
+          "regular": "Endless dunes.\nVibrant souks.\n",
+          "italic": "Morocco is magic."
+        },
+        "description": "Lose yourself in a maze of color, spice, and ancient traditions.",
+        "backgroundImage": "/assets/home_m/Morocco.png",
+        "form": {
+          "title": "Plan your desert adventure",
+          "buttonText": "Explore",
+          "isCorporate": false
+        }
+      }
+    },
+    {
+      "id": "conversations",
+      "type": "Experiences",
+      "data": {
+        "badge": "CURATED MOMENTS",
+        "title": {
+          "regular": "The best stories ",
+          "italic": "are found in the souks."
+        },
+        "description": "Experience the vibrant culture through our exclusive local access.",
+        "items": [
+          {
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Merzouga_Dunes_2011.jpg/960px-Merzouga_Dunes_2011.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "title": "Sahara Desert Camp",
+            "loc": "Merzouga",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Pavillon_Menarag%C3%A4rten.jpg/960px-Pavillon_Menarag%C3%A4rten.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "title": "Marrakech Medina",
+            "loc": "Marrakech",
+            "span": "lg:col-span-1"
+          },
+          {
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/My_Toubkal.jpg/960px-My_Toubkal.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "title": "Atlas Mountains Trek",
+            "loc": "High Atlas",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Chauen.jpg/960px-Chauen.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "title": "Blue City Walk",
+            "loc": "Chefchaouen",
+            "span": "lg:col-span-2"
+          },
+          {
+            "img": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Tajine-marocain-un-plat-varie-et-sain_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+            "title": "Moroccan Cooking Class",
+            "loc": "Fez",
+            "span": "lg:col-span-3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "details",
+      "type": "TextGrid",
+      "data": {
+        "badge": "WHAT WE HANDLE",
+        "title": {
+          "regular": "The mystique, ",
+          "italic": "without the hassle."
+        },
+        "description": "Seamless planning for an exotic adventure.",
+        "items": [
+          {
+            "title": "Luxury Riads",
+            "desc": "Stay in stunning traditional courtyard mansions right in the medina."
+          },
+          {
+            "title": "Private Transfers",
+            "desc": "Comfortable 4x4 vehicles for navigating the desert and mountains."
+          },
+          {
+            "title": "Local Guides",
+            "desc": "Expert navigators to guide you through the labyrinthine souks."
+          },
+          {
+            "title": "Dining Access",
+            "desc": "Reservations at rooftop restaurants overlooking the bustling squares."
+          },
+          {
+            "title": "Full Itinerary",
+            "desc": "A perfectly paced schedule of culture, adventure, and relaxation."
+          },
+          {
+            "title": "24/7 Concierge",
+            "desc": "Round-the-clock support for any spontaneous requests."
+          }
+        ]
+      }
+    },
+    {
+      "id": "morning-mountain",
+      "type": "FeatureList",
+      "data": {
+        "badge": "THE JOURNEY",
+        "title": {
+          "regular": "A bustling medina. ",
+          "italic": "A silent desert."
+        },
+        "items": [
+          {
+            "title": "Sleep under the stars",
+            "desc": "Spend a night in a luxury Berber tent amid the towering Sahara dunes.",
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Merzouga_Dunes_2011.jpg/960px-Merzouga_Dunes_2011.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "align": "left"
+          },
+          {
+            "title": "Bargain for treasures",
+            "desc": "Sip mint tea while negotiating for carpets, spices, and leather goods.",
+            "img": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Telemachus3511.gif?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+            "align": "right"
+          },
+          {
+            "title": "Wander the blue streets",
+            "desc": "Lose yourself in the enchanting azure alleys of Chefchaouen.",
+            "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Chauen.jpg/960px-Chauen.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+            "align": "left"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pricing",
+      "type": "PricingTiers",
+      "data": {
+        "badge": "FLEXIBLE PLANNING",
+        "title": {
+          "regular": "Clear in the service. ",
+          "italic": "Clear in the logic."
+        },
+        "tiers": [
+          {
+            "name": "Oasis Explorer",
+            "price": "Custom",
+            "description": "Essential planning for your exotic getaway.",
+            "features": [
+              "Boutique riad stays",
+              "Private airport transfers",
+              "Curated itinerary",
+              "WhatsApp support"
+            ]
+          },
+          {
+            "name": "Medina Premium",
+            "price": "Custom",
+            "description": "Elevated experiences and premium stays.",
+            "features": [
+              "5-star luxury riads",
+              "Private desert camp",
+              "Expert souk guides",
+              "Priority 24/7 concierge"
+            ],
+            "highlight": true
+          },
+          {
+            "name": "Sahara Luxury",
+            "price": "Custom",
+            "description": "The absolute pinnacle of personalized travel.",
+            "features": [
+              "Exclusive desert buyout",
+              "Hot air balloon rides",
+              "Private chef experiences",
+              "Dedicated travel manager"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "final-cta",
+      "type": "FinalCTA",
+      "data": {
+        "theme": "light",
+        "badge": "THE NEXT STEP",
+        "title": {
+          "regular": "A few days. ",
+          "italic": "One very good decision."
+        },
+        "description": "Tell us how you want to experience Morocco.",
+        "buttonText": "Start Planning"
+      }
+    }
+  ]
+}

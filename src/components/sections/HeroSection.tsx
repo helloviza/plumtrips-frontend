@@ -380,7 +380,7 @@ function HeroForm({
           </div>
           <div>
             <label className={labelClass}>Phone</label>
-            <input name="phone" placeholder="+1 234 567 8900" type="tel" required className={inputClass} />
+            <input name="phone" placeholder="+91 234 567 8900" type="tel" required className={inputClass} />
           </div>
         </div>
 

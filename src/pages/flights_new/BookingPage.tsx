@@ -1032,7 +1032,10 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
     legIndexes: number[],
     isPriceChangeAccepted = false,
     overridePendingInputs?: BookTicketInput,
-  ): Promise<{ bookingId: number | undefined; pnr: string }> {
+  ): Promise<{   bookingId: number | undefined;
+  pnr: string;
+  flightItinerary?: unknown;
+  ticketStatus?: number; }> {
     if (legFlight.isLCC) {
       // ── LCC: direct ticket ──────────────────────────────
       const input: BookTicketInput = overridePendingInputs ?? {
@@ -1061,7 +1064,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
 
       
 
-      return { bookingId: ticketRes.bookingId, pnr: ticketRes.pnr };
+      return { bookingId: ticketRes.bookingId, pnr: ticketRes.pnr ,  flightItinerary: ticketRes.flightItinerary,
+  ticketStatus: ticketRes.ticketStatus,};
 
     } else {
       // ── Non-LCC: Book → Ticket ──────────────────────────
@@ -1106,7 +1110,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
         throw new Error(ticketRes.message || `Ticketing failed (status ${ticketRes.ticketStatus})`);
       }
 
-      return { bookingId: ticketRes.bookingId || bookRes.bookingId, pnr: ticketRes.pnr || bookRes.pnr };
+      return { bookingId: ticketRes.bookingId || bookRes.bookingId, pnr: ticketRes.pnr || bookRes.pnr ,  flightItinerary: ticketRes.flightItinerary,
+  ticketStatus: ticketRes.ticketStatus,};
     }
   }
 
@@ -1117,7 +1122,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
   async function runFullBooking(
     isPriceChangeAccepted = false,
     overridePendingInputs?: BookTicketInput[],
-  ): Promise<{ bookingId: number | undefined; pnr: string }> {
+  ): Promise<{ bookingId: number | undefined; pnr: string,   flightItinerary?: unknown;
+  ticketStatus?: number; }> {
     const isSupplierCombinationError = (err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err || "");
       return msg.toLowerCase().includes("combination") && msg.toLowerCase().includes("supplier");
@@ -1125,7 +1131,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
 
     // ── MULTI-CITY ─────────────────────────────────────────
     if (isMultiCity && activeMultiCityLegs && activeMultiCityLegs.length > 0) {
-      const results: { bookingId: number | undefined; pnr: string }[] = [];
+      const results: { bookingId: number | undefined; pnr: string,   flightItinerary?: unknown;
+  ticketStatus?: number; }[] = [];
       for (let i = 0; i < activeMultiCityLegs.length; i++) {
         const leg = activeMultiCityLegs[i];
         const result = await bookAndTicketSingleLeg(
@@ -1138,6 +1145,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
       return {
         bookingId: results[0]?.bookingId,
         pnr: results.map((r) => r.pnr).filter(Boolean).join(", "),
+        flightItinerary: results[0]?.flightItinerary,
+        ticketStatus: results[0]?.ticketStatus,
       };
     }
 
@@ -1157,6 +1166,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
         return {
           bookingId: out.bookingId,
           pnr: [out.pnr, ret.pnr].filter(Boolean).join(" / "),
+          flightItinerary: out.flightItinerary || ret.flightItinerary,
+          ticketStatus: out.ticketStatus || ret.ticketStatus,
         };
       }
 
@@ -1188,6 +1199,8 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
         return {
           bookingId: out.bookingId,
           pnr: [out.pnr, ret.pnr].filter(Boolean).join(" / "),
+          flightItinerary: out.flightItinerary || ret.flightItinerary,
+          ticketStatus: out.ticketStatus || ret.ticketStatus,
         };
       }
     }
@@ -1219,6 +1232,16 @@ GSTCompanyEmail:         hasGST ? (form.gstCompanyEmail || form.contactEmail || 
       setConfirmedNames(passengerNames);
       setStep(7);
       onConfirm(bookingId, pnr, passengerNames, form.contactEmail, totalPayable);
+      // Auto-download the ticket PDF once booking is confirmed — fires for
+      // both LCC and Non-LCC since finalize() is the single success path
+      // shared by both booking branches. A failed download must never
+      // block or undo the already-successful booking/confirmation, so
+      // it's isolated in its own try/catch.
+      try {
+        await apiDownloadTicketPdf({ PNR: pnr, BookingId: bookingId });
+      } catch (e) {
+        console.error("[Auto ticket PDF download] Failed:", e);
+      }
     };
 
     // ── MOCK MODE ──────────────────────────────────────────

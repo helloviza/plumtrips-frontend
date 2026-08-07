@@ -112,6 +112,34 @@ export default function BookingConfirmation() {
     };
   }, [bookingId]);
 
+  // Add a ref to ensure email is only sent once
+  const emailSentRef = useRef(false);
+
+  useEffect(() => {
+    if (!bookingId || !user?.email || emailSentRef.current) return;
+    
+    // Prevent double-sending in React StrictMode
+    emailSentRef.current = true;
+    
+    const sendEmail = async () => {
+      try {
+        const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+        await fetch(`${base}/api/v1/email/hotel-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            bookingId: bookingId ?? pnr ?? confirmationNo,
+            email: user.email
+          })
+        });
+      } catch (err) {
+        console.error('Failed to send hotel confirmation email', err);
+      }
+    };
+    
+    sendEmail();
+  }, [bookingId, user?.email, pnr, confirmationNo]);
+
   // ── Cancel booking ────────────────────────────────────────────────────────
   const handleCancel = async () => {
     if (!bookingId) {
@@ -145,7 +173,12 @@ export default function BookingConfirmation() {
       return;
     }
     const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-    window.open(`${base}/api/v1/hotels/voucher/${id}`, '_blank', 'noopener,noreferrer');
+    const link = document.createElement('a');
+    link.href = `${base}/api/v1/hotels/voucher/pdf/${id}`;
+    link.setAttribute('download', `voucher-${id}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleAddToCalendar = () => {

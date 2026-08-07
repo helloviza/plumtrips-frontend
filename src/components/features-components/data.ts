@@ -115,6 +115,7 @@ export const aiPlannerProps: AIPlannerProps = {
   fields: [
     { name: "destination", label: "Where do you want to go?", placeholder: "e.g. Switzerland", fullWidth: true },
     { name: "departureCity", label: "Departure city", placeholder: "e.g. Mumbai" },
+    { name: "phoneNumber", label: "Phone Number", placeholder: "e.g. 9876543210" },
     { name: "budget", label: "Budget", placeholder: "75000", isCurrency: true },
     { name: "duration", label: "Duration", placeholder: "2026-08-08 to 2026-08-15" },
     { name: "travelers", label: "Travelers", placeholder: "1 Adults with No Child" },

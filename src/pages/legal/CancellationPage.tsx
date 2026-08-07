@@ -2,7 +2,7 @@
 
 const baseFont = "'Barlow Condensed', Arial, sans-serif";
 const BRAND = "Plumtrips.com";
-const SUPPORT_EMAIL = "hello@Plumtrips.com";
+const SUPPORT_EMAIL = "hello@plumtrips.com";
 const SUPPORT_PHONE = "+91 70659 32396";
 
 export default function CancellationPage() {

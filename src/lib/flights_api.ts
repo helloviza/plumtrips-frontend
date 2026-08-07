@@ -1895,8 +1895,19 @@ export type CancelSendInput = {
   origin?:          string;
   destination?:     string;
   // Integer, or comma-separated string if cancelling multiple tickets
-  ticketId:         string | number;
+  ticketId?:        string | number | null;
   remarks:          string;
+};
+
+export type CancelChangeRequestInfo = {
+  changeRequestId?: number;
+  ticketId?: string | number;
+  changeRequestStatus?: number;
+  remarks?: string;
+  cancellationCharge?: number;
+  refundedAmount?: number;
+  creditNoteNo?: string | null;
+  creditNoteCreatedOn?: string | null;
 };
 
 export type CancelSendResult = {
@@ -1905,7 +1916,26 @@ export type CancelSendResult = {
   status?:         string;   // e.g. "Requested" | "Cancelled" | "Rejected" | "InProgress"
   message?:        string;
   refundAmount?:   number;
+  changeRequestInfo?: CancelChangeRequestInfo[];
 };
+
+function normalizeChangeRequestInfo(raw: unknown): CancelChangeRequestInfo[] {
+  if (!raw) return [];
+
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => ({
+      changeRequestId: typeof item.changeRequestId === "number" ? item.changeRequestId : undefined,
+      ticketId: item.ticketId != null ? String(item.ticketId) : undefined,
+      changeRequestStatus: typeof item.changeRequestStatus === "number" ? item.changeRequestStatus : undefined,
+      remarks: typeof item.remarks === "string" ? item.remarks : undefined,
+      cancellationCharge: typeof item.cancellationCharge === "number" ? item.cancellationCharge : undefined,
+      refundedAmount: typeof item.refundedAmount === "number" ? item.refundedAmount : undefined,
+      creditNoteNo: typeof item.creditNoteNo === "string" ? item.creditNoteNo : null,
+      creditNoteCreatedOn: typeof item.creditNoteCreatedOn === "string" ? item.creditNoteCreatedOn : null,
+    }));
+}
 
 export async function apiCancelSend(input: CancelSendInput): Promise<CancelSendResult> {
   if (MOCK_MODE) {
@@ -1932,9 +1962,9 @@ export async function apiCancelSend(input: CancelSendInput): Promise<CancelSendR
       bookingId:        input.bookingId,
       requestType:      input.requestType,
       cancellationType: input.cancellationType,
-      origin:           input.origin,
-      destination:      input.destination,
-      ticketId:         input.ticketId,
+      ...(input.origin ? { origin: input.origin } : {}),
+      ...(input.destination ? { destination: input.destination } : {}),
+      ...(input.ticketId != null && input.ticketId !== "" ? { ticketId: String(input.ticketId) } : {}),
       remarks:          input.remarks,
     }),
   });
