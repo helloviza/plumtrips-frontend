@@ -58,30 +58,41 @@ export function TrendingDestination({ eyebrow, title, actionLabel, onActionClick
 
       <div style={{ maxWidth: "100%", margin: "0 auto" }}>
         <SectionHead eyebrow={eyebrow} title={title} action={actionLabel} onAction={onActionClick} />
-        <div className="trending-grid" onClick={() => navigate('/holidays')}>
-          {items.map((item) => (
-            <div key={item.name} className="trending-card">
-              <div
-                className="trending-card-bg"
-                style={{ backgroundImage: `url('${item.imageUrl}')` }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "linear-gradient(180deg,rgba(6,18,36,0.12) 30%,rgba(6,18,36,0.9) 100%)",
-                }}
-              />
-              <div style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
-                <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14.5, color: "#fff" }}>
-                  {item.name}
-                </div>
-                <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 11.5, color: "rgba(255,255,255,0.78)", marginTop: 2 }}>
-                  {item.isCurrency && typeof item.description === 'number' ? convert(item.description) : item.description}
+        <div className="trending-grid">
+          {items.map((item) => {
+            const slug = item.name.toLowerCase().replace(/\s+/g, '-');
+            const targetUrl = ['norway', 'germany', 'switzerland', 'morocco','bali'].includes(slug) 
+              ? `/${slug}-personal` 
+              : '/holidays';
+            
+            return (
+              <div 
+                key={item.name} 
+                className="trending-card"
+                onClick={() => navigate(targetUrl)}
+              >
+                <div
+                  className="trending-card-bg"
+                  style={{ backgroundImage: `url('${item.imageUrl}')` }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg,rgba(6,18,36,0.12) 30%,rgba(6,18,36,0.9) 100%)",
+                  }}
+                />
+                <div style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
+                  <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14.5, color: "#fff" }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontFamily: "Poppins, sans-serif", fontSize: 11.5, color: "rgba(255,255,255,0.78)", marginTop: 2 }}>
+                    {item.isCurrency && typeof item.description === 'number' ? convert(item.description) : item.description}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
