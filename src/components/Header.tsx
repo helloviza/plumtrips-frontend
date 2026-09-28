@@ -7,6 +7,7 @@ import { MapPin, PhoneCall, Briefcase, ClipboardList } from "lucide-react";
 import { useCurrency, REGION_CURRENCY } from "../context/currencyContext";
 const logo = "/assets/logoW&OO.png";
 const EXTERNAL_BUSINESS_URL = "https://plumbox.plumtrips.com";
+const SUPPORT_PHONE = "+917065932396"; // +91 70659 32396
 
 /**
  * Use this on any page that wants its hero/content to bleed under the
@@ -164,15 +165,31 @@ export default function Header() {
         {/* ── TOP UTILITY BAR ── */}
         <div className="hidden md:flex items-center justify-between px-8 py-2 bg-[#060c18] text-[0.6875em] font-medium text-white/70">
           <div className="flex gap-8">
-            <button className="flex items-center gap-2 hover:text-white transition-colors">
+            {/* 24/7 Support → dials phone number */}
+            <a
+              href={`tel:${SUPPORT_PHONE}`}
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
               <PhoneCall size={14} className="opacity-70" /> 24/7 Support
-            </button>
-            <button className="flex items-center gap-2 hover:text-white transition-colors">
+            </a>
+
+            {/* Corporate Travel → Plumbox website */}
+            <a
+              href="https://plumbox.plumtrips.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
               <Briefcase size={14} className="opacity-70" /> Corporate Travel
-            </button>
-            <button className="flex items-center gap-2 hover:text-white transition-colors">
+            </a>
+
+            {/* Manage Booking → Home ("/") */}
+            <Link
+              to="/"
+              className="flex items-center gap-2 hover:text-white transition-colors"
+            >
               <ClipboardList size={14} className="opacity-70" /> Manage Booking
-            </button>
+            </Link>
           </div>
           <div className="flex gap-8 relative">
             <button 
@@ -203,10 +220,10 @@ export default function Header() {
                           : "text-white/70 hover:text-white hover:bg-white/5"
                       }`}
                       onClick={() => {
-  setSelectedRegion(region);
-  setCurrency(REGION_CURRENCY[region.id]); // ← this is the new line
-  setRegionMenuOpen(false);
-}}
+                        setSelectedRegion(region);
+                        setCurrency(REGION_CURRENCY[region.id]);
+                        setRegionMenuOpen(false);
+                      }}
                     >
                       {region.text}
                     </button>
