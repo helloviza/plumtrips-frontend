@@ -1,10 +1,18 @@
+/*ReadBlogPage.tsx*/ 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import ReadBlog from "./ReadBlog";
-import { getBlog } from "../../lib/api";
+import { getBlog, getRelatedBlogs } from "../../lib/api";
 
 import type { Post } from "../../lib/api";
+
+function normalizePost(raw: Post & { _id?: string }): Post {
+  return {
+    ...raw,
+    id: raw.id ?? raw._id ?? undefined,
+  };
+}
 
 export default function ReadBlogPage() {
   const { id } = useParams();
@@ -21,7 +29,14 @@ export default function ReadBlogPage() {
         const res = await getBlog(id);
 
         if (res.success) {
-          setPost(res.data);
+          const normalizedPost = normalizePost(res.data);
+
+          if (normalizedPost.related?.length) {
+            setPost(normalizedPost);
+          } else {
+            const related = await getRelatedBlogs(normalizedPost);
+            setPost({ ...normalizedPost, related });
+          }
         } else {
           setError("Blog not found");
         }

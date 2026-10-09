@@ -1,21 +1,38 @@
+/*EditorialHeroBlog.tsx*/ 
 import React, { useRef } from 'react';
 import styles from "../../styles/EditorialHeroBlog.module.css";
 // import { BLOGS } from "../../content/blogs/registry";
 // import BlogCard from "./BlogCard";
-import { getBlogs } from "../../lib/api";
-import { useEffect, useState, useCallback } from "react";
-import type { Post } from "../../lib/api";
+import { useState } from "react";
+import { getBlogs, type Post } from "../../lib/api";
 
-
-
-function normalizePost(raw: any): Post {
-  return { ...raw, id: raw.id ?? raw._id ?? undefined };
-}
 
 function resolveCover(cover: Post["cover"]): string | undefined {
   if (!cover) return undefined;
   if (typeof cover === "string") return cover;
   return cover.src || undefined;
+}
+
+const STORIES_PAGE_SIZE = 6;
+const SEARCH_DEBOUNCE_MS = 300;
+
+function normalizePost(raw: Post & { _id?: string }): Post {
+  return {
+    ...raw,
+    id: raw.id ?? raw._id ?? undefined,
+  };
+}
+
+function matchesSearch(post: Post, query: string): boolean {
+  if (!query) return true;
+
+  return [
+    post.title,
+    post.excerpt,
+    post.subtitle,
+    post.seo?.description,
+    ...(post.categories ?? []),
+  ].some((value) => value?.toLowerCase().includes(query));
 }
 
 /* ── Types ──────────────────────────────────────────────────── */
@@ -31,20 +48,13 @@ export interface StoryItem {
 }
 
 interface EditorialHeroBlogProps {
-  stories?: StoryItem[]; // optional — falls back to hardcoded STORIES
+  posts: Post[];
+  loading: boolean;
+  error: string | null;
 }
 
 /* ── Data ──────────────────────────────────────────────────── */
 const CATEGORIES = ['ALL STORIES', 'ADVENTURE', 'FOOD & DRINK', 'CULTURE', 'TRAVEL TIPS', 'HIDDEN GEMS', 'NATURE'];
-
-
-
-const TRENDING = [
-  { num: '01', title: '10 Islands You Can Still Have To Yourself', sub: 'From the Outer Hebrides to Raja Ampat.' },
-  { num: '02', title: "Digital Nomad's Guide to Bali 2024", sub: 'Beyond Canggu: Where the internet is fast and the coffee is better.' },
-  { num: '03', title: 'The Best Train Journeys in Europe', sub: "Sustainable travel that doesn't skip the luxury." },
-  { num: '04', title: 'Street Food Cities You Need to Eat Your Way Through', sub: 'Bangkok, Mexico City, and the hidden gems in between.' },
-];
 
 const DESTINATIONS = [
   { name: 'Japan',         image: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400&auto=format&fit=crop' },
@@ -84,35 +94,97 @@ const STATS = [
 ];
 
 /* ── Component ─────────────────────────────────────────────── */
-export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
-    const [dbBlogs, setDbBlogs] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function EditorialHeroBlog({
+  posts,
+  loading,
+  error,
+}: EditorialHeroBlogProps) {
   const [showAll, setShowAll] = useState(false);
-
-
-    useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const res = await getBlogs({ status: "published" });
-        if (!cancelled && res.success) {
-          setDbBlogs(res.data.posts.map(normalizePost));
-        }
-      } catch {
-        if (!cancelled) setError("Failed to load blogs.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeCategory, setActiveCategory] = React.useState('ALL STORIES');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>(posts);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const filterRequestId = useRef(0);
 
-  const featuredBlog = dbBlogs[2] ?? null;
-  const remainingBlogs = dbBlogs;
+  const featuredBlog = posts[2] ?? null;
+  const remainingBlogs = filteredPosts;
+
+  React.useEffect(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const category = activeCategory === 'ALL STORIES' ? '' : activeCategory;
+    const requestId = ++filterRequestId.current;
+
+    if (!category && !query) {
+      setFilteredPosts(posts);
+      setFilterLoading(false);
+      setFilterError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setFilterLoading(true);
+    setFilterError(null);
+
+    const loadFilteredPosts = async () => {
+      try {
+        const matchingPosts: Post[] = [];
+        let page = 1;
+        let total = Infinity;
+
+        while (matchingPosts.length < STORIES_PAGE_SIZE && (page - 1) * STORIES_PAGE_SIZE < total) {
+          const response = await getBlogs({
+            status: 'published',
+            ...(category ? { category } : {}),
+            page,
+            limit: STORIES_PAGE_SIZE,
+          });
+
+          if (!response.success) {
+            throw new Error('Failed to load filtered blogs.');
+          }
+
+          const pagePosts = response.data.posts.map(normalizePost);
+          total = response.data.total;
+
+          for (const post of pagePosts) {
+            const matchesCategory =
+              !category || post.categories?.some(
+                (postCategory) => postCategory.trim().toLowerCase() === category.toLowerCase()
+              );
+
+            if (matchesCategory && matchesSearch(post, query)) {
+              matchingPosts.push(post);
+            }
+          }
+
+          if (pagePosts.length === 0) break;
+          page += 1;
+        }
+
+        if (!cancelled && filterRequestId.current === requestId) {
+          setFilteredPosts(matchingPosts);
+          setFilterLoading(false);
+        }
+      } catch (requestError) {
+        if (!cancelled && filterRequestId.current === requestId) {
+          setFilteredPosts([]);
+          setFilterLoading(false);
+          setFilterError(
+            requestError instanceof Error ? requestError.message : 'Failed to load filtered blogs.'
+          );
+        }
+      }
+    };
+
+    const timeoutId = window.setTimeout(loadFilteredPosts, query ? SEARCH_DEBOUNCE_MS : 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeCategory, posts, searchQuery]);
 
   // Use passed-in stories if provided, otherwise fall back to hardcoded STORIES
   // const displayStories: StoryItem[] = stories?.length ? stories : STORIES;
@@ -123,6 +195,32 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
 
   return (
     <main className={styles.editorialPage}>
+
+      {loading && (
+        <div
+          style={{
+            padding: "60px 20px",
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: "16px",
+          }}
+        >
+          Loading blogs...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div
+          style={{
+            padding: "40px 20px",
+            textAlign: "center",
+            color: "#dc2626",
+            fontSize: "16px",
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section className="hero">
@@ -168,8 +266,66 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
         ))}
       </div>
 
+      <div
+        style={{
+          margin: "24px 0",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "500px",
+            position: "relative",
+          }}
+        >
+          <span
+            className="material-symbols-outlined"
+            style={{
+              position: "absolute",
+              left: "16px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#64748b",
+              fontSize: "22px",
+            }}
+          >
+            search
+          </span>
+
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search blogs..."
+            style={{
+              width: "100%",
+              padding: "13px 18px 13px 48px",
+              border: "1px solid #d1d5db",
+              borderRadius: "999px",
+              outline: "none",
+              fontSize: "15px",
+              background: "#fff",
+            }}
+          />
+        </div>
+      </div>
+
       {/* ── Latest Stories ──────────────────────────────────── */}
       <section className="latest-stories">
+{filterLoading && (
+  <div style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+    Loading stories...
+  </div>
+)}
+
+{!filterLoading && filterError && (
+  <div style={{ padding: '16px', textAlign: 'center', color: '#dc2626' }}>
+    {filterError}
+  </div>
+)}
+
 <div className="section-header">
   <h2 className="section-header__title">LATEST STORIES</h2>
   <button
@@ -183,24 +339,12 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
 
 {showAll ? (
   /* ── Expanded grid: all blogs ── */
-  <div className="stories-all-grid">
-    {remainingBlogs.map((story) => (
-      <article key={story.id} className="story-card">
-        <div className="story-card__image">
-          <img src={resolveCover(story.cover)} alt={story.title} />
-        </div>
-        <h3 className="story-card__title">{story.title}</h3>
-        <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
-          Read More
-          <span className="material-symbols-outlined">arrow_forward</span>
-        </a>
-      </article>
-    ))}
-  </div>
-) : (
-  /* ── Carousel: original ── */
-  <div className="stories-carousel-wrap">
-    <div ref={scrollRef} className="stories-carousel scrollbar-hide">
+  remainingBlogs.length === 0 ? (
+    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#64748b' }}>
+      No stories match your selected filters.
+    </div>
+  ) : (
+    <div className="stories-all-grid">
       {remainingBlogs.map((story) => (
         <article key={story.id} className="story-card">
           <div className="story-card__image">
@@ -214,13 +358,37 @@ export default function EditorialHeroBlog({ stories }: EditorialHeroBlogProps) {
         </article>
       ))}
     </div>
-    <button className="carousel-arrow carousel-arrow--prev" onClick={() => scroll('prev')} aria-label="Previous">
-      <span className="material-symbols-outlined">chevron_left</span>
-    </button>
-    <button className="carousel-arrow carousel-arrow--next" onClick={() => scroll('next')} aria-label="Next">
-      <span className="material-symbols-outlined">chevron_right</span>
-    </button>
-  </div>
+  )
+) : (
+  /* ── Carousel: original ── */
+  remainingBlogs.length === 0 ? (
+    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#64748b' }}>
+      No stories match your selected filters.
+    </div>
+  ) : (
+    <div className="stories-carousel-wrap">
+      <div ref={scrollRef} className="stories-carousel scrollbar-hide">
+        {remainingBlogs.map((story) => (
+          <article key={story.id} className="story-card">
+            <div className="story-card__image">
+              <img src={resolveCover(story.cover)} alt={story.title} />
+            </div>
+            <h3 className="story-card__title">{story.title}</h3>
+            <a href={`/readblogs/${story.id}`} className="btn btn--link" style={{ marginTop: 16 }}>
+              Read More
+              <span className="material-symbols-outlined">arrow_forward</span>
+            </a>
+          </article>
+        ))}
+      </div>
+      <button className="carousel-arrow carousel-arrow--prev" onClick={() => scroll('prev')} aria-label="Previous">
+        <span className="material-symbols-outlined">chevron_left</span>
+      </button>
+      <button className="carousel-arrow carousel-arrow--next" onClick={() => scroll('next')} aria-label="Next">
+        <span className="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+  )
 )}
         
 

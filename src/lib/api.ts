@@ -1,6 +1,8 @@
 // apps/frontend/src/lib/api.ts
 
 // Minimal client for your backend (runs in browser)
+import type { BlogLocation } from "../pages/marketing/blogs.model";
+
 const BACKEND = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:8080";
 
 // Default timeout (ms) for network calls. You can override per call below.
@@ -424,11 +426,15 @@ export async function searchHotels(_params: any) {
 
 export type Post = {
   id?: string;
+  likes?: number;
+  ratingTotal?: number;
+  ratingCount?: number;
   title: string;
   subtitle: string;
   slug: string;
   excerpt: string;
-  cover?: { src: string; caption: string };
+  location?: BlogLocation;
+  cover?: { src: string; caption: string; alt?: string };
   author: { name: string; role: string; initials: string; avatar: string };
   categories: string[];
   tags: string[];
@@ -436,11 +442,19 @@ export type Post = {
   publishDate: string;
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   featured: boolean;
-  seo: { title: string; description: string; ogImage: string };
+  seo: { title: string; description: string; ogImage: string; ogImageAlt?: string; canonicalUrl?: string };
   blocks: any[];
   related: any[];
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type RelatedBlog = {
+  slug?: string;
+  cat?: string;
+  title: string;
+  excerpt?: string;
+  thumb?: string;
 };
 
 export async function getBlogs(filters?: any) {
@@ -457,6 +471,181 @@ export async function getBlogs(filters?: any) {
 
 export async function getBlog(idOrSlug: string) {
   return getJson<{ success: boolean; data: Post }>(`/api/abx/blogs/${idOrSlug}`);
+}
+
+export async function likeBlog(id: string) {
+  return postJson<{
+    success: boolean;
+    data: {
+      likes: number;
+    };
+  }>(`/api/abx/blogs/${id}/like`, {});
+}
+
+export async function rateBlog(id: string, rating: number) {
+  return postJson<{
+    success: boolean;
+    data: {
+      ratingCount: number;
+      averageRating: number;
+    };
+  }>(`/api/abx/blogs/${id}/rating`, { rating });
+}
+
+export async function saveBlog(id: string) {
+  return postJson<{
+    success: boolean;
+    data: {
+      saved: boolean;
+      blogId: string;
+    };
+  }>(`/api/abx/blogs/${id}/save`, {});
+}
+
+export async function getBlogInteraction(id: string) {
+  return getJson<{
+    success: boolean;
+    data: {
+      liked: boolean;
+      rating: number;
+      saved: boolean;
+    };
+  }>(`/api/abx/blogs/${id}/interaction`);
+}
+
+export async function getRelatedBlogs(
+  post: Pick<Post, 'slug' | 'title' | 'subtitle' | 'excerpt' | 'categories' | 'tags'>
+) {
+  const response = await getBlogs({
+    status: 'published',
+    page: 1,
+    limit: 50,
+  });
+
+  if (!response.success) return [];
+
+  // Words from the current blog that can help identify its topic/destination.
+  const currentText = [
+    post.title,
+    post.subtitle,
+    post.excerpt,
+    ...(post.categories || []),
+    ...(post.tags || []),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  const currentTopics = new Set(
+    [...(post.categories || []), ...(post.tags || [])].map((topic) =>
+      topic.toLowerCase()
+    )
+  );
+
+  // Ignore very common words so they do not create false matches.
+  const stopWords = new Set([
+    'the',
+    'and',
+    'for',
+    'with',
+    'from',
+    'this',
+    'that',
+    'your',
+    'travel',
+    'guide',
+    'best',
+    'discover',
+    'journey',
+    'blog',
+    'journal',
+  ]);
+
+  const currentKeywords = new Set(
+    currentText
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word.length >= 4 && !stopWords.has(word))
+  );
+
+  return response.data.posts
+    .filter(
+      (candidate) =>
+        candidate.slug && candidate.slug !== post.slug
+    )
+    .map((candidate) => {
+      const candidateText = [
+        candidate.title,
+        candidate.subtitle,
+        candidate.excerpt,
+        ...(candidate.categories || []),
+        ...(candidate.tags || []),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const candidateKeywords = new Set(
+        candidateText
+          .replace(/[^a-z0-9\s-]/g, ' ')
+          .split(/\s+/)
+          .filter((word) => word.length >= 4 && !stopWords.has(word))
+      );
+
+      let relevance = 0;
+
+      // Strong match: same keyword in the blog title.
+      const titleWords = new Set(
+        candidate.title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, ' ')
+          .split(/\s+/)
+          .filter((word) => word.length >= 4 && !stopWords.has(word))
+      );
+
+      for (const keyword of currentKeywords) {
+        if (titleWords.has(keyword)) {
+          relevance += 5;
+        }
+      }
+
+      // Medium match: same keyword anywhere in the candidate blog.
+      for (const keyword of currentKeywords) {
+        if (candidateKeywords.has(keyword)) {
+          relevance += 2;
+        }
+      }
+
+      // Category/tag match.
+      for (const topic of [...(candidate.categories || []), ...(candidate.tags || [])]) {
+        if (currentTopics.has(topic.toLowerCase())) {
+          relevance += 1;
+        }
+      }
+
+      const cover = candidate.cover as Post['cover'] | string | undefined;
+      const thumb =
+        typeof cover === 'string'
+          ? cover
+          : cover?.src || candidate.seo?.ogImage;
+
+      return {
+        relevance,
+        createdAt: candidate.createdAt || candidate.publishDate,
+        related: {
+          slug: candidate.slug,
+          cat: candidate.categories?.[0] || candidate.tags?.[0] || 'Travel',
+          title: candidate.title,
+          excerpt: candidate.excerpt,
+          ...(thumb ? { thumb } : {}),
+        },
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.relevance - a.relevance ||
+        String(b.createdAt).localeCompare(String(a.createdAt))
+    )
+    .slice(0, 3)
+    .map(({ related }) => related);
 }
 
 export async function getBlogsStatus(status: string) {

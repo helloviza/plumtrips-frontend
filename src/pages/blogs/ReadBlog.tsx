@@ -1,6 +1,9 @@
+/*ReadBlog.tsx*/ 
 import React, { useEffect, useRef, useState } from 'react';
-import type { Post } from '../../lib/api';
+import { getBlogInteraction, likeBlog, rateBlog, saveBlog, type Post } from '../../lib/api';
 import type { PostBlock } from '../../pages/marketing/blogs.model';
+import { InlineText } from '../../pages/marketing/InlineText';
+import '../marketing/published-styles.css';
 
 // ─── Google Fonts injection (Playfair Display + Manrope) ──────────────────────
 const FontLoader: React.FC = () => {
@@ -41,6 +44,24 @@ const label: React.CSSProperties = {
   color: tokens.outlineVariant,
 };
 
+const getMediaRatio = (ratio: string | undefined): string | undefined => {
+  if (!ratio || ratio === 'original') return undefined;
+  return ratio.replace(':', ' / ');
+};
+
+const getPublicMediaStyle = (block: PostBlock): React.CSSProperties => {
+  const layout = block.settings?.layout;
+  const style: React.CSSProperties = {};
+  if (layout?.imageWidth) {
+    style.maxWidth = { narrow: 560, standard: 720, wide: 920, full: 'none' }[layout.imageWidth];
+    style.width = '100%';
+  }
+  if (layout?.imageAlignment === 'left') style.marginInline = '0 auto 0 0';
+  if (layout?.imageAlignment === 'right') style.marginInline = '0 0 0 auto';
+  if (layout?.imageAlignment === 'center') style.marginInline = '0 auto';
+  return style;
+};
+
 // ─── Published Block Renderer ─────────────────────────────────────────────────
 const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, isFirst }) => {
   switch (block.type) {
@@ -57,7 +78,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
             margin: '56px 0 20px',
           }}
         >
-          {block.text}
+          <InlineText text={block.text} fragments={block.inlineContent} />
         </h1>
       );
 
@@ -74,7 +95,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
             margin: '48px 0 16px',
           }}
         >
-          {block.text}
+          <InlineText text={block.text} fragments={block.inlineContent} />
         </h2>
       );
 
@@ -91,7 +112,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
             margin: '36px 0 12px',
           }}
         >
-          {block.text}
+          <InlineText text={block.text} fragments={block.inlineContent} />
         </h3>
       );
 
@@ -107,7 +128,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
             margin: '0 0 24px',
           }}
         >
-          {isDropCap ? (
+          {isDropCap && !block.inlineContent?.length ? (
             <>
               <span
                 style={{
@@ -126,7 +147,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
               {block.text?.slice(1)}
             </>
           ) : (
-            block.text
+            <InlineText text={block.text} fragments={block.inlineContent} dropCap />
           )}
         </p>
       );
@@ -151,7 +172,7 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
               margin: 0,
             }}
           >
-            {block.text}
+            <InlineText text={block.text} fragments={block.inlineContent} />
           </p>
           {block.cite && (
             <cite
@@ -175,13 +196,20 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
     case 'image':
     case 'cover':
       return (
-        <figure style={{ margin: '40px 0' }}>
+        <figure style={{ margin: '40px 0', ...getPublicMediaStyle(block) }}>
           {block.src ? (
-            <img
-              src={block.src}
-              alt={block.caption || ''}
-              style={{ width: '100%', display: 'block' }}
-            />
+            <div style={{ aspectRatio: getMediaRatio(block.settings?.imageRatio), overflow: 'hidden', background: tokens.bgContainer }}>
+              <img
+                src={block.src}
+                alt={block.caption || ''}
+                style={{
+                  width: '100%',
+                  height: block.settings?.imageFit === 'natural' ? 'auto' : '100%',
+                  display: 'block',
+                  objectFit: block.settings?.imageFit === 'contain' || block.settings?.imageFit === 'natural' ? 'contain' : 'cover',
+                }}
+              />
+            </div>
           ) : (
             <div
               style={{
@@ -202,20 +230,16 @@ const PubBlock: React.FC<{ block: PostBlock; isFirst?: boolean }> = ({ block, is
     case 'gallery':
       return (
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 8,
-            margin: '40px 0',
-          }}
+          className={`blog-gallery-grid blog-gallery-${block.settings?.galleryComposition || 'equal'}`}
+          style={{ gap: { compact: 6, standard: 12, relaxed: 20 }[block.settings?.galleryGap || 'standard'], margin: '40px 0', ...getPublicMediaStyle(block) }}
         >
           {(block.images || []).map((src, i) => (
-            <div key={i} style={{ aspectRatio: '1', overflow: 'hidden', background: tokens.bgContainer }}>
+            <div key={i} className="blog-gallery-tile" style={{ aspectRatio: getMediaRatio(block.settings?.imageRatio) || '1 / 1', overflow: 'hidden', background: tokens.bgContainer }}>
               {src && (
                 <img
                   src={src}
                   alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', objectFit: block.settings?.imageFit === 'contain' || block.settings?.imageFit === 'natural' ? 'contain' : 'cover' }}
                 />
               )}
             </div>
@@ -494,7 +518,66 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
 }) => {
   const [progress, setProgress] = useState(0);
   const [activeToc, setActiveToc] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(post.likes ?? 0);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!post.id) return;
+
+    const blogId = post.id;
+
+    async function loadInteraction() {
+      try {
+        const response = await getBlogInteraction(blogId);
+
+        if (response.success) {
+          setLiked(response.data.liked);
+          setRating(response.data.rating);
+          setSaved(response.data.saved);
+        }
+      } catch {
+        // User may be logged out, so no interaction state to restore.
+      }
+    }
+
+    loadInteraction();
+  }, [post.id]);
+
   const ref = useRef<HTMLDivElement>(null);
+
+  const handleLike = async () => {
+    if (!post.id) {
+      alert('Blog ID is missing.');
+      return;
+    }
+
+    if (liked) {
+      return;
+    }
+
+    try {
+      const response = await likeBlog(post.id);
+
+      setLiked(true);
+      setLikes(response.data.likes);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : '';
+
+      if (
+        message.includes('unauthorized') ||
+        message.includes('login') ||
+        message.includes('log in')
+      ) {
+        alert('You need to log in to like this blog.');
+        return;
+      }
+
+      alert('Failed to like this blog.');
+    }
+  };
 
   useEffect(() => {
     const el = ref.current;
@@ -513,6 +596,42 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
+  // ── SEO: document title, meta description, canonical link ──────────────────
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = post.seo?.title || post.title || prevTitle;
+
+    const setMeta = (name: string, content: string) => {
+      let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!content) return tag;
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('name', name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+      return tag;
+    };
+
+    const description = post.seo?.description || post.excerpt || '';
+    setMeta('description', description);
+
+    let canonicalTag = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const canonicalHref = post.seo?.canonicalUrl || `${window.location.origin}/blogs/${post.slug}`;
+    const hadCanonical = !!canonicalTag;
+    if (!canonicalTag) {
+      canonicalTag = document.createElement('link');
+      canonicalTag.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalTag);
+    }
+    canonicalTag.setAttribute('href', canonicalHref);
+
+    return () => {
+      document.title = prevTitle;
+      if (!hadCanonical && canonicalTag) canonicalTag.remove();
+    };
+  }, [post.seo?.title, post.seo?.description, post.seo?.canonicalUrl, post.title, post.excerpt, post.slug]);
+
   const numlistBlock = post.blocks.find((b) => b.type === 'numlist');
   const hasToc = layout !== 'essay' && !!numlistBlock;
 
@@ -521,6 +640,83 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
     if (el && ref.current) {
       const top = el.getBoundingClientRect().top + ref.current.scrollTop - 100;
       ref.current.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      await navigator.share({
+        title: post.title,
+        text: post.subtitle || post.excerpt,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareUrl);
+    alert('Blog link copied!');
+  };
+
+  const handleSave = async () => {
+    if (!post.id) {
+      alert('Blog ID is missing.');
+      return;
+    }
+
+    if (saved) {
+      return;
+    }
+
+    try {
+      await saveBlog(post.id);
+      setSaved(true);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : '';
+
+      if (
+        message.includes('unauthorized') ||
+        message.includes('login') ||
+        message.includes('log in')
+      ) {
+        alert('You need to log in to save this blog.');
+        return;
+      }
+
+      alert('Failed to save this blog.');
+    }
+  };
+
+  const handleRating = async (star: number) => {
+    if (!post.id) {
+      alert('Blog ID is missing.');
+      return;
+    }
+
+    if (star < 1 || star > 5) {
+      return;
+    }
+
+    try {
+      await rateBlog(post.id, star);
+
+      setRating(star);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : '';
+
+      if (
+        message.includes('unauthorized') ||
+        message.includes('login') ||
+        message.includes('log in')
+      ) {
+        alert('You need to log in to rate this blog.');
+        return;
+      }
+
+      alert('Failed to rate this blog.');
     }
   };
 
@@ -588,8 +784,16 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
           <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
             <img
               src={post.cover.src}
-              alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              alt={post.cover.alt || post.title || ''}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
             />
           </div>
         )}
@@ -688,13 +892,28 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
                     color: '#fff',
                     fontSize: 13,
                     fontWeight: 700,
-                    backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: 'grayscale(1)',
                   }}
                 >
-                  {!post.author.avatar && post.author.initials}
+                  {post.author.avatar ? (
+                    <img
+                      src={post.author.avatar}
+                      alt={post.author.name || 'Author'}
+                      width={36}
+                      height={36}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                        filter: 'grayscale(1)',
+                      }}
+                    />
+                  ) : (
+                    post.author.initials
+                  )}
                 </div>
                 <div style={{ color: '#fff', flex: 1 }}>
                   <div style={{ ...label, fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>
@@ -718,12 +937,25 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
               {/* Engagement row */}
               <div style={{ display: 'flex', gap: 24, color: '#fff' }}>
                 {[
-                  { icon: '♥', label: 'LIKE' },
-                  { icon: '🔖', label: 'SAVE' },
-                  { icon: '↑', label: 'SHARE' },
+                  {
+                    icon: liked ? '♥' : '♡',
+                    label: liked ? `LIKED (${likes})` : `LIKE (${likes})`,
+                    onClick: handleLike,
+                  },
+                  {
+                    icon: saved ? '🔖' : '🔖',
+                    label: saved ? 'SAVED' : 'SAVE',
+                    onClick: handleSave,
+                  },
+                  {
+                    icon: '↑',
+                    label: 'SHARE',
+                    onClick: handleShare,
+                  },
                 ].map((btn) => (
                   <button
                     key={btn.label}
+                    onClick={btn.onClick}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -871,30 +1103,133 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
               gap: 16,
             }}
           >
-            <div style={{ display: 'flex', gap: 24 }}>
-              {[
-                { icon: '♥', text: 'Like' },
-                { icon: '🔖', text: 'Save' },
-                { icon: '↑', text: 'Share' },
-              ].map((btn) => (
-                <button
-                  key={btn.text}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 24,
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Like */}
+              <button
+                type="button"
+                onClick={handleLike}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  ...label,
+                  fontSize: 10,
+                  color: liked ? tokens.ink : tokens.outline,
+                }}
+              >
+                <span>{liked ? '♥' : '♡'}</span>
+                <span>{liked ? 'Liked' : 'Like'} ({likes})</span>
+              </button>
+
+              {/* Save */}
+              <button
+                type="button"
+                onClick={handleSave}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  ...label,
+                  fontSize: 10,
+                  color: tokens.outline,
+                }}
+              >
+                <span>🔖</span>
+                <span>{saved ? 'Saved' : 'Save'}</span>
+              </button>
+
+              {/* Share */}
+              <button
+                type="button"
+                onClick={handleShare}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  ...label,
+                  fontSize: 10,
+                  color: tokens.outline,
+                }}
+              >
+                <span>↑</span>
+                <span>Share</span>
+              </button>
+
+              {/* Rating */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginLeft: 8,
+                }}
+              >
+                <span
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
                     ...label,
                     fontSize: 10,
                     color: tokens.outline,
                   }}
                 >
-                  <span>{btn.icon}</span>
-                  <span>{btn.text}</span>
-                </button>
-              ))}
+                  Rate this blog
+                </span>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
+                  aria-label={`Rating: ${rating} out of 5`}
+                >
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => handleRating(star)}
+                      aria-label={`Rate ${star} out of 5`}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 2,
+                        cursor: 'pointer',
+                        fontSize: 20,
+                        lineHeight: 1,
+                        color: star <= rating ? tokens.gold : tokens.outlineVariant,
+                      }}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+
+                <span
+                  style={{
+                    fontFamily: tokens.fontBody,
+                    fontSize: 12,
+                    color: tokens.outline,
+                    minWidth: 28,
+                  }}
+                >
+                  {rating > 0 ? `${rating}/5` : ''}
+                </span>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 24 }}>
               <div style={{ textAlign: 'right' }}>
@@ -968,6 +1303,102 @@ const ReadBlog: React.FC<ReadBlogProps> = ({
               </div>
             </div>
           </div>
+
+          {post.related && post.related.length > 0 && (
+            <section
+              style={{
+                marginTop: 64,
+                paddingTop: 40,
+                borderTop: `1px solid ${tokens.outlineVariant}`,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: tokens.fontDisplay,
+                  fontSize: 28,
+                  fontWeight: 400,
+                  color: tokens.ink,
+                  margin: '0 0 24px',
+                }}
+              >
+                Related Blogs
+              </h2>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: 24,
+                }}
+              >
+                {post.related.map((blog: any, index: number) => (
+                  <a
+                    key={`${blog.title}-${index}`}
+                    href={blog.slug ? `/blogs/${blog.slug}` : '#'}
+                    style={{
+                      display: 'block',
+                      overflow: 'hidden',
+                      border: `1px solid ${tokens.outlineVariant}`,
+                      background: '#fff',
+                      color: tokens.ink,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {blog.thumb && (
+                      <img
+                        src={blog.thumb}
+                        alt={blog.title}
+                        loading="lazy"
+                        style={{
+                          width: '100%',
+                          height: 192,
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                    )}
+
+                    <div style={{ padding: 16 }}>
+                      {blog.cat && (
+                        <div style={{ ...label, color: tokens.outline, marginBottom: 8 }}>
+                          {blog.cat}
+                        </div>
+                      )}
+                      <h3
+                        style={{
+                          fontFamily: tokens.fontDisplay,
+                          fontSize: 20,
+                          fontWeight: 400,
+                          lineHeight: 1.3,
+                          color: tokens.ink,
+                          margin: 0,
+                        }}
+                      >
+                        {blog.title}
+                      </h3>
+                      {blog.excerpt && (
+                        <p
+                          style={{
+                            display: '-webkit-box',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 2,
+                            overflow: 'hidden',
+                            fontFamily: tokens.fontBody,
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            color: tokens.inkMuted,
+                            margin: '8px 0 0',
+                          }}
+                        >
+                          {blog.excerpt}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
         </article>
       </div>
     </div>

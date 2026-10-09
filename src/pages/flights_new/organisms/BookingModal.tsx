@@ -9,7 +9,8 @@
 //
 //  RESPONSIVE PASS: every section below now has explicit
 //  mobile → tablet → desktop breakpoints (Tailwind's default
-//  sm=640px / md=768px / lg=1024px scale). Nothing about the
+//  sm=640px / md=768px / lg=
+// px scale). Nothing about the
 //  data wiring changed from the previous pass — only layout,
 //  sizing, and spacing utility classes.
 //

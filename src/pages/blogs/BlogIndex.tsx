@@ -112,128 +112,61 @@
 //  6. Empty state: friendly UI when there are zero posts to show
 // ─────────────────────────────────────────────────────────────
 
-import { BLOGS } from "../../content/blogs/registry";
-import BlogCard from "./BlogCard";
+//import BlogCard from "./BlogCard";
 import { getBlogs } from "../../lib/api";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import type { Post } from "../../lib/api";
 import EditorialHeroBlog from "./EditorialHeroBlog";
-import type { StoryItem } from "./EditorialHeroBlog";
 
-// ── Helpers ───────────────────────────────────────────────────
-
-function normalizePost(raw: any): Post {
-  return { ...raw, id: raw.id ?? raw._id ?? undefined };
+function normalizePost(raw: Post & { _id?: string }): Post {
+  return {
+    ...raw,
+    id: raw.id ?? raw._id ?? undefined,
+  };
 }
-
-function resolveCover(cover: Post["cover"]): string | undefined {
-  if (!cover) return undefined;
-  if (typeof cover === "string") return cover;
-  return cover.src || undefined;
-}
-
-/** Collect every unique tag from static + DB posts for the filter bar */
-function collectAllTags(staticBlogs: typeof BLOGS, dbBlogs: Post[]): string[] {
-  const tagSet = new Set<string>();
-  staticBlogs.forEach((b) => b.tags?.forEach((t) => tagSet.add(t)));
-  dbBlogs.forEach((b) => b.tags?.forEach((t) => tagSet.add(t)));
-  return Array.from(tagSet).sort();
-}
-
-// ── Component ─────────────────────────────────────────────────
 
 export default function BlogIndex() {
-  // ── State ──────────────────────────────────────────────────
-  const [dbBlogs, setDbBlogs]       = useState<Post[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [page, setPage]             = useState(1);
-  const [hasMore, setHasMore]       = useState(true);
-  const [activeTag, setActiveTag]   = useState<string>("All");
-
-  // ── Fetch DB posts ─────────────────────────────────────────
-  const fetchBlogs = useCallback(async (pageNum: number, isLoadMore = false) => {
-    isLoadMore ? setLoadingMore(true) : setLoading(true);
-    setError(null);
-    try {
-      const res = await getBlogs({ status: "published", page: pageNum, limit: 6 });
-      if (res.success) {
-        const fetched = res.data.posts.map(normalizePost);
-        setDbBlogs((prev) => isLoadMore ? [...prev, ...fetched] : fetched);
-
-        // If we received fewer posts than the limit, no more pages exist
-        setHasMore(fetched.length === 6);
-      }
-    } catch {
-      setError("Failed to load blogs. Please try again.");
-    } finally {
-      isLoadMore ? setLoadingMore(false) : setLoading(false);
-    }
-  }, []);
+  const [dbBlogs, setDbBlogs] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBlogs(1);
-  }, [fetchBlogs]);
+    let cancelled = false;
 
-  // ── Load More handler ──────────────────────────────────────
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchBlogs(nextPage, true);
-  };
+    async function loadBlogs() {
+      try {
+        const res = await getBlogs({
+          status: "published",
+          page: 1,
+          limit: 6,
+        });
 
-  // ── Deduplication (fix 2) ──────────────────────────────────
-  // Remove any DB post whose slug already exists in the static registry
-  const staticSlugs = new Set(BLOGS.map((b) => b.slug));
-  const uniqueDbBlogs = dbBlogs.filter(
-    (b) => !b.slug || !staticSlugs.has(b.slug)
-  );
+        if (!cancelled && res.success) {
+          setDbBlogs(res.data.posts.map(normalizePost));
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load blogs.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
 
-  // ── Tag filter (fix 3) ─────────────────────────────────────
-  const allTags = ["All", ...collectAllTags(BLOGS, uniqueDbBlogs)];
+    loadBlogs();
 
-  const filteredStaticBlogs =
-    activeTag === "All"
-      ? BLOGS
-      : BLOGS.filter((b) => b.tags?.includes(activeTag));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const filteredDbBlogs =
-    activeTag === "All"
-      ? uniqueDbBlogs
-      : uniqueDbBlogs.filter((b) => b.tags?.includes(activeTag));
-
-  // ── Hero stories (fix 1) ───────────────────────────────────
-  // Map DB posts to StoryItem; fallback handled inside EditorialHeroBlog
-  const storyItems: StoryItem[] = uniqueDbBlogs.map((b, i) => ({
-    id: b.id ?? i,
-    image: resolveCover(b.cover) ?? "",
-    category: (b.tags?.[0] ?? "TRAVEL").toUpperCase(),
-    title: b.title,
-    excerpt: b.excerpt ?? "",
-    date: b.createdAt
-      ? new Date(b.createdAt).toDateString().toUpperCase()
-      : "",
-    readTime: "5 MIN READ",
-  }));
-
-  // ── Unified href resolver (fix 5) ─────────────────────────
-  // Prefer /blogs/:slug for all posts; fall back to /readblogs/:id only
-  // when a DB post has no slug (temporary fallback — fix slugs in your DB)
-  function dbPostHref(b: Post): string {
-    if (b.slug) return `/blogs/${b.slug}`;
-    return `/readblogs/${b.id}`;
-  }
-
-  // ── Empty state check (fix 6) ─────────────────────────────
-  const totalVisible = filteredStaticBlogs.length + filteredDbBlogs.length;
-  const nothingToShow = !loading && totalVisible === 0;
-
-  // ── Render ─────────────────────────────────────────────────
   return (
-    <>
-      {/* ── 1. Editorial Hero ─────────────────────────────── */}
-      <EditorialHeroBlog stories={storyItems} />
-    </>
+    <EditorialHeroBlog
+      posts={dbBlogs}
+      loading={loading}
+      error={error}
+    />
   );
 }
