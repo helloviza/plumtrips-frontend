@@ -29,16 +29,18 @@ const searchLocations = async (query: string, signal: AbortSignal): Promise<Geoc
 const isValidLatitude = (value: number): boolean => Number.isFinite(value) && value >= -90 && value <= 90;
 const isValidLongitude = (value: number): boolean => Number.isFinite(value) && value >= -180 && value <= 180;
 
+const isValidCoordinates = (
+  lat: number | null,
+  lon: number | null,
+): lat is number =>
+  lat !== null && lon !== null && isValidLatitude(lat) && isValidLongitude(lon);
+
 const isCompleteLocation = (
   name: string,
   latitude: number | null,
   longitude: number | null,
 ): latitude is number =>
-  Boolean(name.trim()) &&
-  latitude !== null &&
-  longitude !== null &&
-  isValidLatitude(latitude) &&
-  isValidLongitude(longitude);
+  Boolean(name.trim()) && isValidCoordinates(latitude, longitude);
 
 const BlogLocationPicker: React.FC<{
   value?: BlogLocation;
@@ -85,6 +87,9 @@ const BlogLocationPicker: React.FC<{
   const updateLocation = (nextLatitude: number, nextLongitude: number) => {
     setLatitude(nextLatitude);
     setLongitude(nextLongitude);
+    setDraftLatitude(String(nextLatitude));
+    setDraftLongitude(String(nextLongitude));
+    setCoordinateError(null);
     if (isCompleteLocation(nameRef.current, nextLatitude, nextLongitude)) {
       onChangeRef.current({
         name: nameRef.current.trim(),
@@ -210,10 +215,19 @@ const BlogLocationPicker: React.FC<{
   }, []);
 
   useEffect(() => {
-    const marker = markerRef.current;
-    if (!marker || latitude === null || longitude === null) return;
+    if (latitude === null || longitude === null) {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      return;
+    }
     if (isValidLatitude(latitude) && isValidLongitude(longitude)) {
-      marker.setLatLng([latitude, longitude]);
+      if (markerRef.current) {
+        markerRef.current.setLatLng([latitude, longitude]);
+      } else if (placeMarkerRef.current) {
+        placeMarkerRef.current(latitude, longitude);
+      }
     }
   }, [latitude, longitude]);
 
@@ -221,7 +235,7 @@ const BlogLocationPicker: React.FC<{
     setName(nextName);
     setSearchQuery(nextName);
     nameRef.current = nextName;
-    if (isCompleteLocation(nextName, latitude, longitude)) {
+    if (nextName.trim() && latitude !== null && longitude !== null && isValidLatitude(latitude) && isValidLongitude(longitude)) {
       onChange({
         name: nextName.trim(),
         latitude,
@@ -261,21 +275,31 @@ const BlogLocationPicker: React.FC<{
   };
 
   const beginCoordinateEdit = () => {
-    if (latitude === null || longitude === null) return;
-    setDraftLatitude(String(latitude));
-    setDraftLongitude(String(longitude));
+    setDraftLatitude(latitude === null ? '' : String(latitude));
+    setDraftLongitude(longitude === null ? '' : String(longitude));
     setCoordinateError(null);
     setEditingCoordinates(true);
   };
 
   const saveManualCoordinates = () => {
-    const nextLatitude = Number(draftLatitude.trim());
-    const nextLongitude = Number(draftLongitude.trim());
-    const latitudeValid = draftLatitude.trim() !== '' && isValidLatitude(nextLatitude);
-    const longitudeValid = draftLongitude.trim() !== '' && isValidLongitude(nextLongitude);
+    const latStr = draftLatitude.trim();
+    const lonStr = draftLongitude.trim();
 
-    if (!latitudeValid || !longitudeValid) {
-      setCoordinateError('Enter a finite latitude (-90 to 90) and longitude (-180 to 180).');
+    if (!latStr || !lonStr) {
+      setCoordinateError('Please enter both latitude and longitude.');
+      return;
+    }
+
+    const nextLatitude = Number(latStr);
+    const nextLongitude = Number(lonStr);
+
+    if (isNaN(nextLatitude) || !Number.isFinite(nextLatitude) || nextLatitude < -90 || nextLatitude > 90) {
+      setCoordinateError('Latitude must be a valid number between -90 and 90.');
+      return;
+    }
+
+    if (isNaN(nextLongitude) || !Number.isFinite(nextLongitude) || nextLongitude < -180 || nextLongitude > 180) {
+      setCoordinateError('Longitude must be a valid number between -180 and 180.');
       return;
     }
 
@@ -306,6 +330,10 @@ const BlogLocationPicker: React.FC<{
     nameRef.current = '';
     setLatitude(null);
     setLongitude(null);
+    setDraftLatitude('');
+    setDraftLongitude('');
+    setEditingCoordinates(false);
+    setCoordinateError(null);
     skipNextValueSyncRef.current = true;
     markerRef.current?.remove();
     markerRef.current = null;
@@ -374,46 +402,160 @@ const BlogLocationPicker: React.FC<{
         </p>
       )}
 
-      {latitude !== null && longitude !== null && !editingCoordinates && (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '10px 12px', borderRadius: 8, background: '#fafafa', border: '1px solid #eee', fontSize: 12 }}>
-            <span><strong>Latitude:</strong> {latitude.toFixed(5)}</span>
-            <span><strong>Longitude:</strong> {longitude.toFixed(5)}</span>
+      {!editingCoordinates ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+            padding: '10px 14px',
+            borderRadius: 8,
+            background: '#fafafa',
+            border: '1px solid #eee',
+            fontSize: 12,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span>
+              <strong>Latitude:</strong> {latitude !== null ? latitude.toFixed(5) : 'Not set'}
+            </span>
+            <span>
+              <strong>Longitude:</strong> {longitude !== null ? longitude.toFixed(5) : 'Not set'}
+            </span>
           </div>
-          <button type="button" className="btn btn-sm" onClick={beginCoordinateEdit} aria-label="Edit location coordinates" title="Edit location coordinates" style={{ justifySelf: 'start' }}>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={beginCoordinateEdit}
+            aria-label="Edit coordinates manually"
+            title="Edit coordinates manually"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: '1px solid #ddd',
+              borderRadius: 6,
+              background: '#fff',
+            }}
+          >
             ✏️ Edit coordinates
           </button>
         </div>
-      )}
-
-      {editingCoordinates && (
-        <div style={{ display: 'grid', gap: 10, padding: 12, borderRadius: 8, background: '#fafafa', border: '1px solid #eee' }}>
-          <label style={{ display: 'grid', gap: 4, fontSize: 12, fontWeight: 600, color: '#555' }}>
-            Latitude
-            <input
-              type="text"
-              inputMode="decimal"
-              value={draftLatitude}
-              onChange={(event) => setDraftLatitude(event.target.value)}
-              aria-invalid={Boolean(coordinateError)}
-              style={{ padding: 8, borderRadius: 7, border: '1px solid #ddd', fontWeight: 400 }}
-            />
-          </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 12, fontWeight: 600, color: '#555' }}>
-            Longitude
-            <input
-              type="text"
-              inputMode="decimal"
-              value={draftLongitude}
-              onChange={(event) => setDraftLongitude(event.target.value)}
-              aria-invalid={Boolean(coordinateError)}
-              style={{ padding: 8, borderRadius: 7, border: '1px solid #ddd', fontWeight: 400 }}
-            />
-          </label>
-          {coordinateError && <p style={{ margin: 0, color: '#b42318', fontSize: 12 }} role="alert">{coordinateError}</p>}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-sm btn-primary" onClick={saveManualCoordinates}>Save</button>
-            <button type="button" className="btn btn-sm" onClick={cancelCoordinateEdit}>Cancel</button>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gap: 12,
+            padding: 14,
+            borderRadius: 8,
+            background: '#fafafa',
+            border: '1px solid #e0e0e0',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#333' }}>Edit coordinates manually</span>
+            <span style={{ fontSize: 11, color: '#777' }}>Latitude: -90 to 90 | Longitude: -180 to 180</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <label style={{ display: 'grid', gap: 4, fontSize: 12, fontWeight: 600, color: '#555' }}>
+              Latitude
+              <input
+                type="text"
+                inputMode="decimal"
+                value={draftLatitude}
+                onChange={(event) => {
+                  setDraftLatitude(event.target.value);
+                  setCoordinateError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveManualCoordinates();
+                  if (e.key === 'Escape') cancelCoordinateEdit();
+                }}
+                placeholder="e.g. 13.08270 (-90 to 90)"
+                aria-invalid={Boolean(coordinateError)}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  border: coordinateError ? '1px solid #d92d20' : '1px solid #ddd',
+                  fontSize: 13,
+                  fontWeight: 400,
+                  outline: 'none',
+                }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 4, fontSize: 12, fontWeight: 600, color: '#555' }}>
+              Longitude
+              <input
+                type="text"
+                inputMode="decimal"
+                value={draftLongitude}
+                onChange={(event) => {
+                  setDraftLongitude(event.target.value);
+                  setCoordinateError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveManualCoordinates();
+                  if (e.key === 'Escape') cancelCoordinateEdit();
+                }}
+                placeholder="e.g. 80.27070 (-180 to 180)"
+                aria-invalid={Boolean(coordinateError)}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  border: coordinateError ? '1px solid #d92d20' : '1px solid #ddd',
+                  fontSize: 13,
+                  fontWeight: 400,
+                  outline: 'none',
+                }}
+              />
+            </label>
+          </div>
+          {coordinateError && (
+            <p style={{ margin: 0, color: '#b42318', fontSize: 12, fontWeight: 500 }} role="alert">
+              ⚠️ {coordinateError}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={saveManualCoordinates}
+              style={{
+                padding: '6px 14px',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                borderRadius: 6,
+                background: '#1a1a1a',
+                color: '#fff',
+                border: 'none',
+              }}
+            >
+              Save coordinates
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={cancelCoordinateEdit}
+              style={{
+                padding: '6px 14px',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                borderRadius: 6,
+                background: '#fff',
+                color: '#444',
+                border: '1px solid #ddd',
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

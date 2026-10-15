@@ -424,6 +424,9 @@ export async function searchHotels(_params: any) {
 /* Blog API functions                                                 */
 /* ------------------------------------------------------------------ */
 
+import type { StoryStyle, BackgroundTheme } from '../pages/marketing/blogs.model';
+export type { StoryStyle, BackgroundTheme };
+
 export type Post = {
   id?: string;
   likes?: number;
@@ -442,6 +445,8 @@ export type Post = {
   publishDate: string;
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   featured: boolean;
+  storyStyle?: StoryStyle;
+  theme?: BackgroundTheme;
   seo: { title: string; description: string; ogImage: string; ogImageAlt?: string; canonicalUrl?: string };
   blocks: any[];
   related: any[];

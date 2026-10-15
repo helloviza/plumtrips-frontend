@@ -11,7 +11,14 @@ export type BlockType =
   | 'hotel'
   | 'map'
   | 'video'
-  | 'newsletter';
+  | 'newsletter'
+  | 'callout'
+  | 'faq'
+  | 'budget'
+  | 'comparison'
+  | 'checklist'
+  | 'keyinfo';
+
 
 export interface ListItem {
   n: number;
@@ -149,8 +156,12 @@ export interface PostBlockSettings {
 export interface InlineTextMarks {
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
   color?: string;
   highlight?: string;
+  href?: string;
+  targetBlank?: boolean;
 }
 
 export interface InlineTextFragment {
@@ -180,7 +191,7 @@ export interface PostBlock {
   title?: string;
   body?: string;
   url?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface PostCover {
@@ -195,6 +206,40 @@ export interface PostAuthor {
   initials: string;
   avatar: string;
 }
+
+export type StoryStyle =
+  | 'editorial-journal'
+  | 'day-by-day'
+  | 'visual-journey'
+  | 'route-explorer'
+  | 'smart-travel'
+  | 'cinematic-destination'
+  | 'photo-essay'
+  | 'travel-diary'
+  | 'culture-heritage'
+  | 'nature-wildlife'
+  | 'budget-breakdown'
+  | 'itinerary-planner'
+  | 'weekend-escape'
+  | 'transport-guide'
+  | 'stay-guide'
+  | 'food-flavours'
+  | 'adventure-expedition'
+  | 'beaches-islands'
+  | 'hidden-gems'
+  | 'seasonal-guide'
+  | 'destination-comparison'
+  | 'things-to-do'
+  | 'traveller-checklist'
+  | 'faq-guide'
+  | 'field-guide';
+
+export type BackgroundTheme =
+  | 'classic-editorial'
+  | 'nature-wildlife'
+  | 'ocean-islands'
+  | 'culture-heritage'
+  | 'adventure';
 
 export interface Post {
   id: string;
@@ -211,6 +256,8 @@ export interface Post {
   publishDate: string;
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   featured: boolean;
+  storyStyle?: StoryStyle;
+  theme?: BackgroundTheme;
   seo: {
     title: string;
     description: string;

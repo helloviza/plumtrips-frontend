@@ -4,29 +4,78 @@ import type { Post } from '../../lib/api';
 import type {
   BlogHighlight,
   LayoutOverrides,
-  LayoutRules,
   PostBlock,
   PostBlockSettings,
   TemplateAuthoringProfile,
   TemplateBlockGuidance,
   TypographyOverrides,
-  TypographyRules,
   InlineTextMarks,
   BlogGalleryComposition,
   BlogImageFit,
   BlogImageRatio,
+  StoryStyle,
+  BackgroundTheme,
+  BlockType,
+  ListItem,
 } from './blogs.model';
-import { applyInlineMark, InlineText } from './InlineText';
+import {
+  BLOG_FORMATS,
+  FORMAT_GALLERY_INFO,
+  STORY_STYLE_LABELS,
+  TEMPLATES_BY_FORMAT,
+  type BlogFormat,
+  type BlogFormatDefinition,
+  type BlogTemplateBlock,
+  type BlogTemplateDefinition,
+} from './blog-templates.data';
+import {
+  applyInlineMark,
+  sanitizeHref,
+  InlineRichTextEditor,
+  type InlineRichTextEditorRef,
+  getMarksAtCaret,
+  getMarksAtIndex,
+  isBooleanMarkActiveInRange,
+  getSharedValueMarkInRange,
+  hasAnyInlineMark,
+  clearInlineMarks,
+  withoutLinkMarks,
+  resolveTypingMarks,
+} from './InlineText';
+import { ITINERARY_SCAFFOLDS, hasExistingItineraryScaffold, type ItineraryScaffoldDuration } from './itinerary-scaffold';
 import BlogLocationPicker from './BlogLocationPicker';
-import { getBlogs, createBlog, updateBlog, deleteBlog, uploadBlogImage } from '../../lib/api';
+import { getBlogs, createBlog, updateBlog, deleteBlog, publishBlog, uploadBlogImage } from '../../lib/api';
+import ReadBlog from '../blogs/ReadBlog';
 import './published-styles.css';
 
 // ─── Normalize MongoDB _id → id ───────────────────────────────────────────────
-function normalizePost(raw: any): Post {
+const normalizeTags = (tags: unknown): string[] => {
+  if (!Array.isArray(tags)) return [];
+
+  const seen = new Set<string>();
+  return tags.reduce<string[]>((normalized, tag) => {
+    if (typeof tag !== 'string') return normalized;
+    const readableTag = tag.trim();
+    const key = readableTag.toLowerCase();
+    if (!key || seen.has(key)) return normalized;
+    seen.add(key);
+    normalized.push(readableTag);
+    return normalized;
+  }, []);
+};
+
+const displayLabels = (values: unknown): string[] => (
+  Array.isArray(values)
+    ? values.filter((value): value is string => typeof value === 'string').map((value) => value.trim()).filter(Boolean)
+    : []
+);
+
+function normalizePost(raw: Partial<Post> & { _id?: string }): Post {
   return {
     ...raw,
-    id: raw.id ?? raw._id ?? undefined,
-  };
+    id: raw.id ?? raw._id ?? '',
+    tags: normalizeTags(raw.tags),
+  } as Post;
 }
 
 // ─── Error message mapper ─────────────────────────────────────────────────────
@@ -49,9 +98,77 @@ const mapErrorMessage = (error: unknown): string => {
   return `❌ ${msg.startsWith('Error: ') ? msg.slice(7) : msg || 'An unexpected error occurred.'}`;
 };
 
-type BlockType =
-  | 'h1' | 'h2' | 'h3' | 'p' | 'quote' | 'image' | 'cover'
-  | 'gallery' | 'numlist' | 'hotel' | 'map' | 'video' | 'newsletter';
+const hasText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+
+const hasMeaningfulBlockContent = (block: PostBlock): boolean => {
+  switch (block.type) {
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'p':
+    case 'quote':
+      return hasText(block.text);
+    case 'image':
+    case 'cover':
+      return hasText(block.src);
+    case 'gallery':
+      return Array.isArray(block.images) && block.images.some(hasText);
+    case 'numlist':
+      return Array.isArray(block.items) && block.items.some((item) => (
+        (hasText(item.title) && !/^item\s+\d+$/i.test(item.title.trim()))
+        || hasText(item.loc)
+        || hasText(item.body)
+        || hasText(item.img)
+      ));
+    case 'hotel':
+      return hasText(block.name) || hasText(block.desc) || hasText(block.img);
+    case 'map':
+      return Array.isArray(block.pins) && block.pins.some((pin) => (
+        hasText(pin.label) && pin.label.trim().toLowerCase() !== 'pin label'
+      ));
+    case 'video':
+      return hasText(block.url);
+    case 'newsletter':
+      return hasText(block.body);
+    default:
+      return false;
+  }
+};
+
+const validatePublishPost = (post: Post): string[] => {
+  const errors: string[] = [];
+  const cleanTitle = (post.title || '').trim();
+  if (!cleanTitle || cleanTitle.toLowerCase().startsWith('untitled blog')) {
+    errors.push('Provide a descriptive article title before publishing.');
+  }
+  if (!hasText(post.slug)) {
+    errors.push('Add a URL slug before publishing.');
+  } else if (/\s/.test(post.slug.trim())) {
+    errors.push('Use a URL-friendly slug without spaces.');
+  }
+
+  const cleanExcerpt = (post.excerpt || '').trim();
+  const cleanSubtitle = (post.subtitle || '').trim();
+  const hasOpeningParagraph = Array.isArray(post.blocks) && post.blocks.some(
+    (b) => b.type === 'p' && (b.text || '').trim().length >= 30,
+  );
+  if (!cleanExcerpt && !cleanSubtitle && !hasOpeningParagraph) {
+    errors.push('Add an engaging subtitle, excerpt, or introductory paragraph to introduce your article.');
+  }
+
+  if (!Array.isArray(post.blocks) || post.blocks.filter(hasMeaningfulBlockContent).length < 2) {
+    errors.push('Add at least 2 complete content sections with descriptive text, itineraries, or photography.');
+  }
+
+  const hasBlankHeading = (post.blocks || []).some(
+    (b) => (b.type === 'h1' || b.type === 'h2' || b.type === 'h3') && !(b.text || '').trim(),
+  );
+  if (hasBlankHeading) {
+    errors.push('One or more section headings are currently empty. Add heading text or remove the section.');
+  }
+
+  return errors;
+};
 
 interface BlogsProps {
   posts?: Post[];
@@ -68,1255 +185,115 @@ const BLOCK_LIBRARY: { type: BlockType; label: string; desc: string }[] = [
   { type: 'h2', label: 'Heading 2', desc: 'Section heading' },
   { type: 'h3', label: 'Heading 3', desc: 'Small heading' },
   { type: 'p', label: 'Paragraph', desc: 'Body text' },
-  { type: 'image', label: 'Image', desc: 'Inline image' },
-  { type: 'cover', label: 'Cover', desc: 'Hero image' },
+  { type: 'image', label: 'Image', desc: 'Inline image with caption' },
+  { type: 'cover', label: 'Cover', desc: 'Hero photograph' },
   { type: 'gallery', label: 'Gallery', desc: 'Grid of images' },
-  { type: 'quote', label: 'Quote', desc: 'Pull quote' },
-  { type: 'numlist', label: 'Numbered list', desc: 'Top list or itinerary' },
-  { type: 'hotel', label: 'Hotel card', desc: 'Destination & hotel summary' },
-  { type: 'map', label: 'Map', desc: 'Pinned map graphic' },
+  { type: 'quote', label: 'Quote', desc: 'Pull quote with attribution' },
+  { type: 'numlist', label: 'Numbered list', desc: 'Top list, route, or itinerary' },
+  { type: 'hotel', label: 'Hotel card', desc: 'Curated stay recommendation' },
+  { type: 'map', label: 'Map', desc: 'Pinned map with waypoints' },
+  { type: 'callout', label: 'Callout Tip', desc: 'Travel tip, warning, or highlight box' },
+  { type: 'faq', label: 'FAQ Item', desc: 'Traveler question and answer' },
+  { type: 'budget', label: 'Budget Row', desc: 'Expense item and estimated price' },
   { type: 'video', label: 'Video', desc: 'Video embed placeholder' },
   { type: 'newsletter', label: 'Newsletter', desc: 'Subscribe CTA' },
 ];
 
-type BlogFormat =
-  | 'destination-guide'
-  | 'itinerary'
-  | 'travel-story'
-  | 'city-guide'
-  | 'things-to-do'
-  | 'blank';
-
-interface BlogFormatDefinition {
-  type: BlogFormat;
-  label: string;
-  description: string;
-  blocks: BlockType[];
-}
-
-const BLOG_FORMATS: BlogFormatDefinition[] = [
-  {
-    type: 'destination-guide',
-    label: 'Destination Guide',
-    description: 'Complete guide with highlights, tips and places to explore.',
-    blocks: ['cover', 'h1', 'p', 'h2', 'p', 'numlist', 'image', 'quote', 'p'],
-  },
-  {
-    type: 'itinerary',
-    label: '3/5/7-Day Itinerary',
-    description: 'Day-by-day travel plan with places, activities and images.',
-    blocks: ['cover', 'h1', 'p', 'numlist', 'map', 'p', 'quote'],
-  },
-  {
-    type: 'travel-story',
-    label: 'Travel Story',
-    description: 'Story-focused format for personal travel experiences.',
-    blocks: ['cover', 'h1', 'p', 'image', 'p', 'quote', 'image', 'p'],
-  },
-  {
-    type: 'city-guide',
-    label: 'City Guide',
-    description: 'City-focused guide covering places, food, stays and tips.',
-    blocks: ['cover', 'h1', 'p', 'h2', 'numlist', 'hotel', 'map', 'p'],
-  },
-  {
-    type: 'things-to-do',
-    label: 'Things To Do',
-    description: 'List-style format for activities and attractions.',
-    blocks: ['cover', 'h1', 'p', 'numlist', 'image', 'quote', 'p'],
-  },
-  {
-    type: 'blank',
-    label: 'Blank / Custom',
-    description: 'Start with an empty editor and add your own sections.',
-    blocks: [],
-  },
-];
-
-type BlogTemplateBlock = {
-  type: BlockType;
-
-  // Content guidance
-  minWords?: number;
-  maxWords?: number;
-  minItems?: number;
-  maxItems?: number;
-
-  // Image rules
-  imageCount?: number;
-  imageStyle?: 'standard' | 'large' | 'full-width' | 'gallery';
-  imagePosition?: 'left' | 'right' | 'center' | 'top' | 'bottom';
-
-  // Layout rules
-  width?: 'small' | 'medium' | 'large' | 'full';
-  alignment?: 'left' | 'center' | 'right';
-
-  // Block-specific settings
-  required?: boolean;
-  typography?: TypographyOverrides;
-  layout?: LayoutOverrides;
-  highlight?: BlogHighlight;
-};
-
-type BlogTemplateDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  thumbnail: string;
-  blocks: BlogTemplateBlock[];
-  profile?: TemplateAuthoringProfile;
-  typography?: TypographyRules;
-  layout?: LayoutRules;
-};
-
-const DESTINATION_TEMPLATES: BlogTemplateDefinition[] = [
-  {
-    id: 'complete-escape',
-    name: 'The Complete Escape',
-    description: 'A complete destination guide with practical information, luxury stays, and experiences.',
-    thumbnail: '/assets/attached_assets/dest-bali.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 12, alignment: 'left', required: true },
-      { type: 'p', minWords: 60, maxWords: 100 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'numlist', minItems: 5, maxItems: 8 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'hotel', minItems: 2, maxItems: 4 },
-      { type: 'map', width: 'full' },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'explorer',
-    name: 'The Explorer',
-    description: 'A discovery-focused guide for places, experiences and highlights.',
-    thumbnail: '/assets/attached_assets/exp-iceland.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 11, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'right', width: 'medium' },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'map', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'essential-guide',
-    name: 'The Essential Guide',
-    description: 'A practical and easy-to-scan destination guide.',
-    thumbnail: '/assets/holidays/jaipur.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 7 },
-      { type: 'numlist', minItems: 4, maxItems: 6 },
-      { type: 'h2', maxWords: 7 },
-      { type: 'hotel', minItems: 2, maxItems: 3 },
-      { type: 'map', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 100 },
-    ],
-  },
-  {
-    id: 'local-lens',
-    name: 'The Local Lens',
-    description: 'A local-focused format for authentic places, food and experiences.',
-    thumbnail: '/assets/attached_assets/culinary_bali.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'left', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'gallery', imageCount: 5, imageStyle: 'gallery', width: 'large' },
-      { type: 'map', width: 'full' },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'hidden-route',
-    name: 'The Hidden Route',
-    description: 'A discovery format focused on lesser-known places and experiences.',
-    thumbnail: '/assets/attached_assets/island-hop.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 11, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 80 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'right', width: 'medium' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 6, maxItems: 12 },
-      { type: 'gallery', imageCount: 3, imageStyle: 'gallery', width: 'large' },
-      { type: 'map', width: 'full' },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-];
-
-const ITINERARY_TEMPLATES: BlogTemplateDefinition[] = [
-  {
-    id: 'classic-journey',
-    name: 'The Classic Journey',
-    description: 'A balanced day-by-day itinerary covering landmark sights, leisure, and dining.',
-    thumbnail: '/assets/attached_assets/exp-tuscany.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'map', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 3, maxItems: 5 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 2, maxItems: 4 },
-      { type: 'hotel', minItems: 2, maxItems: 3 },
-      { type: 'p', minWords: 60, maxWords: 100 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'detailed-route',
-    name: 'The Detailed Route',
-    description: 'An in-depth chronological plan with transit notes, timed stops, and route maps.',
-    thumbnail: '/assets/attached_assets/vietnam_halong_1780482394962.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'map', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'numlist', minItems: 3, maxItems: 7 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'right', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'numlist', minItems: 3, maxItems: 7 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'hotel', minItems: 2, maxItems: 5 },
-      { type: 'p', minWords: 60, maxWords: 100 },
-    ],
-  },
-  {
-    id: 'complete-trip',
-    name: 'The Complete Trip',
-    description: 'All-in-one vacation blueprint with activities, curated stays, and packing essentials.',
-    thumbnail: '/assets/attached_assets/holidays_hero_premium.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'gallery', imageCount: 6, imageStyle: 'gallery', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'hotel', minItems: 2, maxItems: 4 },
-      { type: 'map', width: 'full' },
-      { type: 'video', width: 'large' },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'p', minWords: 80, maxWords: 150 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'scenic-trail',
-    name: 'The Scenic Trail',
-    description: 'A visual road trip or scenic tour highlighting viewpoints, drives, and natural stops.',
-    thumbnail: '/assets/europe/europe_coast.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'image', imageCount: 1, imageStyle: 'full-width', imagePosition: 'top', width: 'full' },
-      { type: 'map', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'numlist', minItems: 3, maxItems: 7 },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'slow-journey',
-    name: 'The Slow Journey',
-    description: 'A relaxed, low-pace itinerary emphasizing mindful exploration, wellness, and local immersion.',
-    thumbnail: '/assets/attached_assets/japan_serene_1780482413728.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 40, maxWords: 80 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'hotel', minItems: 2, maxItems: 4 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 3, maxItems: 5 },
-      { type: 'p', minWords: 60, maxWords: 100 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-];
-
-const TRAVEL_STORY_TEMPLATES: BlogTemplateDefinition[] = [
-  {
-    id: 'the-journey',
-    name: 'The Journey',
-    description: 'An immersive narrative following an evocative journey from departure to homecoming.',
-    thumbnail: '/assets/attached_assets/hero.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 12, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 80, maxWords: 180 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'right', width: 'medium' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'photo-story',
-    name: 'The Photo Story',
-    description: 'A photography-driven essay letting striking visuals and vignettes tell the tale.',
-    thumbnail: '/assets/attached_assets/bali_rice_terrace_1780482458839.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'image', imageCount: 1, imageStyle: 'full-width', imagePosition: 'top', width: 'full' },
-      { type: 'p', minWords: 40, maxWords: 80 },
-      { type: 'gallery', imageCount: 6, imageStyle: 'gallery', width: 'full' },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'travel-diary',
-    name: 'The Travel Diary',
-    description: 'Personal reflections, journal entries, and intimate impressions from the road.',
-    thumbnail: '/assets/attached_assets/japan_pers_tea_1780482988284.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 12, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'left', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 80, maxWords: 180 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'right', width: 'medium' },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'memory-trail',
-    name: 'The Memory Trail',
-    description: 'A nostalgic reflection on meaningful encounters, timeless places, and unforgettable moments.',
-    thumbnail: '/assets/attached_assets/thailand-personal-final-1.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 12, alignment: 'center', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 80, maxWords: 180 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'gallery', imageCount: 5, imageStyle: 'gallery', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'postcard-story',
-    name: 'The Postcard Story',
-    description: 'Short, vivid dispatch capturing the sensory pulse and distinct charm of a destination.',
-    thumbnail: '/assets/attached_assets/vietnam_lanterns_1780482438085.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'gallery', imageCount: 3, imageStyle: 'gallery', width: 'large' },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'bottom', width: 'large' },
-      { type: 'p', minWords: 50, maxWords: 100 },
-    ],
-  },
-];
-
-const CITY_GUIDE_TEMPLATES: BlogTemplateDefinition[] = [
-  {
-    id: 'complete-city',
-    name: 'The Complete City',
-    description: 'Comprehensive urban guide covering iconic attractions, food scenes, and top hotels.',
-    thumbnail: '/assets/attached_assets/dubai_f.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'map', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 6, maxItems: 12 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'hotel', minItems: 2, maxItems: 5 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'gallery', imageCount: 6, imageStyle: 'gallery', width: 'full' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'city-essentials',
-    name: 'The City Essentials',
-    description: 'The quintessential 48-hour city guide with must-see landmarks and neighborhood highlights.',
-    thumbnail: '/assets/singapore/singapore_f.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'right', width: 'medium' },
-      { type: 'hotel', minItems: 2, maxItems: 3 },
-      { type: 'map', width: 'large' },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 100 },
-    ],
-  },
-  {
-    id: 'weekend-edit',
-    name: 'The Weekend Edit',
-    description: 'A curated 2-to-3 day metropolitan getaway packed with brunch, culture, and nightlife.',
-    thumbnail: '/assets/attached_assets/italy_replacement_1.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 3, maxItems: 6 },
-      { type: 'hotel', minItems: 2, maxItems: 3 },
-      { type: 'p', minWords: 60, maxWords: 100 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'neighborhood-lens',
-    name: 'The Neighborhood Lens',
-    description: 'An authentic deep-dive into bohemian quarters, boutique lanes, and local character.',
-    thumbnail: '/assets/attached_assets/japan-tourism-1.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 11, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 100 },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'map', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'gallery', imageCount: 5, imageStyle: 'gallery', width: 'large' },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'hotel', minItems: 2, maxItems: 4 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'local-life',
-    name: 'The Local Life',
-    description: 'Where locals eat, drink, shop, and unwind away from the tourist crowds.',
-    thumbnail: '/assets/attached_assets/culinary_vietnam.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'left', width: 'medium' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'numlist', minItems: 5, maxItems: 10 },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-];
-
-const THINGS_TO_DO_TEMPLATES: BlogTemplateDefinition[] = [
-  {
-    id: 'top-picks',
-    name: 'The Top Picks',
-    description: 'A curated countdown of the absolute best activities, attractions, and must-dos.',
-    thumbnail: '/assets/attached_assets/exp-dubai.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 5, maxItems: 10 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'center', width: 'large' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'experience-list',
-    name: 'The Experience List',
-    description: 'A bucket-list compilation of thrilling adventures, cultural moments, and workshops.',
-    thumbnail: '/assets/attached_assets/exp-thailand.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 11, alignment: 'left', required: true },
-      { type: 'p', minWords: 50, maxWords: 90 },
-      { type: 'numlist', minItems: 6, maxItems: 12 },
-      { type: 'gallery', imageCount: 6, imageStyle: 'gallery', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'map', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'essential-experiences',
-    name: 'The Essential Experiences',
-    description: 'Signature activities you cannot afford to miss when visiting the destination.',
-    thumbnail: '/assets/attached_assets/thai_pers_temple_1780483761928.png',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'standard', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 6, maxItems: 10 },
-      { type: 'image', imageCount: 1, imageStyle: 'full-width', imagePosition: 'top', width: 'full' },
-      { type: 'map', width: 'large' },
-      { type: 'quote', minWords: 10, maxWords: 30, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-  {
-    id: 'experience-trail',
-    name: 'The Experience Trail',
-    description: 'A connected route connecting unforgettable activities from morning until evening.',
-    thumbnail: '/assets/attached_assets/exp-tusc.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'full-width', width: 'full', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'left', required: true },
-      { type: 'p', minWords: 40, maxWords: 80 },
-      { type: 'map', width: 'full' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'numlist', minItems: 4, maxItems: 8 },
-      { type: 'image', imageCount: 1, imageStyle: 'large', imagePosition: 'right', width: 'large' },
-      { type: 'gallery', imageCount: 3, imageStyle: 'gallery', width: 'large' },
-      { type: 'quote', minWords: 10, maxWords: 25, alignment: 'center' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-    ],
-  },
-  {
-    id: 'perfect-day',
-    name: 'The Perfect Day',
-    description: 'A morning-to-night curated schedule showcasing the finest experiences in a single day.',
-    thumbnail: '/assets/attached_assets/culinary_thai.jpg',
-    blocks: [
-      { type: 'cover', imageCount: 1, imageStyle: 'large', width: 'large', required: true },
-      { type: 'h1', maxWords: 10, alignment: 'center', required: true },
-      { type: 'p', minWords: 40, maxWords: 70 },
-      { type: 'image', imageCount: 1, imageStyle: 'standard', imagePosition: 'center', width: 'medium' },
-      { type: 'h2', maxWords: 8 },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'numlist', minItems: 6, maxItems: 8 },
-      { type: 'hotel', minItems: 2, maxItems: 3 },
-      { type: 'gallery', imageCount: 4, imageStyle: 'gallery', width: 'large' },
-      { type: 'p', minWords: 60, maxWords: 120 },
-      { type: 'newsletter', width: 'full' },
-    ],
-  },
-];
-
-const TEMPLATE_AUTHORING_PROFILES: Record<string, TemplateAuthoringProfile> = {
-  'the-complete-escape': {
-    purpose: 'Comprehensive destination guide with practical information and broad coverage.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 80, maxWords: 180 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 2, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'map', 'hotel', 'quote'],
-      optional: ['gallery', 'newsletter'],
-    },
-    highlightUsage: ['tip', 'important', 'quick-fact'],
-    typographyBias: 'balanced editorial',
-    layoutBias: 'wide practical',
-  },
-  'the-explorer': {
-    purpose: 'Discovery-led narrative with a stronger visual exploration rhythm.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 120 },
-    recommendedImageCount: { min: 4, max: 8 },
-    recommendedListDensity: { minItems: 2, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'image', 'map', 'numlist'],
-      optional: ['gallery', 'quote'],
-    },
-    highlightUsage: ['editor-note', 'tip', 'quick-fact'],
-    typographyBias: 'exploration-forward editorial',
-    layoutBias: 'wide visual',
-  },
-  'the-essential-guide': {
-    purpose: 'Fast, practical city or destination planning with scannable sections.',
-    contentDensity: 'light',
-    imageStrategy: 'text-led',
-    editorialRhythm: 'scannable',
-    recommendedTextRange: { minWords: 35, maxWords: 100 },
-    recommendedImageCount: { min: 2, max: 5 },
-    recommendedListDensity: { minItems: 3, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'numlist', 'map'],
-      optional: ['image', 'quote', 'hotel'],
-    },
-    highlightUsage: ['quick-fact', 'tip', 'important'],
-    typographyBias: 'compact practical',
-    layoutBias: 'standard scannable',
-  },
-  'the-local-lens': {
-    purpose: 'Local culture and neighborhood-driven perspective with narrative texture.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 50, maxWords: 140 },
-    recommendedImageCount: { min: 3, max: 7 },
-    recommendedListDensity: { minItems: 2, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'quote', 'gallery', 'map'],
-      optional: ['hotel', 'newsletter'],
-    },
-    highlightUsage: ['tip', 'editor-note', 'quick-fact'],
-    typographyBias: 'editorial narrative',
-    layoutBias: 'wide local',
-  },
-  'the-hidden-route': {
-    purpose: 'Stealth discovery with hidden gems, maps, and discovery-driven visuals.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 120 },
-    recommendedImageCount: { min: 4, max: 8 },
-    recommendedListDensity: { minItems: 2, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'image', 'map', 'gallery'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['tip', 'important', 'editor-note'],
-    typographyBias: 'discovery editorial',
-    layoutBias: 'wide discovery',
-  },
-  'classic-journey': {
-    purpose: 'Balanced day-by-day itinerary with practical route and stay guidance.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 50, maxWords: 120 },
-    recommendedImageCount: { min: 3, max: 5 },
-    recommendedListDensity: { minItems: 3, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'map', 'hotel', 'numlist'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['tip', 'quick-fact', 'important'],
-    typographyBias: 'clear practical',
-    layoutBias: 'standard route',
-  },
-  'detailed-route': {
-    purpose: 'Detailed route planning with more explanation and more practical notes.',
-    contentDensity: 'dense',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 60, maxWords: 160 },
-    recommendedImageCount: { min: 2, max: 5 },
-    recommendedListDensity: { minItems: 3, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'map', 'numlist', 'hotel'],
-      optional: ['quote', 'image'],
-    },
-    highlightUsage: ['important', 'tip', 'warning'],
-    typographyBias: 'detailed practical',
-    layoutBias: 'standard detailed',
-  },
-  'complete-trip': {
-    purpose: 'End-to-end trip planning with accommodation, food, travel, and practical notes.',
-    contentDensity: 'dense',
-    imageStrategy: 'gallery-heavy',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 80, maxWords: 180 },
-    recommendedImageCount: { min: 4, max: 8 },
-    recommendedListDensity: { minItems: 4, maxItems: 10 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'numlist', 'gallery', 'hotel', 'map'],
-      optional: ['quote', 'video', 'newsletter'],
-    },
-    highlightUsage: ['important', 'tip', 'quick-fact'],
-    typographyBias: 'planning-focused editorial',
-    layoutBias: 'full practical',
-  },
-  'scenic-trail': {
-    purpose: 'Visual road-trip and route story emphasizing scenic stops and imagery.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 120 },
-    recommendedImageCount: { min: 4, max: 7 },
-    recommendedListDensity: { minItems: 3, maxItems: 7 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'image', 'map', 'gallery'],
-      optional: ['quote', 'numlist'],
-    },
-    highlightUsage: ['tip', 'editor-note'],
-    typographyBias: 'scenic visual editorial',
-    layoutBias: 'wide route',
-  },
-  'slow-journey': {
-    purpose: 'Relaxed travel pace with longer narrative beats and generous whitespace.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 60, maxWords: 140 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 2, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'quote', 'image', 'hotel'],
-      optional: ['numlist', 'newsletter'],
-    },
-    highlightUsage: ['editor-note', 'tip'],
-    typographyBias: 'slow narrative editorial',
-    layoutBias: 'spacious narrative',
-  },
-  'the-journey': {
-    purpose: 'Narrative travel story that follows a beginning, key moments, and reflection.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 80, maxWords: 180 },
-    recommendedImageCount: { min: 3, max: 5 },
-    recommendedListDensity: { minItems: 0, maxItems: 4 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'quote', 'image', 'h2'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['editor-note', 'quick-fact'],
-    typographyBias: 'immersive narrative',
-    layoutBias: 'wide narrative',
-  },
-  'photo-story': {
-    purpose: 'Photography-first story with wide visuals and lighter supporting text.',
-    contentDensity: 'light',
-    imageStrategy: 'gallery-heavy',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 100 },
-    recommendedImageCount: { min: 6, max: 10 },
-    recommendedListDensity: { minItems: 0, maxItems: 2 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'gallery', 'image', 'quote'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['quick-fact', 'editor-note'],
-    typographyBias: 'visual image-led',
-    layoutBias: 'full visual',
-  },
-  'travel-diary': {
-    purpose: 'Personal diary rhythm with reflective text and intimate observations.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 70, maxWords: 180 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 0, maxItems: 4 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'quote', 'image', 'h2'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['editor-note', 'tip'],
-    typographyBias: 'reflective narrative',
-    layoutBias: 'wide diary',
-  },
-  'memory-trail': {
-    purpose: 'Emotion-driven reflective travel story with fewer but stronger images.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 80, maxWords: 180 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 0, maxItems: 3 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'quote', 'gallery', 'image'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['editor-note', 'important'],
-    typographyBias: 'emotive editorial',
-    layoutBias: 'spacious reflective',
-  },
-  'postcard-story': {
-    purpose: 'Short, vivid travel note designed to feel visual and compact.',
-    contentDensity: 'light',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 100 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 0, maxItems: 2 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'gallery', 'quote', 'image'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['tip', 'quick-fact'],
-    typographyBias: 'short visual',
-    layoutBias: 'compact visual',
-  },
-  'complete-city': {
-    purpose: 'Comprehensive city guide covering neighborhoods, dining, stay, and practical essentials.',
-    contentDensity: 'dense',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 60, maxWords: 160 },
-    recommendedImageCount: { min: 3, max: 7 },
-    recommendedListDensity: { minItems: 4, maxItems: 10 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'map', 'numlist', 'hotel', 'gallery'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['important', 'tip', 'quick-fact'],
-    typographyBias: 'reference editorial',
-    layoutBias: 'wide reference',
-  },
-  'city-essentials': {
-    purpose: 'Scannable city planning guide built around essentials and quick decisions.',
-    contentDensity: 'light',
-    imageStrategy: 'text-led',
-    editorialRhythm: 'scannable',
-    recommendedTextRange: { minWords: 40, maxWords: 100 },
-    recommendedImageCount: { min: 2, max: 5 },
-    recommendedListDensity: { minItems: 4, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'numlist', 'hotel', 'map'],
-      optional: ['quote', 'image'],
-    },
-    highlightUsage: ['quick-fact', 'tip', 'warning'],
-    typographyBias: 'compact practical',
-    layoutBias: 'standard scannable',
-  },
-  'weekend-edit': {
-    purpose: 'Short city break format with a compact itinerary and fewer sections.',
-    contentDensity: 'light',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 40, maxWords: 100 },
-    recommendedImageCount: { min: 3, max: 5 },
-    recommendedListDensity: { minItems: 3, maxItems: 6 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'gallery', 'numlist', 'hotel'],
-      optional: ['newsletter'],
-    },
-    highlightUsage: ['important', 'tip'],
-    typographyBias: 'travel-short practical',
-    layoutBias: 'compact weekend',
-  },
-  'neighborhood-lens': {
-    purpose: 'Neighborhood-first city exploration with local flavor and map-led discovery.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 50, maxWords: 120 },
-    recommendedImageCount: { min: 4, max: 7 },
-    recommendedListDensity: { minItems: 4, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'map', 'gallery', 'quote'],
-      optional: ['hotel', 'numlist'],
-    },
-    highlightUsage: ['tip', 'editor-note', 'quick-fact'],
-    typographyBias: 'local discovery editorial',
-    layoutBias: 'wide neighborhood',
-  },
-  'local-life': {
-    purpose: 'Everyday local culture with food, neighborhoods, and lived-in city rhythm.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'narrative',
-    recommendedTextRange: { minWords: 60, maxWords: 140 },
-    recommendedImageCount: { min: 4, max: 6 },
-    recommendedListDensity: { minItems: 4, maxItems: 10 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'image', 'h2', 'numlist', 'quote'],
-      optional: ['gallery', 'newsletter'],
-    },
-    highlightUsage: ['editor-note', 'tip', 'quick-fact'],
-    typographyBias: 'local narrative',
-    layoutBias: 'balanced local',
-  },
-  'top-picks': {
-    purpose: 'Ranked experiences highlighting the strongest moments without too much clutter.',
-    contentDensity: 'light',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'scannable',
-    recommendedTextRange: { minWords: 40, maxWords: 90 },
-    recommendedImageCount: { min: 3, max: 6 },
-    recommendedListDensity: { minItems: 5, maxItems: 10 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'h2', 'numlist', 'image'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['quick-fact', 'tip'],
-    typographyBias: 'ranked scannable',
-    layoutBias: 'compact ranked',
-  },
-  'experience-list': {
-    purpose: 'Broad activity catalogue with consistent item structure and many options.',
-    contentDensity: 'dense',
-    imageStrategy: 'gallery-heavy',
-    editorialRhythm: 'scannable',
-    recommendedTextRange: { minWords: 50, maxWords: 120 },
-    recommendedImageCount: { min: 4, max: 8 },
-    recommendedListDensity: { minItems: 6, maxItems: 12 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'numlist', 'gallery', 'map'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['important', 'tip', 'quick-fact'],
-    typographyBias: 'catalogue practical',
-    layoutBias: 'standard catalogue',
-  },
-  'essential-experiences': {
-    purpose: 'Must-do focus with a smaller set of stronger experiences and clearer hierarchy.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 60, maxWords: 120 },
-    recommendedImageCount: { min: 3, max: 5 },
-    recommendedListDensity: { minItems: 6, maxItems: 10 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'numlist', 'image', 'map'],
-      optional: ['quote', 'newsletter'],
-    },
-    highlightUsage: ['important', 'tip'],
-    typographyBias: 'must-do editorial',
-    layoutBias: 'wide focused',
-  },
-  'experience-trail': {
-    purpose: 'Route-led experience sequence connecting a day or chapter in order.',
-    contentDensity: 'balanced',
-    imageStrategy: 'image-led',
-    editorialRhythm: 'visual',
-    recommendedTextRange: { minWords: 40, maxWords: 100 },
-    recommendedImageCount: { min: 4, max: 6 },
-    recommendedListDensity: { minItems: 4, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'map', 'numlist', 'gallery'],
-      optional: ['quote'],
-    },
-    highlightUsage: ['tip', 'quick-fact'],
-    typographyBias: 'route visual',
-    layoutBias: 'wide route',
-  },
-  'perfect-day': {
-    purpose: 'Curated one-day flow that feels itinerary-like and highly usable.',
-    contentDensity: 'balanced',
-    imageStrategy: 'balanced',
-    editorialRhythm: 'practical',
-    recommendedTextRange: { minWords: 60, maxWords: 120 },
-    recommendedImageCount: { min: 3, max: 5 },
-    recommendedListDensity: { minItems: 6, maxItems: 8 },
-    sectionGuidance: {
-      required: ['cover', 'h1'],
-      recommended: ['p', 'image', 'numlist', 'hotel'],
-      optional: ['gallery', 'newsletter'],
-    },
-    highlightUsage: ['tip', 'important'],
-    typographyBias: 'day-plan practical',
-    layoutBias: 'balanced day-plan',
-  },
-};
-
-const TEMPLATES_BY_FORMAT: Record<Exclude<BlogFormat, 'blank'>, BlogTemplateDefinition[]> = {
-  'destination-guide': [],
-  'itinerary': [],
-  'travel-story': [],
-  'city-guide': [],
-  'things-to-do': [],
-};
-
-const TEMPLATE_DEFAULTS: Record<Exclude<BlogFormat, 'blank'>, Pick<BlogTemplateDefinition, 'typography' | 'layout'>> = {
-  'destination-guide': {
-    typography: {
-      headingFontFamily: 'plumtrips-editorial',
-      bodyFontFamily: 'georgia',
-      h1Size: 'xl',
-      h2Size: 'large',
-      h3Size: 'normal',
-      bodyTextSize: 'normal',
-      headingWeight: 600,
-      bodyWeight: 400,
-      lineHeight: 'relaxed',
-      letterSpacing: 'normal',
-      headingColor: 'heading',
-      bodyColor: 'default',
-      accentColor: 'accent',
-      textAlignment: 'left',
-    },
-    layout: {
-      contentWidth: 'wide',
-      imageWidth: 'wide',
-      imageAlignment: 'center',
-      textAlignment: 'left',
-      sectionSpacing: 'relaxed',
-      imageTextSpacing: 'standard',
-      sidebar: 'none',
-    },
-  },
-  'itinerary': {
-    typography: {
-      headingFontFamily: 'plumtrips-editorial',
-      bodyFontFamily: 'arial',
-      h1Size: 'xl',
-      h2Size: 'large',
-      h3Size: 'normal',
-      bodyTextSize: 'normal',
-      headingWeight: 700,
-      bodyWeight: 400,
-      lineHeight: 'normal',
-      letterSpacing: 'normal',
-      headingColor: 'heading',
-      bodyColor: 'default',
-      accentColor: 'accent',
-      textAlignment: 'left',
-    },
-    layout: {
-      contentWidth: 'standard',
-      imageWidth: 'wide',
-      imageAlignment: 'center',
-      textAlignment: 'left',
-      sectionSpacing: 'standard',
-      imageTextSpacing: 'standard',
-      sidebar: 'none',
-    },
-  },
-  'travel-story': {
-    typography: {
-      headingFontFamily: 'plumtrips-editorial',
-      bodyFontFamily: 'georgia',
-      h1Size: 'xl',
-      h2Size: 'large',
-      h3Size: 'normal',
-      bodyTextSize: 'large',
-      headingWeight: 500,
-      bodyWeight: 400,
-      lineHeight: 'relaxed',
-      letterSpacing: 'wide',
-      headingColor: 'heading',
-      bodyColor: 'default',
-      accentColor: 'accent',
-      textAlignment: 'left',
-    },
-    layout: {
-      contentWidth: 'wide',
-      imageWidth: 'full',
-      imageAlignment: 'full',
-      textAlignment: 'left',
-      sectionSpacing: 'relaxed',
-      imageTextSpacing: 'relaxed',
-      sidebar: 'none',
-    },
-  },
-  'city-guide': {
-    typography: {
-      headingFontFamily: 'plumtrips-editorial',
-      bodyFontFamily: 'arial',
-      h1Size: 'xl',
-      h2Size: 'large',
-      h3Size: 'normal',
-      bodyTextSize: 'normal',
-      headingWeight: 600,
-      bodyWeight: 400,
-      lineHeight: 'normal',
-      letterSpacing: 'normal',
-      headingColor: 'heading',
-      bodyColor: 'default',
-      accentColor: 'accent',
-      textAlignment: 'left',
-    },
-    layout: {
-      contentWidth: 'wide',
-      imageWidth: 'wide',
-      imageAlignment: 'center',
-      textAlignment: 'left',
-      sectionSpacing: 'standard',
-      imageTextSpacing: 'standard',
-      sidebar: 'right',
-    },
-  },
-  'things-to-do': {
-    typography: {
-      headingFontFamily: 'plumtrips-editorial',
-      bodyFontFamily: 'tahoma',
-      h1Size: 'large',
-      h2Size: 'normal',
-      h3Size: 'normal',
-      bodyTextSize: 'normal',
-      headingWeight: 700,
-      bodyWeight: 400,
-      lineHeight: 'normal',
-      letterSpacing: 'normal',
-      headingColor: 'heading',
-      bodyColor: 'default',
-      accentColor: 'accent',
-      textAlignment: 'left',
-    },
-    layout: {
-      contentWidth: 'standard',
-      imageWidth: 'standard',
-      imageAlignment: 'center',
-      textAlignment: 'left',
-      sectionSpacing: 'compact',
-      imageTextSpacing: 'standard',
-      sidebar: 'none',
-    },
-  },
-};
-
-const addTemplateDefaults = (format: Exclude<BlogFormat, 'blank'>, template: BlogTemplateDefinition): BlogTemplateDefinition => ({
-  ...template,
-  profile: template.profile ?? TEMPLATE_AUTHORING_PROFILES[template.id] ?? undefined,
-  typography: template.typography ?? TEMPLATE_DEFAULTS[format].typography,
-  layout: template.layout ?? TEMPLATE_DEFAULTS[format].layout,
-});
-
-for (const format of Object.keys(TEMPLATE_DEFAULTS) as Exclude<BlogFormat, 'blank'>[]) {
-  const templates = {
-    'destination-guide': DESTINATION_TEMPLATES,
-    'itinerary': ITINERARY_TEMPLATES,
-    'travel-story': TRAVEL_STORY_TEMPLATES,
-    'city-guide': CITY_GUIDE_TEMPLATES,
-    'things-to-do': THINGS_TO_DO_TEMPLATES,
-  }[format];
-  TEMPLATES_BY_FORMAT[format] = templates.map((template) => addTemplateDefaults(format, template));
-}
-
-const FORMAT_GALLERY_INFO: Record<Exclude<BlogFormat, 'blank'>, { title: string; subtitle: string }> = {
-  'destination-guide': {
-    title: 'Destination Guide',
-    subtitle: 'Choose a starting template for your destination story.',
-  },
-  'itinerary': {
-    title: '3/5/7-Day Itinerary',
-    subtitle: 'Choose a starting template for your day-by-day travel plan.',
-  },
-  'travel-story': {
-    title: 'Travel Story',
-    subtitle: 'Choose a starting template for your personal travel narrative.',
-  },
-  'city-guide': {
-    title: 'City Guide',
-    subtitle: 'Choose a starting template for your metropolitan guide.',
-  },
-  'things-to-do': {
-    title: 'Things To Do',
-    subtitle: 'Choose a starting template for your curated activity list.',
-  },
-};
-
 const makeId = () => `b${Math.random().toString(36).slice(2, 10)}`;
 
-const createDefaultBlock = (type: BlockType, settings?: PostBlockSettings): PostBlock => {
+const CONTENT_FIELD_KEYS = new Set([
+  'type', 'url', 'text', 'caption', 'cite', 'src', 'images', 'items',
+  'kicker', 'name', 'loc', 'desc', 'price', 'nights', 'img',
+  'pins', 'title', 'body',
+]);
+
+const createDefaultBlock = (
+  type: BlockType,
+  settings?: PostBlockSettings,
+  initial?: Partial<PostBlock>,
+): PostBlock => {
   switch (type) {
     case 'h1': case 'h2': case 'h3': case 'p':
-      return { id: makeId(), type, text: '' };
+      return { id: makeId(), type, text: initial?.text ?? '' };
     case 'quote':
-      return { id: makeId(), type, text: '', cite: '' };
+      return { id: makeId(), type, text: initial?.text ?? '', cite: initial?.cite ?? '' };
     case 'image': case 'cover':
-      return { id: makeId(), type, src: '', caption: '' };
+      return { id: makeId(), type, src: initial?.src ?? '', caption: initial?.caption ?? '' };
     case 'gallery':
-      return { id: makeId(), type, images: Array.from({ length: settings?.imageCount ?? 0 }, () => '') };
+      return { id: makeId(), type, images: initial?.images ?? Array.from({ length: settings?.imageCount ?? 0 }, () => '') };
     case 'numlist':
       return {
         id: makeId(),
         type,
-        items: Array.from({ length: Math.max(1, settings?.minItems ?? 1) }, (_, index) => ({
-          n: index + 1,
-          title: `Item ${index + 1}`,
-          loc: '',
-          body: '',
-          img: '',
-        })),
+        items: initial?.items && initial.items.length > 0
+          ? initial.items.map((it, idx) => ({ n: it.n ?? idx + 1, title: it.title, loc: it.loc ?? '', body: it.body ?? '', img: it.img ?? '' }))
+          : Array.from({ length: Math.max(1, settings?.minItems ?? 1) }, (_, index) => ({
+            n: index + 1,
+            title: `Item ${index + 1}`,
+            loc: '',
+            body: '',
+            img: '',
+          })),
       };
     case 'hotel':
-      return { id: makeId(), type, kicker: "Editor's pick", name: '', loc: '', desc: '', price: '', nights: '', img: '' };
+      return {
+        id: makeId(),
+        type,
+        kicker: initial?.kicker ?? "Editor's pick",
+        name: initial?.name ?? '',
+        loc: initial?.loc ?? '',
+        desc: initial?.desc ?? '',
+        price: initial?.price ?? '',
+        nights: initial?.nights ?? '',
+        img: initial?.img ?? '',
+      };
     case 'map':
-      return { id: makeId(), type, pins: [{ x: 50, y: 50, label: 'Pin label' }] };
+      return { id: makeId(), type, pins: initial?.pins ? initial.pins.map((p) => ({ ...p })) : [{ x: 50, y: 50, label: 'Pin label' }] };
     case 'video':
-      return { id: makeId(), type, url: '' };
+      return { id: makeId(), type, url: initial?.url ?? '' };
     case 'newsletter':
-      return { id: makeId(), type, title: 'Join the newsletter', body: '' };
+      return { id: makeId(), type, title: initial?.title ?? 'Join the newsletter', body: initial?.body ?? '' };
+    case 'callout':
+      return {
+        id: makeId(),
+        type,
+        title: initial?.title ?? '',
+        text: initial?.text ?? initial?.body ?? '',
+      };
+    case 'faq':
+      return {
+        id: makeId(),
+        type,
+        title: initial?.title ?? 'Frequently Asked Questions',
+        items: initial?.items && initial.items.length > 0
+          ? initial.items.map((it, idx) => ({ n: it.n ?? idx + 1, title: it.title, loc: it.loc ?? '', body: it.body ?? '', img: it.img ?? '' }))
+          : [{ n: 1, title: 'Frequently Asked Question', loc: '', body: 'Answer details go here...', img: '' }],
+      };
+    case 'budget':
+      return {
+        id: makeId(),
+        type,
+        title: initial?.title ?? 'Trip Cost Breakdown',
+        price: initial?.price ?? '',
+        body: initial?.body ?? '',
+      };
     default:
-      return { id: makeId(), type, text: '' };
+      return { id: makeId(), type, text: initial?.text ?? '' };
   }
 };
 
-const defaultBlock = (type: BlockType, settings?: PostBlockSettings): PostBlock => {
-  const block = createDefaultBlock(type, settings);
+const defaultBlock = (
+  type: BlockType,
+  settings?: PostBlockSettings,
+  initial?: Partial<PostBlock>,
+): PostBlock => {
+  const block = createDefaultBlock(type, settings, initial);
   return settings ? { ...block, settings } : block;
 };
 
 const templateBlockSettings = (block: BlogTemplateBlock, profile?: TemplateAuthoringProfile): PostBlockSettings => {
   const explicitSettings = Object.fromEntries(
-    Object.entries(block).filter(([key]) => key !== 'type'),
+    Object.entries(block).filter(([key]) => !CONTENT_FIELD_KEYS.has(key)),
   ) as PostBlockSettings;
 
   const guidance = profile?.blockGuidance?.[block.type];
@@ -1349,7 +326,31 @@ const templateBlockSettings = (block: BlogTemplateBlock, profile?: TemplateAutho
 const templateBlocksToPostBlocks = (templateBlocks: BlogTemplateBlock[], profile?: TemplateAuthoringProfile): PostBlock[] => {
   return templateBlocks.map((block) => {
     const settings = templateBlockSettings(block, profile);
-    return defaultBlock(block.type, Object.keys(settings).length > 0 ? settings : undefined);
+    const initial: Partial<PostBlock> = {};
+    if (block.url !== undefined) initial.url = block.url;
+    if (block.text !== undefined) initial.text = block.text;
+    if (block.caption !== undefined) initial.caption = block.caption;
+    if (block.cite !== undefined) initial.cite = block.cite;
+    if (block.src !== undefined) initial.src = block.src;
+    if (block.images !== undefined) initial.images = [...block.images];
+    if (block.items !== undefined) initial.items = block.items.map((it, idx) => ({
+      n: it.n ?? idx + 1,
+      title: it.title,
+      loc: it.loc ?? '',
+      body: it.body ?? '',
+      img: it.img,
+    }));
+    if (block.kicker !== undefined) initial.kicker = block.kicker;
+    if (block.name !== undefined) initial.name = block.name;
+    if (block.loc !== undefined) initial.loc = block.loc;
+    if (block.desc !== undefined) initial.desc = block.desc;
+    if (block.price !== undefined) initial.price = block.price;
+    if (block.nights !== undefined) initial.nights = block.nights;
+    if (block.img !== undefined) initial.img = block.img;
+    if (block.pins !== undefined) initial.pins = block.pins.map((p) => ({ ...p }));
+    if (block.title !== undefined) initial.title = block.title;
+    if (block.body !== undefined) initial.body = block.body;
+    return defaultBlock(block.type, Object.keys(settings).length > 0 ? settings : undefined, initial);
   });
 };
 
@@ -1717,7 +718,7 @@ const GalleryImageField: React.FC<{
   );
 };
 
-const TEXT_BLOCK_TYPES: BlockType[] = ['h1', 'h2', 'h3', 'p', 'quote'];
+const TEXT_BLOCK_TYPES: BlockType[] = ['h1', 'h2', 'h3', 'p', 'quote', 'callout', 'keyinfo'];
 
 const typographySelectStyle: React.CSSProperties = {
   width: '100%',
@@ -1895,27 +896,75 @@ const TextBlockSettings: React.FC<{
           </select>
         </label>
 
-        <div>
-          <span style={typographyFieldLabel}>Formatting</span>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 31 }}>
-            <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12 }}>
-              <input
-                type="checkbox"
-                checked={typography?.bold === true}
-                onChange={(e) => updateTypography({ bold: e.target.checked })}
-              />
-              Bold
-            </label>
-            <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12 }}>
-              <input
-                type="checkbox"
-                checked={typography?.italic === true}
-                onChange={(e) => updateTypography({ italic: e.target.checked })}
-              />
-              Italic
-            </label>
-          </div>
-        </div>
+        <label>
+          <span style={typographyFieldLabel}>Line height</span>
+          <select
+            aria-label="Line height override"
+            style={typographySelectStyle}
+            value={typography?.lineHeight || 'template-default'}
+            onChange={(e) => selectTypography('lineHeight', e.target.value)}
+          >
+            <option value="template-default">Template Default</option>
+            <option value="tight">Tight</option>
+            <option value="normal">Normal</option>
+            <option value="relaxed">Relaxed</option>
+          </select>
+        </label>
+
+        <label>
+          <span style={typographyFieldLabel}>Letter spacing</span>
+          <select
+            aria-label="Letter spacing override"
+            style={typographySelectStyle}
+            value={typography?.letterSpacing || 'template-default'}
+            onChange={(e) => selectTypography('letterSpacing', e.target.value)}
+          >
+            <option value="template-default">Template Default</option>
+            <option value="tight">Tight</option>
+            <option value="normal">Normal</option>
+            <option value="wide">Wide</option>
+          </select>
+        </label>
+
+        <label>
+          <span style={typographyFieldLabel}>Weight</span>
+          <select
+            aria-label="Font weight"
+            style={typographySelectStyle}
+            value={typography?.bold === true ? 'bold' : typography?.bold === false ? 'normal' : 'template-default'}
+            onChange={(e) => {
+              if (e.target.value === 'template-default') {
+                updateTypography({}, 'bold');
+              } else {
+                updateTypography({ bold: e.target.value === 'bold' });
+              }
+            }}
+          >
+            <option value="template-default">Template Default</option>
+            <option value="bold">Bold</option>
+            <option value="normal">Regular</option>
+          </select>
+        </label>
+
+        <label>
+          <span style={typographyFieldLabel}>Style</span>
+          <select
+            aria-label="Font style"
+            style={typographySelectStyle}
+            value={typography?.italic === true ? 'italic' : typography?.italic === false ? 'normal' : 'template-default'}
+            onChange={(e) => {
+              if (e.target.value === 'template-default') {
+                updateTypography({}, 'italic');
+              } else {
+                updateTypography({ italic: e.target.value === 'italic' });
+              }
+            }}
+          >
+            <option value="template-default">Template Default</option>
+            <option value="italic">Italic</option>
+            <option value="normal">Normal</option>
+          </select>
+        </label>
 
         <label>
           <span style={typographyFieldLabel}>Content width</span>
@@ -1977,57 +1026,6 @@ const TextBlockSettings: React.FC<{
             <option value="right">Right</option>
           </select>
         </label>
-
-        {['image', 'cover'].includes(block.type) && (
-          <>
-            <label>
-              <span style={typographyFieldLabel}>Image width</span>
-              <select
-                aria-label="Image width"
-                style={typographySelectStyle}
-                value={layout?.imageWidth || 'template-default'}
-                onChange={(e) => selectLayout('imageWidth', e.target.value)}
-              >
-                <option value="template-default">Template Default</option>
-                <option value="narrow">Narrow</option>
-                <option value="standard">Standard</option>
-                <option value="wide">Wide</option>
-                <option value="full">Full</option>
-              </select>
-            </label>
-
-            <label>
-              <span style={typographyFieldLabel}>Image alignment</span>
-              <select
-                aria-label="Image alignment"
-                style={typographySelectStyle}
-                value={layout?.imageAlignment || 'template-default'}
-                onChange={(e) => selectLayout('imageAlignment', e.target.value)}
-              >
-                <option value="template-default">Template Default</option>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-                <option value="full">Full</option>
-              </select>
-            </label>
-
-            <label>
-              <span style={typographyFieldLabel}>Image/text spacing</span>
-              <select
-                aria-label="Image text spacing"
-                style={typographySelectStyle}
-                value={layout?.imageTextSpacing || 'template-default'}
-                onChange={(e) => selectLayout('imageTextSpacing', e.target.value)}
-              >
-                <option value="template-default">Template Default</option>
-                <option value="compact">Compact</option>
-                <option value="standard">Normal</option>
-                <option value="relaxed">Spacious</option>
-              </select>
-            </label>
-          </>
-        )}
       </div>
       </fieldset>
     </details>
@@ -2054,9 +1052,36 @@ const MediaBlockSettings: React.FC<{
   if (!MEDIA_SETTINGS_TYPES.includes(block.type)) return null;
 
   const settings = block.settings || {};
+  const layout = settings.layout;
+
   const update = (patch: Partial<PostBlockSettings>) => {
     const next = { ...settings, ...patch };
     onChange(Object.keys(next).length ? next : undefined);
+  };
+
+  const updateLayout = (
+    patch: Partial<LayoutOverrides> = {},
+    clearKey?: keyof LayoutOverrides,
+  ) => {
+    const nextLayout: LayoutOverrides = { ...layout, ...patch };
+    if (clearKey) delete nextLayout[clearKey];
+
+    const nextSettings: PostBlockSettings = { ...settings };
+    if (Object.keys(nextLayout).length > 0) {
+      nextSettings.layout = nextLayout;
+    } else {
+      delete nextSettings.layout;
+    }
+
+    onChange(Object.keys(nextSettings).length > 0 ? nextSettings : undefined);
+  };
+
+  const selectLayout = <K extends keyof LayoutOverrides>(key: K, value: string) => {
+    if (value === 'template-default') {
+      updateLayout({}, key);
+      return;
+    }
+    updateLayout({ [key]: value as LayoutOverrides[K] } as Pick<LayoutOverrides, K>);
   };
 
   const composition = settings.galleryComposition || 'equal';
@@ -2067,10 +1092,10 @@ const MediaBlockSettings: React.FC<{
   return (
     <details style={{ marginTop: 12, border: '1px solid #eee', borderRadius: 10, background: '#fafafa' }}>
       <summary style={{ cursor: 'pointer', padding: '10px 12px', fontSize: 12, fontWeight: 700, color: '#555' }}>
-        Media presentation
+        Media presentation & layout
       </summary>
       <fieldset style={{ border: 0, padding: '0 12px 12px', display: 'grid', gap: 12 }}>
-        <legend className="sr-only">Media presentation settings</legend>
+        <legend className="sr-only">Media presentation and layout settings</legend>
         <div>
           <span style={typographyFieldLabel}>Image fit</span>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -2121,6 +1146,85 @@ const MediaBlockSettings: React.FC<{
             </div>
           </>
         )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginTop: 4, paddingTop: 10, borderTop: '1px solid #eee' }}>
+          <label>
+            <span style={typographyFieldLabel}>Image width</span>
+            <select
+              aria-label="Image width override"
+              style={typographySelectStyle}
+              value={layout?.imageWidth || 'template-default'}
+              onChange={(e) => selectLayout('imageWidth', e.target.value)}
+            >
+              <option value="template-default">Template Default</option>
+              <option value="narrow">Narrow</option>
+              <option value="standard">Standard</option>
+              <option value="wide">Wide</option>
+              <option value="full">Full</option>
+            </select>
+          </label>
+
+          <label>
+            <span style={typographyFieldLabel}>Image alignment</span>
+            <select
+              aria-label="Image alignment override"
+              style={typographySelectStyle}
+              value={layout?.imageAlignment || 'template-default'}
+              onChange={(e) => selectLayout('imageAlignment', e.target.value)}
+            >
+              <option value="template-default">Template Default</option>
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="full">Full</option>
+            </select>
+          </label>
+
+          <label>
+            <span style={typographyFieldLabel}>Image/text spacing</span>
+            <select
+              aria-label="Image text spacing override"
+              style={typographySelectStyle}
+              value={layout?.imageTextSpacing || 'template-default'}
+              onChange={(e) => selectLayout('imageTextSpacing', e.target.value)}
+            >
+              <option value="template-default">Template Default</option>
+              <option value="compact">Compact</option>
+              <option value="standard">Normal</option>
+              <option value="relaxed">Spacious</option>
+            </select>
+          </label>
+
+          <label>
+            <span style={typographyFieldLabel}>Section spacing</span>
+            <select
+              aria-label="Section spacing override"
+              style={typographySelectStyle}
+              value={layout?.sectionSpacing || 'template-default'}
+              onChange={(e) => selectLayout('sectionSpacing', e.target.value)}
+            >
+              <option value="template-default">Template Default</option>
+              <option value="compact">Compact</option>
+              <option value="standard">Normal</option>
+              <option value="relaxed">Spacious</option>
+            </select>
+          </label>
+
+          <label>
+            <span style={typographyFieldLabel}>Sidebar</span>
+            <select
+              aria-label="Sidebar override"
+              style={typographySelectStyle}
+              value={layout?.sidebar || 'template-default'}
+              onChange={(e) => selectLayout('sidebar', e.target.value)}
+            >
+              <option value="template-default">Template Default</option>
+              <option value="none">None</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
+        </div>
       </fieldset>
     </details>
   );
@@ -2146,54 +1250,292 @@ const blockImageCount = (block: PostBlock): number | undefined => {
   return undefined;
 };
 
+// ─── Block Type Display Labels ────────────────────────────────────────────────
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+  h1: 'Heading 1',
+  h2: 'Heading 2',
+  h3: 'Heading 3',
+  p: 'Paragraph',
+  quote: 'Pull Quote',
+  image: 'Image',
+  cover: 'Cover Image',
+  gallery: 'Gallery',
+  numlist: 'Numbered List',
+  hotel: 'Hotel Card',
+  map: 'Map',
+  callout: 'Callout Tip',
+  faq: 'FAQ Item',
+  budget: 'Budget Row',
+  video: 'Video',
+  newsletter: 'Newsletter',
+};
+
+// ─── Numbered List Editor ─────────────────────────────────────────────────────
+const NumberedListEditor: React.FC<{
+  items: ListItem[];
+  onChange: (items: ListItem[]) => void;
+}> = ({ items = [], onChange }) => {
+  const reindex = (list: ListItem[]): ListItem[] =>
+    list.map((it, idx) => ({ ...it, n: idx + 1 }));
+
+  const updateItem = (index: number, patch: Partial<ListItem>) => {
+    const next = [...items];
+    next[index] = { ...next[index], ...patch };
+    onChange(next);
+  };
+
+  const handleMove = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    const [entry] = next.splice(index, 1);
+    next.splice(target, 0, entry);
+    onChange(reindex(next));
+  };
+
+  const handleRemove = (index: number) => {
+    const next = items.filter((_, i) => i !== index);
+    onChange(reindex(next));
+  };
+
+  const handleAdd = () => {
+    const next = [...items, { n: items.length + 1, title: '', loc: '', body: '', img: '' }];
+    onChange(reindex(next));
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 12 }}>
+      {items.length === 0 ? (
+        <div
+          style={{
+            padding: '24px 16px',
+            textAlign: 'center',
+            background: '#fafafa',
+            border: '1px dashed #d1d5db',
+            borderRadius: 10,
+            color: '#6b7280',
+          }}
+        >
+          <div style={{ fontSize: 13, marginBottom: 10 }}>This numbered list has no entries yet.</div>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={handleAdd}
+          >
+            + Add First Entry
+          </button>
+        </div>
+      ) : (
+        items.map((item, index) => (
+          <div
+            key={index}
+            style={{
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              padding: 12,
+              background: '#ffffff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            }}
+          >
+            {/* Header row: Number badge + Title + Action buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 6,
+                  background: '#f3f0ff',
+                  color: '#6d28d9',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  fontVariantNumeric: 'tabular-nums',
+                  flexShrink: 0,
+                }}
+              >
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <input
+                style={{
+                  flex: 1,
+                  padding: '7px 10px',
+                  borderRadius: 6,
+                  border: '1px solid #d1d5db',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: '#fafafa',
+                }}
+                value={item.title || ''}
+                onChange={(e) => updateItem(index, { title: e.target.value })}
+                placeholder={`Entry ${index + 1} headline or title...`}
+              />
+              <div style={{ display: 'inline-flex', gap: 4, flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="btn btn-xs"
+                  onClick={() => handleMove(index, -1)}
+                  disabled={index === 0}
+                  title="Move entry up"
+                  style={{ opacity: index === 0 ? 0.35 : 1 }}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-xs"
+                  onClick={() => handleMove(index, 1)}
+                  disabled={index === items.length - 1}
+                  title="Move entry down"
+                  style={{ opacity: index === items.length - 1 ? 0.35 : 1 }}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-xs"
+                  onClick={() => handleRemove(index)}
+                  title="Delete entry"
+                  style={{ color: '#dc2626' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Secondary metadata row (Location + Image URL) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 2 }}>
+                  Location (optional)
+                </label>
+                <input
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    fontSize: 12,
+                    background: '#f9fafb',
+                    boxSizing: 'border-box',
+                  }}
+                  value={item.loc || ''}
+                  onChange={(e) => updateItem(index, { loc: e.target.value })}
+                  placeholder="e.g. Kyoto, Japan"
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 2 }}>
+                  Image URL (optional)
+                </label>
+                <input
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    fontSize: 12,
+                    background: '#f9fafb',
+                    boxSizing: 'border-box',
+                  }}
+                  value={item.img || ''}
+                  onChange={(e) => updateItem(index, { img: e.target.value })}
+                  placeholder="https://... image url"
+                />
+              </div>
+            </div>
+
+            {/* Body text */}
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 2 }}>
+                Description / Body
+              </label>
+              <textarea
+                style={{
+                  width: '100%',
+                  minHeight: 64,
+                  padding: '7px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #e5e7eb',
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  background: '#fafafa',
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                }}
+                value={item.body || ''}
+                onChange={(e) => updateItem(index, { body: e.target.value })}
+                placeholder="Describe this highlight, tip, or stop…"
+              />
+            </div>
+          </div>
+        ))
+      )}
+
+      {items.length > 0 && (
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={handleAdd}
+          style={{
+            alignSelf: 'start',
+            background: '#f9fafb',
+            border: '1px dashed #d1d5db',
+            color: '#374151',
+            fontWeight: 500,
+          }}
+        >
+          + Add List Entry ({items.length} current)
+        </button>
+      )}
+    </div>
+  );
+};
+
+export type BlogEditorElement = {
+  focus: (options?: FocusOptions) => void;
+  setSelectionRange?: (start: number, end: number) => void;
+} | null;
+
 // ─── Block Editor ─────────────────────────────────────────────────────────────
 const BlogBlockEditor: React.FC<{
   block: PostBlock;
+  index: number;
+  isActive: boolean;
   authoringProfile?: TemplateAuthoringProfile;
+  pendingMarks?: InlineTextMarks;
+  onFormatKey?: (mark: 'bold' | 'italic' | 'underline' | 'strikethrough') => void;
   onChange: (value: PostBlock) => void;
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDuplicate: () => void;
-}> = ({ block, authoringProfile, onChange, onDelete, onMoveUp, onMoveDown, onDuplicate }) => {
+  onFocusBlock?: (id: string, editorEl?: BlogEditorElement) => void;
+  onSelectionChange?: (sel: { start: number; end: number }, editorEl?: BlogEditorElement) => void;
+}> = ({
+  block,
+  index,
+  isActive,
+  authoringProfile,
+  pendingMarks,
+  onFormatKey,
+  onChange,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+  onFocusBlock,
+  onSelectionChange,
+}) => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetField] = useState<string>('src');
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const [textSelection, setTextSelection] = useState({ start: 0, end: 0 });
+  const richEditorRef = useRef<InlineRichTextEditorRef>(null);
 
-  const updateField = (field: string, value: any) => onChange({ ...block, [field]: value });
-  const updateItems = (items: any[]) => updateField('items', items);
-  const updatePins = (pins: any[]) => updateField('pins', pins);
-
-  const updateText = (value: string) => onChange({ ...block, text: value, inlineContent: undefined });
-
-  const rememberTextSelection = () => {
-    const textarea = textAreaRef.current;
-    if (!textarea) return;
-    setTextSelection({ start: textarea.selectionStart, end: textarea.selectionEnd });
-  };
-
-  const applyTextMark = (mark: keyof InlineTextMarks, value: boolean | string) => {
-    const text = block.text || '';
-    const { start, end } = textSelection;
-    if (start === end) return;
-    onChange({
-      ...block,
-      inlineContent: applyInlineMark(text, block.inlineContent, start, end, mark, value),
-    });
-  };
-
-  const clearSelectionAfterFormatting = () => {
-    requestAnimationFrame(() => {
-      textAreaRef.current?.setSelectionRange(textSelection.start, textSelection.end);
-    });
-  };
-
-  const formatSelection = (mark: keyof InlineTextMarks, value: boolean | string) => {
-    applyTextMark(mark, value);
-    clearSelectionAfterFormatting();
-  };
+  const updateField = (field: string, value: unknown) => onChange({ ...block, [field]: value });
+  const updateItems = (items: ListItem[]) => updateField('items', items);
+  const updatePins = (pins: PostBlock['pins']) => updateField('pins', pins);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2208,13 +1550,6 @@ const BlogBlockEditor: React.FC<{
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
-
-  const blockTypeLabel: Record<string, string> = {
-    h1: 'Heading 1', h2: 'Heading 2', h3: 'Heading 3', p: 'Paragraph',
-    quote: 'Pull Quote', image: 'Image', cover: 'Cover Image',
-    gallery: 'Gallery', numlist: 'Numbered List', hotel: 'Hotel Card',
-    map: 'Map', video: 'Video', newsletter: 'Newsletter',
   };
 
   const blockGuidance: TemplateBlockGuidance | undefined = authoringProfile?.blockGuidance?.[block.type];
@@ -2252,11 +1587,32 @@ const BlogBlockEditor: React.FC<{
   ].filter((line): line is string => Boolean(line));
 
   return (
-    <div className="block-editor" style={{ border: '1px solid #ddd', borderRadius: 12, padding: 16, marginBottom: 16, background: '#fff' }}>
+    <div
+      id={`block-editor-${block.id}`}
+      className={`block-editor ${isActive ? 'block-editor--active' : ''}`}
+      onClick={() => onFocusBlock?.(block.id, richEditorRef.current)}
+      style={{
+        border: isActive ? '2px solid #7c3aed' : '1px solid #ddd',
+        boxShadow: isActive ? '0 0 0 3px rgba(124, 58, 237, 0.12)' : 'none',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        background: '#fff',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        scrollMarginTop: 90,
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#888', background: '#f0f0f0', padding: '4px 10px', borderRadius: 999 }}>
-          {blockTypeLabel[block.type] || block.type}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: isActive ? '#6d28d9' : '#888', background: isActive ? '#f5f3ff' : '#f0f0f0', padding: '4px 10px', borderRadius: 999 }}>
+            #{index + 1} {BLOCK_TYPE_LABELS[block.type] || block.type}
+          </span>
+          {isActive && (
+            <span style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>
+              Active
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button type="button" className="btn btn-sm" onClick={onMoveUp} title="Move up">↑</button>
           <button type="button" className="btn btn-sm" onClick={onMoveDown} title="Move down">↓</button>
@@ -2284,79 +1640,76 @@ const BlogBlockEditor: React.FC<{
       )}
 
       {['h1', 'h2', 'h3', 'p'].includes(block.type) && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatSelection('bold', true)}
-              disabled={textSelection.start === textSelection.end}
-              title="Bold selected text"
-            >
-              <strong>B</strong>
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatSelection('italic', true)}
-              disabled={textSelection.start === textSelection.end}
-              title="Italicize selected text"
-            >
-              <em>I</em>
-            </button>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
-              Text color
-              <input
-                type="color"
-                aria-label="Text color for selected text"
-                title="Apply text color to selected text"
-                defaultValue="#7c3aed"
-                disabled={textSelection.start === textSelection.end}
-                onChange={(e) => formatSelection('color', e.target.value)}
-              />
-            </label>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
-              Highlight color
-              <input
-                type="color"
-                aria-label="Highlight color for selected text"
-                title="Apply highlight color to selected text"
-                defaultValue="#fde68a"
-                disabled={textSelection.start === textSelection.end}
-                onChange={(e) => formatSelection('highlight', e.target.value)}
-              />
-            </label>
-            <span style={{ fontSize: 11, color: '#777' }}>
-              {textSelection.start === textSelection.end ? 'Select text to format' : `${textSelection.end - textSelection.start} characters selected`}
-            </span>
-          </div>
-          <textarea
-            ref={textAreaRef}
-            style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
-            value={block.text || ''}
-            onChange={(e) => updateText(e.target.value)}
-            onSelect={rememberTextSelection}
-            onKeyUp={rememberTextSelection}
-            onMouseUp={rememberTextSelection}
-            placeholder="Block text"
-          />
-        </>
+        <InlineRichTextEditor
+          ref={richEditorRef}
+          value={block.text || ''}
+          fragments={block.inlineContent}
+          pendingMarks={isActive ? pendingMarks : undefined}
+          onFormatKey={isActive ? onFormatKey : undefined}
+          placeholder={`${BLOCK_TYPE_LABELS[block.type] || 'Block'} text`}
+          multiline={block.type === 'p'}
+          blockType={block.type}
+          style={{
+            fontSize: block.type === 'h1' ? 22 : block.type === 'h2' ? 18 : block.type === 'h3' ? 16 : 14,
+            fontWeight: ['h1', 'h2', 'h3'].includes(block.type) ? 700 : 400,
+            minHeight: block.type === 'p' ? 80 : 42,
+          }}
+          onChange={(nextText, nextFragments) => {
+            onChange({
+              ...block,
+              text: nextText,
+              inlineContent: nextFragments.length > 0 ? nextFragments : undefined,
+            });
+          }}
+          onFocus={() => {
+            onFocusBlock?.(block.id, richEditorRef.current);
+          }}
+          onSelectionChange={(sel) => {
+            onSelectionChange?.(sel, richEditorRef.current);
+          }}
+        />
       )}
 
       {block.type === 'quote' && (
         <>
           <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Quote text</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-            <button type="button" className="btn btn-sm" onMouseDown={(e) => e.preventDefault()} onClick={() => formatSelection('bold', true)} disabled={textSelection.start === textSelection.end} title="Bold selected text"><strong>B</strong></button>
-            <button type="button" className="btn btn-sm" onMouseDown={(e) => e.preventDefault()} onClick={() => formatSelection('italic', true)} disabled={textSelection.start === textSelection.end} title="Italicize selected text"><em>I</em></button>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12 }}>Text color <input type="color" aria-label="Text color for selected quote text" title="Apply text color to selected quote text" defaultValue="#7c3aed" disabled={textSelection.start === textSelection.end} onChange={(e) => formatSelection('color', e.target.value)} /></label>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12 }}>Highlight color <input type="color" aria-label="Highlight color for selected quote text" title="Apply highlight color to selected quote text" defaultValue="#fde68a" disabled={textSelection.start === textSelection.end} onChange={(e) => formatSelection('highlight', e.target.value)} /></label>
-          </div>
-          <textarea ref={textAreaRef} style={{ width: '100%', minHeight: 80, marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.text || ''} onChange={(e) => updateText(e.target.value)} onSelect={rememberTextSelection} onKeyUp={rememberTextSelection} onMouseUp={rememberTextSelection} placeholder="Quote text" />
+          <InlineRichTextEditor
+            ref={richEditorRef}
+            value={block.text || ''}
+            fragments={block.inlineContent}
+            pendingMarks={isActive ? pendingMarks : undefined}
+            onFormatKey={isActive ? onFormatKey : undefined}
+            placeholder="Quote text"
+            multiline={true}
+            blockType="quote"
+            style={{
+              fontSize: 15,
+              fontStyle: 'italic',
+              marginBottom: 12,
+              minHeight: 80,
+            }}
+            onChange={(nextText, nextFragments) => {
+              onChange({
+                ...block,
+                text: nextText,
+                inlineContent: nextFragments.length > 0 ? nextFragments : undefined,
+              });
+            }}
+            onFocus={() => {
+              onFocusBlock?.(block.id, richEditorRef.current);
+            }}
+            onSelectionChange={(sel) => {
+              onSelectionChange?.(sel, richEditorRef.current);
+            }}
+          />
           <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Attribution / credit</label>
-          <input style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.cite || ''} onChange={(e) => updateField('cite', e.target.value)} placeholder="— Person Name" />
+          <input
+            style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+            value={block.cite || ''}
+            onChange={(e) => updateField('cite', e.target.value)}
+            onFocus={() => onFocusBlock?.(block.id, null)}
+            placeholder="— Person Name"
+          />
         </>
       )}
 
@@ -2396,25 +1749,10 @@ const BlogBlockEditor: React.FC<{
       )}
 
       {block.type === 'numlist' && (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {(block.items || []).map((item, index) => (
-            <div key={index} style={{ border: '1px solid #eee', padding: 12, borderRadius: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                <strong style={{ fontSize: 13 }}>Entry {index + 1}</strong>
-                <button type="button" className="btn btn-xs" onClick={() => updateItems((block.items || []).filter((_, i) => i !== index))}>Remove</button>
-              </div>
-              {[{ f: 'title', ph: 'Title' }, { f: 'loc', ph: 'Location' }, { f: 'img', ph: 'Image URL' }].map(({ f, ph }) => (
-                <div key={f} style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>{ph}</label>
-                  <input style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }} value={(item as any)[f] || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], [f]: e.target.value }; updateItems(next); }} placeholder={ph} />
-                </div>
-              ))}
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>Body text</label>
-              <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={item.body || ''} onChange={(e) => { const next = [...(block.items || [])]; next[index] = { ...next[index], body: e.target.value }; updateItems(next); }} placeholder="Description…" />
-            </div>
-          ))}
-          <button type="button" className="btn btn-sm" onClick={() => updateItems([...(block.items || []), { n: (block.items || []).length + 1, title: '', loc: '', body: '', img: '' }])}>+ Add list entry</button>
-        </div>
+        <NumberedListEditor
+          items={block.items || []}
+          onChange={(items) => updateItems(items)}
+        />
       )}
 
       {block.type === 'hotel' && (
@@ -2428,7 +1766,7 @@ const BlogBlockEditor: React.FC<{
           ] as const).map(({ f, ph }) => (
             <div key={f}>
               <label style={{ fontSize: 11, fontWeight: 600, color: '#888', display: 'block', marginBottom: 3 }}>{ph.split('(')[0].trim()}</label>
-              <input style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }} value={(block as any)[f] || ''} onChange={(e) => updateField(f, e.target.value)} placeholder={ph} />
+              <input style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd' }} value={((block as Record<string, unknown>)[f] as string) || ''} onChange={(e) => updateField(f, e.target.value)} placeholder={ph} />
             </div>
           ))}
           <div>
@@ -2478,442 +1816,186 @@ const BlogBlockEditor: React.FC<{
           <textarea style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }} value={block.body || ''} onChange={(e) => updateField('body', e.target.value)} placeholder="Subscribe for weekly travel stories…" />
         </>
       )}
-    </div>
-  );
-};
 
-// ─── Published Block Renderer ─────────────────────────────────────────────────
-const PREVIEW_FONT_FAMILIES: Record<string, string> = {
-  'plumtrips-editorial': 'var(--font-display, Georgia, serif)',
-  georgia: 'Georgia, serif',
-  arial: 'Arial, sans-serif',
-  'times-new-roman': 'Times New Roman, serif',
-  tahoma: 'Tahoma, sans-serif',
-};
-
-const PREVIEW_TEXT_SIZES: Record<string, number> = { small: 14, normal: 16, large: 19, xl: 23 };
-const PREVIEW_COLORS: Record<string, string> = {
-  default: 'var(--ink, #222)',
-  heading: 'var(--ink, #222)',
-  accent: 'var(--accent, #c8943a)',
-  muted: 'var(--muted, #777)',
-};
-
-const getPreviewBlockStyle = (block: PostBlock): React.CSSProperties => {
-  const settings = block.settings;
-  const typography = block.settings?.typography;
-  const layout = block.settings?.layout;
-  const style: React.CSSProperties = {};
-
-  if (settings?.width) {
-    style.maxWidth = { small: 420, medium: 640, large: 920, full: 'none' }[settings.width];
-    style.width = '100%';
-    style.marginInline = 'auto';
-  }
-
-  const isMediaBlock = ['image', 'cover', 'gallery'].includes(block.type);
-  if (isMediaBlock && settings?.imagePosition) {
-    if (settings.imagePosition === 'left') {
-      style.marginInlineStart = 0;
-      style.marginInlineEnd = 'auto';
-    } else if (settings.imagePosition === 'right') {
-      style.marginInlineStart = 'auto';
-      style.marginInlineEnd = 0;
-    } else if (settings.imagePosition === 'center') {
-      style.marginInline = 'auto';
-    }
-  } else if (!isMediaBlock && settings?.alignment) {
-    style.textAlign = settings.alignment;
-  }
-
-  if (typography?.fontFamily && PREVIEW_FONT_FAMILIES[typography.fontFamily]) style.fontFamily = PREVIEW_FONT_FAMILIES[typography.fontFamily];
-  if (typography?.size && PREVIEW_TEXT_SIZES[typography.size]) style.fontSize = PREVIEW_TEXT_SIZES[typography.size];
-  if (typography?.color && PREVIEW_COLORS[typography.color]) style.color = PREVIEW_COLORS[typography.color];
-  if (typography?.alignment) style.textAlign = typography.alignment;
-  if (typography?.bold) style.fontWeight = 700;
-  if (typography?.italic) style.fontStyle = 'italic';
-
-  if (layout?.textAlignment) style.textAlign = layout.textAlignment;
-  if (layout?.contentWidth) {
-    style.maxWidth = { narrow: 560, standard: 720, wide: 920, full: 'none' }[layout.contentWidth];
-    style.width = '100%';
-    style.marginInline = 'auto';
-  }
-  if (layout?.imageWidth) {
-    style.maxWidth = { narrow: 560, standard: 720, wide: 920, full: 'none' }[layout.imageWidth];
-    style.width = '100%';
-  }
-  if (layout?.imageAlignment) {
-    if (layout.imageAlignment === 'left') {
-      style.marginInlineStart = 0;
-      style.marginInlineEnd = 'auto';
-    } else if (layout.imageAlignment === 'right') {
-      style.marginInlineStart = 'auto';
-      style.marginInlineEnd = 0;
-    } else {
-      style.marginInline = 'auto';
-    }
-  }
-  if (layout?.sectionSpacing) style.marginBlock = { compact: 12, standard: 24, relaxed: 40 }[layout.sectionSpacing];
-  if (block.settings?.highlight) style.backgroundColor = 'var(--paper-2, #f9f6f1)';
-
-  return style;
-};
-
-const getMediaRatio = (ratio: string | undefined): string | undefined => {
-  if (!ratio || ratio === 'original') return undefined;
-  return ratio.replace(':', ' / ');
-};
-
-const getGalleryPreviewClass = (block: PostBlock): string => `blog-gallery-grid blog-gallery-${block.settings?.galleryComposition || 'equal'}`;
-
-const getGalleryGap = (block: PostBlock): number => ({ compact: 6, standard: 12, relaxed: 20 }[block.settings?.galleryGap || 'standard']);
-
-const PubBlock: React.FC<{ block: PostBlock }> = ({ block }) => {
-  switch (block.type) {
-    case 'h1': return <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 500, margin: '40px 0 16px', ...getPreviewBlockStyle(block) }}><InlineText text={block.text} fragments={block.inlineContent} /></h1>;
-    case 'h2': return <h2 id={`s-${block.id}`} style={getPreviewBlockStyle(block)}><InlineText text={block.text} fragments={block.inlineContent} /></h2>;
-    case 'h3': return <h3 id={`s-${block.id}`} style={getPreviewBlockStyle(block)}><InlineText text={block.text} fragments={block.inlineContent} /></h3>;
-    case 'p': return <p style={getPreviewBlockStyle(block)}><InlineText text={block.text} fragments={block.inlineContent} /></p>;
-    case 'quote':
-      return <blockquote style={getPreviewBlockStyle(block)}><InlineText text={block.text} fragments={block.inlineContent} />{block.cite && <cite>{block.cite}</cite>}</blockquote>;
-    case 'image': case 'cover':
-      return (
-        <figure style={getPreviewBlockStyle(block)}>
-          {block.src ? (
-            <div
+      {block.type === 'callout' && (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Callout Title</label>
+            <input
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+              value={block.title || ''}
+              onChange={(e) => updateField('title', e.target.value)}
+              placeholder="e.g. Pro Tip, Important Note"
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Callout Text</label>
+            <InlineRichTextEditor
+              ref={richEditorRef}
+              value={block.text || ''}
+              fragments={block.inlineContent}
+              pendingMarks={isActive ? pendingMarks : undefined}
+              onFormatKey={isActive ? onFormatKey : undefined}
+              placeholder="Callout details, tips, or highlights..."
+              multiline={true}
+              blockType="callout"
               style={{
-                aspectRatio: getMediaRatio(block.settings?.imageRatio) || '16 / 9',
-                width: '100%',
-                background: 'var(--paper-2)',
-                borderRadius: 12,
-                overflow: 'hidden',
+                fontSize: 14,
+                minHeight: 70,
+              }}
+              onChange={(nextText, nextFragments) => {
+                onChange({
+                  ...block,
+                  text: nextText,
+                  inlineContent: nextFragments.length > 0 ? nextFragments : undefined,
+                });
+              }}
+              onFocus={() => {
+                onFocusBlock?.(block.id, richEditorRef.current);
+              }}
+              onSelectionChange={(sel) => {
+                onSelectionChange?.(sel, richEditorRef.current);
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Callout Style / Icon</label>
+            <select
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', background: '#fff' }}
+              value={block.settings?.highlight || 'tip'}
+              onChange={(e) => {
+                const nextSettings = { ...(block.settings || {}), highlight: e.target.value as 'tip' | 'warning' | 'important' | 'editor-note' };
+                onChange({ ...block, settings: nextSettings });
               }}
             >
-              <img
-                src={block.src}
-                alt={block.caption || ''}
-                loading="lazy"
-                decoding="async"
-                style={{
-                  width: '100%',
-                  objectFit: block.settings?.imageFit === 'contain' ? 'contain' : block.settings?.imageFit === 'natural' ? 'contain' : 'cover',
-                  height: block.settings?.imageFit === 'natural' ? 'auto' : '100%',
-                  display: 'block',
-                }}
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                aspectRatio: '16 / 9',
-                background: 'var(--paper-2)',
-                borderRadius: 12,
-                border: '1px dashed var(--line-2)',
-              }}
-            />
-          )}
-          {block.caption && <figcaption>{block.caption}</figcaption>}
-        </figure>
-      );
-    case 'gallery':
-      return (
-        <div className={getGalleryPreviewClass(block)} style={{ gap: getGalleryGap(block), margin: '32px 0', ...getPreviewBlockStyle(block) }}>
-          {(block.images || []).map((src, i) => (
-            <div key={i} className="blog-gallery-tile" style={{ aspectRatio: getMediaRatio(block.settings?.imageRatio) || '1 / 1', borderRadius: 10, overflow: 'hidden', background: 'var(--paper-2)' }}>
-              {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: block.settings?.imageFit === 'contain' || block.settings?.imageFit === 'natural' ? 'contain' : 'cover' }} />}
-            </div>
-          ))}
-        </div>
-      );
-    case 'numlist':
-      return (
-        <div className="pub-numlist" style={getPreviewBlockStyle(block)}>
-          {(block.items || []).map((it, i) => (
-            <div className="nentry" key={i} id={`n-${i + 1}`}>
-              <div className="num">{String(it.n).padStart(2, '0')}</div>
-              <div>
-                <h3>{it.title}</h3>
-                <div className="loc">{it.loc}</div>
-                {it.img && <img src={it.img} alt={it.title} loading="lazy" />}
-                <p>{it.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    case 'hotel':
-      return (
-        <div className="pub-hotel" style={getPreviewBlockStyle(block)}>
-          <div className="h-img">{block.img && <img src={block.img} alt={block.name} loading="lazy" />}</div>
-          <div className="h-body">
-            <div className="h-kicker">{block.kicker}</div>
-            <h4>{block.name}</h4>
-            <div className="h-loc">{block.loc}</div>
-            <p>{block.desc}</p>
-            <div className="h-foot">
-              <span className="price">{block.price}</span>
-              <button className="btn btn-primary btn-sm">View hotel →</button>
-            </div>
+              <option value="tip">💡 Tip</option>
+              <option value="warning">⚠️ Warning</option>
+              <option value="important">⭐ Important</option>
+              <option value="editor-note">📝 Editor Note</option>
+            </select>
           </div>
-        </div>
-      );
-    case 'map':
-      return (
-        <div className="pub-map" style={getPreviewBlockStyle(block)}>
-          {(block.pins || []).map((p, i) => (
-            <div key={i} className="pin" style={{ left: `${p.x}%`, top: `${p.y}%` }} title={p.label} />
-          ))}
-        </div>
-      );
-    case 'video':
-      return (
-        <div style={{ aspectRatio: '16/9', background: '#0a0a0a', borderRadius: 12, display: 'grid', placeItems: 'center', margin: '32px 0', color: '#fff' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'grid', placeItems: 'center' }}>▶</div>
-        </div>
-      );
-    case 'newsletter':
-      return (
-        <div className="pub-newsletter" style={getPreviewBlockStyle(block)}>
-          <h3>{block.title}</h3>
-          <p>{block.body}</p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="email" placeholder="your@email.com" />
-            <button className="btn btn-primary" type="button">Subscribe</button>
-          </div>
-        </div>
-      );
-    default: return null;
-  }
-};
-
-// ─── Travel Blog Post View (Read / Preview) ───────────────────────────────────
-const BlogPostView: React.FC<{ post: Post; layout?: 'magazine' | 'listicle' | 'essay'; displayFont?: 'serif' | 'sans' }> = ({ post, layout = 'magazine', displayFont = 'serif' }) => {
-  const [progress, setProgress] = useState(0);
-  const [activeToc, setActiveToc] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onScroll = () => {
-      const max = el.scrollHeight - el.clientHeight;
-      setProgress(max > 0 ? (el.scrollTop / max) * 100 : 0);
-      const entries = el.querySelectorAll('.pub-numlist .nentry');
-      let best = 0;
-      entries.forEach((entry, i) => { if ((entry as HTMLElement).getBoundingClientRect().top < 200) best = i; });
-      setActiveToc(best);
-    };
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const numlistBlock = post.blocks.find((b) => b.type === 'numlist');
-  const hasToc = layout !== 'essay' && !!numlistBlock;
-
-  const scrollTo = (i: number) => {
-    const el = ref.current?.querySelector(`#n-${i + 1}`) as HTMLElement | null;
-    if (el && ref.current) {
-      const top = el.getBoundingClientRect().top + ref.current.scrollTop - 100;
-      ref.current.scrollTo({ top, behavior: 'smooth' });
-    }
-  };
-
-  const formattedDate = new Date(post.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  return (
-    <div
-      className="pub"
-      data-layout={layout}
-      data-display-font={displayFont}
-      ref={ref}
-      style={{ height: '100%', overflow: 'auto', background: 'var(--paper, #fff)' }}
-    >
-      {/* Reading progress bar */}
-      <div className="pub-progress" style={{ position: 'sticky', top: 0, zIndex: 100, height: 3, background: 'var(--line-2, #eee)' }}>
-        <div className="bar" style={{ width: `${progress}%`, height: '100%', background: 'var(--accent, #c8943a)', transition: 'width .1s linear' }} />
-      </div>
-
-      {/* ── Hero Section ── */}
-      <div style={{ position: 'relative', minHeight: 520, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', overflow: 'hidden' }}>
-        {/* Hero background image */}
-        {post.cover?.src && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-            <img
-              src={post.cover.src}
-              alt={post.cover.alt || post.title || ''}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-            {/* Gradient overlay for readability */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 30%, rgba(0,0,0,0.72) 80%, rgba(0,0,0,0.85) 100%)',
-            }} />
-          </div>
-        )}
-
-        {/* Hero text content */}
-        <div style={{ position: 'relative', zIndex: 1, padding: '60px 32px 40px', maxWidth: 820, margin: '0 auto', width: '100%' }}>
-          {/* Breadcrumb / categories */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.12)',
-              padding: '4px 12px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)',
-            }}>
-              {post.categories[0] || 'Travel'}
-            </span>
-            {post.categories.slice(1).map((c) => (
-              <span key={c} style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>· {c}</span>
-            ))}
-          </div>
-
-          {/* Title */}
-          <h1 style={{
-            fontFamily: 'var(--font-display, Georgia, serif)',
-            fontSize: 'clamp(28px, 5vw, 52px)',
-            fontWeight: 600,
-            lineHeight: 1.12,
-            color: '#fff',
-            margin: '0 0 16px',
-            textShadow: '0 2px 16px rgba(0,0,0,0.3)',
-          }}>
-            {post.title}
-          </h1>
-
-          {/* Subtitle */}
-          {post.subtitle && (
-            <p style={{
-              fontSize: 'clamp(14px, 2vw, 18px)',
-              color: 'rgba(255,255,255,0.82)',
-              margin: '0 0 28px',
-              fontStyle: 'italic',
-              maxWidth: 600,
-              lineHeight: 1.5,
-            }}>
-              {post.subtitle}
-            </p>
-          )}
-
-          {/* Author + meta row */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              border: '2px solid rgba(255,255,255,0.4)',
-              display: 'grid', placeItems: 'center',
-              color: '#fff', fontSize: 13, fontWeight: 700, flexShrink: 0,
-            }}>
-              {!post.author.avatar && post.author.initials}
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{post.author.name}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '.08em', textTransform: 'uppercase' }}>{post.author.role}</div>
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{formattedDate}</div>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, margin: '0 2px' }}>·</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{post.readingTime} min read</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Optional cover caption */}
-      {post.cover?.caption && (
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted, #999)', padding: '8px 24px', fontStyle: 'italic', borderBottom: '1px solid var(--line-2, #eee)' }}>
-          {post.cover.caption}
         </div>
       )}
 
-      {/* ── Body ── */}
-      <div className="pub-body" style={{ display: 'grid', gridTemplateColumns: hasToc ? '220px 1fr' : '1fr', gap: 48, maxWidth: 1060, margin: '0 auto', padding: '48px 24px', alignItems: 'start' }}>
-
-        {/* Sidebar TOC */}
-        {hasToc && (
-          <aside className="pub-toc" style={{
-            position: 'sticky', top: 24,
-            background: 'var(--paper-2, #f9f6f1)',
-            border: '1px solid var(--line-2, #ece9e2)',
-            borderRadius: 14,
-            padding: '20px 18px',
-          }}>
-            <h6 style={{ fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted, #999)', margin: '0 0 14px', fontWeight: 700 }}>In this article</h6>
-            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 4 }}>
-              {numlistBlock?.items?.map((it: any, i: number) => (
-                <li
-                  key={i}
-                  onClick={() => scrollTo(i)}
-                  style={{
-                    fontSize: 13, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-                    fontWeight: i === activeToc ? 600 : 400,
-                    color: i === activeToc ? 'var(--accent, #c8943a)' : 'var(--ink-2, #555)',
-                    background: i === activeToc ? 'var(--accent-soft, rgba(200,148,58,0.08))' : 'transparent',
-                    borderLeft: i === activeToc ? '2px solid var(--accent, #c8943a)' : '2px solid transparent',
-                    transition: 'all .15s',
-                  }}
-                >
-                  <span style={{ opacity: 0.5, fontSize: 11, marginRight: 6, fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
-                  {it.title}
-                </li>
-              ))}
-            </ol>
-          </aside>
-        )}
-
-        {/* Main article */}
-        <article className="pub-content" style={{ minWidth: 0 }}>
-          {post.blocks.map((block) => <PubBlock key={block.id} block={block} />)}
-
-          {/* Tags */}
-          {post.tags.length > 0 && (
-            <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--line-2, #eee)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {post.tags.map((tag) => (
-                <span key={tag} style={{
-                  fontSize: 12, padding: '5px 14px', borderRadius: 999,
-                  background: 'var(--paper-2, #f5f2ec)',
-                  color: 'var(--ink-2, #666)',
-                  border: '1px solid var(--line-2, #ece9e2)',
-                  letterSpacing: '.04em',
-                }}>#{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Author bio card */}
-          <div style={{
-            marginTop: 40,
-            padding: '24px 28px',
-            borderRadius: 16,
-            background: 'var(--paper-2, #f9f6f1)',
-            border: '1px solid var(--line-2, #ece9e2)',
-            display: 'flex',
-            gap: 20,
-            alignItems: 'flex-start',
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
-              backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              backgroundColor: 'var(--line-2, #ddd)',
-              display: 'grid', placeItems: 'center',
-              color: 'var(--ink, #333)', fontSize: 16, fontWeight: 700,
-              border: '2px solid var(--line-2, #ddd)',
-            }}>
-              {!post.author.avatar && post.author.initials}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--muted, #999)', marginBottom: 4, fontWeight: 600 }}>Written by</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink, #1a1a1a)', marginBottom: 2 }}>{post.author.name}</div>
-              <div style={{ fontSize: 13, color: 'var(--ink-2, #666)' }}>{post.author.role}</div>
-            </div>
+      {block.type === 'faq' && (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>FAQ Section Title</label>
+            <input
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+              value={block.title || ''}
+              onChange={(e) => updateField('title', e.target.value)}
+              placeholder="Frequently Asked Questions"
+            />
           </div>
-        </article>
-      </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Questions & Answers</label>
+            {(block.items || []).map((item, idx) => (
+              <div key={idx} style={{ display: 'grid', gap: 6, border: '1px solid #eee', padding: 10, borderRadius: 8, marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: 12 }}>Question #{idx + 1}</strong>
+                  <button
+                    type="button"
+                    className="btn btn-xs"
+                    onClick={() => {
+                      const nextItems = (block.items || []).filter((_, i) => i !== idx);
+                      updateItems(nextItems);
+                    }}
+                    style={{ color: '#dc3545' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                  value={item.title || ''}
+                  onChange={(e) => {
+                    const nextItems = [...(block.items || [])];
+                    nextItems[idx] = { ...nextItems[idx], title: e.target.value };
+                    updateItems(nextItems);
+                  }}
+                  placeholder="Question title"
+                />
+                <textarea
+                  style={{ width: '100%', minHeight: 60, padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                  value={item.body || ''}
+                  onChange={(e) => {
+                    const nextItems = [...(block.items || [])];
+                    nextItems[idx] = { ...nextItems[idx], body: e.target.value };
+                    updateItems(nextItems);
+                  }}
+                  placeholder="Answer explanation..."
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-xs btn-secondary"
+              onClick={() => {
+                const nextItems: ListItem[] = [
+                  ...(block.items || []),
+                  { n: (block.items?.length || 0) + 1, title: 'New Question', loc: '', body: '', img: '' },
+                ];
+                updateItems(nextItems);
+              }}
+            >
+              + Add FAQ Question
+            </button>
+          </div>
+        </div>
+      )}
+
+      {block.type === 'budget' && (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Budget Title</label>
+            <input
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+              value={block.title || ''}
+              onChange={(e) => updateField('title', e.target.value)}
+              placeholder="Trip Cost Breakdown"
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Estimated Total Price</label>
+            <input
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+              value={block.price || ''}
+              onChange={(e) => updateField('price', e.target.value)}
+              placeholder="e.g. ₹45,000 / $550 per person"
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Budget Description / Details</label>
+            <textarea
+              style={{ width: '100%', minHeight: 80, padding: 10, borderRadius: 8, border: '1px solid #ddd' }}
+              value={block.body || ''}
+              onChange={(e) => updateField('body', e.target.value)}
+              placeholder="Breakdown includes flights, 4-star boutique hotels, meals, local transit..."
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const BlogPostView: React.FC<{
+  post: Post;
+  storyStyle?: StoryStyle;
+  theme?: BackgroundTheme;
+  layout?: 'magazine' | 'listicle' | 'essay';
+  displayFont?: 'serif' | 'sans';
+}> = ({ post, storyStyle, theme, layout = 'magazine', displayFont = 'serif' }) => (
+  <ReadBlog
+    post={post}
+    storyStyle={storyStyle || post.storyStyle}
+    theme={theme || post.theme}
+    layout={layout}
+    displayFont={displayFont}
+    isPreview
+  />
+);
 
 // ─── Google Search Result Preview ─────────────────────────────────────────────
 // Visual approximation only — not a pixel-perfect match of Google's live SERP UI.
@@ -3012,12 +2094,50 @@ const BlogEditor: React.FC<{
   onChange: (next: Post) => void;
   onSave: () => void;
   onPreview: () => void;
+  onPublish: () => void;
   onCancel: () => void;
   onDelete: () => void;
-  onAddBlock: (type: BlockType) => void;
+  onAddBlock?: (type: BlockType) => void;
   saving?: boolean;
-}> = ({ post, authoringProfile, onChange, onSave, onPreview, onCancel, onDelete, onAddBlock, saving }) => {
+}> = ({ post, authoringProfile, onChange, onSave, onPreview, onPublish, onCancel, onDelete, saving }) => {
   const [showBlockLibrary, setShowBlockLibrary] = useState(false);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [activeSelection, setActiveSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+  const activeTextareaRef = useRef<BlogEditorElement>(null);
+  const pendingScrollBlockIdRef = useRef<string | null>(null);
+
+  const [showScaffoldModal, setShowScaffoldModal] = useState(false);
+  const [scaffoldDuration, setScaffoldDuration] = useState<ItineraryScaffoldDuration>('3-day');
+  const [confirmReplaceMode, setConfirmReplaceMode] = useState(false);
+
+  const handleApplyScaffold = (duration: ItineraryScaffoldDuration, mode: 'append' | 'replace') => {
+    const scaffold = ITINERARY_SCAFFOLDS[duration];
+    if (!scaffold) return;
+
+    const newBlocks = scaffold.createBlocks(makeId);
+    const firstNewBlockId = newBlocks[0]?.id;
+
+    if (mode === 'replace') {
+      onChange({
+        ...post,
+        blocks: newBlocks,
+        storyStyle: duration === '7-day' ? 'itinerary-planner' : 'day-by-day',
+      });
+    } else {
+      onChange({
+        ...post,
+        blocks: [...post.blocks, ...newBlocks],
+      });
+    }
+
+    if (firstNewBlockId) {
+      setActiveBlockId(firstNewBlockId);
+      pendingScrollBlockIdRef.current = firstNewBlockId;
+    }
+
+    setShowScaffoldModal(false);
+    setConfirmReplaceMode(false);
+  };
 
   const updatePost = (patch: Partial<Post>) => onChange({ ...post, ...patch });
   const updateAuthor = (patch: Partial<Post['author']>) => updatePost({ author: { ...post.author, ...patch } });
@@ -3026,14 +2146,19 @@ const BlogEditor: React.FC<{
     onChange({ ...post, blocks: post.blocks.map((b) => (b.id === id ? next : b)) });
   };
 
-  const deleteBlock = (id: string) => onChange({ ...post, blocks: post.blocks.filter((b) => b.id !== id) });
+  const deleteBlock = (id: string) => {
+    if (activeBlockId === id) setActiveBlockId(null);
+    onChange({ ...post, blocks: post.blocks.filter((b) => b.id !== id) });
+  };
 
   const moveBlock = (id: string, dir: number) => {
     const idx = post.blocks.findIndex((b) => b.id === id);
     if (idx < 0) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= post.blocks.length) return;
     const next = [...post.blocks];
     const [item] = next.splice(idx, 1);
-    next.splice(idx + dir, 0, item);
+    next.splice(targetIdx, 0, item);
     onChange({ ...post, blocks: next });
   };
 
@@ -3044,6 +2169,308 @@ const BlogEditor: React.FC<{
     const next = [...post.blocks];
     next.splice(idx + 1, 0, copy);
     onChange({ ...post, blocks: next });
+    setActiveBlockId(copy.id);
+    pendingScrollBlockIdRef.current = copy.id;
+  };
+
+  useEffect(() => {
+    const targetId = pendingScrollBlockIdRef.current;
+    if (!targetId) return;
+
+    const performScroll = () => {
+      const el = document.getElementById(`block-editor-${targetId}`);
+      if (!el) return false;
+
+      pendingScrollBlockIdRef.current = null;
+
+      const toolbar = document.querySelector('.sticky-editor-toolbar') as HTMLElement | null;
+      const toolbarHeight = toolbar ? toolbar.offsetHeight : 64;
+      const topOffset = toolbarHeight + 20;
+
+      // Find scrollable container (e.g. parent with overflow-y: auto/scroll)
+      let container: HTMLElement | null = null;
+      let parent = el.parentElement;
+      while (parent) {
+        const style = window.getComputedStyle(parent);
+        if (
+          (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+          parent.scrollHeight > parent.clientHeight
+        ) {
+          container = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const targetScrollTop = container.scrollTop + (elRect.top - containerRect.top) - topOffset;
+        container.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth',
+        });
+      } else {
+        const elRect = el.getBoundingClientRect();
+        const targetScrollY = window.scrollY + elRect.top - topOffset;
+        window.scrollTo({
+          top: Math.max(0, targetScrollY),
+          behavior: 'smooth',
+        });
+      }
+
+      // Ready for editing: focus the primary editable field inside the block if available
+      const primaryInput = el.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLDivElement>(
+        '[contenteditable="true"], textarea, input[type="text"], input:not([type])'
+      );
+      if (primaryInput) {
+        primaryInput.focus({ preventScroll: true });
+        activeTextareaRef.current = primaryInput;
+      }
+      return true;
+    };
+
+    if (!performScroll()) {
+      const rafId = requestAnimationFrame(() => {
+        performScroll();
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [post.blocks]);
+
+  const activeBlockIndex = post.blocks.findIndex((b) => b.id === activeBlockId);
+  const activeBlock = activeBlockIndex >= 0 ? post.blocks[activeBlockIndex] : null;
+  const isTextBlock = activeBlock ? ['h1', 'h2', 'h3', 'p', 'quote', 'callout'].includes(activeBlock.type) : false;
+  const hasSelection = isTextBlock && activeSelection.end > activeSelection.start;
+
+  const [showLinkPopover, setShowLinkPopover] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTargetBlank, setLinkTargetBlank] = useState(true);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [pendingMarks, setPendingMarks] = useState<InlineTextMarks>({});
+  const [pendingOverride, setPendingOverride] = useState(false);
+  const ignoreOverrideResetRef = useRef(false);
+  const linkModeRef = useRef(false);
+
+  useEffect(() => {
+    setPendingMarks({});
+    setPendingOverride(false);
+    linkModeRef.current = false;
+    setShowLinkPopover(false);
+  }, [activeBlockId]);
+
+  const fragmentMarksAtCaret = activeBlock
+    ? hasSelection
+      ? getMarksAtIndex(activeBlock.inlineContent, activeSelection.start)
+      : getMarksAtCaret(activeBlock.inlineContent, activeSelection.start)
+    : {};
+
+  const typingMarks: InlineTextMarks = resolveTypingMarks(
+    fragmentMarksAtCaret,
+    pendingOverride,
+    pendingMarks,
+  );
+  const hasPendingMarks = hasAnyInlineMark(typingMarks);
+  const canClearFormatting = hasSelection || (isTextBlock && hasPendingMarks);
+
+  const restoreEditorSelection = (start = activeSelection.start, end = activeSelection.end) => {
+    ignoreOverrideResetRef.current = true;
+    requestAnimationFrame(() => {
+      if (activeTextareaRef.current) {
+        activeTextareaRef.current.focus();
+        activeTextareaRef.current.setSelectionRange?.(start, end);
+      }
+      requestAnimationFrame(() => {
+        ignoreOverrideResetRef.current = false;
+      });
+    });
+  };
+
+  const isMarkActive = (mark: keyof InlineTextMarks): boolean => {
+    if (hasSelection) {
+      return isBooleanMarkActiveInRange(
+        activeBlock?.inlineContent,
+        activeSelection.start,
+        activeSelection.end,
+        mark,
+      );
+    }
+    return Boolean(typingMarks[mark]);
+  };
+
+  const toolbarColor = hasSelection
+    ? getSharedValueMarkInRange(activeBlock?.inlineContent, activeSelection.start, activeSelection.end, 'color')
+    : typingMarks.color || '';
+  const toolbarHighlight = hasSelection
+    ? getSharedValueMarkInRange(activeBlock?.inlineContent, activeSelection.start, activeSelection.end, 'highlight')
+    : typingMarks.highlight || '';
+
+  const getActiveLinkInfo = (): { href?: string; targetBlank?: boolean } => {
+    if (hasSelection) {
+      const href = getSharedValueMarkInRange(
+        activeBlock?.inlineContent,
+        activeSelection.start,
+        activeSelection.end,
+        'href',
+      );
+      if (!href) return {};
+      let offset = 0;
+      for (const f of activeBlock?.inlineContent || []) {
+        const fStart = offset;
+        const fEnd = offset + f.text.length;
+        offset = fEnd;
+        if (Math.max(activeSelection.start, fStart) < Math.min(activeSelection.end, fEnd) && f.marks?.href === href) {
+          return { href: f.marks.href, targetBlank: f.marks.targetBlank !== false };
+        }
+      }
+      return { href };
+    }
+    if (typingMarks.href) {
+      return { href: typingMarks.href, targetBlank: typingMarks.targetBlank !== false };
+    }
+    return {};
+  };
+
+  const handleOpenLinkPopover = () => {
+    if (!isTextBlock) return;
+    const current = getActiveLinkInfo();
+    setLinkUrl(current.href || '');
+    setLinkTargetBlank(current.targetBlank !== undefined ? current.targetBlank : true);
+    setLinkError(null);
+    setShowLinkPopover((prev) => !prev);
+  };
+
+  const handleApplyLink = () => {
+    if (!isTextBlock || !linkUrl.trim()) return;
+    const validated = sanitizeHref(linkUrl);
+    if (!validated) {
+      setLinkError('Please enter a valid URL (e.g. https://example.com or /blogs/guide)');
+      return;
+    }
+    const nextPending: InlineTextMarks = {
+      ...withoutLinkMarks(typingMarks),
+      href: validated,
+      targetBlank: linkTargetBlank,
+    };
+    linkModeRef.current = true;
+    setPendingOverride(true);
+    setPendingMarks(nextPending);
+    if (hasSelection) {
+      formatActiveSelection('href', validated, { targetBlank: linkTargetBlank });
+    } else {
+      restoreEditorSelection();
+    }
+    setShowLinkPopover(false);
+    setLinkError(null);
+  };
+
+  const handleRemoveLink = () => {
+    if (!isTextBlock) return;
+    const nextPending = withoutLinkMarks(typingMarks);
+    linkModeRef.current = false;
+    setPendingMarks(nextPending);
+    setPendingOverride(hasAnyInlineMark(nextPending));
+    if (hasSelection) {
+      formatActiveSelection('href', '');
+    } else {
+      restoreEditorSelection();
+    }
+    setShowLinkPopover(false);
+    setLinkError(null);
+  };
+
+  const toggleMark = (mark: 'bold' | 'italic' | 'underline' | 'strikethrough') => {
+    if (!activeBlock || !isTextBlock) return;
+    if (hasSelection) {
+      formatActiveSelection(mark, !isMarkActive(mark));
+    } else {
+      setPendingOverride(true);
+      setPendingMarks(() => {
+        const next = { ...typingMarks };
+        if (next[mark]) {
+          delete next[mark];
+        } else {
+          next[mark] = true;
+        }
+        if (next.href) linkModeRef.current = true;
+        return next;
+      });
+      restoreEditorSelection();
+    }
+  };
+
+  const setMarkValue = (mark: 'color' | 'highlight', value: string) => {
+    if (!activeBlock || !isTextBlock) return;
+    if (hasSelection) {
+      formatActiveSelection(mark, value);
+    } else {
+      setPendingOverride(true);
+      setPendingMarks(() => ({
+        ...typingMarks,
+        [mark]: value,
+      }));
+      restoreEditorSelection();
+    }
+  };
+
+  const handleClearFormatting = () => {
+    if (!activeBlock || !isTextBlock) return;
+    if (hasSelection) {
+      clearActiveSelectionMarks();
+    } else {
+      setPendingOverride(true);
+      setPendingMarks({});
+      linkModeRef.current = false;
+      setShowLinkPopover(false);
+      restoreEditorSelection();
+    }
+  };
+
+  const formatActiveSelection = (
+    mark: keyof InlineTextMarks,
+    value: boolean | string | undefined,
+    extra?: Partial<InlineTextMarks>
+  ) => {
+    if (!activeBlock || !isTextBlock) return;
+    const text = activeBlock.text || '';
+    const { start, end } = activeSelection;
+    if (start >= end) return;
+    let newInline = applyInlineMark(text, activeBlock.inlineContent, start, end, mark, value);
+    if (extra) {
+      for (const [k, v] of Object.entries(extra)) {
+        newInline = applyInlineMark(text, newInline, start, end, k as keyof InlineTextMarks, v as boolean | string | undefined);
+      }
+    }
+    updateBlock(activeBlock.id, { ...activeBlock, inlineContent: newInline });
+    restoreEditorSelection(start, end);
+  };
+
+  const clearActiveSelectionMarks = () => {
+    if (!activeBlock || !isTextBlock) return;
+    const text = activeBlock.text || '';
+    const { start, end } = activeSelection;
+    if (start >= end) return;
+    const inline = clearInlineMarks(text, activeBlock.inlineContent, start, end);
+    updateBlock(activeBlock.id, { ...activeBlock, inlineContent: inline });
+    setPendingOverride(true);
+    setPendingMarks({});
+    linkModeRef.current = false;
+    setShowLinkPopover(false);
+    restoreEditorSelection(start, end);
+  };
+
+  const handleAddSection = (type: BlockType) => {
+    const newBlock = defaultBlock(type);
+    if (activeBlockId && activeBlockIndex >= 0) {
+      const next = [...post.blocks];
+      next.splice(activeBlockIndex + 1, 0, newBlock);
+      onChange({ ...post, blocks: next });
+    } else {
+      onChange({ ...post, blocks: [...post.blocks, newBlock] });
+    }
+    setActiveBlockId(newBlock.id);
+    setShowBlockLibrary(false);
+    pendingScrollBlockIdRef.current = newBlock.id;
   };
 
   const sectionStyle: React.CSSProperties = {
@@ -3094,11 +2521,544 @@ const BlogEditor: React.FC<{
           <p style={{ margin: '6px 0 0', color: '#666', fontSize: 13 }}>Edit content, then preview the published post before saving.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel}>← Back</button>
-          <button type="button" className="btn btn-sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : '💾 Save'}</button>
-          <button type="button" className="btn btn-sm btn-primary" onClick={onPreview}>👁 Preview</button>
-          <button type="button" className="btn btn-sm" style={{ background: '#ff5c5c', color: '#fff' }} onClick={onDelete}>🗑 Delete</button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onCancel} disabled={saving}>← Back</button>
+          <button type="button" className="btn btn-sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : '💾 Save as Draft'}</button>
+          <button type="button" className="btn btn-sm btn-primary" onClick={onPreview} disabled={saving}>👁 Preview</button>
+          <button type="button" className="btn btn-sm" style={{ background: '#2f855a', color: '#fff' }} onClick={onPublish} disabled={saving}>{saving ? 'Publishing…' : '🚀 Publish'}</button>
+          <button type="button" className="btn btn-sm" style={{ background: '#ff5c5c', color: '#fff' }} onClick={onDelete} disabled={saving}>🗑 Delete</button>
         </div>
+      </div>
+
+      {/* ── Relocated Top Sticky Editor Area: + Add Section & Formatting Toolbar ── */}
+      <div
+        className="sticky-editor-toolbar"
+        style={{
+          position: 'sticky',
+          top: 8,
+          zIndex: 40,
+          background: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: 12,
+          border: '1px solid #dcdfe4',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          padding: '10px 14px',
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          {/* Left: Add section trigger & Active context indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowBlockLibrary((prev) => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                padding: '6px 12px',
+              }}
+            >
+              <span>+ Add Section</span>
+              <span style={{ fontSize: 10, opacity: 0.85 }}>{showBlockLibrary ? '▲' : '▼'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => {
+                setScaffoldDuration('3-day');
+                setConfirmReplaceMode(false);
+                setShowScaffoldModal(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 600,
+                fontSize: 12,
+                padding: '6px 12px',
+                borderRadius: 8,
+                border: '1px solid #dcdfe4',
+                background: '#fafafa',
+                color: '#374151',
+                whiteSpace: 'nowrap',
+              }}
+              title="Insert a 3-day, 5-day, or 7-day travel itinerary blueprint"
+            >
+              <span>🗓️ Itinerary</span>
+            </button>
+
+            <div style={{ width: 1, height: 22, background: '#e0e0e0' }} />
+
+            {/* Active block context pill */}
+            {activeBlock ? (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: '#f5f3ff',
+                  color: '#6d28d9',
+                  border: '1px solid #ddd6fe',
+                  padding: '3px 10px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#7c3aed' }} />
+                <span>#{activeBlockIndex + 1} {BLOCK_TYPE_LABELS[activeBlock.type] || activeBlock.type}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveBlockId(null);
+                  }}
+                  title="Deselect active section"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#8b5cf6',
+                    cursor: 'pointer',
+                    padding: '0 2px',
+                    fontSize: 11,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <span style={{ fontSize: 12, color: '#888', fontStyle: 'italic' }}>
+                No section focused (click into a block to target formatting)
+              </span>
+            )}
+          </div>
+
+          {/* Right: Text Formatting Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => toggleMark('bold')}
+                disabled={!isTextBlock}
+                title={
+                  hasSelection
+                    ? 'Toggle bold on selected text'
+                    : isTextBlock
+                    ? 'Toggle bold for subsequently typed text'
+                    : 'Select a text block to format'
+                }
+                style={{
+                  fontWeight: 700,
+                  minWidth: 32,
+                  background: isMarkActive('bold') ? '#ede9fe' : undefined,
+                  color: isMarkActive('bold') ? '#6d28d9' : undefined,
+                  border: isMarkActive('bold') ? '1px solid #c4b5fd' : undefined,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <strong>B</strong>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => toggleMark('italic')}
+                disabled={!isTextBlock}
+                title={
+                  hasSelection
+                    ? 'Toggle italic on selected text'
+                    : isTextBlock
+                    ? 'Toggle italic for subsequently typed text'
+                    : 'Select a text block to format'
+                }
+                style={{
+                  fontStyle: 'italic',
+                  minWidth: 32,
+                  background: isMarkActive('italic') ? '#ede9fe' : undefined,
+                  color: isMarkActive('italic') ? '#6d28d9' : undefined,
+                  border: isMarkActive('italic') ? '1px solid #c4b5fd' : undefined,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <em>I</em>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => toggleMark('strikethrough')}
+                disabled={!isTextBlock}
+                title={
+                  hasSelection
+                    ? 'Toggle strikethrough on selected text'
+                    : isTextBlock
+                    ? 'Toggle strikethrough for subsequently typed text'
+                    : 'Select a text block to format'
+                }
+                style={{
+                  textDecoration: 'line-through',
+                  minWidth: 32,
+                  background: isMarkActive('strikethrough') ? '#ede9fe' : undefined,
+                  color: isMarkActive('strikethrough') ? '#6d28d9' : undefined,
+                  border: isMarkActive('strikethrough') ? '1px solid #c4b5fd' : undefined,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <s>S</s>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => toggleMark('underline')}
+                disabled={!isTextBlock}
+                title={
+                  hasSelection
+                    ? 'Toggle underline on selected text'
+                    : isTextBlock
+                    ? 'Toggle underline for subsequently typed text'
+                    : 'Select a text block to format'
+                }
+                aria-label="Underline"
+                style={{
+                  textDecoration: 'underline',
+                  minWidth: 32,
+                  background: isMarkActive('underline') ? '#ede9fe' : undefined,
+                  color: isMarkActive('underline') ? '#6d28d9' : undefined,
+                  border: isMarkActive('underline') ? '1px solid #c4b5fd' : undefined,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <span style={{ textDecoration: 'underline', fontWeight: 700 }}>U</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleOpenLinkPopover}
+                disabled={!isTextBlock}
+                title={
+                  hasSelection
+                    ? 'Add or edit hyperlink on selected text'
+                    : isMarkActive('href')
+                    ? 'Link mode is on — click to change URL or turn off'
+                    : isTextBlock
+                    ? 'Turn on link mode and set a URL for subsequently typed text'
+                    : 'Select a text block to add hyperlink'
+                }
+                style={{
+                  minWidth: 32,
+                  background: isMarkActive('href') || showLinkPopover ? '#ede9fe' : undefined,
+                  color: isMarkActive('href') || showLinkPopover ? '#6d28d9' : undefined,
+                  border: isMarkActive('href') || showLinkPopover ? '1px solid #c4b5fd' : undefined,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+              >
+                <span>🔗</span>
+                <span>Link</span>
+              </button>
+
+              <label
+                onMouseDown={(e) => e.preventDefault()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                  marginLeft: 4,
+                }}
+              >
+                <span>Color</span>
+                <input
+                  type="color"
+                  aria-label="Text color"
+                  value={toolbarColor || '#7c3aed'}
+                  disabled={!isTextBlock}
+                  onChange={(e) => setMarkValue('color', e.target.value)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    padding: 0,
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                  }}
+                />
+              </label>
+
+              <label
+                onMouseDown={(e) => e.preventDefault()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  opacity: isTextBlock ? 1 : 0.45,
+                  cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                  marginLeft: 4,
+                }}
+              >
+                <span>Highlight</span>
+                <input
+                  type="color"
+                  aria-label="Highlight color"
+                  value={toolbarHighlight || '#fde68a'}
+                  disabled={!isTextBlock}
+                  onChange={(e) => setMarkValue('highlight', e.target.value)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    padding: 0,
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: isTextBlock ? 'pointer' : 'not-allowed',
+                  }}
+                />
+              </label>
+
+              <button
+                type="button"
+                className="btn btn-sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleClearFormatting}
+                disabled={!canClearFormatting}
+                title={
+                  hasSelection
+                    ? 'Clear formatting on selected text'
+                    : hasPendingMarks
+                    ? 'Reset typing formatting to plain text'
+                    : 'Clear formatting'
+                }
+                style={{
+                  minWidth: 32,
+                  opacity: canClearFormatting ? 1 : 0.45,
+                  cursor: canClearFormatting ? 'pointer' : 'not-allowed',
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                Tx
+              </button>
+            </div>
+
+            {hasSelection ? (
+              <span style={{ fontSize: 11, color: '#6d28d9', fontWeight: 600 }}>
+                {activeSelection.end - activeSelection.start} chars selected
+              </span>
+            ) : hasPendingMarks ? (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: '#fef3c7',
+                  color: '#92400e',
+                  border: '1px solid #fde68a',
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              >
+                <span>✏️ Typing:</span>
+                <span>
+                  {[
+                    typingMarks.bold && 'Bold',
+                    typingMarks.italic && 'Italic',
+                    typingMarks.underline && 'Underline',
+                    typingMarks.strikethrough && 'Strikethrough',
+                    typingMarks.href && 'Link',
+                    typingMarks.color && 'Color',
+                    typingMarks.highlight && 'Highlight',
+                  ]
+                    .filter(Boolean)
+                    .join(' + ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingOverride(true);
+                    setPendingMarks({});
+                    linkModeRef.current = false;
+                  }}
+                  title="Reset typing to plain text"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#b45309',
+                    cursor: 'pointer',
+                    padding: '0 2px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Inline Link Popover when toggled */}
+        {showLinkPopover && isTextBlock && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: '10px 12px',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="https://example.com or /blogs/guide"
+                value={linkUrl}
+                onChange={(e) => {
+                  setLinkUrl(e.target.value);
+                  if (linkError) setLinkError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleApplyLink();
+                  } else if (e.key === 'Escape') {
+                    setShowLinkPopover(false);
+                  }
+                }}
+                autoFocus
+                style={{
+                  flex: '1 1 240px',
+                  padding: '6px 10px',
+                  borderRadius: 6,
+                  border: linkError ? '1px solid #ef4444' : '1px solid #94a3b8',
+                  fontSize: 12,
+                  outline: 'none',
+                  background: '#ffffff',
+                }}
+              />
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                <input
+                  type="checkbox"
+                  checked={linkTargetBlank}
+                  onChange={(e) => setLinkTargetBlank(e.target.checked)}
+                />
+                <span>Open in new tab</span>
+              </label>
+              <button
+                type="button"
+                className="btn btn-xs btn-primary"
+                onClick={handleApplyLink}
+                style={{ padding: '6px 12px', fontWeight: 600 }}
+              >
+                Apply
+              </button>
+              {isMarkActive('href') && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-secondary"
+                  onClick={handleRemoveLink}
+                  style={{ padding: '6px 10px', color: '#b91c1c' }}
+                >
+                  Remove Link
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowLinkPopover(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '0 4px',
+                  fontSize: 14,
+                  lineHeight: 1,
+                }}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+            {linkError && (
+              <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 500 }}>
+                ⚠️ {linkError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Block library drawer when toggled */}
+        {showBlockLibrary && (
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 12,
+              borderTop: '1px solid #edf2f7',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+              gap: 6,
+              maxHeight: 240,
+              overflowY: 'auto',
+            }}
+          >
+            {BLOCK_LIBRARY.map((b) => (
+              <button
+                key={b.type}
+                type="button"
+                className="btn btn-xs"
+                onClick={() => handleAddSection(b.type)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: 6,
+                  padding: '6px 8px',
+                  borderRadius: 6,
+                  border: '1px solid #e2e8f0',
+                  background: '#fafafa',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  textAlign: 'left',
+                }}
+                title={b.desc}
+              >
+                <span style={{ color: '#7c3aed', fontWeight: 700 }}>+</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {authoringProfile && <TemplateGuidancePanel profile={authoringProfile} />}
@@ -3233,7 +3193,44 @@ const BlogEditor: React.FC<{
             </div>
             <div>
               <label style={fieldLabel}>Tags</label>
-              <input style={inputStyle} value={post.tags.join(', ')} onChange={(e) => updatePost({ tags: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })} placeholder="india, monsoon, solo" />
+              <input style={inputStyle} value={post.tags.join(', ')} onChange={(e) => updatePost({ tags: normalizeTags(e.target.value.split(',')) })} placeholder="india, monsoon, solo" />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
+            <div>
+              <label style={fieldLabel}>Story Style / Template</label>
+              <select
+                style={inputStyle}
+                value={post.storyStyle || 'editorial-journal'}
+                onChange={(e) => updatePost({ storyStyle: e.target.value as StoryStyle })}
+              >
+                {Object.entries(TEMPLATES_BY_FORMAT).map(([groupKey, templates]) => {
+                  const groupInfo = FORMAT_GALLERY_INFO[groupKey as keyof typeof FORMAT_GALLERY_INFO];
+                  return (
+                    <optgroup key={groupKey} label={groupInfo?.title || groupKey}>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {STORY_STYLE_LABELS[t.id] || t.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+            </div>
+            <div>
+              <label style={fieldLabel}>Background Theme</label>
+              <select
+                style={inputStyle}
+                value={post.theme || 'classic-editorial'}
+                onChange={(e) => updatePost({ theme: e.target.value as BackgroundTheme })}
+              >
+                <option value="classic-editorial">Classic Editorial (Warm Off-White)</option>
+                <option value="nature-wildlife">Nature & Wildlife (Pale Sage)</option>
+                <option value="ocean-islands">Ocean & Islands (Pale Aqua)</option>
+                <option value="culture-heritage">Culture & Heritage (Warm Parchment)</option>
+                <option value="adventure">Adventure (Muted Sand)</option>
+              </select>
             </div>
           </div>
         </div>
@@ -3269,142 +3266,555 @@ const BlogEditor: React.FC<{
 
       {/* ── Content Blocks ── */}
       <div style={sectionStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap' }}>
-          <p style={{ ...sectionHeadStyle, margin: 0, paddingBottom: 0, border: 'none' }}>📝 Content Blocks</p>
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            onClick={() => setShowBlockLibrary((value) => !value)}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            + Add Section
-          </button>
-        </div>
-
-        {showBlockLibrary && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
-            {BLOCK_LIBRARY.map((b) => (
-              <button
-                key={b.type}
-                type="button"
-                className="btn btn-xs"
-                onClick={() => {
-                  onAddBlock(b.type);
-                  setShowBlockLibrary(false);
-                }}
-                style={{ whiteSpace: 'nowrap', fontSize: 11 }}
-                title={b.desc}
-              >
-                + {b.label}
-              </button>
-            ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ ...sectionHeadStyle, margin: 0, paddingBottom: 0, border: 'none' }}>📝 Content Blocks</p>
+            <span style={{ fontSize: 12, color: '#888' }}>
+              {post.blocks.length} {post.blocks.length === 1 ? 'section' : 'sections'} in story
+            </span>
           </div>
-        )}
-
-        {post.blocks.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: '#bbb', border: '2px dashed #eee', borderRadius: 10 }}>
-            <div style={{ fontSize: 15, marginBottom: 16, color: '#888' }}>No sections added yet.</div>
-            <button type="button" className="btn btn-sm btn-primary" onClick={() => setShowBlockLibrary(true)}>
-              + Add Section
+          <div>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => {
+                setScaffoldDuration('3-day');
+                setConfirmReplaceMode(false);
+                setShowScaffoldModal(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 600,
+                fontSize: 12,
+                padding: '6px 14px',
+                borderRadius: 8,
+                border: '1px solid #c4b5fd',
+                background: '#f5f3ff',
+                color: '#6d28d9',
+              }}
+              title="Insert a pre-structured 3-day, 5-day, or 7-day travel itinerary blueprint"
+            >
+              <span>🗓️ Itinerary Scaffold</span>
             </button>
           </div>
+        </div>
+
+        {/* Polished Blank / Empty State */}
+        {post.blocks.length === 0 && (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '48px 24px',
+              color: '#4b5563',
+              border: '2px dashed #d1d5db',
+              borderRadius: 14,
+              background: '#fcfcfd',
+            }}
+          >
+            <div style={{ fontSize: 32, marginBottom: 12 }}>✍️</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+              Your story is a blank canvas
+            </div>
+            <p style={{ margin: '0 auto 20px', maxWidth: 440, fontSize: 13, lineHeight: 1.6, color: '#6b7280' }}>
+              Start shaping your travel narrative by adding your first heading, lead paragraph, full-bleed photograph, or curated highlight.
+            </p>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowBlockLibrary(true)}
+              style={{ padding: '8px 18px', fontWeight: 600, fontSize: 13 }}
+            >
+              + Add First Section
+            </button>
+            <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #e5e7eb', maxWidth: 620, margin: '24px auto 0' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+                ⚡ Or Quick Start With an Itinerary Scaffold
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handleApplyScaffold('3-day', 'replace')}
+                  style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '7px 14px', fontWeight: 600, fontSize: 12, color: '#1e293b' }}
+                >
+                  🗓️ 3-Day Express
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handleApplyScaffold('5-day', 'replace')}
+                  style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '7px 14px', fontWeight: 600, fontSize: 12, color: '#1e293b' }}
+                >
+                  🗓️ 5-Day Explorer
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => handleApplyScaffold('7-day', 'replace')}
+                  style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, padding: '7px 14px', fontWeight: 600, fontSize: 12, color: '#1e293b' }}
+                >
+                  🗓️ 7-Day Grand Tour
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-        {post.blocks.map((block) => (
+
+        {/* Blocks List */}
+        {post.blocks.map((block, index) => (
           <BlogBlockEditor
             key={block.id}
             block={block}
+            index={index}
+            isActive={block.id === activeBlockId}
             authoringProfile={authoringProfile}
+            pendingMarks={block.id === activeBlockId ? typingMarks : undefined}
+            onFormatKey={toggleMark}
             onChange={(next) => updateBlock(block.id, next)}
             onDelete={() => deleteBlock(block.id)}
             onMoveUp={() => moveBlock(block.id, -1)}
             onMoveDown={() => moveBlock(block.id, 1)}
             onDuplicate={() => duplicateBlock(block.id)}
+            onFocusBlock={(id, textareaEl) => {
+              setActiveBlockId(id);
+              if (textareaEl) activeTextareaRef.current = textareaEl;
+            }}
+            onSelectionChange={(sel, textareaEl) => {
+              setActiveSelection(sel);
+              if (textareaEl) activeTextareaRef.current = textareaEl;
+              setActiveBlockId(block.id);
+              if (ignoreOverrideResetRef.current) {
+                ignoreOverrideResetRef.current = false;
+                return;
+              }
+              if (linkModeRef.current) {
+                const caretVisual = withoutLinkMarks(
+                  sel.end > sel.start
+                    ? getMarksAtIndex(block.inlineContent, sel.start)
+                    : getMarksAtCaret(block.inlineContent, sel.start),
+                );
+                setPendingOverride(true);
+                setPendingMarks((prev) =>
+                  prev.href
+                    ? { ...caretVisual, href: prev.href, targetBlank: prev.targetBlank }
+                    : caretVisual,
+                );
+              } else {
+                setPendingOverride(false);
+                setPendingMarks({});
+              }
+            }}
           />
         ))}
       </div>
+
+      {/* ── Itinerary Scaffold Selection & Confirmation Modal ── */}
+      {showScaffoldModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="scaffold-modal-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowScaffoldModal(false);
+              setConfirmReplaceMode(false);
+            }
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 720,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 24px',
+                borderBottom: '1px solid #f1f5f9',
+              }}
+            >
+              <div>
+                <h3 id="scaffold-modal-title" style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🗓️</span> Travel Itinerary Scaffolds
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+                  Select an expertly structured travel blueprint for your blog post.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowScaffoldModal(false);
+                  setConfirmReplaceMode(false);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: 4,
+                  lineHeight: 1,
+                }}
+                title="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Scaffold Options Selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#475569', marginBottom: 10 }}>
+                  Choose Itinerary Blueprint
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                  {(['3-day', '5-day', '7-day'] as ItineraryScaffoldDuration[]).map((dur) => {
+                    const item = ITINERARY_SCAFFOLDS[dur];
+                    const isSelected = scaffoldDuration === dur;
+                    return (
+                      <button
+                        key={dur}
+                        type="button"
+                        onClick={() => {
+                          setScaffoldDuration(dur);
+                          setConfirmReplaceMode(false);
+                        }}
+                        style={{
+                          textAlign: 'left',
+                          padding: 14,
+                          borderRadius: 12,
+                          border: isSelected ? '2px solid #7c3aed' : '1px solid #e2e8f0',
+                          background: isSelected ? '#f5f3ff' : '#fafafa',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: isSelected ? '#6d28d9' : '#64748b', background: isSelected ? '#ede9fe' : '#e2e8f0', padding: '2px 8px', borderRadius: 999 }}>
+                            {item.duration}
+                          </span>
+                          {isSelected && <span style={{ color: '#7c3aed', fontWeight: 800 }}>✓</span>}
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: isSelected ? '#4c1d95' : '#1e293b' }}>
+                          {item.name}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                          {item.badge}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Selected Scaffold Details */}
+              {(() => {
+                const currentScaffold = ITINERARY_SCAFFOLDS[scaffoldDuration];
+                return (
+                  <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', padding: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 6 }}>
+                      {currentScaffold.name} Blueprint Overview
+                    </div>
+                    <p style={{ margin: '0 0 10px', fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                      {currentScaffold.description}
+                    </p>
+                    <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 600, color: '#334155' }}>Best for:</span>
+                      <span>{currentScaffold.idealFor}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Duplicate Scaffold Detection Notice */}
+              {hasExistingItineraryScaffold(post.blocks) && (
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 16 }}>⚠️</span>
+                  <div style={{ fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>
+                    <strong>Existing Itinerary Detected:</strong> This story already contains day headings or stage itineraries. Appending will insert additional day sections without overwriting existing content.
+                  </div>
+                </div>
+              )}
+
+              {/* Overwrite Confirmation Warning Box (if triggered) */}
+              {confirmReplaceMode && (
+                <div style={{ background: '#fef2f2', border: '2px solid #ef4444', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#b91c1c', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>🚨</span> Confirm Destructive Replacement
+                  </div>
+                  <p style={{ margin: '0 0 14px', fontSize: 12, color: '#7f1d1d', lineHeight: 1.6 }}>
+                    Are you sure you want to replace all <strong>{post.blocks.length} existing sections</strong> with the {ITINERARY_SCAFFOLDS[scaffoldDuration].name}? Existing content in Content Blocks will be replaced.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyScaffold(scaffoldDuration, 'replace')}
+                      style={{
+                        background: '#dc2626',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '8px 16px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Yes, Replace All Sections
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReplaceMode(false)}
+                      style={{
+                        background: '#fff',
+                        color: '#374151',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 8,
+                        padding: '8px 14px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel Overwrite
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions Footer */}
+            {!confirmReplaceMode && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px 24px',
+                  background: '#f8fafc',
+                  borderTop: '1px solid #f1f5f9',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowScaffoldModal(false)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #d1d5db',
+                    color: '#475569',
+                    borderRadius: 8,
+                    padding: '8px 16px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {post.blocks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReplaceMode(true)}
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #fca5a5',
+                        color: '#dc2626',
+                        borderRadius: 8,
+                        padding: '8px 14px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      title="Replace current story content with this scaffold"
+                    >
+                      🔄 Replace Entire Story...
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleApplyScaffold(scaffoldDuration, post.blocks.length === 0 ? 'replace' : 'append')}
+                    style={{
+                      background: '#7c3aed',
+                      border: 'none',
+                      color: '#fff',
+                      borderRadius: 8,
+                      padding: '8px 18px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)',
+                    }}
+                  >
+                    <span>{post.blocks.length === 0 ? '⚡ Insert Scaffold' : '➕ Append Scaffold to Story'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // ─── Blog List Item ───────────────────────────────────────────────────────────
-const BlogListItem: React.FC<{ post: Post; onOpen: (post: Post, mode: ViewMode) => void }> = ({ post, onOpen }) => (
-  <div className="blog-list-item" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8e8e8', overflow: 'hidden' }}>
-    {post.cover?.src && (
-      <div style={{ height: 200, overflow: 'hidden' }}>
-        <img src={post.cover.src} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      </div>
-    )}
-    <div style={{ padding: 20 }}>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10, color: '#777', fontSize: 13 }}>
-        <span>{post.categories[0] || 'Uncategorized'}</span>
-        <span>{new Date(post.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-        <span>{post.readingTime} min read</span>
-        <span style={{ background: post.status === 'published' ? '#d4edda' : '#fff3cd', color: post.status === 'published' ? '#155724' : '#856404', borderRadius: 999, padding: '2px 8px', fontSize: 11 }}>{post.status}</span>
-      </div>
-      <h3 style={{ margin: '0 0 10px' }}>{post.title}</h3>
-      <p style={{ margin: 0, color: '#555' }}>{post.excerpt}</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundImage: `url(${post.author.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#ccc', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 12 }}>
-          {!post.author.avatar && post.author.initials}
+const BlogListItem: React.FC<{ post: Post; onOpen: (post: Post, mode: ViewMode) => void }> = ({ post, onOpen }) => {
+  const categories = displayLabels(post.categories);
+  const tags = displayLabels(post.tags);
+
+  return (
+    <div className="blog-list-item" style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8e8e8', overflow: 'hidden' }}>
+      {post.cover?.src && (
+        <div style={{ height: 200, overflow: 'hidden' }}>
+          <img src={post.cover.src} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
-        <span style={{ fontSize: 14 }}>{post.author.name}</span>
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-        {post.tags.slice(0, 3).map((tag) => (
-          <span key={tag} style={{ background: '#f1f1f1', borderRadius: 999, padding: '4px 10px', fontSize: 12 }}>#{tag}</span>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-        <button
-          type="button"
-          className="btn btn-xs"
-          onClick={(e) => { e.stopPropagation(); onOpen(post, 'preview'); }}
-          style={{ cursor: 'pointer' }}
-        >
-          Read
-        </button>
-        <button
-          type="button"
-          className="btn btn-xs btn-primary"
-          onClick={(e) => { e.stopPropagation(); onOpen(post, 'editor'); }}
-          style={{ cursor: 'pointer' }}
-        >
-          Edit
-        </button>
+      )}
+      <div style={{ padding: 20 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10, color: '#777', fontSize: 13 }}>
+          {categories.length > 0
+            ? categories.map((category) => <span key={category}>{category}</span>)
+            : <span>Uncategorized</span>}
+          <span>{new Date(post.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span>{post.readingTime} min read</span>
+          <span style={{ background: post.status === 'published' ? '#d4edda' : '#fff3cd', color: post.status === 'published' ? '#155724' : '#856404', borderRadius: 999, padding: '2px 8px', fontSize: 11 }}>{post.status}</span>
+        </div>
+        <h3 style={{ margin: '0 0 10px' }}>{post.title}</h3>
+        <p style={{ margin: 0, color: '#555' }}>{post.excerpt}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#ccc', display: 'grid', placeItems: 'center', color: '#fff', fontSize: 12 }}>
+            {!post.author.avatar && post.author.initials}
+          </div>
+          <span style={{ fontSize: 14 }}>{post.author.name}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          {tags.slice(0, 3).map((tag) => (
+            <span key={tag} style={{ background: '#f1f1f1', borderRadius: 999, padding: '4px 10px', fontSize: 12 }}>#{tag}</span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <button type="button" className="btn btn-xs" onClick={(e) => { e.stopPropagation(); onOpen(post, 'preview'); }} style={{ cursor: 'pointer' }}>Read</button>
+          <button type="button" className="btn btn-xs btn-primary" onClick={(e) => { e.stopPropagation(); onOpen(post, 'editor'); }} style={{ cursor: 'pointer' }}>Edit</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Blog List View ───────────────────────────────────────────────────────────
-const BlogListView: React.FC<{ posts: Post[]; onOpen: (post: Post, mode: ViewMode) => void; onCreate: () => void; loading?: boolean; error?: string | null }> = ({ posts, onOpen, onCreate, loading, error }) => (
-  <div style={{ padding: 24 }}>
-    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-      <div>
-        <h1 style={{ margin: 0 }}>Journal</h1>
-        <p style={{ marginTop: 8, color: '#666' }}>Browse posts, open them for reading, or edit any entry.</p>
+const BlogListView: React.FC<{ posts: Post[]; onOpen: (post: Post, mode: ViewMode) => void; onCreate: () => void; loading?: boolean; error?: string | null }> = ({ posts, onOpen, onCreate, loading, error }) => {
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  const categoryOptions = Array.from(
+    posts
+      .flatMap((post) => displayLabels(post.categories))
+      .reduce((options, category) => {
+        const key = category.toLowerCase();
+        if (!options.has(key)) options.set(key, category);
+        return options;
+      }, new Map<string, string>())
+      .entries(),
+  ).sort(([, first], [, second]) => first.localeCompare(second));
+
+  const filteredPosts = posts.filter((post) => {
+    return !selectedCategory || displayLabels(post.categories).some(
+      (category) => category.toLowerCase() === selectedCategory.toLowerCase(),
+    );
+  });
+  const hasFilters = Boolean(selectedCategory);
+
+  const clearFilters = () => {
+    setSelectedCategory('');
+  };
+
+  return (
+    <div style={{ padding: 24 }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Journal</h1>
+          <p style={{ marginTop: 8, color: '#666' }}>Browse posts, open them for reading, or edit any entry.</p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={onCreate}>New post</button>
+      </header>
+      {error && (
+        <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, background: '#ffe5e5', color: '#8a1c1c', border: '1px solid #f5c2c2' }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+      {!loading && posts.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 24, padding: '16px 20px', background: '#fff', border: '1px solid #e8e8e8', borderRadius: 12 }}>
+          <label style={{ display: 'grid', gap: 6, minWidth: 220, fontSize: 12, fontWeight: 600, color: '#444' }}>
+            Category
+            <select
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+              style={{ padding: '9px 12px', borderRadius: 8, border: '1px solid #ddd', background: '#fafafa', fontSize: 14 }}
+            >
+              <option value="">All categories</option>
+              {Array.from(new Set([...BLOG_CATEGORY_OPTIONS.slice(1), ...categoryOptions.map(([, category]) => category)])).map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </label>
+          {hasFilters && <button type="button" className="btn btn-sm" onClick={clearFilters} style={{ height: 38, alignSelf: 'flex-end' }}>Clear filter</button>}
+        </div>
+      )}
+      {loading && <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>Loading blogs…</div>}
+      {!loading && posts.length === 0 && !error && (
+        <div style={{ padding: 48, textAlign: 'center', color: '#888', border: '2px dashed #e0e0e0', borderRadius: 16 }}>
+          <p style={{ fontSize: 18, margin: '0 0 16px' }}>No posts yet</p>
+          <button type="button" className="btn btn-primary" onClick={onCreate}>Create your first post</button>
+        </div>
+      )}
+      {!loading && posts.length > 0 && filteredPosts.length === 0 && (
+        <div style={{ padding: 48, textAlign: 'center', color: '#888', border: '2px dashed #e0e0e0', borderRadius: 16 }}>
+          <p style={{ fontSize: 18, margin: '0 0 16px' }}>No posts match these filters.</p>
+          <button type="button" className="btn btn-sm" onClick={clearFilters}>Clear filters</button>
+        </div>
+      )}
+      <div style={{ display: 'grid', gap: 24 }}>
+        {filteredPosts.map((post) => (
+          <BlogListItem key={post.id || post.slug} post={post} onOpen={onOpen} />
+        ))}
       </div>
-      <button type="button" className="btn btn-primary" onClick={onCreate}>New post</button>
-    </header>
-    {error && (
-      <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, background: '#ffe5e5', color: '#8a1c1c', border: '1px solid #f5c2c2' }}>
-        <strong>Error:</strong> {error}
-      </div>
-    )}
-    {loading && <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>Loading blogs…</div>}
-    {!loading && posts.length === 0 && !error && (
-      <div style={{ padding: 48, textAlign: 'center', color: '#888', border: '2px dashed #e0e0e0', borderRadius: 16 }}>
-        <p style={{ fontSize: 18, margin: '0 0 16px' }}>No posts yet</p>
-        <button type="button" className="btn btn-primary" onClick={onCreate}>Create your first post</button>
-      </div>
-    )}
-    <div style={{ display: 'grid', gap: 24 }}>
-      {posts.map((post) => (
-        <BlogListItem key={post.id || post.slug} post={post} onOpen={onOpen} />
-      ))}
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Main Blogs Component ─────────────────────────────────────────────────────
 const Blogs: React.FC<BlogsProps> = ({
@@ -3425,6 +3835,7 @@ const Blogs: React.FC<BlogsProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<BlogTemplateDefinition | null>(null);
   const [returnToTemplateLibrary, setReturnToTemplateLibrary] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(showListView ? 'list' : 'preview');
+  const [savedPostSnapshot, setSavedPostSnapshot] = useState('');
 
   useEffect(() => { loadBlogs(); }, []);
 
@@ -3449,6 +3860,7 @@ const Blogs: React.FC<BlogsProps> = ({
 
   const openPost = (post: Post, mode: ViewMode) => {
     setActivePost(post);
+    setSavedPostSnapshot(JSON.stringify(post));
     setIsCreatingPost(false);
     setReturnToTemplateLibrary(false);
     setViewMode(mode);
@@ -3471,13 +3883,28 @@ const Blogs: React.FC<BlogsProps> = ({
 
     const basePost = createEmptyPost();
     const templateBlocks = templateBlocksToPostBlocks(template.blocks, template.profile);
+    const initialStoryStyle: StoryStyle =
+      (template.id as StoryStyle) ||
+      (template.profile?.imageStrategy === 'gallery-heavy' || template.profile?.imageStrategy === 'image-led'
+        ? 'visual-journey'
+        : template.id.includes('route')
+        ? 'route-explorer'
+        : template.id.includes('explorer')
+        ? 'day-by-day'
+        : template.id.includes('essential') || template.id.includes('guide')
+        ? 'smart-travel'
+        : 'editorial-journal');
+
     const draftPost: Post = {
       ...basePost,
       id: `local-${makeId()}`,
+      storyStyle: initialStoryStyle,
+      theme: 'classic-editorial',
       blocks: templateBlocks,
     };
 
     setActivePost(draftPost);
+    setSavedPostSnapshot('');
     setIsCreatingPost(true);
     setViewMode('editor');
   };
@@ -3490,13 +3917,25 @@ const Blogs: React.FC<BlogsProps> = ({
     setError(null);
 
     const basePost = createEmptyPost();
+    const formatStyleMap: Record<BlogFormat, StoryStyle> = {
+      'editorial-destination': 'editorial-journal',
+      'photography-narrative': 'cinematic-destination',
+      'practical-planning': 'budget-breakdown',
+      'discovery-experience': 'food-flavours',
+      'decision-interactive': 'destination-comparison',
+      'blank': 'editorial-journal',
+    };
+
     const draftPost: Post = {
       ...basePost,
       id: `local-${makeId()}`,
+      storyStyle: formatStyleMap[format.type] || 'editorial-journal',
+      theme: 'classic-editorial',
       blocks: format.blocks.map((type) => defaultBlock(type)),
     };
 
     setActivePost(draftPost);
+    setSavedPostSnapshot('');
     setIsCreatingPost(true);
     setViewMode('editor');
   };
@@ -3506,24 +3945,25 @@ const Blogs: React.FC<BlogsProps> = ({
     setPostsState((prev) => prev.map((p) => (p.id === next.id ? next : p)));
   };
 
-  const savePost = async (post?: Post) => {
+  const savePost = async (post?: Post): Promise<Post | null> => {
     const target = post ?? activePost;
-    if (!target) return false;
+    if (!target) return null;
 
     setSaving(true);
     try {
-      const createPayload = { ...target };
+      const normalizedTarget = { ...target, tags: normalizeTags(target.tags) };
+      const createPayload = { ...normalizedTarget };
       delete createPayload.id;
 
       const response = isCreatingPost
         ? await createBlog(createPayload)
-        : target.id
-          ? await updateBlog(target.id, target)
+        : normalizedTarget.id
+          ? await updateBlog(normalizedTarget.id, normalizedTarget)
           : null;
 
       if (!response) {
         setError('This post is missing a valid ID and cannot be updated.');
-        return false;
+        return null;
       }
 
       if (response.success) {
@@ -3534,7 +3974,8 @@ const Blogs: React.FC<BlogsProps> = ({
           setIsCreatingPost(false);
         }
         setActivePost(normalized);
-        return true;
+        setSavedPostSnapshot(JSON.stringify(normalized));
+        return normalized;
       }
     } catch (err) {
       console.error('Failed to save blog:', err);
@@ -3542,21 +3983,106 @@ const Blogs: React.FC<BlogsProps> = ({
     } finally {
       setSaving(false);
     }
-    return false;
+    return null;
   };
 
   const deletePost = async (id: string) => {
     if (!window.confirm('Delete this blog post? This cannot be undone.')) return;
+    setSaving(true);
     try {
       const response = await deleteBlog(id);
-      if (response.success) {
-        setPostsState((prev) => prev.filter((p) => p.id !== id));
-        setActivePost(null);
-        setViewMode('list');
+      if (!response.success) {
+        throw new Error('The server did not confirm deletion.');
       }
+      setPostsState((prev) => prev.filter((p) => p.id !== id));
+      setActivePost(null);
+      setSavedPostSnapshot('');
+      setViewMode('list');
+      alert('Blog post deleted.');
     } catch (err) {
-      setError(mapErrorMessage(err));
+      const message = mapErrorMessage(err);
+      setError(message);
+      alert(message);
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const hasUnsavedChanges = !!activePost && (
+    isCreatingPost || JSON.stringify(activePost) !== savedPostSnapshot
+  );
+
+  const handleSaveDraft = async () => {
+    if (!activePost || saving) return;
+    setError(null);
+    const saved = await savePost({ ...activePost, status: 'draft' });
+    if (saved) {
+      alert('Blog saved as draft.');
+      setReturnToTemplateLibrary(false);
+      setViewMode('list');
+    } else {
+      alert(error || 'Unable to save the draft. Check the form and try again.');
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!activePost || saving) return;
+    setError(null);
+    const validationErrors = validatePublishPost(activePost);
+    if (validationErrors.length > 0) {
+      const message = validationErrors.join('\n');
+      setError(message);
+      alert(message);
+      return;
+    }
+
+    const saved = await savePost({ ...activePost, status: 'draft' });
+    if (!saved?.id) {
+      alert(error || 'The latest edits could not be saved, so the post was not published.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await publishBlog(saved.id);
+      if (!response.success) {
+        throw new Error('The server did not confirm publication.');
+      }
+      const published = normalizePost(response.data);
+      setActivePost(published);
+      setPostsState((prev) => prev.map((post) => (post.id === published.id ? published : post)));
+      setSavedPostSnapshot(JSON.stringify(published));
+      alert('Blog published successfully.');
+      setViewMode('list');
+    } catch (err) {
+      const message = mapErrorMessage(err);
+      setError(message);
+      alert(`Publish failed: ${message} Please try again.`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Leave without saving?')) return;
+    setActivePost(null);
+    setSavedPostSnapshot('');
+    setViewMode('list');
+    if (returnToTemplateLibrary) setShowFormatLibrary(true);
+  };
+
+  const handleDelete = () => {
+    if (!activePost) return;
+    if (isCreatingPost || !activePost.id || activePost.id.startsWith('local-')) {
+      if (!window.confirm('Discard this new blog post? This cannot be undone.')) return;
+      setActivePost(null);
+      setSavedPostSnapshot('');
+      setIsCreatingPost(false);
+      setViewMode('list');
+      if (returnToTemplateLibrary) setShowFormatLibrary(true);
+      return;
+    }
+    void deletePost(activePost.id);
   };
 
   const addBlock = (type: BlockType) => {
@@ -3734,35 +4260,12 @@ const Blogs: React.FC<BlogsProps> = ({
         authoringProfile={selectedTemplate?.profile}
         onChange={handlePostChange}
         onSave={async () => {
-          const saved = await savePost(activePost);
-          if (saved) {
-            setReturnToTemplateLibrary(false);
-            setViewMode('list');
-          }
+          await handleSaveDraft();
         }}
         onPreview={() => setViewMode('preview')}
-        onCancel={() => {
-          if (isCreatingPost) {
-            setActivePost(null);
-            setIsCreatingPost(false);
-          } else {
-            void savePost(activePost);
-          }
-          if (returnToTemplateLibrary) {
-            setShowFormatLibrary(true);
-          } else {
-            setViewMode('list');
-          }
-        }}
-        onDelete={() => {
-          if (isCreatingPost) {
-            setActivePost(null);
-            setIsCreatingPost(false);
-            setViewMode('list');
-          } else if (activePost.id) {
-            void deletePost(activePost.id);
-          }
-        }}
+        onPublish={() => { void handlePublish(); }}
+        onCancel={handleBack}
+        onDelete={handleDelete}
         onAddBlock={addBlock}
         saving={saving}
       />
@@ -3775,23 +4278,71 @@ const Blogs: React.FC<BlogsProps> = ({
         {/* Floating toolbar */}
         <div style={{
           position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 1000, display: 'flex', gap: 8,
-          background: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(10px)',
-          borderRadius: 999, padding: '8px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+          zIndex: 1000, display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(20,20,20,0.88)', backdropFilter: 'blur(12px)',
+          borderRadius: 999, padding: '6px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          maxWidth: '92vw', flexWrap: 'wrap', justifyContent: 'center'
         }}>
-          <span style={{ color: '#fff', fontSize: 12, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', alignSelf: 'center', paddingLeft: 4 }}>
-            👁 Preview (unsaved)
+          <span style={{ color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', paddingLeft: 4 }}>
+            👁 Preview
           </span>
+
+          {/* Quick Style Switcher in Preview */}
+          <select
+            value={activePost.storyStyle || 'editorial-journal'}
+            onChange={(e) => handlePostChange({ ...activePost, storyStyle: e.target.value as StoryStyle })}
+            style={{
+              background: 'rgba(255,255,255,0.14)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, outline: 'none'
+            }}
+          >
+            {Object.entries(TEMPLATES_BY_FORMAT).map(([groupKey, templates]) => {
+              const groupInfo = FORMAT_GALLERY_INFO[groupKey as keyof typeof FORMAT_GALLERY_INFO];
+              return (
+                <optgroup key={groupKey} label={groupInfo?.title || groupKey} style={{ color: '#000', background: '#fff' }}>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id} style={{ color: '#000', background: '#fff' }}>
+                      {STORY_STYLE_LABELS[t.id] || t.name}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+
+          {/* Quick Theme Switcher in Preview */}
+          <select
+            value={activePost.theme || 'classic-editorial'}
+            onChange={(e) => setActivePost({ ...activePost, theme: e.target.value as BackgroundTheme })}
+            style={{
+              background: 'rgba(255,255,255,0.14)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, outline: 'none'
+            }}
+          >
+            <option value="classic-editorial" style={{ color: '#000' }}>Classic Editorial (Warm Off-White)</option>
+            <option value="nature-wildlife" style={{ color: '#000' }}>Nature & Wildlife (Pale Sage)</option>
+            <option value="ocean-islands" style={{ color: '#000' }}>Ocean & Islands (Pale Aqua)</option>
+            <option value="culture-heritage" style={{ color: '#000' }}>Culture & Heritage (Warm Parchment)</option>
+            <option value="adventure" style={{ color: '#000' }}>Adventure (Muted Sand)</option>
+          </select>
+
           <button
             type="button"
             className="btn btn-sm btn-primary"
             onClick={() => setViewMode('editor')}
-            style={{ borderRadius: 999 }}
+            style={{ borderRadius: 999, padding: '6px 14px', fontSize: 12 }}
           >
             ✏️ Back to editor
           </button>
         </div>
-        <BlogPostView post={activePost} layout={layout} displayFont={displayFont} />
+        <BlogPostView
+          post={activePost}
+          storyStyle={activePost.storyStyle}
+          theme={activePost.theme}
+          layout={layout}
+          displayFont={displayFont}
+        />
       </div>
     );
   }

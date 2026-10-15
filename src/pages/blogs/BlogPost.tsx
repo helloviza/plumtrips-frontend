@@ -62,7 +62,11 @@ export default function BlogPost() {
 
   if (match) {
     const Component = match.default as React.ComponentType;
-    return <Component />;
+    return (
+      <div className="static-blog-shell">
+        <Component />
+      </div>
+    );
   }
 
   if (dbLoading) {
