@@ -1,6 +1,7 @@
 // src/pages/marketing/MarketingDash.tsx
 import { useMemo, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { usePermission } from "../../hooks/usePermission";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   Ship,
@@ -9,13 +10,15 @@ import {
   Pencil,
   LayoutDashboard,
   LogOut,
-  Mail, Image
+  Mail, Image,
+  User
 } from "lucide-react";
 
 const logo = "/assets/logo.png";
 
 export default function MarketingDash() {
   const { user, logout: marketlogout, loading } = useAuth();
+  const { hasModuleAccess, isMainAdmin } = usePermission();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,8 +63,9 @@ export default function MarketingDash() {
     offers: "Offers & Promotions Management",
     blogs: "Journal & Blog Management",
     frontpage: "Frontpage Management",
-    Carousel: "Homepage Carousel Management",
-  };
+    homecarousel: "Homepage Carousel Management",
+    users: "User Management",
+  }; 
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -87,42 +91,27 @@ export default function MarketingDash() {
 
         {/* Nav — scrollable, fills remaining space */}
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5">
-          <NavItem
-            icon={<Ship size={17} />}
-            label="Cruises"
-            isActive={activeTab === "cruises"}
-            onClick={() => navigate("/marketing-dash/cruises")}
-          />
-          <NavItem
-            icon={<Umbrella size={17} />}
-            label="Holidays"
-            isActive={activeTab === "holidays"}
-            onClick={() => navigate("/marketing-dash/holidays")}
-          />
-          <NavItem
-            icon={<Tag size={17} />}
-            label="Offers"
-            isActive={activeTab === "offers"}
-            onClick={() => navigate("/marketing-dash/offers")}
-          />
-          <NavItem
-            icon={<Pencil size={17} />}
-            label="Blogs"
-            isActive={activeTab === "blogs"}
-            onClick={() => navigate("/marketing-dash/blogs")}
-          />
-          <NavItem
-            icon={<LayoutDashboard size={17} />}
-            label="Frontpage"
-            isActive={activeTab === "frontpage"}
-            onClick={() => navigate("/marketing-dash/frontpage")}
-          />
-          <NavItem
-            icon={<Image size={17} />}
-            label="Home Carousel"
-            isActive={activeTab === "homecarousel"}
-            onClick={() => navigate("/marketing-dash/homecarousel")}
-           />
+          {hasModuleAccess("cruises") && (
+            <NavItem icon={<Ship size={17} />} label="Cruises" isActive={activeTab === "cruises"} onClick={() => navigate("/marketing-dash/cruises")} />
+          )}
+          {hasModuleAccess("holidays") && (
+            <NavItem icon={<Umbrella size={17} />} label="Holidays" isActive={activeTab === "holidays"} onClick={() => navigate("/marketing-dash/holidays")} />
+          )}
+          {hasModuleAccess("offers") && (
+            <NavItem icon={<Tag size={17} />} label="Offers" isActive={activeTab === "offers"} onClick={() => navigate("/marketing-dash/offers")} />
+          )}
+          {hasModuleAccess("blogs") && (
+            <NavItem icon={<Pencil size={17} />} label="Blogs" isActive={activeTab === "blogs"} onClick={() => navigate("/marketing-dash/blogs")} />
+          )}
+          {hasModuleAccess("frontpage") && (
+            <NavItem icon={<LayoutDashboard size={17} />} label="Frontpage" isActive={activeTab === "frontpage"} onClick={() => navigate("/marketing-dash/frontpage")} />
+          )}
+          {hasModuleAccess("carousel") && (
+            <NavItem icon={<Image size={17} />} label="Home Carousel" isActive={activeTab === "homecarousel"} onClick={() => navigate("/marketing-dash/homecarousel")} />
+          )}
+          {isMainAdmin && (
+            <NavItem icon={<User size={17} />} label="User Management" isActive={activeTab === "users"} onClick={() => navigate("/marketing-dash/users")} />
+          )}
         </nav>
 
         {/* Footer logout — flex-shrink-0, NOT absolute */}

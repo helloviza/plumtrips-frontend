@@ -15,7 +15,19 @@ async function http<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 export type MeResponse = { user: { id?: string; email: string; fullName?: string; phone?: string } | null };
-export type MarketResponse = { user : { id?: string; email: string } | null }
+export type MarketResponse = {
+  user: {
+    id?: string;
+    email: string;
+    fullName?: string;
+    role?: string;
+    isMainAdmin?: boolean;
+    isProtected?: boolean;
+    accessibleModules?: string[];
+    permissions?: string[];
+    status?: 'active' | 'suspended';
+  } | null;
+};
 
 
 export const authApi = {

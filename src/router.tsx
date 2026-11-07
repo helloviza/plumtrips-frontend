@@ -20,6 +20,8 @@ import MicePage from "./pages/mice/MicePage";
 import CruisesPage from "./pages/cruises/CruisesPage";
 import OffersPage from "./pages/offers/Offers";
 
+import UserManagementPage from "./pages/admin/UserManagement";
+
 import TermsPage from "./pages/legal/TermsPage";
 import PrivacyPage from "./pages/legal/PrivacyPage";
 import CancellationPage from "./pages/legal/CancellationPage";
@@ -85,7 +87,10 @@ import Offer from "./pages/marketing/Offers";
 import FrontpagePage from "./pages/marketing/Frontpage";
 
 import RequireMarketAuth from "./components/RequireMarketAuth";
+import RbacGuard from "./components/auth/RbacGuard";
+import AccessDenied from "./components/auth/AccessDenied";
 import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
+import { usePermission } from "./hooks/usePermission";
 
 // New Flight Flow
 import FlightsFlow from "./pages/flights_new/FlightsFlow";
@@ -124,6 +129,13 @@ function DynamicDestinationWrapper(): ReactElement {
       }}
     />
   );
+}
+
+function MarketingDefaultRoute(): ReactElement {
+  const { firstAccessiblePath } = usePermission();
+  return firstAccessiblePath
+    ? <Navigate to={firstAccessiblePath} replace />
+    : <AccessDenied />;
 }
 
 // ---------- SSO Forward ----------
@@ -219,13 +231,71 @@ export const router = createBrowserRouter(
           ),
 
           children: [
-            { index: true, element: <Cruise /> },
-            { path: "cruises", element: <Cruise /> },
-            { path: "holidays", element: <Holiday /> },
-            { path: "offers", element: <Offer /> },
-            { path: "blogs", element: <Blog /> },
-            { path: "frontpage", element: <FrontpagePage /> },
-            { path: "homecarousel", element: <HomeCarouselPage /> },
+            {
+              index: true,
+              element: <MarketingDefaultRoute />,
+            },
+            {
+              path: "cruises",
+              element: (
+                <RbacGuard module="cruises" requiredPermission="cruises:view">
+                  <Cruise />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "holidays",
+              element: (
+                <RbacGuard module="holidays" requiredPermission="holidays:view">
+                  <Holiday />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "offers",
+              element: (
+                <RbacGuard module="offers" requiredPermission="offers:view">
+                  <Offer />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "blogs",
+              element: (
+                <RbacGuard module="blogs" requiredPermission="blogs:view">
+                  <Blog />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "frontpage",
+              element: (
+                <RbacGuard module="frontpage" requiredPermission="frontpage:view">
+                  <FrontpagePage />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "homecarousel",
+              element: (
+                <RbacGuard module="carousel" requiredPermission="carousel:view">
+                  <HomeCarouselPage />
+                </RbacGuard>
+              ),
+            },
+            {
+              path: "users",
+              element: (
+                <RbacGuard
+                  module="users"
+                  requiredPermission="users:view"
+                  moduleLabel="Manage Roles & Access"
+                  requireMainAdmin
+                >
+                  <UserManagementPage />
+                </RbacGuard>
+              ),
+            },
           ],
         },
 
@@ -504,4 +574,3 @@ export const router = createBrowserRouter(
     basename: import.meta.env.BASE_URL,
   }
 );
-
